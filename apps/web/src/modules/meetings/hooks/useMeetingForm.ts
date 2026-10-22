@@ -4,6 +4,7 @@ import {
   ruleEndDay,
   type CreateMeetingBody,
   type MeetingOccurrence,
+  type ProjectId,
   type UpdateSeriesBody,
 } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,7 +32,12 @@ export const meetingForm = z.object({
 export type MeetingForm = z.infer<typeof meetingForm>
 
 /** A new meeting: today at the default hour, in the account's zone. */
-export const newMeeting = (today: string, accountZone: string): MeetingForm => ({
+/** A new meeting's form; in a project when made from one (FR-026, FR-055). */
+export const newMeeting = (
+  today: string,
+  accountZone: string,
+  projectId: ProjectId | null = null,
+): MeetingForm => ({
   title: '',
   startsLocal: `${today}T${String(DEFAULT_HOUR).padStart(2, '0')}:00`,
   timeZone: accountZone,
@@ -39,7 +45,7 @@ export const newMeeting = (today: string, accountZone: string): MeetingForm => (
   rule: null,
   until: null,
   location: '',
-  projectId: null,
+  projectId,
   attendeeIds: [],
   note: '',
 })

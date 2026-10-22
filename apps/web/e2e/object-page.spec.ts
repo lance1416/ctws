@@ -92,81 +92,61 @@ test('the address of a person who is gone says so instead of showing nothing', a
   await expect(page).toHaveURL(/\/people$/)
 })
 
-test('Linked sits beside Tasks where the page has room, and below it on a phone', async ({
+test('the project’s blocks sit beside the tree where the page has columns, under it where not', async ({
   page,
 }) => {
-  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
   const { project } = await world(page)
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto(`/projects/${project.id}`)
-  // Both boxes in ONE frame, once the head above them has its name: two reads either side of the
-  // name arriving put the two blocks 44px apart -- the name's own line -- and blamed the layout.
-  await expect(page.locator('[data-project-sentence]')).toBeVisible()
-  await expect(page.locator('[data-panel="Linked"]')).toContainText('Ying Chen')
-  const boxes = () =>
-    page.evaluate(() =>
-      ['Tasks', 'Linked'].map((name) => {
-        const r = document.querySelector(`[data-panel="${name}"]`)!.getBoundingClientRect()
-        return { x: r.x, y: r.y, width: r.width, height: r.height }
-      }),
-    )
-  const [tasks, linked] = await boxes()
-  // Beside: to the right of the tasks, and starting level with them.
-  expect(linked!.x).toBeGreaterThanOrEqual(tasks!.x + tasks!.width)
-  expect(Math.abs(linked!.y - tasks!.y)).toBeLessThan(40)
-  expect(Math.round(linked!.width)).toBe(320)
+  const tree = page.locator('[data-panel="Tasks"]')
+  const people = page.getByRole('region', { name: 'People' })
+  const box = (l: typeof tree) => l.evaluate((el) => el.getBoundingClientRect().toJSON())
 
+  // The 27-inch screen: the tree takes half the columns, the blocks the rest (DES-001 section 4),
+  // each column starting level with the tree.
+  await page.setViewportSize({ width: 2560, height: 1310 })
+  await page.goto(`/projects/${project.id}`)
+  await expect(people).toContainText('Ying Chen')
+  const wideTree = await box(tree)
+  const side = await box(page.locator('[data-project-side]').first())
+  expect(side.x).toBeGreaterThanOrEqual(wideTree.x + wideTree.width)
+  expect(Math.abs(side.y - wideTree.y)).toBeLessThan(4)
+
+  // With no column to spare, under the tree, two across, starting at its left edge.
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await expect(page.locator('[data-project-under]')).toBeVisible()
+  const narrowTree = await box(tree)
+  const under = await box(page.locator('[data-project-under]'))
+  expect(under.y).toBeGreaterThanOrEqual(narrowTree.y + narrowTree.height)
+  expect(Math.round(under.x)).toBe(Math.round(narrowTree.x))
+
+  // And on a phone, one column, still under the tree.
   await page.setViewportSize({ width: 375, height: 800 })
   await expect
-    .poll(async () => {
-      const [narrowTasks, narrowLinked] = await boxes()
-      return narrowLinked!.y - (narrowTasks!.y + narrowTasks!.height)
-    })
+    .poll(async () => (await box(people)).y - ((await box(tree)).y + (await box(tree)).height))
     .toBeGreaterThan(-4)
 })
 
-/**
- * BELOW THE TASKS, ON THEIR EDGE. With the detail open (the third column is the detail's) and on a
- * phone, Linked goes under the tree -- and it is then one column with it: its rows' threads at the
- * tree's thread x and its headings where the Tasks heading hangs, not 72px to the left of them.
- */
-test('with the detail open the third column is the detail’s, and Linked goes below on the tree’s edge', async ({
+test('a project’s blocks: what is in it first, the empty ones as their heads, each + its own', async ({
   page,
 }) => {
-  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
   const { project } = await world(page)
-  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto(`/projects/${project.id}`)
-  await page.getByRole('listitem').filter({ hasText: 'Rewrite the CV' }).click()
-  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
-  await expect(page.locator('[data-panel="Linked"]')).toContainText('Ying Chen')
-  // One frame for every box: see the test above.
-  const edges = () =>
-    page.evaluate(() => {
-      const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect()
-      const tasks = box('[data-panel="Tasks"]')
-      const linked = box('[data-panel="Linked"]')
-      return {
-        below: linked.y > tasks.y + tasks.height - 4,
-        treeThread: Math.round(box('[data-task-tree] [data-thread]').x),
-        linkedThread: Math.round(box('[data-panel="Linked"] [data-thread]').x),
-        tasksHeading: Math.round(box('[data-panel="Tasks"] h2').x),
-        linkedHeading: Math.round(box('[data-panel="Linked"] h3').x),
-      }
-    })
-  const wide = await edges()
-  expect(wide.below).toBe(true)
-  expect(wide.linkedThread).toBe(wide.treeThread)
-  expect(wide.linkedHeading).toBe(wide.tasksHeading)
+  const blocks = page.locator('[data-project-under] > section')
+  await expect(page.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
+  // The meetings coming up and the people on it, in FR-055's order; then the empty ones, which
+  // are their heads saying so.
+  const names = await blocks.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))
+  expect(names.slice(0, 2)).toEqual(['Meetings', 'People'])
+  const reading = page.getByRole('region', { name: 'Reading' })
+  await expect(reading).toContainText('None yet')
+  expect(names.indexOf('Reading')).toBeGreaterThan(1)
 
-  // And on a phone, where it is below for want of room.
-  await page.setViewportSize({ width: 375, height: 800 })
-  await page.goto(`/projects/${project.id}`)
-  // Both reads, not just Linked's: the tree's can land second, and then it has no thread to measure.
-  await expect(page.locator('[data-panel="Linked"]')).toContainText('Ying Chen')
-  await expect(page.getByRole('listitem').filter({ hasText: 'Rewrite the CV' })).toBeVisible()
-  const phone = await edges()
-  expect(phone.below).toBe(true)
-  expect(phone.linkedThread).toBe(phone.treeThread)
-  expect(phone.linkedHeading).toBe(phone.tasksHeading)
+  // The Meetings block's + makes a meeting, in this project.
+  await page
+    .getByRole('region', { name: 'Meetings' })
+    .getByRole('button', { name: 'New meeting' })
+    .click()
+  const dialog = page.getByRole('dialog', { name: 'New meeting' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('Job hunt')
 })

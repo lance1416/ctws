@@ -174,7 +174,11 @@ test('a line of work is taken off without touching the others', async ({ page })
   await expect(pane).toContainText('CTWS')
 
   await page.goto(`/projects/${hunt}`)
-  await expect(page.getByRole('region', { name: 'Linked' })).not.toContainText('陈颖')
+  const people = page.getByRole('region', { name: 'People' })
+  await expect(people).toContainText('None yet')
+  await expect(people).not.toContainText('陈颖')
+  await page.goto(`/projects/${ctws}`)
+  await expect(page.getByRole('region', { name: 'People' })).toContainText('陈颖')
 })
 
 test('an address removed in the pane is really gone', async ({ page }) => {
@@ -283,10 +287,7 @@ test('the list is in pinyin order, not byte order', async ({ page }) => {
   ])
 })
 
-test('a project page carries its people, as edges and not as a block of its own', async ({
-  page,
-}) => {
-  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
+test('a project page carries its people, in its People block (FR-055)', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, '找工作')
   await add(page, {
@@ -297,9 +298,7 @@ test('a project page carries its people, as edges and not as a block of its own'
   await add(page, { name: '不相干的人' })
   await page.goto(`/projects/${pid}`)
 
-  const people = page
-    .getByRole('region', { name: 'Linked' })
-    .getByRole('region', { name: 'People' })
+  const people = page.getByRole('region', { name: 'People' })
   await expect(people).toContainText('某招聘')
   await expect(people).not.toContainText('不相干的人')
 })

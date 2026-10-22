@@ -1,5 +1,6 @@
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
+import { useProjectPeople } from './hooks/projectThings'
 import { peopleKeys } from './api'
 import { BirthdayCard } from './components/BirthdayCard'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
@@ -73,6 +74,8 @@ export const peopleModule: WorkspaceModule = {
     },
   ],
   today: [{ id: 'birthdays', order: 40, Block: BirthdaysToday }],
+  // A project's page lists the people on it (FR-055).
+  project: { Things: { kind: 'person', useThings: useProjectPeople } },
   relations: [
     {
       type: 'person',

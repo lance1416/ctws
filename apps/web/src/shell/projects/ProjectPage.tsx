@@ -1,14 +1,14 @@
 import { idFrom, projectId, type ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { Fragment } from 'react'
+import { useRef, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
+import { splitColumns, useColumns } from '../../platform/ui/columns'
 import { DangerZone } from '../../platform/ui/DangerZone'
 import { useViewParam } from '../../platform/ui/ViewTabs'
 import { DeletedNotice } from '../detail/DeletedNotice'
 import type { Crumbs } from '../layout/page'
 import { useSubjectOf } from '../layout/subject'
-import { LinkBlocks } from '../links/LinkBlocks'
 import { useRegistry } from '../registry'
 import { followable, pinnedOf, resourcesQuery } from '../resources/api'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
@@ -16,6 +16,7 @@ import { useEveryProject } from './api'
 import { DeleteProject } from './DeleteProject'
 import { digitHandlers, PROJECT_KEYS } from './keys'
 import { ProjectHead } from './ProjectHead'
+import { ProjectLinked } from './ProjectLinked'
 
 /** The project the address names, live or archived: an archived project still has its page. */
 function useOpenProject() {
@@ -73,45 +74,42 @@ function OpenProject({ id }: { id: ProjectId }) {
       if (url) window.open(url, '_blank', 'noopener,noreferrer')
     }),
   })
-  // Linked lists the kinds the page's own rows do not already show.
-  const linkedKinds = registry.relations
-    .filter((r) => r.moduleId === null || r.moduleId !== main?.moduleId)
-    .map((r) => r.type)
+  // Across the page's columns (DES-001 section 4): the tree takes half, its blocks the rest, or
+  // they go under it when there is no column to spare.
+  const page = useRef<HTMLDivElement>(null)
+  const columns = useColumns(page)
+  const { main: mainColumns, side } = splitColumns(columns)
 
   return (
-    <Fragment>
+    <div ref={page} className="flex min-w-0 flex-1 flex-col">
       <section aria-label="Project at a glance" className="mb-4 min-w-0">
         <ProjectHead id={id} views={views} view={view} onView={pickView} />
       </section>
 
-      {/* Linked sits beside the rows only when this column is wide enough (a container query,
-          so an open detail pane counts); otherwise it goes under them. */}
-      <div className="@container">
-        <div className="grid min-w-0 grid-cols-1 items-start gap-10 @5xl:grid-cols-[minmax(0,1fr)_20rem] @5xl:gap-14">
-          <div className="flex min-w-0 flex-col gap-4">
-            {main && (
-              // Named for a screen reader; on screen the tree's own column names head it.
-              <section
-                aria-labelledby="project-main"
-                data-panel={main.moduleLabel}
-                className="min-w-0"
-              >
-                <h2 id="project-main" className="sr-only">
-                  {main.moduleLabel}
-                </h2>
-                <main.Component projectId={id} view={view} />
-              </section>
-            )}
-          </div>
-          <section aria-label="Linked" data-panel="Linked" className="min-w-0 @5xl:pt-1">
-            <LinkBlocks of={{ type: 'project', id }} types={linkedKinds} />
+      <div
+        data-project-columns={columns}
+        className="grid min-w-0 grid-cols-1 items-start gap-3 lg:grid-cols-[repeat(var(--columns),minmax(0,1fr))]"
+        style={{ '--columns': columns, '--main': mainColumns } as CSSProperties}
+      >
+        {main && (
+          // Named for a screen reader; on screen the tree's own column names head it.
+          <section
+            aria-labelledby="project-main"
+            data-panel={main.moduleLabel}
+            className="min-w-0 lg:col-span-(--main)"
+          >
+            <h2 id="project-main" className="sr-only">
+              {main.moduleLabel}
+            </h2>
+            <main.Component projectId={id} view={view} />
           </section>
-        </div>
+        )}
+        <ProjectLinked projectId={id} columns={side} beside={mainColumns < columns} />
       </div>
 
       <DangerZone>
         <DeleteProject id={id} />
       </DangerZone>
-    </Fragment>
+    </div>
   )
 }

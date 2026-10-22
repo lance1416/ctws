@@ -175,6 +175,8 @@ export type Registry = {
   relations: RegisteredRelation[]
   relationFor: (type: ObjectType) => RegisteredRelation
   projectMain: RegisteredProjectMain | null
+  /** Each module's own things in a project, by the kind they are. */
+  projectThings: (NonNullable<ProjectContribution['Things']> & { moduleId: string })[]
   projectRowFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectLead: ComponentType<{ projectId: ProjectId }> | null
@@ -262,6 +264,9 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       if (!found) throw new Error(`no module says where a ${type} lives`)
       return found
     },
+    projectThings: modules.flatMap((m) =>
+      m.project?.Things ? [{ moduleId: m.id, ...m.project.Things }] : [],
+    ),
     projectMain: (() => {
       const m = modules.find((x) => x.project?.Main)
       return m?.project?.Main ? { moduleId: m.id, moduleLabel: m.label, ...m.project.Main } : null

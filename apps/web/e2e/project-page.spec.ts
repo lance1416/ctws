@@ -130,12 +130,10 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   const treePanel = page.getByRole('region', { name: 'Tasks', exact: true })
   // The tree is INSIDE the panel, not beside it: a panel drawn around nothing would otherwise pass.
   await expect(treePanel.locator('[data-task-tree]')).toHaveCount(1)
-  // The head is above it; beside it, with the detail closed, is what the project meets.
+  // The head is above it.
   const bannerBox = (await header(page).boundingBox())!
   const closedBox = (await treePanel.boundingBox())!
   expect(bannerBox.y + bannerBox.height).toBeLessThanOrEqual(closedBox.y + 1)
-  const aside = (await page.locator('[data-panel="Linked"]').boundingBox())!
-  expect(aside.x).toBeGreaterThanOrEqual(closedBox.x + closedBox.width)
 
   await openDetail(page, '被打开的任务')
   const dialog = page.getByRole('dialog', { name: 'Task details' })

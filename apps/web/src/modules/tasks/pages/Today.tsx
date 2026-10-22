@@ -8,7 +8,7 @@ import { longDay, nextMonday, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
-import { useColumns } from '../../../platform/ui/columns'
+import { inColumns, splitColumns, useColumns } from '../../../platform/ui/columns'
 import {
   CarriedIcon,
   ExpandIcon,
@@ -30,7 +30,6 @@ import { carriedFrom } from '../logic/todayMarks'
 import { todaySegments } from '../logic/today'
 import { DoneButton, LINE, TaskLine, TaskPath } from './today/TaskLine'
 import { Timeline } from './today/Timeline'
-import { inColumns, todayColumns } from './today/dayColumns'
 import { minutesOf, type TimedItem } from './today/dayLine'
 import { useOthersToday, useTodayRows } from './today/useTodayRows'
 
@@ -72,7 +71,7 @@ export function Today() {
   // Not held to a width: the page's columns are what its width gives (DES-001 section 4).
   const page = useRef<HTMLDivElement>(null)
   const columns = useColumns(page)
-  const { tasks: taskColumns, side } = todayColumns(columns)
+  const { main: taskColumns, side } = splitColumns(columns)
   const sideColumns = inColumns(registry.todayBlocks, side)
 
   // The timed things: meetings from their module, and deadlines today at a time.

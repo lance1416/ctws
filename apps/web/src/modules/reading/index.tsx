@@ -1,5 +1,6 @@
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
+import { useProjectReading } from './hooks/projectThings'
 import { readingKeys } from './api'
 import { UnfiledLine } from './components/ReadingKind'
 import { ReadingAside, ReadingWidget } from './components/ReadingWidget'
@@ -9,7 +10,6 @@ import { READING_ID } from './logic/id'
 import { isReadingUrl } from './logic/readingUrl'
 import { Reading } from './pages/Reading'
 
-// No project-page block: reading reaches a project as edges, which the shell draws for every kind.
 const PAGE = topPage('Reading')
 
 export const readingModule: WorkspaceModule = {
@@ -56,6 +56,8 @@ export const readingModule: WorkspaceModule = {
       span: 8,
     },
   ],
+  // A project's page lists its reading (FR-055).
+  project: { Things: { kind: 'reading', useThings: useProjectReading } },
   relations: [
     {
       type: 'reading',

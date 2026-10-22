@@ -1,4 +1,4 @@
-import { type CreateMeetingBody, type MeetingOccurrence } from '@ctws/contracts'
+import { type CreateMeetingBody, type MeetingOccurrence, type ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { createMeeting, meetingKeys } from '../api'
@@ -24,9 +24,12 @@ import {
  * app it cannot be made from a line of text.
  */
 export function NewMeetingDialog({
+  projectId = null,
   onClose,
   onMade,
 }: {
+  /** The project it is made in, when opened from one. */
+  projectId?: ProjectId | null
   onClose: () => void
   onMade: (made: MeetingOccurrence) => void
 }) {
@@ -35,7 +38,7 @@ export function NewMeetingDialog({
   const titleField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
 
-  const { form, values, ready } = useMeetingForm(newMeeting(today, accountZone))
+  const { form, values, ready } = useMeetingForm(newMeeting(today, accountZone, projectId))
   const dirty = { shouldDirty: true }
   const title = form.register('title')
   // The dialog's two boxes are the halves of one start.

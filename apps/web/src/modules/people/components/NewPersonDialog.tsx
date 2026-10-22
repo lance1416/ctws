@@ -1,4 +1,4 @@
-import { type PersonResponse } from '@ctws/contracts'
+import { type PersonResponse, type ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { createPerson, peopleKeys } from '../api'
@@ -16,16 +16,21 @@ import { Modal } from '../../../platform/ui/Modal'
 
 /** New person, for when you know more than a name; one address here, the rest on their pane. */
 export function NewPersonDialog({
+  projectId = null,
   onClose,
   onMade,
 }: {
+  /** The project they are on, when made from one (FR-026, FR-055). */
+  projectId?: ProjectId | null
   onClose: () => void
   onMade: (made: PersonResponse) => void
 }) {
   const nameField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
 
-  const { form, values, named } = usePersonForm(newPerson)
+  const { form, values, named } = usePersonForm(
+    projectId ? { ...newPerson, projectIds: [projectId] } : newPerson,
+  )
   const dirty = { shouldDirty: true }
   const name = form.register('name')
   // One row: the dialog takes a single address.

@@ -73,6 +73,16 @@ export type ProjectContribution = {
     Component: ComponentType<{ projectId: ProjectId; view: string }>
     views: readonly [ProjectView, ...ProjectView[]]
   }
+  /**
+   * This module's own things in a project, for their block on its page (FR-055): the meetings
+   * coming up, the people on it, its reading. The shell puts them with what is linked to the
+   * project by hand, and the block's + makes a new one in the project.
+   */
+  Things?: {
+    kind: ObjectType
+    /** A hook: called once per page, in registry order. */
+    useThings: (projectId: ProjectId) => ProjectThings
+  }
   /** Numbers for a project's row in the list, said as one line. */
   RowFacts?: ComponentType<{ project: ProjectResponse }>
   /** Numbers for a project's Workbench card, a line each. */
@@ -91,6 +101,25 @@ export type ProjectContribution = {
 }
 
 type ProjectView = { id: string; label: string; icon?: IconComponent }
+
+/** One of a module's things in a project, as its block lists it. */
+type ProjectThing = {
+  id: string
+  title: string
+  /** Where it opens, when not the kind's own address (a meeting's next occurrence). */
+  to?: string
+  /** A word or two in the row's first column: "Thu 14:00". */
+  lead?: string | null
+  /** A word or two at the row's end. */
+  fact?: string | null
+}
+
+export type ProjectThings = {
+  things: ProjectThing[]
+  isPending: boolean
+  isError: boolean
+  retry: () => void
+}
 
 export type RelationContribution = {
   /** Exactly one module answers for each type. */

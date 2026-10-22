@@ -137,7 +137,6 @@ test('search reaches both modules from one box', async ({ page }) => {
 test('a project page carries both modules, each with its own block and numbers', async ({
   page,
 }) => {
-  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
   await registerFreshUser(page)
   const projectId = await makeProject(page, 'CTWS')
   await makeTask(page, projectId, '配色重做')
@@ -148,16 +147,13 @@ test('a project page carries both modules, each with its own block and numbers',
   )
   await page.goto(`/projects/${projectId}`)
 
-  // The task module's block and the reading module's, side by side under one shell project.
+  // The task module's tree and the reading module's block, on one shell project (FR-055).
   await expect(page.getByText('配色重做')).toBeVisible()
   await expect(page.getByText('一篇相关的文章')).toBeVisible()
   // And the reading module's number is its block's count, beside the tasks.
-  await expect(
-    page
-      .getByRole('region', { name: 'Linked' })
-      .getByRole('region', { name: 'Reading' })
-      .locator('[data-count]'),
-  ).toHaveText('1')
+  await expect(page.getByRole('region', { name: 'Reading' }).locator('[data-count]')).toHaveText(
+    '1',
+  )
   // The row does NOT repeat the name of the project you are standing in -- the same rule the
   // dependency pane keeps, and the same reason the task tree shows no breadcrumb.
   await expect(page.getByRole('listitem').filter({ hasText: '一篇相关的文章' })).not.toContainText(

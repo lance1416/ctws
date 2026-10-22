@@ -125,7 +125,10 @@ function Frame({
             {hasSidebar && sidebarOpen && <Sidebar place={place} />}
           </div>
           <div className="relative flex min-w-0 flex-1">
-            <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20">
+            {/* An item open as a column (`DetailPane`, from 1280) takes its width from the main
+                area's right, so it sits beside the page rather than over it: 22rem, its 12px
+                inset, and a 12px gap. */}
+            <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20 has-[[data-detail-mode=pane]]:pr-[23.5rem]">
               <LeaveGuardContext.Provider value={leaveGuard}>
                 <Outlet />
               </LeaveGuardContext.Provider>

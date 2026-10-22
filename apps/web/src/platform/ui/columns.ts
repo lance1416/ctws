@@ -32,3 +32,33 @@ export function useColumns(ref: RefObject<HTMLElement | null>): number {
   }, [ref])
   return count
 }
+
+/**
+ * A page's columns between its main blocks and the ones beside them (DES-001 section 4, Today's
+ * tasks and a project's tree): the main ones take half, two at least; the others take the rest.
+ * With two columns or fewer the main ones take the whole row and the others go under them, as many
+ * across.
+ */
+export function splitColumns(columns: number): { main: number; side: number } {
+  const main = Math.min(columns, Math.max(2, Math.ceil(columns / 2)))
+  return { main, side: columns > main ? columns - main : columns }
+}
+
+/**
+ * The blocks beside the main ones, in order, across `columns`: one a column while they last, and
+ * any left over under the last columns' (artboard 31: This week and Birthdays share the last). A
+ * column left without a block is not returned.
+ */
+export function inColumns<T>(blocks: readonly T[], columns: number): T[][] {
+  const each = Math.floor(blocks.length / columns)
+  const over = blocks.length % columns
+  const out: T[][] = []
+  let from = 0
+  for (let i = 0; i < columns; i++) {
+    const n =
+      blocks.length <= columns ? (i < blocks.length ? 1 : 0) : each + (i >= columns - over ? 1 : 0)
+    if (n > 0) out.push(blocks.slice(from, from + n))
+    from += n
+  }
+  return out
+}

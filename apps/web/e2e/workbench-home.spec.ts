@@ -34,7 +34,6 @@ test('signing in lands on the workbench, not inside a module', async ({ page }) 
 })
 
 test('the Reading card holds only what belongs to no project', async ({ page }) => {
-  test.fixme(true, 'Phase 3, STORY-015: the project page shows module-owned items in Linked again.')
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'CTWS')
   await apiPost(page, '/reading', { kind: 'book', title: '散着的书' })
