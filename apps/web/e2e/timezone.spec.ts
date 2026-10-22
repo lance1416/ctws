@@ -111,7 +111,11 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
   // into today's list rather than dropped, so the row shows -- marked. The mark is the assertion
   // worth having, because 'yesterday' is a word only the account's zone can produce.
   await page.getByRole('link', { name: 'Today' }).click()
-  const row = page.getByRole('listitem').filter({ hasText: '按进程时区排的' })
+  // Today's own lists: Ready to start may well offer it, which says it can start, not that it is due.
+  const row = page
+    .locator('li')
+    .filter({ has: page.locator('[data-today-row]') })
+    .filter({ hasText: '按进程时区排的' })
   if (dayIn(ACCOUNT_TZ) > runnerDay()) {
     await expect(row).toBeVisible()
     // Carried, and the day it was planned for is the account's yesterday -- a day only the
