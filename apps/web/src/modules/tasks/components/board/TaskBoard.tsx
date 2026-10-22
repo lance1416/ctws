@@ -66,10 +66,18 @@ export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: React
       </div>
     )
   if (!tasks.isSuccess) return <BoardLoading />
-  return <Board data={tasks.data} add={add} />
+  return <Board projectId={projectId} data={tasks.data} add={add} />
 }
 
-function Board({ data, add }: { data: ProjectTasks; add: ReactNode }) {
+function Board({
+  projectId,
+  data,
+  add,
+}: {
+  projectId: ProjectId
+  data: ProjectTasks
+  add: ReactNode
+}) {
   const all = data.tasks
   const byId = useMemo(() => new Map(all.map((t) => [t.id, t])), [all])
   const counts = useMemo(() => leafCounts(all), [all])
@@ -89,7 +97,7 @@ function Board({ data, add }: { data: ProjectTasks; add: ReactNode }) {
       }),
     [all, drag, today, timeZone, allDone],
   )
-  const folds = useBoardFolds(columns)
+  const folds = useBoardFolds(projectId, columns)
   const opened = (status: TaskStatus) => !SIDE_STATUSES.includes(status) || sides.has(status)
   const shown = new Map(
     BOARD_ORDER.filter(opened).map((status) => [

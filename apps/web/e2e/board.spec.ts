@@ -96,8 +96,11 @@ test('only leaves are cards, grouped under their top-level parent, the project�
   await expect(card(page, '公式换行').locator('[data-board-path]')).toHaveText('Batch 3')
   await expect(card(page, '装依赖').locator('[data-board-path]')).toHaveCount(0)
 
-  // A group folds to its head, and opens again.
+  // A group folds to its head, stays folded for this project (DES-001 section 4), and opens again.
   await head(page, 'in_progress', /接入 KaTeX/).click()
+  await expect(cardsIn(page, 'in_progress')).toHaveText([/写变更日志/])
+  await page.reload()
+  await expect(head(page, 'in_progress', /接入 KaTeX/)).toHaveAttribute('aria-expanded', 'false')
   await expect(cardsIn(page, 'in_progress')).toHaveText([/写变更日志/])
   await head(page, 'in_progress', /接入 KaTeX/).click()
   await expect(cardsIn(page, 'in_progress')).toHaveCount(3)
