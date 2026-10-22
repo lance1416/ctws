@@ -1,5 +1,9 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { BlockFailed } from '../../../../platform/ui/Block'
 import { BUTTON } from '../../../../platform/ui/buttonStyles'
 import { FlagIcon, JoinIcon, KIND_ICON } from '../../../../platform/ui/icons'
+import { LAYER } from '../../../../platform/ui/layers'
 import { dayTimeline, lengthOf, type TimedItem } from './dayLine'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -10,8 +14,29 @@ const pct = (share: number) => `${(share * 100).toFixed(3)}%`
  * THE DAY ON ONE LINE (FR-079, artboard 12): the hours from 08 to 20, the past hatched, a line at
  * now, the stretch free until the next timed thing, meetings as purple spans with Join, and timed
  * deadlines as flags. Things too close to read apart are one node with a count, listed on hover.
+ * When a module's meetings or other timed things could not be read, it says so instead of drawing
+ * a day that looks free (FR-032).
  */
-export function Timeline({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number }) {
+export function Timeline({
+  items,
+  nowMinutes,
+  failed,
+  onRetry,
+}: {
+  items: TimedItem[]
+  nowMinutes: number
+  failed: boolean
+  onRetry: () => void
+}) {
+  if (failed)
+    return (
+      <section
+        aria-label="Timeline of the day"
+        className="rounded-block border border-line bg-panel"
+      >
+        <BlockFailed what="timeline" onRetry={onRetry} />
+      </section>
+    )
   const line = dayTimeline(items, nowMinutes)
   const Meeting = KIND_ICON.meeting
   return (
@@ -42,7 +67,6 @@ export function Timeline({ items, nowMinutes }: { items: TimedItem[]; nowMinutes
         {line.nodes.map((node) => {
           const first = node.items[0]!
           const many = node.items.length > 1
-          const label = node.items.map((i) => `${clock(i.start)} ${i.title}`).join('\n')
           if (first.kind === 'due' && !many)
             return (
               <div key={node.key} data-timeline-due>
@@ -61,7 +85,7 @@ export function Timeline({ items, nowMinutes }: { items: TimedItem[]; nowMinutes
             )
           const joinable = !many && first.joinUrl && (first.end ?? first.start) > nowMinutes
           return (
-            <div key={node.key} data-timeline-meeting title={many ? label : undefined}>
+            <div key={node.key} data-timeline-meeting>
               <div
                 className="absolute top-0 grid h-10 min-w-6 place-items-center rounded-control bg-meeting text-on-project"
                 style={{ left: pct(node.at), width: pct(node.until - node.at) }}
@@ -73,22 +97,24 @@ export function Timeline({ items, nowMinutes }: { items: TimedItem[]; nowMinutes
                 )}
               </div>
               <div
-                className="absolute top-0 flex h-10 min-w-0 items-center gap-2.5 pl-2 overflow-hidden"
+                className={`absolute top-0 flex h-10 min-w-0 items-center gap-2.5 pl-2 ${many ? '' : 'overflow-hidden'}`}
                 style={{
                   left: `calc(${pct(node.until)} + 0px)`,
                   width: pct(Math.max(node.room - node.until, 0.06)),
                 }}
               >
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-meta font-medium text-meeting-t">
-                    {many ? `${node.items.length} meetings` : first.title}
+                {many ? (
+                  <Cluster items={node.items} nowMinutes={nowMinutes} />
+                ) : (
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-meta font-medium text-meeting-t">
+                      {first.title}
+                    </span>
+                    <span className="truncate font-mono text-meta text-muted">
+                      {clock(first.start)}
+                    </span>
                   </span>
-                  <span className="truncate font-mono text-meta text-muted">
-                    {many
-                      ? `${clock(first.start)}–${clock(node.items.at(-1)!.start)}`
-                      : clock(first.start)}
-                  </span>
-                </span>
+                )}
                 {joinable && (
                   <a
                     href={first.joinUrl!}
@@ -136,5 +162,92 @@ export function Timeline({ items, nowMinutes }: { items: TimedItem[]; nowMinutes
         )}
       </div>
     </section>
+  )
+}
+
+/**
+ * Meetings too close to draw apart (FR-015): the count and the span, which list them on hover and
+ * on a press, so a keyboard and a screen reader reach each one too (WCAG 2.1.1, 1.4.13). Esc and a
+ * press elsewhere put the list away.
+ */
+function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number }) {
+  const [pressed, setPressed] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const open = pressed || hovered
+  const box = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    if (!pressed) return
+    const onDown = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setPressed(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [pressed])
+  const span = `${clock(items[0]!.start)}–${clock(items.at(-1)!.start)}`
+  return (
+    <span
+      ref={box}
+      className="relative flex min-w-0"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape' || !open) return
+        e.preventDefault()
+        e.stopPropagation()
+        setPressed(false)
+        setHovered(false)
+      }}
+    >
+      <button
+        type="button"
+        data-timeline-cluster
+        aria-expanded={open}
+        aria-label={`${items.length} meetings, ${span}`}
+        onClick={() => setPressed(!pressed)}
+        className="flex min-w-0 flex-col rounded-control text-left"
+      >
+        <span className="truncate text-meta font-medium text-meeting-t">
+          {items.length} meetings
+        </span>
+        <span className="truncate font-mono text-meta text-muted">{span}</span>
+      </button>
+      {open && (
+        <ul
+          aria-label={`${items.length} meetings`}
+          className={`absolute top-full left-0 ${LAYER.menu} mt-1.5 w-72 rounded-block bg-float p-1.5 shadow-float`}
+        >
+          {items.map((m) => {
+            const joinable = m.joinUrl && (m.end ?? m.start) > nowMinutes
+            return (
+              <li key={m.key} className="flex min-h-8 items-center gap-2.5 rounded-control px-2">
+                <span className="font-mono text-meta text-muted">{clock(m.start)}</span>
+                {m.to ? (
+                  <Link
+                    to={m.to}
+                    className="min-w-0 flex-1 truncate text-ui text-ink hover:underline"
+                  >
+                    {m.title}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 flex-1 truncate text-ui text-ink">{m.title}</span>
+                )}
+                {joinable && (
+                  <a
+                    href={m.joinUrl!}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={`Join ${m.title}`}
+                    className={`${BUTTON.secondary} h-6.5 shrink-0 px-2 text-meta`}
+                  >
+                    <JoinIcon size={14} aria-hidden="true" />
+                    Join
+                  </a>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </span>
   )
 }

@@ -3,11 +3,12 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { addDays } from '@ctws/core/day'
 import { clockTime } from '@ctws/core/clock'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { longDay, nextMonday, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { useColumns } from '../../../platform/ui/columns'
 import {
   CarriedIcon,
   ExpandIcon,
@@ -29,6 +30,7 @@ import { carriedFrom } from '../logic/todayMarks'
 import { todaySegments } from '../logic/today'
 import { DoneButton, LINE, TaskLine, TaskPath } from './today/TaskLine'
 import { Timeline } from './today/Timeline'
+import { inColumns, todayColumns } from './today/dayColumns'
 import { minutesOf, type TimedItem } from './today/dayLine'
 import { useOthersToday, useTodayRows } from './today/useTodayRows'
 
@@ -47,7 +49,7 @@ export function Today() {
   const now = useNow()
   const day = ymd(now, timeZone)
   const today = useQuery(todayQuery(day))
-  const entries = useOthersToday(day)
+  const others = useOthersToday(day)
   const registry = useRegistry()
   const lunar = useLunarName(day)
   // In the address, as on a project page: opening another row is a navigation, which the open
@@ -67,10 +69,16 @@ export function Today() {
   const { openTask } = pane
   const { inProgress, planned, overdue } = todaySegments(rows)
 
+  // Not held to a width: the page's columns are what its width gives (DES-001 section 4).
+  const page = useRef<HTMLDivElement>(null)
+  const columns = useColumns(page)
+  const { tasks: taskColumns, side } = todayColumns(columns)
+  const sideColumns = inColumns(registry.todayBlocks, side)
+
   // The timed things: meetings from their module, and deadlines today at a time.
   const nowClock = clockTime(now, timeZone)
   const timed: TimedItem[] = [
-    ...entries.flatMap((e): TimedItem[] =>
+    ...others.entries.flatMap((e): TimedItem[] =>
       e.type === 'meeting' && e.time
         ? [
             {
@@ -107,7 +115,7 @@ export function Today() {
   )
 
   return (
-    <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-3.5">
+    <div ref={page} className="flex w-full flex-col gap-3.5">
       <header className="flex items-center gap-3.5">
         <h1
           id="today-heading"
@@ -130,7 +138,12 @@ export function Today() {
         </span>
       </header>
 
-      <Timeline items={timed} nowMinutes={minutesOf(nowClock)} />
+      <Timeline
+        items={timed}
+        nowMinutes={minutesOf(nowClock)}
+        failed={others.failed}
+        onRetry={others.retry}
+      />
 
       {error && (
         <p role="alert" className="text-ui text-stop-t">
@@ -138,8 +151,12 @@ export function Today() {
         </p>
       )}
 
-      <div className="grid min-w-0 grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_26.25rem]">
-        <div className="flex min-w-0 flex-col gap-3">
+      <div
+        data-today-columns={columns}
+        className="grid min-w-0 grid-cols-1 items-start gap-3 lg:grid-cols-[repeat(var(--columns),minmax(0,1fr))]"
+        style={{ '--columns': columns, '--tasks': taskColumns } as CSSProperties}
+      >
+        <div className="flex min-w-0 flex-col gap-3 lg:col-span-(--tasks)">
           {today.isError ? (
             <Block title="Today">
               <BlockFailed what="tasks for today" onRetry={() => void today.refetch()} />
@@ -150,25 +167,27 @@ export function Today() {
             </Block>
           ) : (
             <>
-              <Block
-                badge={{ icon: InProgressIcon, tint: 'bg-go-bg text-go' }}
-                title="In progress"
-                count={inProgress.length}
-                empty={inProgress.length === 0 ? 'None' : null}
-              >
-                <ul className="p-1.5">
-                  {inProgress.map((t) =>
-                    line(
-                      t,
-                      <DoneButton
-                        id={t.id}
-                        title={t.title}
-                        onDone={() => setStatus(t.id, 'done')}
-                      />,
-                    ),
-                  )}
-                </ul>
-              </Block>
+              {/* Left column blocks keep their order and are not drawn empty (FR-079). */}
+              {inProgress.length > 0 && (
+                <Block
+                  badge={{ icon: InProgressIcon, tint: 'bg-go-bg text-go' }}
+                  title="In progress"
+                  count={inProgress.length}
+                >
+                  <ul className="p-1.5">
+                    {inProgress.map((t) =>
+                      line(
+                        t,
+                        <DoneButton
+                          id={t.id}
+                          title={t.title}
+                          onDone={() => setStatus(t.id, 'done')}
+                        />,
+                      ),
+                    )}
+                  </ul>
+                </Block>
+              )}
 
               <PlannedBlock
                 planned={planned}
@@ -190,11 +209,17 @@ export function Today() {
           )}
         </div>
 
-        <div className="flex min-w-0 flex-col gap-3">
-          {registry.todayBlocks.map(({ moduleId, id, Block: Part }) => (
-            <Part key={`${moduleId}:${id}`} today={day} />
-          ))}
-        </div>
+        {sideColumns.map((blocks) => (
+          <div
+            key={`${blocks[0]!.moduleId}:${blocks[0]!.id}`}
+            data-today-side
+            className="flex min-w-0 flex-col gap-3"
+          >
+            {blocks.map(({ moduleId, id, Block: Part }) => (
+              <Part key={`${moduleId}:${id}`} today={day} />
+            ))}
+          </div>
+        ))}
       </div>
 
       {openTask && (

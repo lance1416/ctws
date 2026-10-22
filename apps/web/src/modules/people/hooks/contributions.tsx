@@ -9,7 +9,11 @@ import { PEOPLE_ID } from '../logic/id'
 export function useBirthdayEntries(range: { from: string; to: string }) {
   // The month stepped away from stays drawn until the next one is in.
   const result = useQuery({ ...birthdayCalendarQuery(range), placeholderData: keepPreviousData })
-  return { entries: result.data ?? [], isError: result.isError }
+  return {
+    entries: result.data ?? [],
+    isError: result.isError,
+    retry: () => void result.refetch(),
+  }
 }
 
 export function usePeopleHits(query: string) {

@@ -8,8 +8,10 @@ import { isFinished, STATUS_LABEL } from '../logic/status'
 export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 16 | 20 }) {
   const half = status === 'in_progress'
   const solid = status === 'done'
-  // Only a settled task recedes; backlog is still open.
+  // Only a settled task recedes; backlog is still open. What is being worked on is green, as on
+  // the status's own badge (artboards 1, 12).
   const live = !isFinished(status)
+  const tone = half ? 'text-go' : live ? 'text-ink' : 'text-muted'
   return (
     <svg
       role="img"
@@ -21,7 +23,7 @@ export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 1
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`shrink-0 ${live ? 'text-ink' : 'text-muted'}`}
+      className={`shrink-0 ${tone}`}
     >
       <title>{STATUS_LABEL[status]}</title>
       <circle

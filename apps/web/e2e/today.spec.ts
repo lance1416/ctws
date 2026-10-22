@@ -34,7 +34,9 @@ test('a new account sees its day with nothing planned, not an error (FR-030)', a
   await registerFreshUser(page)
   await expect(page.locator('#today-heading')).toBeVisible()
   await expect(block(page, 'Planned for today')).toContainText('Nothing yet')
-  await expect(block(page, 'In progress')).toContainText('None')
+  // The left column's blocks stand in a fixed order and are not drawn empty (FR-079).
+  await expect(block(page, 'In progress')).toHaveCount(0)
+  await expect(block(page, 'Overdue')).toHaveCount(0)
   await expect(block(page, 'Birthdays')).toContainText('None to be told about today')
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
@@ -226,6 +228,82 @@ test('the now line moves with the clock, and Join goes once the meeting is over'
   await expect(line.getByRole('link', { name: 'Join' })).toHaveCount(0)
 })
 
+test('meetings too close to draw apart are one node that lists them, by key as well', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  for (const [title, at] of [
+    ['Standup one', '13:00'],
+    ['Standup two', '13:10'],
+    ['Standup three', '13:20'],
+  ] as const)
+    await meetingToday(page, title, at, zone)
+  await page.reload()
+
+  const cluster = page.getByRole('button', { name: '3 meetings, 13:00–13:20' })
+  const list = page.getByRole('list', { name: '3 meetings' })
+  await expect(list).toHaveCount(0)
+  // Reached like any control, opened with Enter, and each meeting is a link of its own.
+  await cluster.focus()
+  await page.keyboard.press('Enter')
+  await expect(cluster).toHaveAttribute('aria-expanded', 'true')
+  for (const title of ['Standup one', 'Standup two', 'Standup three'])
+    await expect(list.getByRole('link', { name: title })).toBeVisible()
+  await expect(list).toContainText('13:10')
+  await page.keyboard.press('Escape')
+  await expect(list).toHaveCount(0)
+  await expect(cluster).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('the timeline says so when the meetings cannot be read, instead of a free day', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await meetingToday(page, 'Stripe: first screen', '14:00', await accountZone(page))
+  const calendar = '**/api/v1/meetings?view=calendar*'
+  await page.route(calendar, (r) => r.fulfill({ status: 500, body: '{}' }))
+  await page.reload()
+  const line = page.getByRole('region', { name: 'Timeline of the day' })
+  await expect(line).toContainText('Couldn’t load the timeline.')
+  await expect(line.locator('[data-free]')).toHaveCount(0)
+  // Only the timeline: the task blocks are there as ever (FR-032).
+  await expect(block(page, 'Planned for today')).toBeVisible()
+
+  await page.unroute(calendar)
+  await line.getByRole('button', { name: 'Try again' }).click()
+  await expect(line.locator('[data-timeline-meeting]')).toContainText('Stripe: first screen')
+  await expect(line).not.toContainText('Couldn’t load')
+})
+
+test('the page takes its width in columns: half for the tasks, the rest beside them', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const grid = page.locator('[data-today-columns]')
+  const share = async () => {
+    const [tasks, all] = await Promise.all([
+      block(page, 'Planned for today').evaluate((el) => el.getBoundingClientRect().width),
+      grid.evaluate((el) => el.getBoundingClientRect().width),
+    ])
+    return tasks / all
+  }
+  // DES-001 section 4: 1440 is 2 and 1, 1920 is 2 and 2, 2560 is 3 and 3 (artboards 12, 31).
+  for (const [width, columns, side, tasks] of [
+    [1440, 3, 1, 2 / 3],
+    [1920, 4, 2, 1 / 2],
+    [2560, 6, 3, 1 / 2],
+  ] as const) {
+    await page.setViewportSize({ width, height: 1000 })
+    await expect(grid).toHaveAttribute('data-today-columns', String(columns))
+    await expect(page.locator('[data-today-side]')).toHaveCount(side)
+    expect(Math.abs((await share()) - tasks)).toBeLessThan(0.02)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    )
+  }
+})
+
 test('the timeline runs 08 to 20 and reaches out to anything earlier', async ({ page }) => {
   await registerFreshUser(page)
   const zone = await accountZone(page)
@@ -258,7 +336,7 @@ test('In progress finishes with its check; the status mark finishes too, and say
   await makeTask(page, pid, '也做完', { scheduledOn: dayOffset(0) })
   await page.reload()
   await page.getByRole('button', { name: 'Mark “做完它” done' }).click()
-  await expect(block(page, 'In progress')).toContainText('None')
+  await expect(block(page, 'In progress')).toHaveCount(0)
   expect((await serverTask(page, pid, '做完它')).status).toBe('done')
   await page.getByRole('button', { name: 'Complete “也做完”' }).click()
   await expect(rowOf(block(page, 'Planned for today'), '也做完')).toHaveCount(0)

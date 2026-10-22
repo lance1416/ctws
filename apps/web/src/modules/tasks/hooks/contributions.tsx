@@ -10,7 +10,11 @@ import { revealHref } from '../logic/crumb'
 export function useTaskEntries(range: { from: string; to: string }) {
   // The month stepped away from stays drawn until the next one is in.
   const result = useQuery({ ...taskCalendarQuery(range), placeholderData: keepPreviousData })
-  return { entries: result.data ?? [], isError: result.isError }
+  return {
+    entries: result.data ?? [],
+    isError: result.isError,
+    retry: () => void result.refetch(),
+  }
 }
 
 /** Quick capture lands in the workspace inbox, found by its `isInbox` flag, never by name. */

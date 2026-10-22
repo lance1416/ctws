@@ -260,7 +260,9 @@ test('Done carries the rail, and a search result its project', async ({ page }) 
 
 // ---------------------------------------------------------------------------- the status marker
 
-test('the status marker is the heaviest mark on the row, and still hue-free', async ({ page }) => {
+test('the status marker is the heaviest mark on the row, and only in progress has a hue', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '在做', { status: 'in_progress' })
@@ -273,16 +275,24 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(16)
 
-  // An OPEN task's mark is drawn in the body colour; a settled one stays muted. Value and weight,
-  // never hue: `color` here must be the very same colour the row's own text is painted in, so no
-  // status has a hue of its own and the shapes still carry the meaning.
+  // An open task's mark is drawn in the body colour, and a settled one stays muted; what is being
+  // worked on is green, as its block's badge is (artboards 1, 12). The shapes still carry the
+  // meaning: the colour is said twice, never alone.
   const colourOf = (l: ReturnType<typeof mark>) => l.evaluate((el) => getComputedStyle(el).color)
   const bodyColour = await page
     .locator('[data-today-row]')
     .first()
     .evaluate((el) => getComputedStyle(el).color)
-  for (const name of ['In progress', 'To do', 'Backlog'])
-    expect(await colourOf(mark(name)), name).toBe(bodyColour)
+  for (const name of ['To do', 'Backlog']) expect(await colourOf(mark(name)), name).toBe(bodyColour)
+  const go = await page.evaluate(() => {
+    const probe = document.createElement('span')
+    probe.style.color = 'var(--color-go)'
+    document.body.append(probe)
+    const colour = getComputedStyle(probe).color
+    probe.remove()
+    return colour
+  })
+  expect(await colourOf(mark('In progress'))).toBe(go)
 
   // A finished one recedes. (On Done, where every row is settled.)
   await makeTask(page, pid, '收工', { status: 'done' })

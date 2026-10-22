@@ -3,6 +3,7 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import { ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
 import { DoneIcon, FlagIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, useEveryProject } from '../../../../shell/projects'
+import { ProgressSquare } from '../../components/ProgressSquare'
 import { StatusButton } from '../../components/StatusControls'
 import { SavedMark } from '../../components/TaskRowParts'
 import { blockedLabel } from '../../logic/blockedLabel'
@@ -69,7 +70,10 @@ function DueChip({
   )
 }
 
-/** One task on Today, in the shared columns; `action` is the fifth. */
+/**
+ * One task on Today, in the shared columns; `action` is the fifth. A parent (due today, FR-043)
+ * has its progress where a leaf has its status: its status is its children's to change.
+ */
 export function TaskLine({
   task: t,
   today,
@@ -96,14 +100,18 @@ export function TaskLine({
   return (
     // Blocked rows dim but stay: a list that loses tasks cannot be trusted.
     <li className={`${LINE} ${blocked ? 'opacity-60' : ''}`}>
-      <span className="-m-1.5 flex">
-        <StatusButton
-          status={t.status}
-          title={t.title}
-          size={16}
-          onClick={() => onStatus(toggleDoneTarget(t.status))}
-        />
-      </span>
+      {t.rollup ? (
+        <ProgressSquare progress={t.rollup.progress} />
+      ) : (
+        <span className="-m-1.5 flex">
+          <StatusButton
+            status={t.status}
+            title={t.title}
+            size={16}
+            onClick={() => onStatus(toggleDoneTarget(t.status))}
+          />
+        </span>
+      )}
       <button
         type="button"
         ref={rowRef}

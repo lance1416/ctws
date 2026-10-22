@@ -10,13 +10,21 @@ import { statusActions, TODAY_KEYS } from '../../logic/keys'
 /** A Today row's change of dates: both in one request, so the row never sits half moved. */
 type DatesPatch = { dueAt?: string | null; scheduledOn?: string | null }
 
-/** Other modules' dated things for `day`: one hook per provider, over the registry's fixed list. */
+/**
+ * Other modules' dated things for `day`: one hook per provider, over the registry's fixed list.
+ * `failed` when any of them could not be read, and `retry` reads those again.
+ */
 export function useOthersToday(day: string) {
-  return useRegistry()
+  const sources = useRegistry()
     .calendar.filter((p) => p.moduleId !== TASKS_ID)
-    .flatMap((p) =>
-      p.useEntries({ from: day, to: day }).entries.map((e) => ({ ...e, moduleId: p.moduleId })),
-    )
+    .map((p) => ({ moduleId: p.moduleId, ...p.useEntries({ from: day, to: day }) }))
+  return {
+    entries: sources.flatMap((s) => s.entries.map((e) => ({ ...e, moduleId: s.moduleId }))),
+    failed: sources.some((s) => s.isError),
+    retry: () => {
+      for (const s of sources) if (s.isError) s.retry()
+    },
+  }
 }
 
 /**
@@ -64,10 +72,8 @@ export function useTodayRows({
     pane,
     setStatus,
     patch,
+    // A parent's status is its children's: its row takes no status keys.
     onRowKeyDown: (e: KeyboardEvent, t: TodayTaskResponse) =>
-      keys(
-        e,
-        statusActions(t.status, (next) => setStatus(t.id, next)),
-      ),
+      keys(e, t.rollup ? {} : statusActions(t.status, (next) => setStatus(t.id, next))),
   }
 }

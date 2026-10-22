@@ -143,6 +143,8 @@ export type CalendarContribution = {
   useEntries: (range: { from: string; to: string }) => {
     entries: CalendarEntry[]
     isError: boolean
+    /** Reads them again, after a failure. */
+    retry: () => void
   }
   /**
    * Where an entry goes and the words for its date, and its title when the module words it: the

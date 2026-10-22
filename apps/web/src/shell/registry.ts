@@ -119,7 +119,11 @@ type CalendarProvider = {
   moduleId: string
   label: string
   /** A hook: the module's entries for an inclusive day range, as the shell draws them. */
-  useEntries: (range: { from: string; to: string }) => { entries: ShownEntry[]; isError: boolean }
+  useEntries: (range: { from: string; to: string }) => {
+    entries: ShownEntry[]
+    isError: boolean
+    retry: () => void
+  }
   opens?: CalendarContribution['opens']
 }
 
@@ -135,9 +139,10 @@ function calendarProvider(moduleId: string, c: CalendarContribution): CalendarPr
     ...(c.opens ? { opens: c.opens } : {}),
     useEntries: function useShownEntries(range) {
       const accountZone = useTimeZone()
-      const { entries, isError } = c.useEntries(range)
+      const { entries, isError, retry } = c.useEntries(range)
       return {
         isError,
+        retry,
         entries: entries.map((e) => {
           const one = said(e, accountZone)
           return { ...one, ...c.show(one), key: entryKey(e) }

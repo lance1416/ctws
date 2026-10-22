@@ -55,5 +55,9 @@ export function useReadingHits(query: string) {
 export function useReadingEntries(range: { from: string; to: string }) {
   // The month stepped away from stays drawn until the next one is in.
   const result = useQuery({ ...readingCalendarQuery(range), placeholderData: keepPreviousData })
-  return { entries: result.data ?? [], isError: result.isError }
+  return {
+    entries: result.data ?? [],
+    isError: result.isError,
+    retry: () => void result.refetch(),
+  }
 }
