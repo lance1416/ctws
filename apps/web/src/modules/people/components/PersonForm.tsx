@@ -5,7 +5,7 @@ import type { UseFormRegisterReturn } from 'react-hook-form'
 import { WritingMode } from '../../../platform/notes/WritingMode'
 import { Button } from '../../../platform/ui/Button'
 import { Field } from '../../../platform/ui/Field'
-import { field, label } from '../../../platform/ui/formStyles'
+import { area, field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { PickCity } from '../../../shell/cities'
@@ -181,7 +181,7 @@ export function PersonForm({
           id="c-note"
           {...form.register('note')}
           rows={4}
-          className={`${field} mt-1.5 max-w-reading`}
+          className={`${area} mt-1.5 max-w-reading`}
         />
       </div>
       {writing && (

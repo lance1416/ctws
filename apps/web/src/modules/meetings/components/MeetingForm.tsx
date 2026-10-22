@@ -2,7 +2,7 @@ import type { MeetingOccurrence, UpdateSeriesBody } from '@ctws/contracts'
 import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
-import { boxed, field, label } from '../../../platform/ui/formStyles'
+import { area, boxed, field, label } from '../../../platform/ui/formStyles'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { FormBar } from '../../../shell/detail'
 import { ProjectPicker } from '../../../shell/projects'
@@ -143,7 +143,7 @@ export function MeetingForm({
           id="m-note"
           {...form.register('note')}
           rows={4}
-          className={`${field} mt-1.5 max-w-reading`}
+          className={`${area} mt-1.5 max-w-reading`}
         />
       </div>
     </form>

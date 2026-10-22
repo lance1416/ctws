@@ -9,7 +9,7 @@ import { createTask, projectTasksQuery } from '../api'
 import { dayEndIso, dayPhrase, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
 import { flatten } from '../logic/tree/flatten'
-import { field, label } from '../../../platform/ui/formStyles'
+import { area, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { Modal } from '../../../platform/ui/Modal'
 import { DateDecisions, StatusRadios } from './TaskFields'
@@ -221,7 +221,7 @@ export function CreateTaskDialog({
               setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
             })}
             rows={3}
-            className={`${field} mt-1.5 max-w-reading`}
+            className={`${area} mt-1.5 max-w-reading`}
           />
         </div>
 

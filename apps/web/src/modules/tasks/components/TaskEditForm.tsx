@@ -14,7 +14,7 @@ import {
 import { useNow } from '../../../platform/time/useNow'
 import { Button } from '../../../platform/ui/Button'
 import { DetailHead } from '../../../platform/ui/DetailPane'
-import { field, label } from '../../../platform/ui/formStyles'
+import { area, label } from '../../../platform/ui/formStyles'
 import { FlagIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
 import type { UnsavedGuard } from '../../../platform/ui/unsavedGuard'
@@ -255,7 +255,7 @@ export function TaskEditForm({
             setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
           })}
           rows={5}
-          className={`${field} mt-1.5 max-w-reading`}
+          className={`${area} mt-1.5 max-w-reading`}
         />
       </div>
       {writing && (

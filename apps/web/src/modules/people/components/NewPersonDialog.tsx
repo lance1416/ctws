@@ -9,7 +9,7 @@ import { channelPlaceholder, KIND_CHOICES } from '../logic/channels'
 import { useChannelRows } from './ChannelsEditor'
 import { BirthdayEditor, birthdayDraftOf } from '../birthday/BirthdayEditor'
 import { CIRCLE_CHOICES } from '../logic/labels'
-import { boxed, field, label } from '../../../platform/ui/formStyles'
+import { area, boxed, field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { Modal } from '../../../platform/ui/Modal'
@@ -185,7 +185,7 @@ export function NewPersonDialog({
             id="person-note"
             {...form.register('note')}
             rows={3}
-            className={`${field} mt-1.5`}
+            className={`${area} mt-1.5`}
           />
         </div>
 

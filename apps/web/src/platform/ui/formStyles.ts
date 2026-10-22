@@ -10,6 +10,10 @@ export const boxed =
 
 export const field = `w-full ${boxed}`
 
+/** A field for lines of prose (notes): `field`'s edge and type, as tall as its rows, five at least. */
+export const area =
+  'w-full min-h-28 rounded-control border border-line-strong bg-panel px-2.5 py-1.5 text-ui text-ink placeholder:text-subtle aria-invalid:border-stop'
+
 export const label = 'block text-meta text-muted'
 
 /** The box a new thing is typed into. No background: the surface it sits on decides. */
