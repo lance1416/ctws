@@ -71,8 +71,9 @@ function DueChip({
 }
 
 /**
- * One task on Today, in the shared columns; `action` is the fifth. A parent (due today, FR-043)
- * has its progress where a leaf has its status: its status is its children's to change.
+ * One task on Today, in the shared columns; `action` is the fifth. A parent (FR-043) has its
+ * progress where a leaf has its status, and how many of its children are done where a leaf has
+ * its action: its status and its plan are its children's to change (artboard 32).
  */
 export function TaskLine({
   task: t,
@@ -100,8 +101,8 @@ export function TaskLine({
   return (
     // Blocked rows dim but stay: a list that loses tasks cannot be trusted.
     <li className={`${LINE} ${blocked ? 'opacity-60' : ''}`}>
-      {t.rollup ? (
-        <ProgressSquare progress={t.rollup.progress} />
+      {t.children ? (
+        <ProgressSquare status={t.status} children={t.children} />
       ) : (
         <span className="-m-1.5 flex">
           <StatusButton
@@ -131,7 +132,15 @@ export function TaskLine({
       </button>
       <TaskPath task={t} />
       <DueChip dueAt={t.dueAt} today={today} timeZone={timeZone} />
-      <span className="justify-self-end">{action}</span>
+      <span className="justify-self-end">
+        {t.children ? (
+          <span data-row-children className="font-mono text-meta text-subtle tabular-nums">
+            {t.children.done}/{t.children.counted}
+          </span>
+        ) : (
+          action
+        )}
+      </span>
     </li>
   )
 }

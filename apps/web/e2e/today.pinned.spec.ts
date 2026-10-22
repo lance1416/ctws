@@ -48,7 +48,7 @@ test('the marks say due today, tomorrow, how late, and where a plan was carried 
   await expect(row(page, 'Planned for today', '顺延的')).toContainText('Carried from Sun')
 })
 
-test('a parent due today is a row of today’s, with its progress where a status would be', async ({
+test('a parent by its deadline: a row of today’s or overdue, with its progress square', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -60,20 +60,35 @@ test('a parent due today is a row of today’s, with its progress where a status
   await made('System design round', amazon.id)
   const lawyer = await made('Find a lawyer', null)
   await made('Call two firms', lawyer.id)
-  // 18:00 today in London, and today with no time of its own (23:59).
+  const flat = await made('Flat deposit', null)
+  await made('Find the receipt', flat.id)
+  // 18:00 today in London; today with no time of its own (23:59); and yesterday's.
   await patch(page, amazon.id, { dueAt: '2026-10-22T17:00:00Z' })
   await patch(page, lawyer.id, { dueAt: '2026-10-22T22:59:00Z' })
+  await patch(page, flat.id, { dueAt: '2026-10-21T17:00:00Z' })
   await patch(page, sde.id, { status: 'done' })
   await page.goto('/today')
 
+  // Half done, so half full; one child done, so the parent is under way, and green (artboard 32).
   const amazonRow = row(page, 'Planned for today', 'Amazon')
-  await expect(amazonRow.getByRole('img', { name: '50% done' })).toBeVisible()
+  const square = amazonRow.getByRole('img', { name: 'In progress, 1 of 2 done' })
+  await expect(square).toHaveAttribute('data-progress-square', '50')
   await expect(amazonRow.locator('[data-row-mark]')).toHaveText('Due today')
+  await expect(amazonRow.locator('[data-row-children]')).toHaveText('1/2')
   // Its status is its children's: there is nothing here to change it with.
-  await expect(amazonRow.getByRole('button', { name: /“Amazon”$/ })).toHaveCount(0)
+  await expect(amazonRow.getByRole('button', { name: /“Amazon”/ })).toHaveCount(0)
   await expect(
-    row(page, 'Planned for today', 'Find a lawyer').getByRole('img', { name: '0% done' }),
+    row(page, 'Planned for today', 'Find a lawyer').getByRole('img', {
+      name: 'To do, 0 of 1 done',
+    }),
   ).toBeVisible()
+
+  // Missed, it is overdue like a leaf, but it has no plan to be given a day.
+  const flatRow = row(page, 'Overdue', 'Flat deposit')
+  await expect(flatRow.locator('[data-row-mark]')).toHaveText('1 day late')
+  await expect(flatRow.locator('[data-row-children]')).toHaveText('0/1')
+  await expect(flatRow.getByRole('button', { name: /^Plan “Flat deposit”/ })).toHaveCount(0)
+
   // A time of its own puts it on the line as well; the end of the day does not.
   const flags = page
     .getByRole('region', { name: 'Timeline of the day' })

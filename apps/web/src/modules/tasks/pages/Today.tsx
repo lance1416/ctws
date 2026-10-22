@@ -309,7 +309,9 @@ function PlannedBlock({
 
 /**
  * OVERDUE: what is late, how late, and the days it can move to, which make it a plan (FR-079):
- * Today, Tomorrow, next Monday, or a day picked. Past five, the head moves them all at once.
+ * Today, Tomorrow, next Monday, or a day picked. Past five, the head moves them all at once. A
+ * parent has no plan of its own (FR-043): its row offers no day, and moving them all passes it
+ * by; it is opened to change its deadline or to get on with what is under it.
  */
 function OverdueBlock({
   overdue,
@@ -347,7 +349,9 @@ function OverdueBlock({
                 {days.map((d) => (
                   <DropdownMenu.Item
                     key={d.label}
-                    onSelect={() => overdue.forEach((t) => onMove(t.id, d.to))}
+                    onSelect={() =>
+                      overdue.filter((t) => !t.children).forEach((t) => onMove(t.id, d.to))
+                    }
                     className={MENU_ITEM}
                   >
                     {d.label === 'Mon' ? 'Next Monday' : d.label}

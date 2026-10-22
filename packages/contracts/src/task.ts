@@ -139,6 +139,17 @@ const rollupResponse = z.object({
 })
 export type RollupResponse = z.infer<typeof rollupResponse>
 
+/**
+ * A parent's direct children, counted for its progress square (artboard 32): how many are done,
+ * how many count (all but the cancelled), and how many of those wait in the backlog.
+ */
+const childCounts = z.object({
+  done: z.number().int().min(0),
+  counted: z.number().int().min(0),
+  backlog: z.number().int().min(0),
+})
+export type ChildCounts = z.infer<typeof childCounts>
+
 /** Another task at the end of a dependency, named with its project because one may cross. */
 const dependencyRef = z.object({
   id: taskId,
@@ -217,8 +228,8 @@ export const todayTaskResponse = taskResponse.extend({
   segment: z.enum(TODAY_SEGMENTS),
   /** Unfinished blockers. */
   blockedBy: z.array(dependencyRef),
-  /** A parent's rollup, as its tree shows it: a parent due today is one row (FR-043). Null on a leaf. */
-  rollup: rollupResponse.nullable(),
+  /** A parent's children, for the square it wears where a leaf has its status (FR-043). Null on a leaf. */
+  children: childCounts.nullable(),
 })
 export type TodayTaskResponse = z.infer<typeof todayTaskResponse>
 

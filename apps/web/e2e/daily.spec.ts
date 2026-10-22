@@ -84,9 +84,11 @@ test('starting a task from its row puts it under In progress, and S on Today pau
   await makeTask(page, pid, '写方案')
   await openTree(page, pid)
 
-  // A dateless, not-started task is not on Today's lists.
+  // A dateless, not-started task is not on Today's lists, and an empty block is not drawn (FR-079).
   await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('region', { name: 'In progress' })).toContainText('None')
+  await expect(page.locator('#today-heading')).toBeVisible()
+  await expect(page.locator('[data-today-row]').filter({ hasText: '写方案' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'In progress' })).toHaveCount(0)
   await page.goBack()
   await page.getByRole('listitem').first().waitFor()
 
@@ -104,7 +106,7 @@ test('starting a task from its row puts it under In progress, and S on Today pau
   await page.locator('[data-today-row]').filter({ hasText: '写方案' }).focus()
   await page.keyboard.press('s')
   expect((await stopped).request().postDataJSON()).toEqual({ status: 'todo' })
-  await expect(progress).toContainText('None')
+  await expect(progress).toHaveCount(0)
   expect((await serverTask(page, pid, '写方案')).status).toBe('todo')
 })
 

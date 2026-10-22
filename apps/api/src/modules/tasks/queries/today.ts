@@ -1,15 +1,15 @@
 import { todayTaskResponse, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
-import { z } from 'zod'
+import type { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { dayStart, localDay } from '../../../platform/db/time'
-import { isLeafSql, pathRow, pathSql, TASK_COLUMNS } from './rows'
+import { pathRow, pathSql, TASK_COLUMNS } from './rows'
 import { taskOpenSql, visibleTasks } from './scope'
 
 const todayRow = pathRow.extend({
   segment: todayTaskResponse.shape.segment,
-  isParent: z.boolean(),
+  children: todayTaskResponse.shape.children,
 })
 export type TodayTask = z.output<typeof todayRow>
 
@@ -19,8 +19,9 @@ export type TodayTask = z.output<typeof todayRow>
  * progress (what is being done stays there, due today or not, FR-079), then today's plans and
  * deadlines. A plan from an earlier day stays until it is done.
  *
- * A parent shows only when its own deadline is today (FR-043), as one row of today's: its status
- * is its children's, and the child that is in progress is that row (FR-037).
+ * A parent shows only by its own deadline (FR-043): due today it is a row of today's, missed it is
+ * overdue, and it carries its children's counts. Never in progress: its status is its children's,
+ * and the child that is in progress is that row (FR-037).
  */
 export async function listToday(
   q: Queryable,
@@ -42,29 +43,40 @@ export async function listToday(
         p.rank as project_rank,
         parent.title as "parentTitle",
         ${pathSql('t')} as path,
-        not ${isLeafSql('t')} as "isParent",
+        case
+          when kids.total > 0
+            then json_build_object('done', kids.done, 'counted', kids.counted, 'backlog', kids.backlog)
+        end as children,
         case
           when t.due_at is not null and t.due_at < b.t0 then 'overdue'
-          when t.status = 'in_progress' and ${isLeafSql('t')} then 'in_progress'
+          when t.status = 'in_progress' and kids.total = 0 then 'in_progress'
           else 'today'
         end as segment
       from tasks t
       join projects p on p.id = t.project_id
       join bounds b on true
       left join tasks parent on parent.id = t.parent_id
+      cross join lateral (
+        select
+          count(*) as total,
+          count(*) filter (where c.status = 'done') as done,
+          count(*) filter (where c.status <> 'cancelled') as counted,
+          count(*) filter (where c.status = 'backlog') as backlog
+        from tasks c
+        where c.parent_id = t.id and c.deleted_at is null
+      ) kids
       where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
         and p.archived_at is null
         and ${taskOpenSql('t')}
         and (
-          (
-            ${isLeafSql('t')}
+          (t.due_at is not null and t.due_at < b.t1)
+          or (
+            kids.total = 0
             and (
-              (t.due_at is not null and t.due_at < b.t1)
-              or (t.scheduled_on is not null and t.scheduled_on <= b.today)
+              (t.scheduled_on is not null and t.scheduled_on <= b.today)
               or t.status = 'in_progress'
             )
           )
-          or (not ${isLeafSql('t')} and t.due_at >= b.t0 and t.due_at < b.t1)
         )
     )
     select * from picked

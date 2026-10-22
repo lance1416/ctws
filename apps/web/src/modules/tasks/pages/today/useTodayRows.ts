@@ -74,6 +74,6 @@ export function useTodayRows({
     patch,
     // A parent's status is its children's: its row takes no status keys.
     onRowKeyDown: (e: KeyboardEvent, t: TodayTaskResponse) =>
-      keys(e, t.rollup ? {} : statusActions(t.status, (next) => setStatus(t.id, next))),
+      keys(e, t.children ? {} : statusActions(t.status, (next) => setStatus(t.id, next))),
   }
 }

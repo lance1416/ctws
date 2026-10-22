@@ -386,11 +386,10 @@ describe('listToday timezone and DST', () => {
 })
 
 /**
- * A PARENT'S OWN DEADLINE (FR-043): due today, the parent is one row of today's, with the rollup
- * its tree shows; on any other day it is not on Today's lists. Through the route, on a fixed clock,
- * because the rollup is the route's.
+ * A PARENT'S OWN DEADLINE (FR-043): due today, the parent is a row of today's; missed, it is
+ * overdue; either way it carries its children's counts. Tomorrow's is not on Today's lists yet.
  */
-describe('a parent due today', () => {
+describe('a parent by its deadline', () => {
   // 09:10 on Thursday, October 22, in London.
   const NOW = new Date('2026-10-22T08:10:00Z')
   const status = async (ctx: Harness, id: string, to: string) => {
@@ -403,7 +402,7 @@ describe('a parent due today', () => {
     expect(res.statusCode).toBe(200)
   }
 
-  it('is one row of today, with its rollup, and only on its own day', async () => {
+  it('is a row of today or overdue, with its children counted, never in progress', async () => {
     const ctx = await setupWith(cleanups, undefined, {
       clock: () => NOW,
       timezone: 'Europe/London',
@@ -434,7 +433,7 @@ describe('a parent due today', () => {
       id: string
       status: string
       segment: string
-      rollup: { progress: number | null; inProgress: number; overdue: number } | null
+      children: { done: number; counted: number; backlog: number } | null
     }[]
     const row = (id: string) => rows.find((r) => r.id === id)
 
@@ -442,11 +441,14 @@ describe('a parent due today', () => {
     expect(row(amazon)).toMatchObject({
       status: 'in_progress',
       segment: 'today',
-      rollup: { progress: 0.5, inProgress: 1, overdue: 0 },
+      children: { done: 1, counted: 2, backlog: 0 },
     })
-    expect(row(sde)).toMatchObject({ segment: 'in_progress', rollup: null })
+    expect(row(sde)).toMatchObject({ segment: 'in_progress', children: null })
+    expect(row(missed)).toMatchObject({
+      segment: 'overdue',
+      children: { done: 0, counted: 1, backlog: 0 },
+    })
     expect(row(later)).toBeUndefined()
-    expect(row(missed)).toBeUndefined()
   })
 })
 
