@@ -9,7 +9,6 @@ import {
   WEB,
   navLink,
 } from './helpers'
-import { MONTHS } from './days'
 
 /**
  * THE ONE PLACE THE ACCOUNT'S TIMEZONE IS NOT THE RUNNER'S.
@@ -75,7 +74,7 @@ test('today means today in the account zone, for the list and the caption alike'
   // The SERVER put it here, having compared the day string against `now() at time zone $tz`. In
   // the runner's zone this is yesterday or tomorrow, so a server reading its own clock misses it.
   await expect(
-    page.getByRole('region', { name: 'Today', exact: true }).getByText('按账户时区排的'),
+    page.getByRole('region', { name: 'Planned for today' }).getByText('按账户时区排的'),
   ).toBeVisible()
 
   // And the page's own heading -- the date -- agrees with the server: the day comes from the
@@ -117,10 +116,11 @@ test('the runner’s today is some OTHER day, and the page says which', async ({
     await expect(row).toBeVisible()
     // Carried, and the day it was planned for is the account's yesterday -- a day only the
     // account's zone can name.
-    const [, m, d] = runnerDay().split('-').map(Number) as [number, number, number]
-    await expect(row.locator('[data-date-hint="carried"]')).toHaveText(
-      `Carried over from ${MONTHS[m - 1]} ${d}`,
-    )
+    // Yesterday, within the week: said by its weekday (artboard 12).
+    const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+      new Date(`${runnerDay()}T12:00:00Z`).getUTCDay()
+    ]
+    await expect(row.locator('[data-date-hint="carried"]')).toHaveText(`Carried from ${weekday}`)
   } else {
     // The account is behind the runner, so this day has not arrived yet for the account and
     // nothing may surface it as due now.
@@ -181,6 +181,6 @@ test('a deadline inside the account day counts as today on another UTC date', as
   // server that built those bounds from its OWN zone puts the task on the wrong day, which is what
   // this file exists for -- and what the rest of the suite cannot see.
   await expect(
-    page.getByRole('region', { name: 'Today', exact: true }).getByText('今天之内截止'),
+    page.getByRole('region', { name: 'Planned for today' }).getByText('今天之内截止'),
   ).toBeVisible()
 })

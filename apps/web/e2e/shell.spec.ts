@@ -310,7 +310,7 @@ test('on a phone, several things in progress are rows, not a column of empty spa
   const pid = await makeProject(page, 'P')
   for (const t of ['一', '二', '三']) await makeTask(page, pid, t, { status: 'in_progress' })
   await page.goto('/today')
-  const rows = page.locator('[data-panel="In progress"] li')
+  const rows = page.getByRole('region', { name: 'In progress' }).getByRole('listitem')
   await expect(rows).toHaveCount(3)
   for (const h of await rows.evaluateAll((els) =>
     els.map((el) => el.getBoundingClientRect().height),

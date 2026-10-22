@@ -107,36 +107,26 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
   expect((await measure()).title).toEqual({ size: '11.25px', line: '18px' })
 })
 
-test('the banner subject is the title step, and the date heading above it is the hero step', async ({
-  page,
-}) => {
+test('Today names its day at the title step, and its rows are the UI step', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
-  const pid = await makeProject(page, '横幅')
-  await makeTask(page, pid, '正在做的这一条')
-  await page.goto(`/projects/${pid}`)
-  await page.getByRole('button', { name: 'Start “正在做的这一条”' }).click()
+  const pid = await makeProject(page, '字号')
+  await makeTask(page, pid, '正在做的这一条', { status: 'in_progress' })
   await page.goto('/today')
-  const banner = page.locator('[data-today-row]')
-  await expect(banner).toHaveCount(1)
-
-  const subject = await banner
-    .locator('span > span')
-    .first()
-    .evaluate((el) => {
-      const s = getComputedStyle(el)
-      return { size: s.fontSize, line: s.lineHeight, weight: s.fontWeight }
-    })
-  expect(subject).toEqual({ size: '26px', line: '34px', weight: '600' })
-  // The page's own heading is the date, one step above the banner: on this page the day is the
-  // subject, and the one thing being done in it is the next thing said. The display step, at 500.
-  expect(await pair(page, 'h1')).toEqual({ size: '40px', line: '48px', weight: '500' })
+  // Artboard 12: the date is the page's heading like any other page's, 26/34 at 600.
+  expect(await pair(page, 'h1')).toEqual({ size: '26px', line: '34px', weight: '600' })
+  // A row is 13/20; the one in progress in 500.
+  expect(await pair(page, '[data-today-row]')).toEqual({
+    size: '13px',
+    line: '20px',
+    weight: '500',
+  })
 })
 
 /**
  * ONE PAGE-TITLE STEP. Every page's own heading is the title step (26/34, 600, FR-008); a smaller one
- * reads as a section of some other page. Today's date (display) and the Workbench's hidden heading
- * are the two that are something else on purpose.
+ * reads as a section of some other page. Today's date is one of them now (artboard 12); the
+ * Workbench's hidden heading is the one that is something else on purpose.
  */
 test('every page names itself at one step', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -146,6 +136,7 @@ test('every page names itself at one step', async ({ page }) => {
   await apiPost(page, '/people', { name: '韩梅梅' })
   await apiPost(page, '/reading', { kind: 'book', title: '设计心理学' })
   for (const path of [
+    '/today',
     '/projects',
     `/projects/${pid}`,
     '/review',

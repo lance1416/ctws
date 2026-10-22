@@ -1,11 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   accountZone,
-  dayInZone,
   makeProject,
   makeReading,
   makeTask,
-  meetingToday,
   registerFreshUser,
   sidewaysScroll,
   apiPost,
@@ -108,21 +106,13 @@ const bodyStart = (page: Page, title: string) =>
       return getComputedStyle(at).paddingLeft
     })
 
-test("Today's rows, Done today and Completed start 14px past the thread on a phone too", async ({
-  page,
-}) => {
+// Today's rows are blocks' rows now (artboard 12), each block with its own inset; the phone's
+// Today is phase 4 (STORY-037).
+test('Completed starts 14px past the thread on a phone too', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await registerFreshUser(page)
-  const zone = await accountZone(page)
   const pid = await makeProject(page, 'Gutter')
-  await makeTask(page, pid, 'Planned today', { scheduledOn: dayInZone(zone) })
-  await makeTask(page, pid, 'Under way', { status: 'in_progress' })
   await makeTask(page, pid, 'Finished', { status: 'done' })
-  await meetingToday(page, 'Standup', '23:59', zone)
-
-  await page.goto('/today')
-  for (const title of ['Planned today', 'Under way', 'Finished', 'Standup'])
-    expect(await bodyStart(page, title), title).toBe('14px')
 
   await page.goto('/review?view=done')
   expect(await bodyStart(page, 'Finished'), 'Completed').toBe('14px')

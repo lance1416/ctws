@@ -1,16 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { TZDate } from '@date-fns/tz'
-import {
-  accountZone,
-  dayInZone,
-  makeProject,
-  makeTask,
-  registerFreshUser,
-  sidewaysScroll,
-  taskPatched,
-  WEB,
-} from './helpers'
-import { dayOffset, dueAgo, MONTHS, nextMondayYmd, ymd } from './days'
+import { makeProject, makeTask, registerFreshUser, sidewaysScroll } from './helpers'
+import { dayOffset, dueAgo } from './days'
 
 /**
  * THE ROW ANATOMY: a MARGIN that says when, a THREAD in the project's colour, then the body --
@@ -25,12 +15,7 @@ import { dayOffset, dueAgo, MONTHS, nextMondayYmd, ymd } from './days'
  * - "the title is not truncated" is provable only by measuring `scrollWidth` against `clientWidth`
  *   on a REAL long title at the narrowest panel width.
  * - "the thread joins the rows" is provable only from its box: one x, the row's height, no radius.
- * - "the triage still does what it did" is provable only from the request body; the UI can agree
- *   with itself while sending nothing.
  */
-
-const triage = (page: Page, title: string) =>
-  page.getByRole('button', { name: `Change the dates for “${title}”` })
 
 /** Every x of a set of cells, rounded-key to the pixel: sub-pixel layout noise is not a column break. */
 async function xs(page: Page, selector: string): Promise<number[]> {
@@ -51,30 +36,6 @@ async function rights(page: Page, selector: string): Promise<number[]> {
   expect(ends.length, `cells matching ${selector}`).toBeGreaterThan(1)
   return ends
 }
-
-/**
- * THE MARGIN IS A COLUMN. Its words end at one x on every row of a list, whatever the word, and
- * every title starts at one x after it -- the two scans a diary page affords. Three overdue rows
- * whose titles and days all differ, because one x is easy to pass when every row says the same.
- */
-test('on Today, the margin ends at one x and every title starts at one x', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 })
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '短', { dueAt: dueAgo(2) })
-  await makeTask(page, pid, '中等长度的一个标题', { dueAt: dueAgo(11) })
-  await makeTask(page, pid, '一个非常非常非常非常非常长的标题用来把右边挤掉', { dueAt: dueAgo(4) })
-  await page.goto('/today')
-  const section = page.getByRole('region', { name: 'Overdue' })
-  await expect(section.locator('[data-row-lead="missed"]')).toHaveCount(3)
-
-  const ends = await rights(page, '[aria-label="Overdue"] [data-row-lead-text]')
-  expect(new Set(ends).size, `margin ends: ${ends.join(',')}`).toBe(1)
-  const titles = await xs(page, '[aria-label="Overdue"] [data-row-title]')
-  expect(new Set(titles).size, `title x values: ${titles.join(',')}`).toBe(1)
-  // The margin is BEFORE the title, which is what a margin is.
-  expect(ends[0]!).toBeLessThan(titles[0]!)
-})
 
 /**
  * In the tree the BODY is indented and nothing else is: the margin's words and the thread stay at
@@ -174,59 +135,6 @@ test('a row with a plan and a deadline shows the deadline', async ({ page }) => 
 })
 
 /**
- * OVERDUE, END TO END, on one task. While its deadline is later today it sits in the Today queue
- * and its margin is the time; two days gone, it sits in Overdue, its margin is the day it was due,
- * the right-hand note says how late, and the line under the title says where it lives.
- *
- * The deadline is pinned at 12:34 local, so the time is a fixed string whenever the suite runs;
- * "later today" holds at any hour because Today takes everything from the start of the day.
- */
-test('overdue: the day in the margin, how late on the right, where on the second line', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 1000 })
-  await registerFreshUser(page)
-  const pid = await makeProject(page, '邮件服务')
-  // 12:34 on the ACCOUNT's clock, today and two days ago: the margin speaks the account's zone,
-  // so its expected words are built in that zone, not in whatever zone the runner is in.
-  const zone = await accountZone(page)
-  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
-  const noon = new TZDate(y, m - 1, d, 12, 34, 0, 0, zone)
-  const TITLE = '核对退信率并给收件人分组'
-  const id = await makeTask(page, pid, TITLE, { dueAt: noon.toISOString() })
-
-  await page.goto('/today')
-  const queueRow = page
-    .getByRole('region', { name: 'Today', exact: true })
-    .locator('li')
-    .filter({ hasText: TITLE })
-  await expect(queueRow.locator('[data-row-lead-text]')).toHaveText('12:34')
-  await expect(queueRow.locator('[data-row-note]')).toHaveCount(0)
-
-  const twoDaysAgo = new TZDate(y, m - 1, d - 2, 12, 34, 0, 0, zone)
-  const res = await page.request.patch(`/api/v1/tasks/${id}`, {
-    headers: WEB,
-    data: { dueAt: twoDaysAgo.toISOString() },
-  })
-  expect(res.status()).toBe(200)
-  await page.reload()
-
-  const lateRow = page
-    .getByRole('region', { name: 'Overdue' })
-    .locator('li')
-    .filter({ hasText: TITLE })
-  await expect(lateRow.locator('[data-row-lead-text]')).toHaveText(
-    `${MONTHS[twoDaysAgo.getMonth()]} ${twoDaysAgo.getDate()}`,
-  )
-  await expect(lateRow.locator('[data-row-lead]')).toHaveAttribute(
-    'title',
-    `Due ${MONTHS[twoDaysAgo.getMonth()]} ${twoDaysAgo.getDate()}, ${twoDaysAgo.getFullYear()}, 12:34`,
-  )
-  await expect(lateRow.locator('[data-row-note]')).toHaveText('2 days late')
-  await expect(lateRow.locator('[data-row-meta]')).toHaveText('邮件服务')
-})
-
-/**
  * A REAL, LONG title: 575px of text at 15px. A placeholder string would prove nothing, because the
  * bug is truncation and a short title fits every layout.
  */
@@ -302,7 +210,7 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
  * The TREE's second line carries no breadcrumb (the project is known and the hierarchy is in the
  * indentation), while Today's carries one.
  */
-test('the tree has no breadcrumb; Today says where on the second line', async ({ page }) => {
+test('the tree has no breadcrumb; Today says where in its path column', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '面包屑')
   const parent = await makeTask(page, pid, '父任务')
@@ -312,173 +220,17 @@ test('the tree has no breadcrumb; Today says where on the second line', async ({
   await expect(child.locator('[data-row-crumb]')).toHaveCount(0)
   await expect(child).not.toContainText('面包屑')
 
+  // Today says where, in its own column: the project's square and the task it is under.
   await page.goto('/today')
-  const line = page.getByRole('region', { name: 'Overdue' }).locator('[data-row-meta]')
-  await expect(line.locator('[data-row-crumb]')).toHaveText('面包屑 › 父任务')
+  const path = page.getByRole('region', { name: 'Overdue' }).locator('[data-row-path]')
+  await expect(path).toHaveText(/父任务$/)
 })
 
 // ------------------------------------------------------------- the mark on a row with something to read
 
 // --------------------------------------------------------------------------- the action control
 
-test('opening a row’s date control moves nothing on the row', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '逾期的', { dueAt: dueAgo(2) })
-  await makeTask(page, pid, '下面那行', { dueAt: dueAgo(2) })
-  await page.goto('/today')
-
-  const row = page
-    .locator('li')
-    .filter({ has: page.locator('[data-today-row]') })
-    .first()
-  const before = {
-    row: (await row.boundingBox())!,
-    title: (await page.locator('[data-today-row]').first().boundingBox())!,
-    due: (await page.locator('[data-row-note]').first().boundingBox())!,
-    next: (await page.locator('[data-today-row]').nth(1).boundingBox())!,
-  }
-
-  await triage(page, '逾期的').click()
-  const panel = page.getByRole('group', { name: 'Overdue: 逾期的' })
-  await expect(panel).toBeVisible()
-
-  const after = {
-    row: (await row.boundingBox())!,
-    title: (await page.locator('[data-today-row]').first().boundingBox())!,
-    due: (await page.locator('[data-row-note]').first().boundingBox())!,
-    next: (await page.locator('[data-today-row]').nth(1).boundingBox())!,
-  }
-  expect(after).toEqual(before)
-
-  // The panel is over the page, not in the flow: it hangs below its own trigger and reaches down
-  // across the row beneath, which is what "no reflow" means in practice.
-  const box = (await panel.boundingBox())!
-  const trig = (await triage(page, '逾期的').boundingBox())!
-  expect(box.y).toBeGreaterThanOrEqual(trig.y + trig.height)
-  expect(box.y + box.height).toBeGreaterThan(before.next.y)
-})
-
-test('the date control is reachable, operable and escapable by keyboard alone', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '键盘逾期', { dueAt: dueAgo(2) })
-  await page.goto('/today')
-
-  // From the row itself, one Tab reaches the control: the row's actions are ONE tab stop.
-  await page.locator('[data-today-row]').focus()
-  await page.keyboard.press('Tab')
-  await expect(triage(page, '键盘逾期')).toBeFocused()
-  await expect(triage(page, '键盘逾期')).toHaveAttribute('aria-expanded', 'false')
-
-  await page.keyboard.press('Enter')
-  const panel = page.getByRole('group', { name: 'Overdue: 键盘逾期' })
-  await expect(panel).toBeVisible()
-  await expect(triage(page, '键盘逾期')).toHaveAttribute('aria-expanded', 'true')
-
-  // Escape closes it and focus comes back to the trigger, not to <body>.
-  await page.keyboard.press('Escape')
-  await expect(panel).toHaveCount(0)
-  await expect(triage(page, '键盘逾期')).toBeFocused()
-
-  // And a triage action can be run entirely from the keyboard, sending the real request.
-  await page.keyboard.press('Enter')
-  await expect(panel).toBeVisible()
-  await page.keyboard.press('Tab')
-  await expect(panel.getByRole('button', { name: 'To tomorrow' })).toBeFocused()
-  const res = taskPatched(page)
-  await page.keyboard.press('Enter')
-  const body = (await res).request().postDataJSON() as { dueAt: string }
-  expect(Object.keys(body)).toEqual(['dueAt'])
-  expect(ymd(new Date(body.dueAt))).toBe(dayOffset(1))
-  // The row left the page; focus went to the heading rather than falling to <body>.
-  await expect(page.getByText('Nothing for today')).toBeVisible()
-  await expect(page.locator('#today-heading')).toBeFocused()
-})
-
-test('making a deadline next week’s plan demotes it in one request', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '没人等下周', { dueAt: dueAgo(6) })
-  await page.goto('/today')
-  await triage(page, '没人等下周').click()
-  const res = taskPatched(page)
-  await page
-    .getByRole('group', { name: 'Overdue: 没人等下周' })
-    .getByRole('button', { name: 'Next week', exact: true })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({
-    dueAt: null,
-    scheduledOn: nextMondayYmd(),
-  })
-  const tasks = (await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()).tasks as {
-    title: string
-    dueAt: string | null
-    scheduledOn: string | null
-  }[]
-  const t = tasks.find((x) => x.title === '没人等下周')!
-  expect(t.dueAt).toBeNull()
-  expect(t.scheduledOn).toBe(nextMondayYmd())
-})
-
-test('the open date control adds no horizontal scroll at 375', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 800 })
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '窄屏上的逾期任务标题也可能很长', { dueAt: dueAgo(2) })
-  await page.goto('/today')
-  await triage(page, '窄屏上的逾期任务标题也可能很长').click()
-  await expect(page.getByRole('group', { name: /^Overdue: / })).toBeVisible()
-  // Nothing scrolls sideways at 375px; a popover anchored to the
-  // right edge of a row is exactly the kind of thing that quietly breaks it.
-  const over = await sidewaysScroll(page)
-  expect(over).toEqual({ doc: 0, body: 0 })
-})
-
 // ------------------------------------------------------------------------------- the project rail
-
-test('a cross-project row carries its own project’s rail, at one x, beside its name', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const a = await makeProject(page, '甲项目')
-  const b = await makeProject(page, '乙项目')
-  await makeTask(page, a, '甲一', { scheduledOn: dayOffset(0) })
-  await makeTask(page, a, '甲二', { scheduledOn: dayOffset(0) })
-  await makeTask(page, b, '乙一', { scheduledOn: dayOffset(0) })
-  await page.goto('/today')
-  const section = page.getByRole('region', { name: 'Today', exact: true })
-  await expect(section.getByText('甲一')).toBeVisible()
-
-  const railOf = (title: string) =>
-    page
-      .locator('li')
-      .filter({ has: page.locator('[data-today-row]') })
-      .filter({ hasText: title })
-      .locator('[data-project-rail]')
-  // The rail says which project, and says the SAME thing for two tasks of one project.
-  await expect(railOf('甲一')).toHaveAttribute('data-project-rail', a)
-  await expect(railOf('甲二')).toHaveAttribute('data-project-rail', a)
-  await expect(railOf('乙一')).toHaveAttribute('data-project-rail', b)
-
-  // Fixed x on every row OF ONE LIST -- a spine, not a decoration that follows the content.
-  // Scoped to the Today queue: the overdue panel and the completed-today panel
-  // are lists of their own in another column, and a rail x shared across columns was never the
-  // claim. Within the list the assertion is the same one, on the same three rows.
-  const rails = await xs(page, '[aria-label="Today"] [data-project-rail]')
-  expect(new Set(rails).size, `rail x values: ${rails.join(',')}`).toBe(1)
-  // Six hues cannot identify an unbounded number of projects, so the rail is never alone: the
-  // project's name is on the row as well (WCAG 1.4.1), and the rail itself is hidden from AT.
-  await expect(section.getByText('甲项目').first()).toBeVisible()
-  await expect(section.getByText('乙项目').first()).toBeVisible()
-  await expect(railOf('甲一')).toHaveAttribute('aria-hidden', 'true')
-  // Two different projects are allowed to share a hue; what must never happen is one project
-  // wearing two. Same id, same class.
-  const classOf = (title: string) => railOf(title).getAttribute('class')
-  expect(await classOf('甲一')).toBe(await classOf('甲二'))
-})
 
 test('Done carries the rail, and a search result its project', async ({ page }) => {
   await registerFreshUser(page)
@@ -517,10 +269,9 @@ test('the status marker is the heaviest mark on the row, and still hue-free', as
   await page.goto('/today')
 
   const mark = (name: string) => page.getByRole('img', { name })
-  // 20px at 2px of stroke: the mark is the app's core semantic, and the workbench stepped every
-  // size up again around 46px rows.
+  // 16 in Today's first column, which is 16 wide (DES-001 section 4); 20 elsewhere, below.
   for (const name of ['In progress', 'To do', 'Backlog'])
-    expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
+    expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(16)
 
   // An OPEN task's mark is drawn in the body colour; a settled one stays muted. Value and weight,
   // never hue: `color` here must be the very same colour the row's own text is painted in, so no

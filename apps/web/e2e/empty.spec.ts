@@ -12,21 +12,20 @@ import { ymd } from './days'
  * makes the first half mean anything.
  */
 
-test('an empty Today says so, and the line goes when there is something on it', async ({
+test('an empty Today says Nothing yet, and stops saying it when something is planned', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
 
-  await expect(page.getByText('Nothing for today')).toBeVisible()
+  const planned = page.getByRole('region', { name: 'Planned for today' })
+  await expect(planned).toContainText('Nothing yet')
 
-  // The other half: with something on today, none of it is on the page.
+  // The other half: with something planned, the words go.
   await makeTask(page, pid, '今天要做的', { scheduledOn: ymd(new Date()) })
   await page.goto('/today')
-  await expect(
-    page.getByRole('region', { name: 'Today', exact: true }).getByText('今天要做的'),
-  ).toBeVisible()
-  await expect(page.getByText('Nothing for today')).toHaveCount(0)
+  await expect(planned.getByText('今天要做的')).toBeVisible()
+  await expect(planned).not.toContainText('Nothing yet')
 })
 
 test('an empty project says what the tree is for and puts the cursor in the input', async ({

@@ -152,8 +152,10 @@ export async function openProject(page: Page, name: string, exact = false): Prom
       url.searchParams.has('projectId')
     )
   })
-  // Scoped to <main>: the left rail also lists every project by name, and the project list page
-  // being exercised lives in the centre column.
+  // From the project list: other pages (Today) name projects too. Scoped to <main>: the sidebar
+  // also lists every project by name.
+  if (new URL(page.url()).pathname !== '/projects') await page.goto('/projects')
+  await page.getByRole('heading', { level: 1, name: 'Projects' }).waitFor()
   await page.getByRole('main').getByText(name, { exact }).click()
   await loaded
 }
@@ -541,6 +543,7 @@ export async function meetingToday(
   hhmm: string,
   zone: string,
   durationMinutes = 30,
+  joinUrl: string | null = null,
 ): Promise<void> {
   const account = await accountZone(page)
   const [y, m, d] = dayInZone(account).split('-').map(Number) as [number, number, number]
@@ -549,7 +552,7 @@ export async function meetingToday(
   const startsLocal = format(new TZDate(instant.getTime(), zone), "yyyy-MM-dd'T'HH:mm")
   const res = await page.request.post('/api/v1/meetings', {
     headers: WEB,
-    data: { title, startsLocal, timeZone: zone, durationMinutes },
+    data: { title, startsLocal, timeZone: zone, durationMinutes, ...(joinUrl ? { joinUrl } : {}) },
   })
   expect(res.ok(), await res.text()).toBe(true)
 }

@@ -10,29 +10,12 @@ import {
   taskPatched,
   WEB,
 } from './helpers'
-import { DAY, dayOffset, dueAgo, MONTHS, nextMondayYmd, ymd } from './days'
+import { DAY, dayOffset, dueAgo, MONTHS, ymd } from './days'
 
 // The daily loop: finishing, starting and deferring work from the list itself, the dates a tree
 // row shows, and the panel / delete guards. Every assertion that a status or date changed reads
 // the SERVER (a fresh GET), not the screen: an optimistic update that never reached the API
 // would pass any check that only looks at the UI.
-
-/**
- * The row's date control: an overdue or carried row's date actions, inside one disclosure.
- *
- * The trigger's name deliberately does not CONTAIN either group name, so `getByRole` -- which
- * matches accessible names by substring -- cannot confuse the two.
- */
-const triage = (page: Page, title: string) =>
-  page.getByRole('button', { name: `Change the dates for “${title}”` })
-
-/** Opens a row's date control and returns the panel, asserting it actually opened. */
-async function openTriage(page: Page, title: string, kind: 'Overdue' | 'Carried over') {
-  await triage(page, title).click()
-  const panel = page.getByRole('group', { name: `${kind}: ${title}` })
-  await expect(panel).toBeVisible()
-  return panel
-}
 
 const treeRow = (page: Page, title: string) =>
   page
@@ -93,7 +76,7 @@ test('a finished task can be restored from its mark, landing on backlog', async 
   await expect(treeRow(page, '写方案').getByRole('img', { name: 'Backlog' })).toBeVisible()
 })
 
-test('starting a task from its row puts it under In progress, stopping takes it off', async ({
+test('starting a task from its row puts it under In progress, and S on Today pauses it', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -101,9 +84,9 @@ test('starting a task from its row puts it under In progress, stopping takes it 
   await makeTask(page, pid, '写方案')
   await openTree(page, pid)
 
-  // A dateless, not-started task is not on the Today page at all.
+  // A dateless, not-started task is not on Today's lists.
   await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByText('Nothing for today')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'In progress' })).toContainText('None')
   await page.goBack()
   await page.getByRole('listitem').first().waitFor()
 
@@ -113,13 +96,15 @@ test('starting a task from its row puts it under In progress, stopping takes it 
   expect((await serverTask(page, pid, '写方案')).status).toBe('in_progress')
 
   await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.getByRole('region', { name: 'In progress' }).getByText('写方案')).toBeVisible()
+  const progress = page.getByRole('region', { name: 'In progress' })
+  await expect(progress.getByText('写方案')).toBeVisible()
 
-  // Stop it from the Today row: it has no date, so it leaves the page.
+  // Paused from the row with S: it has no date, so it leaves the list.
   const stopped = taskPatched(page)
-  await page.getByRole('button', { name: 'Pause “写方案”' }).click()
+  await page.locator('[data-today-row]').filter({ hasText: '写方案' }).focus()
+  await page.keyboard.press('s')
   expect((await stopped).request().postDataJSON()).toEqual({ status: 'todo' })
-  await expect(page.getByText('Nothing for today')).toBeVisible()
+  await expect(progress).toContainText('None')
   expect((await serverTask(page, pid, '写方案')).status).toBe('todo')
 })
 
@@ -196,104 +181,6 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
 
 // ---------------------------------------------------------------------------------- overdue exits
 
-test('pushing the deadline on an overdue row keeps its time of day and takes the row out of Overdue', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const due = dueAgo(2)
-  await makeTask(page, pid, '推到明天', { dueAt: due })
-  await makeTask(page, pid, '推到下周', { dueAt: due })
-  await makeTask(page, pid, '不动的', { dueAt: due })
-  await page.goto('/today')
-  const section = page.getByRole('region', { name: 'Overdue' })
-  await expect(section.getByText('2 days late')).toHaveCount(3)
-
-  // The same local time of day, on another local day.
-  const onDay = (days: number) => {
-    const d = new Date(due)
-    return new Date(
-      d.getFullYear(),
-      d.getMonth(),
-      d.getDate() + days,
-      d.getHours(),
-      d.getMinutes(),
-      d.getSeconds(),
-      d.getMilliseconds(),
-    )
-  }
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const expectTomorrow = new Date(
-    tomorrow.getFullYear(),
-    tomorrow.getMonth(),
-    tomorrow.getDate(),
-    onDay(0).getHours(),
-    onDay(0).getMinutes(),
-    onDay(0).getSeconds(),
-    onDay(0).getMilliseconds(),
-  )
-
-  let res = taskPatched(page)
-  await (
-    await openTriage(page, '推到明天', 'Overdue')
-  )
-    .getByRole('button', { name: 'To tomorrow' })
-    .click()
-  // The request moves the deadline and nothing else.
-  expect((await res).request().postDataJSON()).toEqual({ dueAt: expectTomorrow.toISOString() })
-  // The row left Overdue; the other two overdue rows did not move.
-  await expect(page.getByText('推到明天')).toHaveCount(0)
-  await expect(section.getByText('2 days late')).toHaveCount(2)
-  // The server says so, from a fresh read, in its own segment arithmetic: not on the list at all.
-  const today = (await (await page.request.get('/api/v1/tasks?view=today')).json()).tasks as {
-    title: string
-    segment: string
-  }[]
-  expect(today.find((t) => t.title === '推到明天')).toBeUndefined()
-  expect(
-    today
-      .filter((t) => t.segment === 'overdue')
-      .map((t) => t.title)
-      .sort(),
-  ).toEqual(['不动的', '推到下周'])
-  const moved = await serverTask(page, pid, '推到明天')
-  expect(new Date(moved.dueAt!).getTime()).toBe(expectTomorrow.getTime())
-  // No scheduling was invented on the way.
-  expect(moved.scheduledOn).toBeNull()
-  await page.reload()
-  await expect(page.getByText('推到明天')).toHaveCount(0)
-
-  // Next week is the coming Monday, at the same time of day.
-  const now = new Date()
-  const toMonday = (8 - now.getDay()) % 7 || 7
-  const monday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + toMonday,
-    onDay(0).getHours(),
-    onDay(0).getMinutes(),
-    onDay(0).getSeconds(),
-    onDay(0).getMilliseconds(),
-  )
-  res = taskPatched(page)
-  await (
-    await openTriage(page, '推到下周', 'Overdue')
-  )
-    .getByRole('button', { name: 'To next week' })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({ dueAt: monday.toISOString() })
-  await expect(page.getByText('推到下周')).toHaveCount(0)
-  expect(new Date((await serverTask(page, pid, '推到下周')).dueAt!).getTime()).toBe(
-    monday.getTime(),
-  )
-  // The untouched one is still overdue on the server.
-  expect(new Date((await serverTask(page, pid, '不动的')).dueAt!).getTime()).toBe(
-    new Date(due).getTime(),
-  )
-  await expect(section.getByText('不动的')).toBeVisible()
-})
-
 test('only a deadline change takes a task out of Overdue: a bare scheduledOn does not', async ({
   page,
 }) => {
@@ -330,35 +217,7 @@ test('only a deadline change takes a task out of Overdue: a bare scheduledOn doe
   expect(await segmentOf()).not.toBe('overdue')
 })
 
-test('clearing the deadline takes a row out of Overdue and the server forgets it', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '不再重要', { dueAt: dueAgo(3) })
-  await makeTask(page, pid, '要留下', { dueAt: dueAgo(1) })
-  await page.goto('/today')
-  const section = page.getByRole('region', { name: 'Overdue' })
-  await expect(section.getByText('不再重要')).toBeVisible()
-
-  const res = taskPatched(page)
-  await (
-    await openTriage(page, '不再重要', 'Overdue')
-  )
-    .getByRole('button', { name: 'Clear the deadline' })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({ dueAt: null })
-  await expect(page.getByText('不再重要')).toHaveCount(0)
-  // The other overdue row is untouched, and focus went to it rather than to <body>.
-  await expect(section.getByText('要留下')).toBeVisible()
-  await expect(page.locator('[data-today-row]').filter({ hasText: '要留下' })).toBeFocused()
-  expect((await serverTask(page, pid, '不再重要')).dueAt).toBeNull()
-  expect((await serverTask(page, pid, '要留下')).dueAt).not.toBeNull()
-  await page.reload()
-  await expect(page.getByText('不再重要')).toHaveCount(0)
-})
-
-test('an overdue row is finished with its mark, and only overdue rows have the exits', async ({
+test('an overdue row is finished with its mark, and only overdue rows have the days to move to', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -366,21 +225,9 @@ test('an overdue row is finished with its mark, and only overdue rows have the e
   await makeTask(page, pid, '逾期的', { dueAt: dueAgo(2) })
   await makeTask(page, pid, '在做的', { status: 'in_progress' })
   await page.goto('/today')
-  // Exactly one date control on the page: the overdue row has one, the in-progress row has none.
-  await expect(page.locator('[data-triage-trigger]')).toHaveCount(1)
-  await expect(triage(page, '逾期的')).toBeVisible()
-  await expect(triage(page, '在做的')).toHaveCount(0)
-
-  // Opening it offers the same two exits it always did, and nothing is reachable while it is shut.
-  await expect(page.getByRole('button', { name: 'To tomorrow' })).toHaveCount(0)
-  const panel = await openTriage(page, '逾期的', 'Overdue')
-  await expect(panel.getByRole('button', { name: 'To tomorrow' })).toBeVisible()
-  await expect(panel.getByRole('button', { name: 'To next week' })).toBeVisible()
-  await expect(panel.getByRole('button', { name: 'Clear the deadline' })).toBeVisible()
-  // Escape shuts it and hands focus back to the trigger rather than to <body> (WCAG 2.4.3).
-  await page.keyboard.press('Escape')
-  await expect(panel).toHaveCount(0)
-  await expect(triage(page, '逾期的')).toBeFocused()
+  // The overdue row offers Today, Tomorrow, Mon and a day picked; the in-progress row none of it.
+  await expect(page.getByRole('button', { name: /^Plan “逾期的” for/ })).toHaveCount(4)
+  await expect(page.getByRole('button', { name: /^Plan “在做的”/ })).toHaveCount(0)
 
   const res = taskPatched(page)
   await page.getByRole('button', { name: 'Complete “逾期的”' }).click()
@@ -710,228 +557,43 @@ const rowOf = (page: Page, title: string) =>
     .locator('li')
     .filter({ has: page.locator('[data-today-row]') })
     .filter({ hasText: title })
-async function todaySegment(page: Page, id: string): Promise<string> {
-  const tasks = (await (await page.request.get('/api/v1/tasks?view=today')).json()).tasks as {
-    id: string
-    segment: string
-  }[]
-  return tasks.find((t) => t.id === id)?.segment ?? 'absent'
-}
 
 /*
-  A carried plan is for TODAY, at no particular time: it belongs under Any time, and the day it was
-  first meant for is said on the right, not in the margin, whose words on this list are times.
+  A carried plan is for TODAY: it is under Planned for today, and the day it was first meant for is
+  said in the row's last column (artboard 12).
 */
-test('a plan carried over from days ago says so on Today, under Any time; a plan for today does not', async ({
+test('a plan carried over from days ago says where from; a plan for today does not', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  const old = dayOffset(-5)
+  const old = dayOffset(-10)
   await makeTask(page, pid, '搁置的计划', { scheduledOn: old })
   await makeTask(page, pid, '昨天的计划', { scheduledOn: dayOffset(-1) })
   await makeTask(page, pid, '今天的计划', { scheduledOn: dayOffset(0) })
   await page.goto('/today')
-  const section = page.getByRole('region', { name: 'Today', exact: true })
+  const section = page.getByRole('region', { name: 'Planned for today' })
   await expect(section.getByText('今天的计划')).toBeVisible()
 
-  // The margin is the day's: "Any time" once, on the first row, and no old date anywhere on it.
-  await expect(section.locator('[data-row-lead-text]')).toHaveText(['Any time'])
-  await expect(section.locator('li').first()).toContainText('Any time')
-  // The day it was meant for is on the right.
-  const day = (ymd: string) => {
+  // Within the week the weekday, before it the date (artboard 12: "Carried from Sun").
+  const weekday = (ymd: string) =>
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(`${ymd}T12:00:00Z`).getUTCDay()]
+  const date = (ymd: string) => {
     const [, m, d] = ymd.split('-').map(Number)
     return `${MONTHS[m! - 1]} ${d}`
   }
   await expect(rowOf(page, '搁置的计划').locator('[data-date-hint="carried"]')).toHaveText(
-    `Carried over from ${day(old)}`,
+    `Carried from ${date(old)}`,
   )
   await expect(rowOf(page, '昨天的计划').locator('[data-date-hint="carried"]')).toHaveText(
-    `Carried over from ${day(dayOffset(-1))}`,
+    `Carried from ${weekday(dayOffset(-1))}`,
   )
-  // Today's own plan carries no mark and no triage group.
+  // Today's own plan carries no mark.
   await expect(rowOf(page, '今天的计划').locator('[data-date-hint]')).toHaveCount(0)
-  await expect(triage(page, '今天的计划')).toHaveCount(0)
   await expect(page.locator('[data-date-hint="carried"]')).toHaveCount(2)
-  // Not an overdue deadline: no overdue segment, no overdue wording.
+  // Not an overdue deadline: no overdue block, no overdue wording.
   await expect(page.getByRole('region', { name: 'Overdue' })).toHaveCount(0)
   await expect(section).not.toContainText('late')
-})
-
-test('moving the plan to today keeps the row, drops the mark, and changes only the plan', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const id = await makeTask(page, pid, '改到今天的', { scheduledOn: dayOffset(-3) })
-  await makeTask(page, pid, '旁观者', { scheduledOn: dayOffset(-3) })
-  await page.goto('/today')
-  const res = taskPatched(page)
-  await (
-    await openTriage(page, '改到今天的', 'Carried over')
-  )
-    .getByRole('button', { name: 'Move to today' })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: dayOffset(0) })
-
-  // The row stays but is no longer carried, so its date control goes with the mark.
-  await expect(triage(page, '改到今天的')).toHaveCount(0)
-  await expect(rowOf(page, '改到今天的').locator('[data-date-hint="carried"]')).toHaveCount(0)
-  await expect(
-    page.getByRole('region', { name: 'Today', exact: true }).getByText('改到今天的'),
-  ).toBeVisible()
-  // The neighbour is untouched and still marked.
-  await expect(triage(page, '旁观者')).toBeVisible()
-  expect((await serverTask(page, pid, '改到今天的')).scheduledOn).toBe(dayOffset(0))
-  expect((await serverTask(page, pid, '旁观者')).scheduledOn).toBe(dayOffset(-3))
-  expect(await todaySegment(page, id)).toBe('today')
-  await page.reload()
-  await expect(page.getByText('改到今天的')).toBeVisible()
-  await expect(triage(page, '改到今天的')).toHaveCount(0)
-})
-
-test('moving the plan to tomorrow or next week takes the row off Today', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const a = await makeTask(page, pid, '改到明天的', { scheduledOn: dayOffset(-2) })
-  const b = await makeTask(page, pid, '改到下周的', { scheduledOn: dayOffset(-2) })
-  await makeTask(page, pid, '留着的', { scheduledOn: dayOffset(-2) })
-  await page.goto('/today')
-
-  let res = taskPatched(page)
-  await (
-    await openTriage(page, '改到明天的', 'Carried over')
-  )
-    .getByRole('button', { name: 'Move to tomorrow' })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: dayOffset(1) })
-  await expect(page.getByText('改到明天的')).toHaveCount(0)
-  expect((await serverTask(page, pid, '改到明天的')).scheduledOn).toBe(dayOffset(1))
-  expect(await todaySegment(page, a)).toBe('absent')
-
-  res = taskPatched(page)
-  await (
-    await openTriage(page, '改到下周的', 'Carried over')
-  )
-    .getByRole('button', { name: 'Move to next week' })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: nextMondayYmd() })
-  await expect(page.getByText('改到下周的')).toHaveCount(0)
-  expect((await serverTask(page, pid, '改到下周的')).scheduledOn).toBe(nextMondayYmd())
-  expect(await todaySegment(page, b)).toBe('absent')
-
-  // The one nobody touched is still there and still carried.
-  await expect(triage(page, '留着的')).toBeVisible()
-  await expect(rowOf(page, '留着的').locator('[data-date-hint="carried"]')).toBeVisible()
-  await expect(page.locator('[data-today-row]')).toHaveCount(1)
-  await page.reload()
-  await expect(page.locator('[data-today-row]')).toHaveCount(1)
-})
-
-test('clearing the plan removes the row from Today and the server holds none', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const id = await makeTask(page, pid, '不排了', { scheduledOn: dayOffset(-4) })
-  await makeTask(page, pid, '另一个', { scheduledOn: dayOffset(-4) })
-  await page.goto('/today')
-  const res = taskPatched(page)
-  await (
-    await openTriage(page, '不排了', 'Carried over')
-  )
-    .getByRole('button', { name: 'Clear the plan' })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({ scheduledOn: null })
-  await expect(page.getByText('不排了')).toHaveCount(0)
-
-  const t = await serverTask(page, pid, '不排了')
-  expect(t.scheduledOn).toBeNull()
-  expect(t.status).toBe('todo') // the task still exists, untouched: only the plan went
-  expect(await todaySegment(page, id)).toBe('absent')
-  await page.reload()
-  await expect(page.getByText('不排了')).toHaveCount(0)
-  await expect(page.getByText('另一个')).toBeVisible()
-})
-
-test('a carried plan is not a deadline: clearing the plan leaves dueAt alone', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const due = new Date()
-  due.setHours(23, 0, 0, 0)
-  await makeTask(page, pid, '计划和今晚截止', {
-    scheduledOn: dayOffset(-2),
-    dueAt: due.toISOString(),
-  })
-  await page.goto('/today')
-  await expect(triage(page, '计划和今晚截止')).toBeVisible()
-  const res = taskPatched(page)
-  await (
-    await openTriage(page, '计划和今晚截止', 'Carried over')
-  )
-    .getByRole('button', { name: 'Clear the plan' })
-    .click()
-  await res
-  const t = await serverTask(page, pid, '计划和今晚截止')
-  expect(t.scheduledOn).toBeNull()
-  expect(new Date(t.dueAt!).getTime()).toBe(due.getTime())
-  // It is still due today, so it stays on the list, no longer marked.
-  await expect(page.getByText('计划和今晚截止')).toBeVisible()
-  await expect(triage(page, '计划和今晚截止')).toHaveCount(0)
-})
-
-test('making a deadline a plan moves the row out of Overdue into Today, with dueAt gone', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const id = await makeTask(page, pid, '没人在等', { dueAt: dueAgo(3) })
-  await makeTask(page, pid, '转到明天', { dueAt: dueAgo(3) })
-  await makeTask(page, pid, '还逾期', { dueAt: dueAgo(3) })
-  await page.goto('/today')
-  const overdue = page.getByRole('region', { name: 'Overdue' })
-  await expect(overdue.getByText('3 days late')).toHaveCount(3)
-  expect(await todaySegment(page, id)).toBe('overdue')
-
-  let res = taskPatched(page)
-  await (
-    await openTriage(page, '没人在等', 'Overdue')
-  )
-    .getByRole('button', { name: 'Today', exact: true })
-    .click()
-  // One request carries both halves of the change.
-  expect((await res).request().postDataJSON()).toEqual({ dueAt: null, scheduledOn: dayOffset(0) })
-
-  await expect(overdue.getByText('没人在等')).toHaveCount(0)
-  await expect(
-    page.getByRole('region', { name: 'Today', exact: true }).getByText('没人在等'),
-  ).toBeVisible()
-  const t = await serverTask(page, pid, '没人在等')
-  expect(t.dueAt).toBeNull()
-  expect(t.scheduledOn).toBe(dayOffset(0))
-  expect(await todaySegment(page, id)).toBe('today')
-  // A plan for today is quiet: no carried mark and no date control.
-  await expect(triage(page, '没人在等')).toHaveCount(0)
-  await expect(rowOf(page, '没人在等').locator('[data-date-hint]')).toHaveCount(0)
-  await page.reload()
-  await expect(
-    page.getByRole('region', { name: 'Today', exact: true }).getByText('没人在等'),
-  ).toBeVisible()
-
-  // Demoting to tomorrow leaves the list altogether; the neighbour stays overdue.
-  res = taskPatched(page)
-  await (
-    await openTriage(page, '转到明天', 'Overdue')
-  )
-    .getByRole('button', { name: 'Tomorrow', exact: true })
-    .click()
-  expect((await res).request().postDataJSON()).toEqual({ dueAt: null, scheduledOn: dayOffset(1) })
-  await expect(page.getByText('转到明天')).toHaveCount(0)
-  const t2 = await serverTask(page, pid, '转到明天')
-  expect(t2.dueAt).toBeNull()
-  expect(t2.scheduledOn).toBe(dayOffset(1))
-  expect(new Date((await serverTask(page, pid, '还逾期')).dueAt!).getTime()).toBeLessThan(
-    Date.now(),
-  )
-  await expect(overdue.getByText('还逾期')).toBeVisible()
 })
 
 /**

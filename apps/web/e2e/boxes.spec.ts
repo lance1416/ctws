@@ -44,21 +44,6 @@ async function openTask(page: Page, scheme: 'light' | 'dark') {
   return pane
 }
 
-test('a section of a page is not a box', async ({ page }) => {
-  await registerFreshUser(page)
-  // Signing up passes through the Workbench, whose cards ARE boxes: measure Today's, not those.
-  await expect(page.locator('#today-heading')).toBeVisible()
-  await expect(page.locator('[data-panel="In progress"]')).toBeVisible()
-  const section = page.getByRole('main').locator('[data-panel]').first()
-  await expect(section).toBeVisible()
-  expect(await style(section)).toEqual({
-    fill: 'rgba(0, 0, 0, 0)',
-    border: '0px',
-    radius: '0px',
-    shadow: 'none',
-  })
-})
-
 test('the Workbench is the ground, and its cards are tiles on it', async ({ page }) => {
   await registerFreshUser(page, '/')
   const tile = page.getByRole('main').locator('[data-panel]').first()

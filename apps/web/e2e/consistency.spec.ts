@@ -341,7 +341,7 @@ test('the new task dialog sizes status chips to their words, like the pane', asy
   expect(new Set(widths).size, 'five chips, five widths: sized to the words').toBeGreaterThan(1)
 })
 
-test('Today: one gap under In progress, however tall the right column is', async ({ page }) => {
+test('Today: one gap between the blocks, however tall the right column is', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'IQBank')
@@ -352,11 +352,11 @@ test('Today: one gap under In progress, however tall the right column is', async
     await makeTask(page, pid, `Overdue ${i}`, { dueAt: `${dayOffset(-2)}T09:00:00.000Z` })
   await page.goto('/today')
   const doing = page.getByRole('region', { name: 'In progress' })
-  const today = page.getByRole('region', { name: 'Today', exact: true })
+  const today = page.getByRole('region', { name: 'Planned for today' })
   const overdue = page.getByRole('region', { name: 'Overdue' })
-  await expect(overdue).toContainText('Overdue 7')
+  await expect(overdue.locator('[data-today-row]')).toHaveCount(5)
   const a = (await doing.boundingBox())!
   const b = (await today.boundingBox())!
-  // However long the sections below get, the one under In progress keeps the page's own gap.
-  expect(Math.round(b.y - (a.y + a.height))).toBe(36)
+  // However long the blocks below get, the one under In progress keeps the page's 12 (artboard 12).
+  expect(Math.round(b.y - (a.y + a.height))).toBe(12)
 })

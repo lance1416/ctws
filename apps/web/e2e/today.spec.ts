@@ -1,461 +1,362 @@
-import { zoneAbbreviation } from '@ctws/core/clock'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import {
   accountZone,
   apiPost,
   dayInZone,
   editDetail,
-  isMove,
   makeProject,
   makeTask,
   meetingToday,
-  openProject,
   registerFreshUser,
-  setDetailStatus,
-  submitCreate,
-  WEB,
-  navLink,
+  serverTask,
 } from './helpers'
-
-async function captureAndOpen(page: Page, title: string) {
-  await submitCreate(page, 'Capture…', title)
-  await navLink(page, 'Projects').click()
-  await openProject(page, 'Inbox')
-  await page.getByRole('listitem').filter({ hasText: title }).click()
-  // The pane opens in reading mode; every test here is about an edit.
-  await editDetail(page)
-}
-
-test('a freshly registered user sees an empty today page, not an error', async ({ page }) => {
-  await registerFreshUser(page)
-  // `level: 1` because "Done today" is a heading on this page too, and getByRole matches names by
-  // substring: without it this would be ambiguous the moment anything is finished today.
-  await expect(page.locator('#today-heading')).toBeVisible()
-  await expect(page.getByText('Nothing for today')).toBeVisible()
-})
-
-test('scheduling a task through the detail panel puts it on the today page', async ({ page }) => {
-  await registerFreshUser(page)
-  await captureAndOpen(page, '改简历')
-
-  // Today in the browser's own timezone, which is also the timezone registration recorded.
-  const today = new Date().toLocaleDateString('en-CA')
-  await page.getByLabel('Plan', { exact: true }).fill(today)
-  await page.getByRole('button', { name: 'Save' }).click()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  // `exact` because "Done today" is also a region whose name contains "Today".
-  const section = page.getByRole('region', { name: 'Today', exact: true })
-  await expect(section.getByText('改简历')).toBeVisible()
-  // The breadcrumb says where it lives, so the list is usable without opening anything.
-  await expect(section.getByText('Inbox')).toBeVisible()
-  // With something scheduled, the empty-state line must be gone, not shown beside the list.
-  await expect(page.getByText('Nothing for today')).toHaveCount(0)
-})
-
-// The server puts each task in one segment; this asserts the page does not undo that by rendering a
-// task into several sections.
-test('a task that is both overdue and in progress is shown once', async ({ page }) => {
-  await registerFreshUser(page)
-  await captureAndOpen(page, '又逾期又在做')
-  await setDetailStatus(page, 'In progress')
-  await page.getByLabel('Due', { exact: true }).fill('2020-01-01T00:00')
-  await page.getByRole('button', { name: 'Save' }).click()
-  // Wait for the save to land before navigating, the way the saves above this one do. Without it
-  // the test races its own PATCH, which leaves Overdue simply absent. The pane returns to
-  // reading rather than closing, so Edit coming back is the signal.
-  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  // Wait for the list to be on screen before counting: while the route is still switching the
-  // project page's own row is in the DOM, and a count taken then passes without proving anything.
-  await expect(
-    page.getByRole('region', { name: 'Overdue' }).getByText('又逾期又在做'),
-  ).toBeVisible()
-  await expect(page.getByText('又逾期又在做')).toHaveCount(1)
-})
+import { addDaysYmd, dayOffset, dueAgo, nextMondayYmd } from './days'
 
 /**
- * The three segments go to three different panels, in the page's own order. This pins the panel
- * order, including the panels that are not segments, and that each segment's task lands in its own
- * panel AND IN NO OTHER: a task rendered twice reads as "did I create this twice?".
+ * TODAY (FR-079, artboard 12, STORY-034): the timeline across the top; In progress, Planned for
+ * today and Overdue on the left in one set of columns (DES-001 section 4); Ready to start, This
+ * week and Birthdays on the right.
  */
-test("each segment goes to its own panel, in the page's order, and to only one", async ({
+
+const block = (page: Page, name: string) => page.getByRole('region', { name, exact: true })
+const rowOf = (scope: Locator, title: string) =>
+  scope.getByRole('listitem').filter({ hasText: title })
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const weekdayOfYmd = (day: string) => WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
+
+/** The browser's clock at `hh:mm` today on the account's clock. */
+async function clockAt(page: Page, hh: number, mm: number) {
+  const zone = await accountZone(page)
+  const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
+  await page.clock.install({ time: new TZDate(y, m - 1, d, hh, mm, 0, 0, zone) })
+}
+
+test('a new account sees its day with nothing planned, not an error (FR-030)', async ({ page }) => {
+  await registerFreshUser(page)
+  await expect(page.locator('#today-heading')).toBeVisible()
+  await expect(block(page, 'Planned for today')).toContainText('Nothing yet')
+  await expect(block(page, 'In progress')).toContainText('None')
+  await expect(block(page, 'Birthdays')).toContainText('None to be told about today')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
+test('with nothing planned, what could start is offered, each with Plan (FR-030)', async ({
   page,
 }) => {
   await registerFreshUser(page)
-  const today = new Date().toLocaleDateString('en-CA')
+  const pid = await makeProject(page, '改版')
+  await makeTask(page, pid, '量一下尺寸')
+  await page.reload()
+  const planned = block(page, 'Planned for today')
+  await expect(planned).toContainText('Nothing yet')
+  await planned.getByRole('button', { name: 'Plan “量一下尺寸” for today' }).click()
+  // Planned now, as a row of the list; and no longer offered.
+  await expect(rowOf(planned, '量一下尺寸').locator('[data-today-row]')).toBeVisible()
+  await expect(planned).not.toContainText('Nothing yet')
+  expect((await serverTask(page, pid, '量一下尺寸')).scheduledOn).toBe(
+    dayInZone(await accountZone(page)),
+  )
+})
 
-  // Created in the reverse of display order so insertion order cannot explain a pass.
-  await captureAndOpen(page, '甲在做')
-  await setDetailStatus(page, 'In progress')
-  await page.getByRole('button', { name: 'Save' }).click()
-  // Saving returns the pane to reading rather than closing it, so this steps out explicitly.
-  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+test('each task is in one block, and the blocks stand in the board’s order', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  await makeTask(page, pid, '甲在做', { status: 'in_progress' })
+  await makeTask(page, pid, '乙今天', { scheduledOn: dayOffset(0) })
+  await makeTask(page, pid, '丙逾期', { dueAt: dueAgo(3) })
+  // In progress and late both: late wins, and it is shown once.
+  await makeTask(page, pid, '丁又逾期又在做', { status: 'in_progress', dueAt: dueAgo(2) })
+  await page.reload()
+  await expect(block(page, 'Birthdays')).toBeVisible()
+  await expect(page.locator('[data-today-row]')).toHaveCount(4)
 
-  await submitCreate(page, 'Capture…', '乙今天')
-  await page.getByRole('listitem').filter({ hasText: '乙今天' }).click()
-  await editDetail(page)
-  await page.getByLabel('Plan', { exact: true }).fill(today)
-  await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-
-  await submitCreate(page, 'Capture…', '丙逾期')
-  await page.getByRole('listitem').filter({ hasText: '丙逾期' }).click()
-  await editDetail(page)
-  await page.getByLabel('Due', { exact: true }).fill('2020-01-01T00:00')
-  await page.getByRole('button', { name: 'Save' }).click()
-  // Wait for the save to land before navigating, the way the saves above this one do. Without it
-  // the test races its own PATCH, which leaves Overdue simply absent. The pane returns to
-  // reading rather than closing, so Edit coming back is the signal.
-  await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  await expect(page.locator('#today-heading')).toBeVisible()
-  // This week is in this list too: the set is the PAGE's sections, not the segment list. "Done
-  // today" is absent because nothing was finished -- a section with nothing to say is not drawn.
   expect(
-    await page.locator('[data-panel]').evaluateAll((els) => els.map((el) => el.dataset.panel)),
-  ).toEqual(['In progress', 'Today', 'Overdue', 'This week'])
-
-  for (const [title, panel] of [
+    await page
+      .getByRole('region')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label'))),
+  ).toEqual([
+    'Timeline of the day',
+    'In progress',
+    'Planned for today',
+    'Overdue',
+    'Ready to start',
+    'This week',
+    'Birthdays',
+  ])
+  for (const [title, name] of [
     ['甲在做', 'In progress'],
-    ['乙今天', 'Today'],
+    ['乙今天', 'Planned for today'],
     ['丙逾期', 'Overdue'],
+    ['丁又逾期又在做', 'Overdue'],
   ] as const) {
-    await expect(
-      page.getByRole('region', { name: panel, exact: true }).getByText(title),
-    ).toHaveCount(1)
-    // And nowhere else on the page: one task, one panel.
-    await expect(page.getByText(title)).toHaveCount(1)
+    await expect(rowOf(block(page, name), title)).toHaveCount(1)
+    await expect(page.locator('[data-today-row]').filter({ hasText: title })).toHaveCount(1)
   }
 })
 
-test('an edit made from the today page is reflected without a reload', async ({ page }) => {
+test('the three lists share one set of columns (DES-001 section 4)', async ({ page }) => {
+  // Lance's screenshot of 2026-10-21 is the counter-example: each list had its own columns.
+  await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
-  await captureAndOpen(page, '先在做')
-  await setDetailStatus(page, 'In progress')
-  await page.getByRole('button', { name: 'Save' }).click()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  await page.getByRole('region', { name: 'In progress' }).getByText('先在做').click()
-  await editDetail(page)
-  await setDetailStatus(page, 'Done')
-  await page.getByRole('button', { name: 'Save' }).click()
-
-  // It left the banner -- and it turned up under "Done today" without a reload.
-  await expect(
-    page.getByRole('region', { name: 'In progress', exact: true }).getByText('先在做'),
-  ).toHaveCount(0)
-  await expect(
-    page.getByRole('region', { name: 'Done today', exact: true }).getByText('先在做'),
-  ).toBeVisible()
-  await expect(page.getByText('Nothing for today')).toBeVisible()
-  // The panel unmounted without being closed; focus must not have fallen to <body>.
-  await expect(page.locator('#today-heading')).toBeFocused()
-})
-
-// The breadcrumb is what makes the list usable without opening anything; a nested task must show
-// where it sits, not only which project it is in.
-test('a nested task shows both its project and its parent in the breadcrumb', async ({ page }) => {
-  await registerFreshUser(page)
-  await submitCreate(page, 'Capture…', '父任务')
-  await navLink(page, 'Projects').click()
-  await openProject(page, 'Inbox')
-  await submitCreate(page, 'Capture…', '子任务')
-  await expect(page.getByRole('listitem')).toHaveCount(2)
-
-  const moved = page.waitForResponse((r) => isMove(r.request()) && r.ok())
-  await page.getByRole('button', { name: 'Task: 子任务' }).focus()
-  await page.keyboard.press('Alt+ArrowRight')
-  await moved
-
-  await page.getByRole('listitem').filter({ hasText: '子任务' }).click()
-  await editDetail(page)
-  await setDetailStatus(page, 'In progress')
-  await page.getByRole('button', { name: 'Save' }).click()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  const section = page.getByRole('region', { name: 'In progress' })
-  await expect(section.getByText('子任务')).toBeVisible()
-  await expect(section.getByText('Inbox › 父任务')).toBeVisible()
-})
-
-// A failed fetch must not read as "nothing to do": that would tell the user they are free when the
-// app simply could not ask.
-test('a failed fetch shows an error, not the empty-state line', async ({ page }) => {
-  const todayView = (url: URL) =>
-    url.pathname === '/api/v1/tasks' && url.searchParams.get('view') === 'today'
-  await page.route(todayView, (route) => route.fulfill({ status: 500, json: { title: 'boom' } }))
-  await registerFreshUser(page)
-  await expect(page.getByRole('alert')).toHaveText('boom')
-  await expect(page.getByText('Nothing for today')).toHaveCount(0)
-})
-
-// The overdue date is for reading, not for a form: a relative label, with the exact local time on
-// hover. The datetime-local wire format ("2026-10-01T09:00") must never reach the screen.
-test('an overdue task shows a relative label, not the datetime-local format', async ({ page }) => {
-  await registerFreshUser(page)
-  await captureAndOpen(page, '交报告')
-  await page.getByLabel('Due', { exact: true }).fill('2020-01-01T09:00')
-  await page.getByRole('button', { name: 'Save' }).click()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  const section = page.getByRole('region', { name: 'Overdue' })
-  // The day it was due is the margin, flagged; the exact moment is the margin's title; how late is
-  // the note on the right; the line under the title says where.
-  const row = section.locator('li').filter({ hasText: '交报告' })
-  await expect(row.locator('[data-row-lead-text]')).toHaveText('Jan 1')
-  await expect(row.locator('[data-row-lead]')).toHaveAttribute('title', 'Due Jan 1, 2020, 09:00')
-  await expect(row.locator('[data-row-note]')).toHaveText(/^\d+ days? late$/)
-  await expect(row.locator('[data-row-meta]')).toHaveText('Inbox')
-  await expect(section).not.toContainText(/\d{4}-\d{2}-\d{2}T/)
-  await expect(section).not.toContainText('T09:00')
-})
-
-test('the status dot has a text alternative', async ({ page }) => {
-  await registerFreshUser(page)
-  await captureAndOpen(page, '写 M2b')
-  await setDetailStatus(page, 'In progress')
-  await page.getByRole('button', { name: 'Save' }).click()
-
-  await page.getByRole('link', { name: 'Today' }).click()
-  await expect(
-    page.getByRole('region', { name: 'In progress' }).getByRole('img', { name: 'In progress' }),
-  ).toBeVisible()
-})
-
-/**
- * One task in progress is the page's focus and gets the largest type; several are a list at row
- * size, since five 24px lines are a wall rather than an emphasis.
- */
-test('one task in progress is the focus, several are a list', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 1000 })
-  await registerFreshUser(page)
-  const p = await apiPost(page, '/projects', { name: 'P' })
-  const pid = p.id as string
-  await apiPost(page, '/tasks', { title: '只在做这一件', projectId: pid, status: 'in_progress' })
-  await page.goto('/today')
-
-  const size = (sel: string) =>
-    page
-      .locator(sel)
-      .first()
-      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
-  const alone = await size('[data-doing-title]')
-
-  await apiPost(page, '/tasks', { title: '第二件', projectId: pid, status: 'in_progress' })
-  await apiPost(page, '/tasks', { title: '第三件', projectId: pid, status: 'in_progress' })
+  const pid = await makeProject(page, '对齐')
+  const parent = await makeTask(page, pid, '一个很长很长的父任务名字，长到会被截断')
+  await makeTask(page, pid, '在做的', { status: 'in_progress', dueAt: dueAgo(-1) }, parent)
+  await makeTask(page, pid, '计划的', { scheduledOn: dayOffset(-3) })
+  await makeTask(page, pid, '逾期的', { dueAt: dueAgo(7) })
   await page.reload()
-  const crowded = await size('[data-doing-title]')
-  expect(crowded, 'with three in progress the title falls back to the row size').toBeLessThan(alone)
-
-  // As wide as the Today column, so the buttons sit beside the content, not at the window edge.
-  const [doing, today] = await Promise.all([
-    page.getByRole('region', { name: 'In progress' }).boundingBox(),
-    page.getByRole('region', { name: 'Today' }).boundingBox(),
-  ])
-  expect(Math.round(doing!.x + doing!.width)).toBe(Math.round(today!.x + today!.width))
+  await expect(page.locator('[data-today-row]')).toHaveCount(3)
+  const lefts = async (sel: string) =>
+    page.locator(`[data-today-row]`).evaluateAll(
+      (rows, s) =>
+        rows.map((r) => {
+          const cell = r.closest('li')!.querySelector(s)
+          return cell ? Math.round(cell.getBoundingClientRect().left) : null
+        }),
+      sel,
+    )
+  // Title, path and mark start on one line in every block, whatever a row lacks.
+  for (const sel of ['[data-row-title]', '[data-row-path]']) {
+    const xs = await lefts(sel)
+    expect(new Set(xs).size, `${sel} at ${xs.join(', ')}`).toBe(1)
+  }
+  const marks = (await lefts('[data-row-mark]')).filter((x) => x !== null)
+  expect(marks.length).toBe(2)
+  expect(new Set(marks).size).toBe(1)
+  // No time label and no colour bar in front of the status (FR-004, DES-001 section 4).
+  await expect(page.locator('main [data-row-lead]')).toHaveCount(0)
 })
 
-/**
- * The one thing being done is the line this page is for: on a phone it is said in full, on as
- * many lines as it takes, not cut to the dozen characters a 36px line leaves beside its mark.
- */
-test('on a phone the one thing in progress is said in full', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 })
-  await registerFreshUser(page)
-  const p = await apiPost(page, '/projects', { name: 'P' })
-  const title = 'Ship the Daybook redesign and redraw the canvas'
-  await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
-  await page.goto('/today')
-  const subject = page.locator('[data-doing-title]')
-  await expect(subject).toHaveText(title)
-  const cut = await subject.evaluate((el) => el.scrollWidth > el.clientWidth)
-  expect(cut, 'the title runs past its box').toBe(false)
-  // And on more than one line, which is what saying it in full takes at this width.
-  const lines = await subject.evaluate(
-    (el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight),
-  )
-  expect(lines).toBeGreaterThanOrEqual(2)
-})
-
-test('with one task in progress Done is the main action, with several it is a button on a row', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1600, height: 1000 })
-  await registerFreshUser(page)
-  const p = await apiPost(page, '/projects', { name: 'P' })
-  const pid = p.id as string
-  await apiPost(page, '/tasks', { title: '只在做这一件', projectId: pid, status: 'in_progress' })
-  await page.goto('/today')
-  const fill = () =>
-    page
-      .getByRole('button', { name: /^Complete/ })
-      .first()
-      .evaluate((el) => getComputedStyle(el).backgroundColor)
-  const alone = await fill()
-
-  await apiPost(page, '/tasks', { title: '第二件', projectId: pid, status: 'in_progress' })
-  await apiPost(page, '/tasks', { title: '第三件', projectId: pid, status: 'in_progress' })
-  await page.reload()
-  await expect(page.getByRole('button', { name: /^Complete/ })).toHaveCount(3)
-  expect(await fill(), '三条时不再是填实的那一个').not.toBe(alone)
-})
-
-// ------------------------------------------------------------------------------- the day's line
-
-test('a meeting sits on the day at your own time, and says the zone it was agreed in', async ({
+test('the marks say due today, tomorrow, how late, and where a plan was carried from', async ({
   page,
 }) => {
   await registerFreshUser(page)
-  const account = await accountZone(page)
-  // Any zone that is not the account's, with no clock change near today's date, so the label is
-  // the same whatever day this runs.
-  const zone = account === 'Asia/Tokyo' ? 'Asia/Kolkata' : 'Asia/Tokyo'
-  await meetingToday(page, 'Northwind intro call', '12:00', zone)
-  const entries = await page.request.get(
-    `/api/v1/meetings?view=calendar&from=${dayInZone(account)}&to=${dayInZone(account)}`,
-    { headers: WEB },
-  )
-  const [entry] = (
-    (await entries.json()) as { entries: { startsAt: string; timeZone: string | null }[] }
-  ).entries
-  expect(entry?.timeZone, 'the server says which zone it was agreed in').toBe(zone)
+  const pid = await makeProject(page, '记号')
+  await makeTask(page, pid, '今天截止', {
+    status: 'in_progress',
+    dueAt: new Date(Date.now() + 3600_000).toISOString(),
+  })
+  await makeTask(page, pid, '明天截止', { status: 'in_progress', dueAt: dueAgo(-1) })
+  await makeTask(page, pid, '七天前截止', { dueAt: dueAgo(7) })
+  const carried = dayOffset(-4)
+  await makeTask(page, pid, '顺延的', { scheduledOn: carried })
+  await page.reload()
 
-  await page.goto('/today')
-  const row = page
-    .getByRole('region', { name: 'Today', exact: true })
-    .locator('[data-day-entry]')
-    .filter({ hasText: 'Northwind intro call' })
-  await expect(row.locator('[data-row-lead-text]')).toHaveText('12:00')
-  await expect(row.locator('[data-entry-zone]')).toHaveText(
-    zoneAbbreviation(new Date(entry!.startsAt), zone),
+  const progress = block(page, 'In progress')
+  // A deadline later today could fall tomorrow late at night; only assert the near-certain cases.
+  if (new Date(Date.now() + 3600_000).getDate() === new Date().getDate())
+    await expect(rowOf(progress, '今天截止').locator('[data-row-mark]')).toHaveText('Due today')
+  await expect(rowOf(block(page, 'Overdue'), '七天前截止').locator('[data-row-mark]')).toHaveText(
+    '7 days late',
+  )
+  await expect(rowOf(block(page, 'Planned for today'), '顺延的')).toContainText(
+    `Carried from ${weekdayOfYmd(carried)}`,
   )
 })
 
-test('a meeting already over is drawn a step quieter, above the now line', async ({ page }) => {
+test('an overdue row becomes a plan with one press: Today, Tomorrow, Mon or a day picked', async ({
+  page,
+}) => {
   await registerFreshUser(page)
-  const account = await accountZone(page)
-  await meetingToday(page, 'Early call', '00:00', account)
-  // Read at 15:00, so the half-hour from midnight is over whenever this runs.
-  const [y, m, d] = dayInZone(account).split('-').map(Number) as [number, number, number]
-  await page.clock.setFixedTime(new TZDate(y, m - 1, d, 15, 0, 0, 0, account))
-  await page.goto('/today')
-  const row = page.locator('[data-day-entry]').filter({ hasText: 'Early call' })
-  const subtle = await page.evaluate(() => {
-    const probe = document.createElement('span')
-    probe.style.color = 'var(--color-subtle)'
-    document.body.append(probe)
-    const c = getComputedStyle(probe).color
-    probe.remove()
-    return c
-  })
-  await expect(row.locator('[data-row-title]')).toHaveCSS('color', subtle)
-  const now = (await page.locator('[data-now-line]').boundingBox())!
-  expect((await row.boundingBox())!.y).toBeLessThan(now.y)
+  const pid = await makeProject(page, '逾期')
+  for (const t of ['改到今天', '改到明天', '改到周一', '另选一天'])
+    await makeTask(page, pid, t, { dueAt: dueAgo(2) })
+  await page.reload()
+  const overdue = block(page, 'Overdue')
+
+  await overdue.getByRole('button', { name: 'Plan “改到明天” for tomorrow' }).click()
+  await expect(rowOf(overdue, '改到明天')).toHaveCount(0)
+  // A plan now, nobody waiting: the deadline goes (FR-079), and tomorrow it is on Planned.
+  const tomorrow = await serverTask(page, pid, '改到明天')
+  expect([tomorrow.dueAt, tomorrow.scheduledOn]).toEqual([null, dayOffset(1)])
+
+  await overdue.getByRole('button', { name: 'Plan “改到今天” for today' }).click()
+  await expect(rowOf(block(page, 'Planned for today'), '改到今天')).toBeVisible()
+  await expect(rowOf(overdue, '改到今天')).toHaveCount(0)
+
+  await overdue.getByRole('button', { name: 'Plan “改到周一” for next Monday' }).click()
+  await expect(rowOf(overdue, '改到周一')).toHaveCount(0)
+  expect((await serverTask(page, pid, '改到周一')).scheduledOn).toBe(nextMondayYmd())
+
+  const later = addDaysYmd(dayOffset(0), 9)
+  await overdue.getByRole('button', { name: 'Plan “另选一天” for another day' }).click()
+  for (let i = 0; i < 2; i++) {
+    const cell = page.getByRole('button', { name: later, exact: true })
+    if (await cell.isVisible()) break
+    await page.getByRole('button', { name: 'Next month' }).click()
+  }
+  await page.getByRole('button', { name: later, exact: true }).click()
+  await expect(overdue).toHaveCount(0)
+  expect((await serverTask(page, pid, '另选一天')).scheduledOn).toBe(later)
 })
 
-test('with nothing timed today there is no now line', async ({ page }) => {
+test('past five overdue, the head moves them all, and All N shows the rest', async ({ page }) => {
   await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '今天随时做', { scheduledOn: dayInZone(await accountZone(page)) })
-  await page.goto('/today')
-  const row = page.locator('li').filter({ has: page.locator('[data-today-row]') })
-  await expect(row).toHaveCount(1)
-  await expect(page.locator('[data-now-line]')).toHaveCount(0)
-  // The untimed rows begin with the word for them.
-  await expect(row.locator('[data-row-lead-text]')).toHaveText('Any time')
+  const pid = await makeProject(page, '一堆')
+  for (let i = 1; i <= 7; i++) await makeTask(page, pid, `逾期${i}`, { dueAt: dueAgo(i) })
+  await page.reload()
+  const overdue = block(page, 'Overdue')
+  await expect(overdue.locator('[data-today-row]')).toHaveCount(5)
+  await overdue.getByRole('button', { name: 'All 7' }).click()
+  await expect(overdue.locator('[data-today-row]')).toHaveCount(7)
+  await overdue.getByRole('button', { name: /^Move all to/ }).click()
+  await page.getByRole('menuitem', { name: 'Tomorrow' }).click()
+  await expect(overdue).toHaveCount(0)
+  for (let i = 1; i <= 7; i++)
+    expect((await serverTask(page, pid, `逾期${i}`)).scheduledOn).toBe(dayOffset(1))
 })
 
-test('a task due today at a time is on the line once, at its time', async ({ page }) => {
-  await registerFreshUser(page)
-  const account = await accountZone(page)
-  const pid = await makeProject(page, 'P')
-  const [y, m, d] = dayInZone(account).split('-').map(Number) as [number, number, number]
-  await makeTask(page, pid, '下午交的', {
-    dueAt: new TZDate(y, m - 1, d, 16, 0, 0, 0, account).toISOString(),
-  })
-  await page.goto('/today')
-  const line = page.getByRole('region', { name: 'Today', exact: true })
-  await expect(line.getByText('下午交的')).toHaveCount(1)
-  await expect(page.getByText('下午交的')).toHaveCount(1)
-  await expect(
-    line.locator('li').filter({ hasText: '下午交的' }).locator('[data-row-lead-text]'),
-  ).toHaveText('16:00')
-  // Something is timed, so the day has a now.
-  await expect(page.locator('[data-now-line]')).toHaveCount(1)
-})
-
-/**
- * NOW MOVES, AND A MEETING IS OVER WHEN IT ENDS. A Today left open keeps its now line on the
- * clock; and at 10:30 the 10:00–11:00 meeting is the one you are in, not one that has gone by.
- * The clock is the test's own, set to the account's today: nothing here rides on the hour the
- * suite happens to run at.
- */
-test('the now line moves with the clock, and a meeting is past only once it has ended', async ({
+test('the timeline: now, the free stretch, the meeting with Join and the timed deadline', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const zone = await accountZone(page)
-  await meetingToday(page, 'Morning sync', '08:00', zone, 60)
-  await meetingToday(page, 'Design review', '10:00', zone, 60)
+  await meetingToday(page, 'Stripe: first screen', '14:00', zone, 45, 'https://zoom.us/j/123')
+  const pid = await makeProject(page, '时间轴')
   const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
-  await page.clock.install({ time: new TZDate(y, m - 1, d, 10, 30, 0, 0, zone) })
-  await page.goto('/today')
+  await makeTask(page, pid, 'Prepare the system design round', {
+    dueAt: new TZDate(y, m - 1, d, 18, 0, 0, 0, zone).toISOString(),
+  })
+  await clockAt(page, 9, 10)
+  await page.reload()
 
-  const tint = (title: string) =>
-    page
-      .locator('[data-day-entry]')
-      .filter({ hasText: title })
-      .locator('[data-row-title]')
-      .evaluate((el) => getComputedStyle(el).color)
-  await expect(page.locator('[data-now-line]')).toContainText('10:30')
-  // Over (08:00–09:00) and under way (10:00–11:00) are not drawn alike.
-  expect(await tint('Design review')).not.toBe(await tint('Morning sync'))
+  const line = page.getByRole('region', { name: 'Timeline of the day' })
+  await expect(line.locator('[data-now-line]')).toContainText('Now, 09:10')
+  await expect(line.locator('[data-free]')).toHaveText('4h 50m free')
+  const meeting = line.locator('[data-timeline-meeting]')
+  await expect(meeting).toContainText('Stripe: first screen')
+  await expect(meeting).toContainText('14:00')
+  await expect(meeting.getByRole('link', { name: 'Join' })).toHaveAttribute(
+    'href',
+    'https://zoom.us/j/123',
+  )
+  const flag = line.locator('[data-timeline-due]')
+  await expect(flag).toContainText('Prepare the system design round')
+  await expect(flag).toContainText('18:00')
+  // The heading says the time too, in figures.
+  await expect(page.locator('[data-now-clock]')).toHaveText('09:10')
+})
 
-  // An hour later, with nothing done on the page: the line has moved, and the review is over.
+test('the now line moves with the clock, and Join goes once the meeting is over', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const zone = await accountZone(page)
+  await meetingToday(page, 'Design review', '10:00', zone, 60, 'https://meet.example/abc')
+  await clockAt(page, 10, 30)
+  await page.reload()
+  const line = page.getByRole('region', { name: 'Timeline of the day' })
+  await expect(line.locator('[data-now-line]')).toContainText('Now, 10:30')
+  // On now: nothing free until it ends.
+  await expect(line.locator('[data-free]')).toHaveCount(0)
+  await expect(line.getByRole('link', { name: 'Join' })).toBeVisible()
   await page.clock.fastForward('01:00:00')
-  await expect(page.locator('[data-now-line]')).toContainText('11:30')
-  await expect.poll(() => tint('Design review')).toBe(await tint('Morning sync'))
+  await expect(line.locator('[data-now-line]')).toContainText('Now, 11:30')
+  await expect(line.getByRole('link', { name: 'Join' })).toHaveCount(0)
 })
 
-/** Several things in progress are a list of rows: at 320px they fit, and nothing scrolls sideways. */
-test('several things in progress fit a 320px phone', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 700 })
+test('the timeline runs 08 to 20 and reaches out to anything earlier', async ({ page }) => {
   await registerFreshUser(page)
-  const p = await apiPost(page, '/projects', { name: 'P' })
-  for (const title of ['第一件在做的', '第二件在做的'])
-    await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
-  await page.goto('/today')
-  await expect(page.locator('[data-doing-title]')).toHaveCount(2)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0)
+  const zone = await accountZone(page)
+  await meetingToday(page, 'Early call', '07:00', zone)
+  await page.reload()
+  const line = page.getByRole('region', { name: 'Timeline of the day' })
+  await expect(line).toContainText('07')
+  await expect(line).toContainText('20')
 })
 
-/**
- * The controls that appear over a row's end on hover sit on an OPAQUE ground: through a
- * translucent one the end of the title is drawn under Pause, both legible at once and neither.
- */
-test('the controls over a hovered row hide the title under them', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 })
+test('the head names the day, its lunar day with its month, and the time', async ({ page }) => {
   await registerFreshUser(page)
-  const p = await apiPost(page, '/projects', { name: 'P' })
-  for (const title of ['一件', '两件'])
-    await apiPost(page, '/tasks', { title, projectId: p.id as string, status: 'in_progress' })
-  await page.goto('/today')
-  const row = page.locator('[data-doing-title]').first()
-  await row.hover()
-  const ground = await page
-    .getByRole('button', { name: /^Pause/ })
-    .first()
-    .evaluate((el) => getComputedStyle(el.parentElement!).backgroundColor)
-  // rgb(...) is opaque; rgba(..., a) with a < 1 is not.
-  expect(ground).toMatch(/^rgb\(/)
+  const today = dayInZone(await accountZone(page))
+  const [, , d] = today.split('-').map(Number) as [number, number, number]
+  const month = new Date(`${today}T12:00:00Z`).toLocaleString('en-GB', {
+    month: 'long',
+    timeZone: 'UTC',
+  })
+  await expect(page.locator('#today-heading')).toContainText(`${month} ${d}`)
+  // "九月十三": the month is said with the day, not the day alone.
+  await expect(page.locator('[data-lunar-day]')).toHaveText(/月/)
+})
+
+test('In progress finishes with its check; the status mark finishes too, and says what it does', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '完成')
+  await makeTask(page, pid, '做完它', { status: 'in_progress' })
+  await makeTask(page, pid, '也做完', { scheduledOn: dayOffset(0) })
+  await page.reload()
+  await page.getByRole('button', { name: 'Mark “做完它” done' }).click()
+  await expect(block(page, 'In progress')).toContainText('None')
+  expect((await serverTask(page, pid, '做完它')).status).toBe('done')
+  await page.getByRole('button', { name: 'Complete “也做完”' }).click()
+  await expect(rowOf(block(page, 'Planned for today'), '也做完')).toHaveCount(0)
+})
+
+test('a row opens its task, and an edit there shows on Today without a reload', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '编辑')
+  await makeTask(page, pid, '旧名字', { scheduledOn: dayOffset(0) })
+  await page.reload()
+  await page.locator('[data-today-row]').filter({ hasText: '旧名字' }).click()
+  await editDetail(page)
+  await page.getByLabel('Title').fill('新名字')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await expect(rowOf(block(page, 'Planned for today'), '新名字')).toBeVisible()
+})
+
+test('a nested task says the task it is under, beside its project’s square', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '外层项目')
+  const parent = await makeTask(page, pid, '父任务')
+  await makeTask(page, pid, '子任务', { scheduledOn: dayOffset(0) }, parent)
+  await page.reload()
+  const path = rowOf(block(page, 'Planned for today'), '子任务').locator('[data-row-path]')
+  await expect(path).toHaveText(/父任务$/)
+  await expect(path.locator('[data-project-square]')).toHaveAttribute('data-project-square', pid)
+})
+
+test('Ready to start offers what waits for nothing and is not on Today already', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '可开始')
+  await makeTask(page, pid, '可以开始的')
+  await makeTask(page, pid, '已经计划的', { scheduledOn: dayOffset(0) })
+  await page.reload()
+  const ready = block(page, 'Ready to start')
+  await expect(ready).toContainText('可以开始的')
+  await expect(ready).not.toContainText('已经计划的')
+  await ready.getByRole('button', { name: 'Start “可以开始的”' }).click()
+  await expect(rowOf(block(page, 'In progress'), '可以开始的')).toBeVisible()
+  await expect(ready).not.toContainText('可以开始的')
+})
+
+test('This week counts what each project closed, and says when one has gone quiet', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '本周')
+  await makeTask(page, pid, '做完的', { status: 'done' })
+  await makeTask(page, pid, '还开着的')
+  await page.reload()
+  const week = block(page, 'This week')
+  const row = week.locator(`[data-week-row="${pid}"]`)
+  await expect(row.getByLabel('1 closed this week')).toBeVisible()
+  // The inbox is not a line of work.
+  await expect(week).not.toContainText('Inbox')
+})
+
+test('a failed read is said in its block, and the rest of the page keeps working', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.route('**/api/v1/tasks?view=today', (r) => r.fulfill({ status: 500, body: '{}' }))
+  await page.reload()
+  await expect(page.getByText('Couldn’t load the tasks for today.')).toBeVisible()
+  await expect(block(page, 'Birthdays')).toBeVisible()
 })
 
 test('an open Today asks the server again when the day turns', async ({ page }) => {
@@ -468,7 +369,31 @@ test('an open Today asks the server again when the day turns', async ({ page }) 
 
   const asked = (view: string) =>
     page.waitForRequest((r) => new URL(r.url()).searchParams.get('view') === view)
-  const again = Promise.all([asked('today'), asked('completed'), asked('movement')])
+  const again = Promise.all([asked('today'), asked('ready'), asked('movement')])
   await page.clock.runFor(5_000)
   await again
+})
+
+test('on a narrow screen the rows keep the title and drop the path and mark', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '窄屏')
+  await makeTask(page, pid, '窄屏上一条很长很长的任务标题也不应该把页面撑宽', { dueAt: dueAgo(2) })
+  await page.reload()
+  const row = page.locator('[data-today-row]').first()
+  await expect(row).toBeVisible()
+  await expect(page.locator('[data-row-path]').first()).toBeHidden()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
+test('a birthday whose reminder has come round is listed', async ({ page }) => {
+  await registerFreshUser(page)
+  const tomorrow = dayOffset(1)
+  const [, m, d] = tomorrow.split('-').map(Number) as [number, number, number]
+  await apiPost(page, '/people', {
+    name: '外婆',
+    birthday: { calendar: 'solar', month: m, day: d, year: null, leapMonth: false, remindLead: 7 },
+  })
+  await page.reload()
+  await expect(block(page, 'Birthdays').locator('[data-birthday-row]')).toContainText('外婆')
 })
