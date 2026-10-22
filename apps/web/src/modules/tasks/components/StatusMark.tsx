@@ -1,5 +1,5 @@
 import type { TaskStatus } from '@ctws/contracts'
-import { isFinished, STATUS_LABEL } from '../logic/status'
+import { STATUS_LABEL } from '../logic/status'
 
 /**
  * A task's status by shape, never by hue alone. Every part is always drawn and fades or scales in,
@@ -8,10 +8,9 @@ import { isFinished, STATUS_LABEL } from '../logic/status'
 export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 16 | 20 }) {
   const half = status === 'in_progress'
   const solid = status === 'done'
-  // Only a settled task recedes; backlog is still open. What is being worked on is green, as on
-  // the status's own badge (artboards 1, 12).
-  const live = !isFinished(status)
-  const tone = half ? 'text-go' : live ? 'text-ink' : 'text-muted'
+  // What is being worked on is green, as its block's badge is; every other status is muted
+  // (artboards 1, 12), and its shape says which it is.
+  const tone = half ? 'text-go' : 'text-muted'
   return (
     <svg
       role="img"

@@ -140,8 +140,9 @@ const rollupResponse = z.object({
 export type RollupResponse = z.infer<typeof rollupResponse>
 
 /**
- * A parent's direct children, counted for its progress square (artboard 32): how many are done,
- * how many count (all but the cancelled), and how many of those wait in the backlog.
+ * A parent's leaves, counted for its progress square and its "1/4" (FR-051, artboard 32): how
+ * many are done, how many count (neither in the backlog nor cancelled), and how many wait in the
+ * backlog.
  */
 const childCounts = z.object({
   done: z.number().int().min(0),

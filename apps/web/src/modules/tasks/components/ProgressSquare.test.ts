@@ -13,11 +13,11 @@ describe('fillOf', () => {
     expect(fillOf(counts(9, 10))).toBe(75)
   })
 
-  it('says how it ended: all done, all cancelled, all still in the backlog', () => {
+  it('says how it ended: all done, all cancelled, all the rest in the backlog', () => {
     expect(fillOf(counts(4, 4))).toBe('check')
     expect(fillOf(counts(0, 0))).toBe('x')
-    expect(fillOf(counts(0, 3, 3))).toBe('dash')
-    // One out of the backlog and it is to do again: the edge is drawn whole.
-    expect(fillOf(counts(0, 3, 2))).toBe(0)
+    expect(fillOf(counts(0, 0, 3))).toBe('dash')
+    // The backlog does not count: two of the four counted are done, with two more waiting.
+    expect(fillOf(counts(2, 4, 2))).toBe(50)
   })
 })

@@ -260,7 +260,7 @@ test('Done carries the rail, and a search result its project', async ({ page }) 
 
 // ---------------------------------------------------------------------------- the status marker
 
-test('the status marker is the heaviest mark on the row, and only in progress has a hue', async ({
+test('the status marker is the row’s heaviest mark, and only in progress has a hue', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -275,30 +275,27 @@ test('the status marker is the heaviest mark on the row, and only in progress ha
   for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(16)
 
-  // An open task's mark is drawn in the body colour, and a settled one stays muted; what is being
-  // worked on is green, as its block's badge is (artboards 1, 12). The shapes still carry the
-  // meaning: the colour is said twice, never alone.
+  // What is being worked on is green, as its block's badge is; every other mark is muted
+  // (artboards 1, 12). The shapes carry the meaning: the colour is said twice, never alone.
   const colourOf = (l: ReturnType<typeof mark>) => l.evaluate((el) => getComputedStyle(el).color)
-  const bodyColour = await page
-    .locator('[data-today-row]')
-    .first()
-    .evaluate((el) => getComputedStyle(el).color)
-  for (const name of ['To do', 'Backlog']) expect(await colourOf(mark(name)), name).toBe(bodyColour)
-  const go = await page.evaluate(() => {
-    const probe = document.createElement('span')
-    probe.style.color = 'var(--color-go)'
-    document.body.append(probe)
-    const colour = getComputedStyle(probe).color
-    probe.remove()
-    return colour
-  })
-  expect(await colourOf(mark('In progress'))).toBe(go)
+  const token = (name: string) =>
+    page.evaluate((n) => {
+      const probe = document.createElement('span')
+      probe.style.color = `var(--color-${n})`
+      document.body.append(probe)
+      const colour = getComputedStyle(probe).color
+      probe.remove()
+      return colour
+    }, name)
+  const muted = await token('muted')
+  for (const name of ['To do', 'Backlog']) expect(await colourOf(mark(name)), name).toBe(muted)
+  expect(await colourOf(mark('In progress'))).toBe(await token('go'))
 
-  // A finished one recedes. (On Done, where every row is settled.)
+  // A finished one is muted too, and told by its filled shape. (On Done, where every row is.)
   await makeTask(page, pid, '收工', { status: 'done' })
   await page.goto('/review?view=done')
   await expect(page.getByText('收工')).toBeVisible()
-  expect(await colourOf(mark('Done'))).not.toBe(bodyColour)
+  expect(await colourOf(mark('Done'))).toBe(muted)
   expect(await mark('Done').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 })
 

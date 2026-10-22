@@ -5,9 +5,8 @@ import { STATUS_LABEL } from '../logic/status'
 type Fill = 0 | 25 | 50 | 75 | 'check' | 'x' | 'dash'
 
 export function fillOf({ done, counted, backlog }: ChildCounts): Fill {
-  if (counted === 0) return 'x'
+  if (counted === 0) return backlog > 0 ? 'dash' : 'x'
   if (done === counted) return 'check'
-  if (backlog === counted) return 'dash'
   const share = done / counted
   return share === 0 ? 0 : share < 0.5 ? 25 : share < 0.75 ? 50 : 75
 }
@@ -20,9 +19,10 @@ const TONE: Partial<Record<TaskStatus, string>> = { in_progress: 'text-go', todo
 
 /**
  * A parent's progress where a leaf has its status (FR-043, artboard 32): a rounded square filled
- * from the bottom by the share of its children that is done, in quarter steps; a check when all
- * are done, a cross when all were cancelled, a dashed edge while all wait in the backlog. The same
- * size as the status mark beside it: 16 in a row, 20 in a title.
+ * from the bottom by the share of its leaves that is done (of those neither in the backlog nor
+ * cancelled), in quarter steps; a check when all are done, a cross when all were cancelled, a
+ * dashed edge while the rest wait in the backlog. The same size as the status mark beside it: 16
+ * in a row, 20 in a title.
  */
 export function ProgressSquare({
   status,

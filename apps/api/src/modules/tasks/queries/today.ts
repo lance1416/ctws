@@ -43,10 +43,7 @@ export async function listToday(
         p.rank as project_rank,
         parent.title as "parentTitle",
         ${pathSql('t')} as path,
-        case
-          when kids.total > 0
-            then json_build_object('done', kids.done, 'counted', kids.counted, 'backlog', kids.backlog)
-        end as children,
+        kids.total > 0 as is_parent,
         case
           when t.due_at is not null and t.due_at < b.t0 then 'overdue'
           when t.status = 'in_progress' and kids.total = 0 then 'in_progress'
@@ -57,13 +54,7 @@ export async function listToday(
       join bounds b on true
       left join tasks parent on parent.id = t.parent_id
       cross join lateral (
-        select
-          count(*) as total,
-          count(*) filter (where c.status = 'done') as done,
-          count(*) filter (where c.status <> 'cancelled') as counted,
-          count(*) filter (where c.status = 'backlog') as backlog
-        from tasks c
-        where c.parent_id = t.id and c.deleted_at is null
+        select count(*) as total from tasks c where c.parent_id = t.id and c.deleted_at is null
       ) kids
       where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
         and p.archived_at is null
@@ -79,7 +70,28 @@ export async function listToday(
           )
         )
     )
-    select * from picked
+    -- A parent's leaves, walked only for the parents picked: done, counted (neither in the backlog
+    -- nor cancelled) and in the backlog, the one measure its square and its "1/4" share (FR-051).
+    select
+      picked.*,
+      case when picked.is_parent then (
+        with recursive under as (
+          select c.id, c.status from tasks c where c.parent_id = picked.id and c.deleted_at is null
+          union all
+          select g.id, g.status from tasks g join under on g.parent_id = under.id
+          where g.deleted_at is null
+        )
+        select json_build_object(
+          'done', count(*) filter (where under.status = 'done'),
+          'counted', count(*) filter (where under.status not in ('backlog', 'cancelled')),
+          'backlog', count(*) filter (where under.status = 'backlog')
+        )
+        from under
+        where not exists (
+          select 1 from tasks k where k.parent_id = under.id and k.deleted_at is null
+        )
+      ) end as children
+    from picked
     order by
       case segment when 'overdue' then 0 when 'today' then 1 else 2 end,
       -- Within a segment only that segment's key is non-null.

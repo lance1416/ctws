@@ -411,6 +411,10 @@ describe('a parent by its deadline', () => {
     const amazon = await createTask(ctx, pid, 'Amazon')
     const sde = await createTask(ctx, pid, 'SDE II', amazon)
     const round = await createTask(ctx, pid, 'System design round', amazon)
+    // A parent under the parent: its leaves are Amazon's too, and it is not one itself.
+    const offer = await createTask(ctx, pid, 'Offer', amazon)
+    await createTask(ctx, pid, 'Negotiate', offer)
+    await createTask(ctx, pid, 'Sign', offer)
     const later = await createTask(ctx, pid, 'Due tomorrow')
     await createTask(ctx, pid, 'under tomorrow', later)
     const missed = await createTask(ctx, pid, 'Due yesterday')
@@ -419,7 +423,7 @@ describe('a parent by its deadline', () => {
     await schedule(ctx, amazon, { dueAt: '2026-10-22T17:00:00Z' })
     await schedule(ctx, later, { dueAt: '2026-10-23T17:00:00Z' })
     await schedule(ctx, missed, { dueAt: '2026-10-21T17:00:00Z' })
-    // One child started and one done: the parent is in progress, and halfway.
+    // One leaf started and one done: the parent is in progress.
     await status(ctx, sde, 'in_progress')
     await status(ctx, round, 'done')
 
@@ -441,7 +445,7 @@ describe('a parent by its deadline', () => {
     expect(row(amazon)).toMatchObject({
       status: 'in_progress',
       segment: 'today',
-      children: { done: 1, counted: 2, backlog: 0 },
+      children: { done: 1, counted: 4, backlog: 0 },
     })
     expect(row(sde)).toMatchObject({ segment: 'in_progress', children: null })
     expect(row(missed)).toMatchObject({
