@@ -80,6 +80,8 @@ export async function readOccurrence(
 /**
  * A series' next occurrence within a year of `today`, else its latest one in the year before:
  * a link can name a meeting long over, and a one-off in the past is the commonest such link.
+ * Further off than either year, a one-off still opens, and so does a series yet to start: their
+ * first occurrence is then the only or the next one.
  */
 export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
   queryOptions({
@@ -89,8 +91,26 @@ export const seriesQuery = (meetingId: MeetingId | null, today: string) =>
         ? skipToken
         : async ({ signal }) =>
             (await nearestOccurrence(meetingId, { from: today, order: 'asc' }, signal)) ??
-            nearestOccurrence(meetingId, { to: today, order: 'desc' }, signal),
+            (await nearestOccurrence(meetingId, { to: today, order: 'desc' }, signal)) ??
+            farOccurrence(meetingId, today, signal),
   })
+
+/** The first occurrence of a one-off, or of a series that starts after `today`; else null. */
+async function farOccurrence(
+  id: MeetingId,
+  today: string,
+  signal: AbortSignal,
+): Promise<MeetingOccurrence | null> {
+  let series: MeetingSeries
+  try {
+    series = await call(api.meetings.series, { params: { id } }, { signal })
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null
+    throw e
+  }
+  if (series.rrule !== null && series.startsLocal.slice(0, 10) <= today) return null
+  return readOccurrence(id, series.startsLocal, signal)
+}
 
 /** A series' first occurrence from one end of a window, or null when it has none or is gone. */
 async function nearestOccurrence(
