@@ -306,3 +306,39 @@ test('the delete question still asks when counting what goes with the project fa
   await expect(ask).toContainText('Delete Alpha? Everything in it goes.')
   await expect(ask.getByRole('button', { name: /^Delete/ })).toBeEnabled()
 })
+
+test('the tree says it is reading, or that it could not, and is never an empty project then', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Slow')
+  await makeTask(page, pid, 'Somewhere')
+  const tree = page.getByRole('region', { name: 'Tasks' })
+
+  // BUG-039: held back, it draws grey rows under its column names, and no "New task" yet.
+  let release!: () => void
+  const held = new Promise<void>((resolve) => (release = resolve))
+  await page.route('**/api/v1/tasks?projectId=*', async (route) => {
+    await held
+    await route.continue()
+  })
+  await page.goto(`/projects/${pid}`)
+  await expect(tree.locator('[aria-busy="true"]')).toBeVisible()
+  await expect(tree.getByRole('textbox', { name: 'New task' })).toHaveCount(0)
+  await expect(page.getByText('No tasks in this project yet')).toHaveCount(0)
+  release()
+  await expect(tree.getByRole('listitem').filter({ hasText: 'Somewhere' })).toBeVisible()
+  await page.unroute('**/api/v1/tasks?projectId=*')
+
+  // Failing, it says so in its block with a way to try again, which brings the rows back.
+  let failing = true
+  await page.route('**/api/v1/tasks?projectId=*', (route) =>
+    failing ? route.fulfill({ status: 500, body: '{}' }) : route.continue(),
+  )
+  await page.reload()
+  await expect(tree.getByRole('alert')).toHaveText('Couldn’t load the tasks.')
+  await expect(tree.getByRole('textbox', { name: 'New task' })).toHaveCount(0)
+  failing = false
+  await tree.getByRole('button', { name: 'Try again' }).click()
+  await expect(tree.getByRole('listitem').filter({ hasText: 'Somewhere' })).toBeVisible()
+})

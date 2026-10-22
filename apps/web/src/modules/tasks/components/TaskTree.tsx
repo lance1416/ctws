@@ -9,6 +9,8 @@ import {
 } from '@ctws/contracts'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { useDelayed } from '../../../platform/time/useDelayed'
+import { BlockFailed } from '../../../platform/ui/Block'
 import { EMPTY_ACTION, EmptyState } from '../../../platform/ui/EmptyState'
 import { useProjects } from '../../../shell/projects'
 import { projectTasksQuery } from '../api'
@@ -202,6 +204,16 @@ export function TaskTree({
     />
   )
 
+  // Reading or not read: the tree's own block says so, and never draws an empty project with its
+  // "New task" (FR-031, FR-032, BUG-039).
+  if (tasks.isError)
+    return (
+      <div className="mt-2 rounded-block border border-line bg-panel">
+        <BlockFailed what="tasks" onRetry={() => void tasks.refetch()} />
+      </div>
+    )
+  if (tasks.isPending) return <TreeLoading />
+
   return (
     <>
       <SelectionBar
@@ -213,11 +225,6 @@ export function TaskTree({
         onClear={picked.clear}
         busy={picked.busy}
       />
-      {tasks.isError && (
-        <p role="alert" className="mt-4 text-ui text-stop-t">
-          Couldn't load tasks
-        </p>
-      )}
       {error && (
         <p role="alert" className="mt-4 text-ui text-stop-t">
           {error}
@@ -303,5 +310,37 @@ export function TaskTree({
         />
       )}
     </>
+  )
+}
+
+/** The tree's block in grey rows under its column names, after the first 300 ms (FR-031). */
+function TreeLoading() {
+  const shown = useDelayed()
+  if (!shown) return null
+  return (
+    <div aria-busy="true" className="mt-2 rounded-block border border-line bg-panel">
+      <div
+        aria-hidden="true"
+        className={`${TREE_ROW} min-h-7.5 border-b border-line text-meta text-muted`}
+      >
+        <span>Name</span>
+        <span className={WIDE_ONLY}>Stage</span>
+        <span className={WIDE_ONLY}>Progress</span>
+        <span>Due</span>
+      </div>
+      <div className="flex flex-col py-1">
+        {[62, 48, 55, 40].map((width, i) => (
+          <div key={i} className={TREE_ROW}>
+            <span className="flex items-center gap-2.5">
+              <span className="size-4 shrink-0 rounded-full bg-line" />
+              <span className="h-2.5 rounded-key bg-line" style={{ width: `${width}%` }} />
+            </span>
+            <span className={WIDE_ONLY} />
+            <span className={`h-2.5 w-12 rounded-key bg-line opacity-60 ${WIDE_ONLY}`} />
+            <span className="h-2.5 w-10 rounded-key bg-line opacity-60" />
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
