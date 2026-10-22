@@ -22,6 +22,7 @@ import {
   listTaskCalendar,
   listToday,
   projectBoard,
+  subtreeRollups,
   searchTasks,
   taskDependencyLists,
 } from './queries'
@@ -36,13 +37,21 @@ export const taskRoutes: FastifyPluginAsyncZod = async (app) => {
 
     on(api.tasks.today, async (req) => {
       const user = currentUser(req)
-      const rows = await listToday(app.db, user.workspaceId, user.timezone, app.clock())
+      const now = app.clock()
+      const rows = await listToday(app.db, user.workspaceId, user.timezone, now)
       const blockers = await blockersFor(
         app.db,
         user.workspaceId,
         rows.map((t) => t.id),
       )
-      return { tasks: rows.map((t) => toTodayResponse(t, blockers)) }
+      const rollups = await subtreeRollups(
+        app.db,
+        user.workspaceId,
+        rows.filter((t) => t.isParent).map((t) => t.id),
+        user.timezone,
+        now,
+      )
+      return { tasks: rows.map((t) => toTodayResponse(t, blockers, rollups)) }
     }),
 
     on(api.tasks.ready, async (req) => {

@@ -217,6 +217,8 @@ export const todayTaskResponse = taskResponse.extend({
   segment: z.enum(TODAY_SEGMENTS),
   /** Unfinished blockers. */
   blockedBy: z.array(dependencyRef),
+  /** A parent's rollup, as its tree shows it: a parent due today is one row (FR-043). Null on a leaf. */
+  rollup: rollupResponse.nullable(),
 })
 export type TodayTaskResponse = z.infer<typeof todayTaskResponse>
 

@@ -2,7 +2,7 @@ import type { ProjectId, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { listToday } from '../../../src/modules/tasks/queries/today'
-import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
+import { appWithUser, type Harness, secondUser, setupWith } from '../../helpers/harness'
 import { createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
@@ -382,6 +382,71 @@ describe('listToday timezone and DST', () => {
 
     const rows = await listToday(shared.db, workspaceId, tz, new Date(now))
     expect(rows.find((r) => r.id === id)?.segment ?? 'absent').toBe(expected)
+  })
+})
+
+/**
+ * A PARENT'S OWN DEADLINE (FR-043): due today, the parent is one row of today's, with the rollup
+ * its tree shows; on any other day it is not on Today's lists. Through the route, on a fixed clock,
+ * because the rollup is the route's.
+ */
+describe('a parent due today', () => {
+  // 09:10 on Thursday, October 22, in London.
+  const NOW = new Date('2026-10-22T08:10:00Z')
+  const status = async (ctx: Harness, id: string, to: string) => {
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${id}`,
+      headers: ctx.authed,
+      payload: { status: to },
+    })
+    expect(res.statusCode).toBe(200)
+  }
+
+  it('is one row of today, with its rollup, and only on its own day', async () => {
+    const ctx = await setupWith(cleanups, undefined, {
+      clock: () => NOW,
+      timezone: 'Europe/London',
+    })
+    const pid = await createProject(ctx, 'Job hunt')
+    const amazon = await createTask(ctx, pid, 'Amazon')
+    const sde = await createTask(ctx, pid, 'SDE II', amazon)
+    const round = await createTask(ctx, pid, 'System design round', amazon)
+    const later = await createTask(ctx, pid, 'Due tomorrow')
+    await createTask(ctx, pid, 'under tomorrow', later)
+    const missed = await createTask(ctx, pid, 'Due yesterday')
+    await createTask(ctx, pid, 'under yesterday', missed)
+    // 18:00 today in London, then tomorrow's and yesterday's.
+    await schedule(ctx, amazon, { dueAt: '2026-10-22T17:00:00Z' })
+    await schedule(ctx, later, { dueAt: '2026-10-23T17:00:00Z' })
+    await schedule(ctx, missed, { dueAt: '2026-10-21T17:00:00Z' })
+    // One child started and one done: the parent is in progress, and halfway.
+    await status(ctx, sde, 'in_progress')
+    await status(ctx, round, 'done')
+
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/tasks?view=today',
+      headers: ctx.authed,
+    })
+    expect(res.statusCode).toBe(200)
+    const rows = res.json().tasks as {
+      id: string
+      status: string
+      segment: string
+      rollup: { progress: number | null; inProgress: number; overdue: number } | null
+    }[]
+    const row = (id: string) => rows.find((r) => r.id === id)
+
+    // Today's, though it is in progress: its status is its children's, and SDE II is that row.
+    expect(row(amazon)).toMatchObject({
+      status: 'in_progress',
+      segment: 'today',
+      rollup: { progress: 0.5, inProgress: 1, overdue: 0 },
+    })
+    expect(row(sde)).toMatchObject({ segment: 'in_progress', rollup: null })
+    expect(row(later)).toBeUndefined()
+    expect(row(missed)).toBeUndefined()
   })
 })
 

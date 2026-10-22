@@ -1,22 +1,26 @@
 import { todayTaskResponse, type WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
-import type { z } from 'zod'
+import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { dayStart, localDay } from '../../../platform/db/time'
 import { isLeafSql, pathRow, pathSql, TASK_COLUMNS } from './rows'
 import { taskOpenSql, visibleTasks } from './scope'
 
-const todayRow = pathRow.extend({ segment: todayTaskResponse.shape.segment })
+const todayRow = pathRow.extend({
+  segment: todayTaskResponse.shape.segment,
+  isParent: z.boolean(),
+})
 export type TodayTask = z.output<typeof todayRow>
 
 /**
  * Open LEAVES in unarchived projects that are in progress, planned up to today, or due before
  * tomorrow. Each falls in exactly one segment so no row shows twice: overdue wins, then in
  * progress (what is being done stays there, due today or not, FR-079), then today's plans and
- * deadlines. A plan from an earlier day stays until it is done. A parent never shows: its
- * status is its children's, and the child that is in progress is the row (FR-037). A parent's
- * deadline is its own (FR-043), but it is the calendar that shows it, not Today's list.
+ * deadlines. A plan from an earlier day stays until it is done.
+ *
+ * A parent shows only when its own deadline is today (FR-043), as one row of today's: its status
+ * is its children's, and the child that is in progress is that row (FR-037).
  */
 export async function listToday(
   q: Queryable,
@@ -38,9 +42,10 @@ export async function listToday(
         p.rank as project_rank,
         parent.title as "parentTitle",
         ${pathSql('t')} as path,
+        not ${isLeafSql('t')} as "isParent",
         case
           when t.due_at is not null and t.due_at < b.t0 then 'overdue'
-          when t.status = 'in_progress' then 'in_progress'
+          when t.status = 'in_progress' and ${isLeafSql('t')} then 'in_progress'
           else 'today'
         end as segment
       from tasks t
@@ -50,11 +55,16 @@ export async function listToday(
       where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
         and p.archived_at is null
         and ${taskOpenSql('t')}
-        and ${isLeafSql('t')}
         and (
-          (t.due_at is not null and t.due_at < b.t1)
-          or (t.scheduled_on is not null and t.scheduled_on <= b.today)
-          or t.status = 'in_progress'
+          (
+            ${isLeafSql('t')}
+            and (
+              (t.due_at is not null and t.due_at < b.t1)
+              or (t.scheduled_on is not null and t.scheduled_on <= b.today)
+              or t.status = 'in_progress'
+            )
+          )
+          or (not ${isLeafSql('t')} and t.due_at >= b.t0 and t.due_at < b.t1)
         )
     )
     select * from picked

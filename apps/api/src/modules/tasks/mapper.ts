@@ -8,6 +8,7 @@ import type {
   TaskResponse,
   TodayTaskResponse,
 } from '@ctws/contracts'
+import type { Rollup } from '@ctws/core'
 import { isoOrNull } from '../../platform/values'
 import { dayEntry } from '../../shell/calendar'
 import type { CalendarRow, CompletedTask, ReadyTask, SearchTask, TodayTask } from './queries'
@@ -35,6 +36,7 @@ export function toTaskResponse(t: Task): TaskResponse {
 export function toTodayResponse(
   t: TodayTask,
   blockers: Map<TaskId, DependencyRef[]>,
+  rollups: Map<TaskId, Rollup>,
 ): TodayTaskResponse {
   return {
     ...toTaskResponse(t),
@@ -43,6 +45,7 @@ export function toTodayResponse(
     path: t.path,
     segment: t.segment,
     blockedBy: blockers.get(t.id) ?? [],
+    rollup: t.isParent ? (rollups.get(t.id) ?? null) : null,
   }
 }
 
