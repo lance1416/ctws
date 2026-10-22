@@ -5,6 +5,7 @@ import { liveUnder, type Scope, within } from '../../../platform/db/scope'
 import { ident, sqlValues } from '../../../platform/db/sql'
 import { inLiveProject, projectScope } from '../../../shell/projects'
 import { tasks, type Task } from '../tables'
+import { isLeafSql } from './rows'
 import { NotFound } from '../../../platform/errors'
 
 /** How a raw query names the task table and the project table joined to it: `t` and `p`. */
@@ -30,8 +31,9 @@ export const taskFinishedSql = (task: string): SQL => sql`${ident(task)}.status 
 export const taskOpenSql = (task: string): SQL => sql`${ident(task)}.status not in (${FINISHED})`
 
 /**
- * How many live open tasks the project `projectId` names has. The project list correlates it
- * through the literal `projects.id`: a drizzle column would render unqualified.
+ * How many live open leaves the project `projectId` names has: a parent organises the work under
+ * it, and is not one more thing open (FR-037). The project list correlates it through the literal
+ * `projects.id`: a drizzle column would render unqualified.
  */
 export const openTaskCountSql = (projectId: SQL = sql`projects.id`) =>
   sql<number>`(
@@ -39,6 +41,7 @@ export const openTaskCountSql = (projectId: SQL = sql`projects.id`) =>
     where open_t.project_id = ${projectId}
       and open_t.deleted_at is null
       and ${taskOpenSql('open_t')}
+      and ${isLeafSql('open_t')}
   )`.mapWith(Number)
 
 const byId = (q: Queryable, workspaceId: WorkspaceId, id: TaskId) =>

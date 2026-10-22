@@ -471,12 +471,13 @@ describe('project open-task counts', () => {
     expect(res.statusCode).toBe(200)
   }
 
-  it('counts every task that is not done, cancelled or deleted, at any depth', async () => {
+  it('counts every leaf that is not done, cancelled or deleted, at any depth', async () => {
     const ctx = await setup()
     const a = await createProject(ctx, 'A')
     const b = await createProject(ctx, 'B')
 
-    // Two roots, one child of the first: depth must not change the count.
+    // Two roots, one child of the first: depth must not change the count, and the first, a
+    // parent now, is not one more open thing (FR-037).
     const open1 = await createTask(ctx, a, 'open 1')
     await createTask(ctx, a, 'open child', open1)
     await createTask(ctx, a, 'open 2')
@@ -496,7 +497,7 @@ describe('project open-task counts', () => {
     // A task in the OTHER project, so the subquery cannot be counting the whole workspace.
     await createTask(ctx, b, 'elsewhere')
 
-    expect(await listed(ctx)).toEqual({ Inbox: 0, A: 3, B: 1 })
+    expect(await listed(ctx)).toEqual({ Inbox: 0, A: 2, B: 1 })
   })
 
   it('follows a status change back and forth', async () => {
