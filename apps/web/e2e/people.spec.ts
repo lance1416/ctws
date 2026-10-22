@@ -581,10 +581,14 @@ test('a very long link is truncated, and the pane does not widen at all', async 
   await expect(pane.getByText('sites.google.com')).toBeVisible()
   expect((await pane.boundingBox())!.width).toBe(narrow)
 
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  )
-  expect(overflow).toBeLessThanOrEqual(0)
+  // Read once the pane has settled: mid-way through opening the page can be wider for a frame.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+    )
+    .toBeLessThanOrEqual(0)
 
   // Measure the address itself: the pane can hold its width by overflowing while the text runs past
   // its cell.
