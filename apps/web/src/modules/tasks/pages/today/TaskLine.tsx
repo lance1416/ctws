@@ -5,7 +5,7 @@ import { DoneIcon, FlagIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, useEveryProject } from '../../../../shell/projects'
 import { ProgressSquare } from '../../components/ProgressSquare'
 import { StatusButton } from '../../components/StatusControls'
-import { SavedMark } from '../../components/TaskRowParts'
+import { SavedMark, WaitingBadge } from '../../components/TaskRowParts'
 import { blockedLabel } from '../../logic/blockedLabel'
 import { toggleDoneTarget } from '../../logic/status'
 import { dueMark } from '../../logic/todayMarks'
@@ -104,13 +104,14 @@ export function TaskLine({
       {t.children ? (
         <ProgressSquare status={t.status} children={t.children} />
       ) : (
-        <span className="-m-1.5 flex">
+        <span className="relative -m-1.5 flex">
           <StatusButton
             status={t.status}
             title={t.title}
             size={16}
             onClick={() => onStatus(toggleDoneTarget(t.status))}
           />
+          {blocked && <WaitingBadge />}
         </span>
       )}
       <button

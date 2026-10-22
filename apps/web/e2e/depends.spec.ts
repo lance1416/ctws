@@ -44,6 +44,8 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   // PRESENT, and its Due column says it is waiting -- a list that drops tasks cannot be trusted.
   await expect(row(page, '发 v0.8.0')).toBeVisible()
   await expect(row(page, '发 v0.8.0').locator('[data-row-due]')).toHaveText('Waiting')
+  // And its mark wears the lock on its corner (FR-041).
+  await expect(row(page, '发 v0.8.0').locator('[data-waiting-badge]')).toBeVisible()
 
   // Finishing the blocker is the only write. Nothing touches the waiting task.
   await openPane(page, '跑通 CI')
@@ -54,6 +56,7 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
 
   await expect(row(page, '发 v0.8.0').locator('[data-row-due="waiting"]')).toHaveCount(0)
   await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).not.toHaveAttribute('title', /./)
+  await expect(row(page, '发 v0.8.0').locator('[data-waiting-badge]')).toHaveCount(0)
 })
 
 test('a dependency is added by searching, and it reaches into another project', async ({

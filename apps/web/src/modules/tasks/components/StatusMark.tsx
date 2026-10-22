@@ -8,9 +8,9 @@ import { STATUS_LABEL } from '../logic/status'
 export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 16 | 20 }) {
   const half = status === 'in_progress'
   const solid = status === 'done'
-  // What is being worked on is green, as its block's badge is; every other status is muted
-  // (artboards 1, 12), and its shape says which it is.
-  const tone = half ? 'text-go' : 'text-muted'
+  // Artboard 1: what is being worked on is green, what waits to be started muted, and the backlog
+  // and what is settled subtle; the shape says which it is as well.
+  const tone = half ? 'text-go' : status === 'todo' ? 'text-muted' : 'text-subtle'
   return (
     <svg
       role="img"

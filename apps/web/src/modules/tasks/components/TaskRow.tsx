@@ -11,11 +11,11 @@ import { treeDue, type TreeDue } from '../logic/tree/treeDue'
 import { useTimeZone } from '../../../shell/auth'
 import {
   INDENT_PX,
-  NotesMark,
   opensOnClick,
   OVER_ROW,
   SavedMark,
   TREE_ROW,
+  WaitingBadge,
   WIDE_ONLY,
 } from './TaskRowParts'
 import { ProgressSquare } from './ProgressSquare'
@@ -73,7 +73,6 @@ export function TaskRow({
   const title = task?.title ?? ''
   const status = task?.status ?? 'todo'
   const dueAt = task?.dueAt ?? null
-  const hasNotes = (task?.notes ?? '') !== ''
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   })
@@ -167,13 +166,14 @@ export function TaskRow({
             <ProgressSquare status={status} children={counts} />
           </span>
         ) : (
-          <span className="-m-1.5 flex shrink-0">
+          <span className="relative -m-1.5 flex shrink-0">
             <StatusButton
               status={status}
               title={title}
               size={16}
               onClick={() => on.setStatus(toggleDoneTarget(status))}
             />
+            {blocked && !settled && <WaitingBadge />}
           </span>
         )}
         <span
@@ -189,11 +189,6 @@ export function TaskRow({
         {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
         {selected && <span className="sr-only">Selected</span>}
         {blocked && <span className="sr-only">, {blocked}</span>}
-        {hasNotes && (
-          <span className="flex shrink-0 items-center text-subtle">
-            <NotesMark />
-          </span>
-        )}
       </span>
 
       <span data-row-stage className={`flex min-w-0 ${WIDE_ONLY}`}>

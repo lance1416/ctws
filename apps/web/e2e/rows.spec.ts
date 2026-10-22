@@ -264,8 +264,8 @@ test('the status marker is the row’s heaviest mark, and only in progress has a
   for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(16)
 
-  // What is being worked on is green, as its block's badge is; every other mark is muted
-  // (artboards 1, 12). The shapes carry the meaning: the colour is said twice, never alone.
+  // Artboard 1: what is being worked on is green, what waits to be started muted, the backlog
+  // subtle. The shapes carry the meaning: the colour is said twice, never alone.
   const colourOf = (l: ReturnType<typeof mark>) => l.evaluate((el) => getComputedStyle(el).color)
   const token = (name: string) =>
     page.evaluate((n) => {
@@ -276,15 +276,16 @@ test('the status marker is the row’s heaviest mark, and only in progress has a
       probe.remove()
       return colour
     }, name)
-  const muted = await token('muted')
-  for (const name of ['To do', 'Backlog']) expect(await colourOf(mark(name)), name).toBe(muted)
+  const subtle = await token('subtle')
+  expect(await colourOf(mark('To do'))).toBe(await token('muted'))
+  expect(await colourOf(mark('Backlog'))).toBe(subtle)
   expect(await colourOf(mark('In progress'))).toBe(await token('go'))
 
-  // A finished one is muted too, and told by its filled shape. (On Done, where every row is.)
+  // A finished one is subtle, as the backlog, and told by its filled shape. (On Done.)
   await makeTask(page, pid, '收工', { status: 'done' })
   await page.goto('/review?view=done')
   await expect(page.getByText('收工')).toBeVisible()
-  expect(await colourOf(mark('Done'))).toBe(muted)
+  expect(await colourOf(mark('Done'))).toBe(subtle)
   expect(await mark('Done').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 })
 

@@ -1,4 +1,5 @@
 import type { MouseEvent, ReactNode } from 'react'
+import { LockIcon } from '../../../platform/ui/icons'
 
 /** The row parts only the task lists use; the shared anatomy is `shell/rows/RowParts`. */
 
@@ -76,24 +77,20 @@ export function PlanMark() {
   )
 }
 
-/** A notes glyph: three ruled lines, the shortest last, unlike either date glyph. */
-export function NotesMark() {
+/**
+ * A lock on the status mark's corner, for a leaf something unfinished holds up (FR-041,
+ * artboard 8). Inside the 28px status button that sits at -6px, so it lands on the glyph's own
+ * corner. The words are the row's, said elsewhere.
+ */
+export function WaitingBadge() {
   return (
-    <svg
+    <span
       aria-hidden="true"
-      viewBox="0 0 14 14"
-      width="14"
-      height="14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      className="shrink-0"
+      data-waiting-badge
+      className="pointer-events-none absolute right-0.5 bottom-0.5 grid size-[11px] place-items-center rounded-full bg-panel text-warn"
     >
-      <path d="M2.5 4h9" />
-      <path d="M2.5 7h9" />
-      <path d="M2.5 10h5" />
-    </svg>
+      <LockIcon size={9} />
+    </span>
   )
 }
 
