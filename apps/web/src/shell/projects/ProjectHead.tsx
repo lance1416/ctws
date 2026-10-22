@@ -1,14 +1,32 @@
 import type { ProjectId } from '@ctws/contracts'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
-import { projectKeys, updateProject, useEveryProject } from './api'
-import { useRegistry } from '../registry'
-import { Button } from '../../platform/ui/Button'
-import { ProjectIdentity } from './ProjectIdentity'
+import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
+import { MoreIcon, type IconComponent } from '../../platform/ui/icons'
+import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
+import { Segmented } from '../../platform/ui/Segmented'
 import { NewMenu } from '../creates'
+import { projectKeys, updateProject, useEveryProject } from './api'
+import { PinnedResources } from './PinnedResources'
+import { ProjectIdentity } from './ProjectIdentity'
 
-/** The head of a project's page: its name and colour, and each module's numbers about it. */
-export function ProjectHead({ id }: { id: ProjectId }) {
-  const registry = useRegistry()
+type View = { id: string; label: string; icon?: IconComponent }
+
+/**
+ * THE HEAD OF A PROJECT'S PAGE (FR-053, artboard 8): its square and name, the switch between its
+ * views, New and More; under them, the resources it pins.
+ */
+export function ProjectHead({
+  id,
+  views,
+  view,
+  onView,
+}: {
+  id: ProjectId
+  views: readonly View[]
+  view: string
+  onView: (id: string) => void
+}) {
   // Live or archived: an archived project still has its page, marked as such.
   const projects = useEveryProject()
   const project = projects.data?.find((p) => p.id === id)
@@ -18,47 +36,63 @@ export function ProjectHead({ id }: { id: ProjectId }) {
     ) : null
   }
   return (
-    <div className="flex min-w-0 items-start gap-3">
-      <div className="flex min-w-0 flex-1 flex-col">
-        <ProjectIdentity projectId={id} name={project.name} color={project.color} />
+    <div className="flex min-w-0 flex-col gap-3.5">
+      {/* On a narrow screen the name has a line of its own, and the controls wrap under it. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+        <ProjectIdentity project={project} />
         {project.archivedAt && (
-          <p data-project-archived className="mt-1.5 text-ui font-medium text-muted">
+          <span
+            data-project-archived
+            className="inline-flex h-5.5 shrink-0 items-center rounded-control bg-hover px-2 text-meta font-medium text-muted"
+          >
             Archived
-          </p>
+          </span>
         )}
-        {registry.projectHeadlines.map(({ moduleId, Component }) => (
-          <Component key={moduleId} projectId={id} />
-        ))}
+        {views.length > 1 && (
+          <Segmented label="View" segments={views} current={view} onPick={onView} />
+        )}
+        <NewMenu projectName={project.name} className="shrink-0" />
+        {/* The inbox is where capture lands, and the server refuses to archive it. */}
+        {!project.isInbox && <MoreMenu id={id} archived={project.archivedAt !== null} />}
       </div>
-      <NewMenu projectName={project.name} className="mt-1 shrink-0" />
-      {/* The inbox is where capture lands, and the server refuses to archive it. */}
-      {!project.isInbox && <ArchiveToggle id={id} archived={project.archivedAt !== null} />}
+      <PinnedResources projectId={id} />
     </div>
   )
 }
 
 /**
- * Archive hides a project from the rail and live lists but keeps everything. It is undone in one
- * press, so it sits in the head; only what cannot be undone goes at the foot with Delete.
+ * What else can be done to the project (FR-052): archive, which hides it from the rail and the
+ * live lists but keeps everything, and is undone from the same menu.
  */
-function ArchiveToggle({ id, archived }: { id: ProjectId; archived: boolean }) {
+function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean }) {
   const toggle = useMutation({
     mutationFn: () => updateProject(id, { archived: !archived }),
     meta: { changes: ['project'], awaits: [projectKeys.all], ownsError: true },
   })
   return (
-    <div className="mt-1 flex shrink-0 flex-col items-end">
-      <Button
-        look="quiet"
-        onClick={() => toggle.mutate()}
-        disabled={toggle.isPending}
-        className="whitespace-nowrap"
-      >
-        {archived ? 'Unarchive' : 'Archive'}
-      </Button>
+    <div className="relative flex shrink-0 flex-col items-end">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger aria-label="More" className={ICON_BUTTON}>
+          <MoreIcon size={16} aria-hidden="true" />
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
+            <DropdownMenu.Item
+              onSelect={() => toggle.mutate()}
+              disabled={toggle.isPending}
+              className={MENU_ITEM}
+            >
+              {archived ? 'Unarchive' : 'Archive'}
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
       {toggle.isError && (
-        <p role="alert" className="mt-1 text-ui text-stop-t">
-          {archived ? "Couldn't unarchive." : "Couldn't archive."} Try again.
+        <p
+          role="alert"
+          className="absolute top-full right-0 mt-1 text-ui whitespace-nowrap text-stop-t"
+        >
+          {archived ? 'Couldn’t unarchive.' : 'Couldn’t archive.'} Try again.
         </p>
       )}
     </div>

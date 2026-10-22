@@ -30,6 +30,7 @@ export function NewMenu({
   const [at, setAt] = useState(0)
   const box = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     if (open) input.current?.focus()
   }, [open])
@@ -46,6 +47,8 @@ export function NewMenu({
   const pick = (creator: Creator) => {
     setOpen(false)
     setTyped('')
+    // The form it opens hands focus back to what had it: New, not the item about to go.
+    trigger.current?.focus()
     openNew(creator)
   }
   const onKeyDown = (e: KeyboardEvent) => {
@@ -68,6 +71,7 @@ export function NewMenu({
   return (
     <div ref={box} className={`relative ${className}`}>
       <button
+        ref={trigger}
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}

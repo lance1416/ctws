@@ -12,6 +12,7 @@ import {
   type IconComponent,
 } from '../../platform/ui/icons'
 import { Modal } from '../../platform/ui/Modal'
+import { PROJECT_KEYS } from '../projects/keys'
 import { useRegistry } from '../registry'
 import { SEARCH_KEYS } from '../search/SearchDialog'
 import { JUMP_PREFIX, NEW_PREFIX } from './chords'
@@ -65,6 +66,12 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
     },
     { title: 'Go to', icon: BarExpandIcon, tint: grey, rows: jumps },
     { title: 'New', icon: NewIcon, tint: grey, rows: makes },
+    {
+      title: PROJECT_KEYS.title,
+      icon: KIND_ICON.project,
+      tint: 'bg-project-bg text-project',
+      rows: PROJECT_KEYS.rows,
+    },
     ...registry.keys.map((t) => ({
       title: t.title,
       icon: KIND_ICON.task,
@@ -97,7 +104,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
     ...titles.flatMap((t) => shown.filter((g) => g.title === t)),
     ...(i === COLUMNS.length - 1 ? shown.filter((g) => !COLUMNS.flat().includes(g.title)) : []),
   ])
-  const singles = singleKeysOf(switchOrder(registry.anywhere, registry.keys))
+  const singles = singleKeysOf(switchOrder(registry.anywhere, [PROJECT_KEYS, ...registry.keys]))
 
   return (
     <Modal title="Keyboard shortcuts" onClose={onClose} initialFocus={box} palette wide>

@@ -8,6 +8,7 @@ import {
   registerFreshUser,
   slowReads,
   WEB,
+  openNewTask,
 } from './helpers'
 
 /**
@@ -112,8 +113,11 @@ test('a project is archived from its own page, and brought back the same way', a
         r.url().endsWith(`/api/v1/projects/${pid}`) &&
         r.request().postDataJSON()?.archived === archived,
     )
+  // In the head's More (FR-052).
+  const more = page.getByRole('button', { name: 'More' })
   const archiving = patched(true)
-  await page.getByRole('button', { name: 'Archive', exact: true }).click()
+  await more.click()
+  await page.getByRole('menuitem', { name: 'Archive', exact: true }).click()
   expect((await archiving).ok()).toBe(true)
   await expect(page.locator('[data-project-archived]')).toHaveText('Archived')
   await expect(rail.getByRole('link', { name: '旧项目' })).toHaveCount(0)
@@ -121,11 +125,13 @@ test('a project is archived from its own page, and brought back the same way', a
   await expect(page.getByText('留下的')).toBeVisible()
 
   const restoring = patched(false)
-  await page.getByRole('button', { name: 'Unarchive', exact: true }).click()
+  await more.click()
+  await page.getByRole('menuitem', { name: 'Unarchive', exact: true }).click()
   expect((await restoring).ok()).toBe(true)
   await expect(page.locator('[data-project-archived]')).toHaveCount(0)
   await expect(rail.getByRole('link', { name: '旧项目' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Archive', exact: true })).toBeVisible()
+  await more.click()
+  await expect(page.getByRole('menuitem', { name: 'Archive', exact: true })).toBeVisible()
 })
 
 /** The inbox is where capture lands: it cannot be archived, so its page offers no Archive. */
@@ -138,6 +144,7 @@ test('the inbox has no Archive', async ({ page }) => {
   await page.goto(`/projects/${inbox}`)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'More' })).toHaveCount(0)
 })
 
 test('the New project box is empty for the next name once the server has the last', async ({
@@ -187,7 +194,7 @@ test('the New dialog on an archived project names that project', async ({ page }
   })
   expect(res.ok(), await res.text()).toBe(true)
   await page.goto(`/projects/${old}`)
-  await page.getByRole('button', { name: 'New…', exact: true }).click()
+  await openNewTask(page)
   const dialog = page.getByRole('dialog', { name: 'New task' })
   await expect(dialog.getByRole('button', { name: 'Projects: Old thing' })).toBeVisible()
 })

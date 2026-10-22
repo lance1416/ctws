@@ -39,12 +39,18 @@ import {
   Check,
   Circle,
   CornerDownRight,
+  Ellipsis,
+  FileCode,
+  FileText,
   Flag,
   Folder,
+  FolderOpen,
+  GitPullRequest,
   Inbox,
   Keyboard,
   LayoutDashboard,
   Link,
+  ListTree,
   MessagesSquare,
   Moon,
   PanelRight,
@@ -53,6 +59,7 @@ import {
   RotateCw,
   Search,
   SquareCheckBig,
+  SquareKanban,
   StickyNote,
   Sun,
   Trash,
@@ -92,6 +99,26 @@ export const PLACE_ICON = {
 } as const satisfies Record<string, IconComponent>
 
 export const NewIcon = Plus
+/** A project's two views (FR-053), and the menu of what else can be done to it. */
+export const TreeIcon = ListTree
+export const BoardIcon = SquareKanban
+export const MoreIcon = Ellipsis
+/**
+ * A resource by the service its address names (FR-046, DES-001 section 4): the shape says what
+ * kind of place it is, and it stays grey, so it is never read as a state or a kind.
+ */
+export const RESOURCE_ICON = {
+  'github-pr': GitPullRequest,
+  'github-issue': GitPullRequest,
+  github: GitPullRequest,
+  'google-doc': FileText,
+  'google-sheet': FileText,
+  'google-slides': FileText,
+  'google-drive': FolderOpen,
+  overleaf: FileCode,
+  figma: FileText,
+  web: Link,
+} as const satisfies Record<string, IconComponent>
 export const CloseIcon = X
 export const OpenFullIcon = PanelRight
 export const ExpandIcon = ChevronDown

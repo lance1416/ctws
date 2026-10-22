@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { dayOffset } from './days'
-import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
+import { apiPost, makeProject, makeTask, openNewTask, registerFreshUser } from './helpers'
 
 /** The same thing in the same place, drawn the same way, across the panes and dialogs. */
 
@@ -127,7 +127,7 @@ test('new-item dialogs: Cancel left, Create right, at the right edge', async ({ 
       'task',
       async () => {
         await page.goto(`/projects/${w.pid}`)
-        await page.getByRole('button', { name: /^New…/ }).click()
+        await openNewTask(page)
       },
     ],
     [
@@ -331,7 +331,7 @@ test('one kind, one chip: the same reading and editing, in every pane', async ({
 test('the new task dialog sizes status chips to their words, like the pane', async ({ page }) => {
   const w = await panes(page)
   await page.goto(`/projects/${w.pid}`)
-  await page.getByRole('button', { name: /^New…/ }).click()
+  await openNewTask(page)
   const group = page.getByRole('dialog').getByRole('radiogroup')
   const widths = await group
     .locator('label')

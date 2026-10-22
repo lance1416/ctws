@@ -27,7 +27,7 @@ test('the board is a view of the task block, not a page of its own', async ({ pa
   await openBoard(page, pid)
 
   // Same page, same block, same project banner above it. Only the rows are drawn differently.
-  await expect(page).toHaveURL(new RegExp(`/projects/${pid}\\?view=tasks%3Aboard$`))
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}\\?view=board$`))
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Tasks' })).toBeVisible()
   // The one-line capture box stays: adding to this project is the same action either way.
@@ -47,9 +47,9 @@ test('the chosen view survives a reload, because it is in the URL', async ({ pag
   await expect(page.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true')
 
   // Back to the list, and the parameter goes with it.
-  await page.getByRole('tab', { name: 'List' }).click()
+  await page.getByRole('tab', { name: 'Tree' }).click()
   await expect(page.locator('[data-task-tree]')).toBeVisible()
-  await expect(page.getByRole('tab', { name: 'List' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('tab', { name: 'Tree' })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('every task appears once, in its own column, with its parent named', async ({ page }) => {
@@ -104,7 +104,7 @@ test('dragging a card to another column writes that status', async ({ page }) =>
 test('an empty project says so once, not four times', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '空的')
-  await page.goto(`/projects/${pid}?view=tasks:board`)
+  await page.goto(`/projects/${pid}?view=board`)
   await expect(page.getByText('No tasks in this project yet')).toHaveCount(1)
   await expect(page.locator('[data-board-column]')).toHaveCount(0)
 })
@@ -133,7 +133,7 @@ test('a board that cannot load says so, instead of four empty columns', async ({
   const pid = await makeProject(page, 'Down')
   await makeTask(page, pid, 'Somewhere')
   await page.route('**/api/v1/tasks?projectId=*', (r) => r.fulfill({ status: 503, body: '{}' }))
-  await page.goto(`/projects/${pid}?view=tasks:board`)
+  await page.goto(`/projects/${pid}?view=board`)
   await expect(page.getByRole('alert')).toContainText("Couldn't load tasks")
   await expect(page.locator('[data-board-column]')).toHaveCount(0)
 })

@@ -8,6 +8,8 @@ import {
   sidewaysScroll,
   captureBox,
   openCapture,
+  headNew,
+  openNewTask,
 } from './helpers'
 import { dayOffset, ymd } from './days'
 
@@ -45,7 +47,6 @@ const nextCreate = (page: Page) =>
     .then((r) => r.request().postDataJSON())
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New task' })
-const openButton = (page: Page) => page.getByRole('button', { name: 'New…', exact: true })
 const titleField = (page: Page) => dialog(page).getByRole('textbox', { name: 'Title' })
 
 /** A project holding one root task, open on its page with the tree loaded. */
@@ -64,7 +65,7 @@ test('Create writes the title, project, parent, status, plan, deadline and notes
   const { pid, rootId } = await seed(page)
   const writes = recordWrites(page)
 
-  await openButton(page).click()
+  await openNewTask(page)
   await expect(dialog(page)).toBeVisible()
   // The title has focus the moment it opens: the dialog is a thing to type into.
   await expect(titleField(page)).toBeFocused()
@@ -109,7 +110,7 @@ test('Create writes the title, project, parent, status, plan, deadline and notes
 
 test('⌘↵ creates and stays open, with the title cleared and focused', async ({ page }) => {
   const { pid } = await seed(page)
-  await openButton(page).click()
+  await openNewTask(page)
   await dialog(page).getByRole('radio', { name: 'To do', exact: true }).check()
   await dialog(page).getByRole('button', { name: 'Plan for today' }).click()
 
@@ -148,13 +149,13 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
   await seed(page)
   const writes = recordWrites(page)
 
-  await openButton(page).click()
+  await openNewTask(page)
   await titleField(page).fill('不会被创建')
   // A typed title is asked about first; Discard is the way out.
   await page.keyboard.press('Escape')
   await dialog(page).getByRole('button', { name: 'Discard changes' }).click()
   await expect(dialog(page)).toHaveCount(0)
-  await expect(openButton(page)).toBeFocused()
+  await expect(headNew(page)).toBeFocused()
   expect(writes).toEqual([])
 
   // Opened from a task row by N T, focus goes back to THAT row rather than to the button or, worse,
@@ -169,7 +170,7 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
   await expect(handle).toBeFocused()
 
   // Cancel is the same decision with a mouse.
-  await openButton(page).click()
+  await openNewTask(page)
   // `exact`: accessible names are one flat namespace matched by substring, and "Clear the
   // deadline" is in
   // this very dialog.
@@ -182,7 +183,7 @@ test('an empty title creates nothing and says so', async ({ page }) => {
   await seed(page)
   const writes = recordWrites(page)
 
-  await openButton(page).click()
+  await openNewTask(page)
   await dialog(page).getByRole('button', { name: 'Create', exact: true }).click()
   await expect(dialog(page).getByRole('alert')).toHaveText('Title is required')
   await expect(titleField(page)).toBeFocused()
@@ -225,7 +226,7 @@ test('N T opens the dialog, obeys the off switch and is two letters while typing
   await page.keyboard.press('t')
   await expect(dialog(page)).toHaveCount(0)
   // And the button still is the way in, which is why a key being off is not a dead end.
-  await openButton(page).click()
+  await openNewTask(page)
   await expect(dialog(page)).toBeVisible()
 })
 
@@ -267,7 +268,7 @@ test('the quick paths are untouched: the new-task box and capture behave as they
 test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 760 })
   await seed(page)
-  await openButton(page).click()
+  await openNewTask(page)
   await expect(dialog(page)).toBeVisible()
   await dialog(page)
     .getByLabel('Notes')
@@ -317,10 +318,9 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
 }) => {
   await seed(page)
 
-  // 1. `?` opens it. It is pressed from the new-task box's NEIGHBOUR -- a focusable control that
-  // is not a text field -- so that "focus goes back to what opened it" below has something to go
-  // back to. (A heading is not focusable, and the page's <h1> is a rename control.)
-  await page.getByRole('button', { name: 'New…', exact: true }).focus()
+  // 1. `?` opens it. It is pressed from the head's New -- a focusable control that is not a text
+  // field -- so that "focus goes back to what opened it" below has something to go back to.
+  await headNew(page).focus()
   await page.keyboard.press('?')
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(help).toBeVisible()
@@ -341,7 +341,7 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   // 2. Escape closes it. 4. And focus goes back to what opened it.
   await page.keyboard.press('Escape')
   await expect(help).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'New…', exact: true })).toBeFocused()
+  await expect(headNew(page)).toBeFocused()
 
   // 3. A click outside closes it.
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
@@ -372,7 +372,7 @@ test('a task made in the New dialog starts as to do, like one typed into the lis
   page,
 }) => {
   await seed(page)
-  await openButton(page).click()
+  await openNewTask(page)
   await expect(dialog(page).getByRole('radio', { name: 'To do', exact: true })).toBeChecked()
   await titleField(page).fill('照常开始')
   const posted = nextCreate(page)
@@ -399,10 +399,13 @@ test('the ? list is the board’s three columns, and its switch names the keys i
     'Anywhere',
     'Go to',
     'New',
+    'On a project',
     'In a tree or list, with a row focused',
     'In search',
   ])
   await expect(help).toContainText('Fold, or go to the parent')
+  await expect(help).toContainText('Open a pinned resource')
+  await expect(help).toContainText('Switch between tree and board')
   // Three columns that fit the screen: the foot is on it.
   const foot = help.getByText('This key changes in the redesign.', { exact: false })
   const box = (await help.boundingBox())!

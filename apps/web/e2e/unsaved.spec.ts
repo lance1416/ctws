@@ -7,6 +7,7 @@ import {
   makeProject,
   makeTask,
   registerFreshUser,
+  openNewTask,
 } from './helpers'
 import { dayOffset } from './days'
 
@@ -131,7 +132,7 @@ const newDialogs: [string, string, (page: Page) => Promise<unknown>][] = [
     async (page) => {
       const pid = await makeProject(page, 'P')
       await page.goto(`/projects/${pid}`)
-      await page.getByRole('button', { name: 'New…', exact: true }).click()
+      await openNewTask(page)
     },
   ],
   [

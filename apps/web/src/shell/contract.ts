@@ -9,6 +9,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type { KeyTable } from '../platform/keyboard/keyTable'
+import type { IconComponent } from '../platform/ui/icons'
 
 /**
  * What a module declares. The shell owns auth, the frame, overlays, projects, the edge table and
@@ -64,16 +65,14 @@ export type Reads = { queryKey: QueryKey; of: readonly ObjectType[] }
 
 /** What a module adds to a project. Components, so the shell never knows the module's endpoints. */
 export type ProjectContribution = {
-  /** Rows on the project's page that need more than a list of edges, like the task tree. */
-  Block?: {
+  /**
+   * The rows a project's page is about, like the task tree, and the views its head switches
+   * between (FR-053), the first the default. At most one module gives them.
+   */
+  Main?: {
     Component: ComponentType<{ projectId: ProjectId; view: string }>
-    /** The block's views, the first the default; tabs in its head are drawn from two up. */
-    views: readonly [BlockView, ...BlockView[]]
-    /** A control in the block's head, typically its own "new". */
-    Action?: ComponentType<{ projectId: ProjectId }>
+    views: readonly [ProjectView, ...ProjectView[]]
   }
-  /** Numbers under the project's name on its page, said as a sentence. */
-  Headline?: ComponentType<{ projectId: ProjectId }>
   /** Numbers for a project's row in the list, said as one line. */
   RowFacts?: ComponentType<{ project: ProjectResponse }>
   /** Numbers for a project's Workbench card, a line each. */
@@ -91,7 +90,7 @@ export type ProjectContribution = {
   contents?: (qc: QueryClient, projectId: ProjectId) => Promise<string | null>
 }
 
-type BlockView = { id: string; label: string }
+type ProjectView = { id: string; label: string; icon?: IconComponent }
 
 export type RelationContribution = {
   /** Exactly one module answers for each type. */

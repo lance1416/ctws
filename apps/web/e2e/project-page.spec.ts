@@ -1,13 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
-  backdateProjectActivity,
+  headNew,
   makeProject,
   makeTask,
-  movementOf,
   openDetail,
+  openProject,
   registerFreshUser,
 } from './helpers'
-import { dueAgo, MONTHS } from './days'
 
 /**
  * THE PROJECT PAGE as a workbench: the header banner carrying this line of
@@ -31,100 +30,92 @@ const WIDE = { width: 1440, height: 1000 }
 const MEDIUM = { width: 1024, height: 800 }
 const header = (page: Page) =>
   page.getByRole('region', { name: 'Project at a glance', exact: true })
-const sentence = (page: Page) => header(page).locator('[data-project-sentence]')
 
-// ------------------------------------------------------------------ the numbers, in one sentence
+// ------------------------------------------------------------------------------- the head
 
-test('the project head says the numbers the server reports, for THIS project', async ({ page }) => {
+test('the head is the square and name, the views, New and More (FR-053)', async ({ page }) => {
   await registerFreshUser(page)
-  await page.setViewportSize(WIDE)
-  const busy = await makeProject(page, '很忙的线')
-  const calm = await makeProject(page, '很闲的线')
+  const id = await makeProject(page, 'Job hunt')
+  await page.goto(`/projects/${id}`)
 
-  // 很忙的线: four open, two of them overdue. 很闲的线: one open, none late. Different in every
-  // number, so a head showing workspace-wide totals (or the other project's) fails on this page.
-  await makeTask(page, busy, '忙一', { dueAt: dueAgo(3) })
-  await makeTask(page, busy, '忙二', { dueAt: dueAgo(1) })
-  await makeTask(page, busy, '忙三')
-  await makeTask(page, busy, '忙四')
-  await makeTask(page, calm, '闲一')
+  // The square is the project's own, and opens its colours.
+  const square = header(page).locator(`[data-project-chip="${id}"]`)
+  await expect(square).toHaveAccessibleName('Project colour')
+  await expect(square).toHaveText('JH')
+  await expect(header(page).getByRole('heading', { level: 1 })).toHaveText('Job hunt')
+  const views = header(page).getByRole('tablist', { name: 'View' })
+  await expect(views.getByRole('tab', { name: 'Tree' })).toHaveAttribute('aria-selected', 'true')
+  await expect(views.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'false')
+  await expect(headNew(page)).toBeVisible()
+  // Archive is in More now, not a button of its own (FR-052).
+  await expect(header(page).getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0)
+  await header(page).getByRole('button', { name: 'More' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Archive' })).toBeVisible()
+})
 
-  const server = await movementOf(page)
-  const expected = (id: string) => server.find((r) => r.projectId === id)!
-  expect([expected(busy).remaining, expected(busy).overdue]).toEqual([4, 2])
-  expect([expected(calm).remaining, expected(calm).overdue]).toEqual([1, 0])
+test('the inbox has no More: there is nothing in it to do to the inbox', async ({ page }) => {
+  await registerFreshUser(page)
+  await openProject(page, 'Inbox')
+  await expect(header(page).getByRole('button', { name: 'More' })).toHaveCount(0)
+})
 
-  for (const id of [busy, calm]) {
-    const row = expected(id)
-    await page.goto(`/projects/${id}`)
-    await expect(page.getByRole('heading', { level: 1, name: row.projectName })).toBeVisible()
-    // The chip beside the name is never the only carrier: the NAME is right there (WCAG 1.4.1).
-    await expect(header(page).locator(`[data-project-chip="${id}"]`)).toHaveAccessibleName(
-      'Project colour',
+test('the view is in the address, and B switches it', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await makeProject(page, 'P')
+  await makeTask(page, id, '一条')
+  await page.goto(`/projects/${id}`)
+  const tab = (name: string) => header(page).getByRole('tab', { name })
+
+  await tab('Board').click()
+  await expect(page).toHaveURL(new RegExp(`/projects/${id}\\?view=board$`))
+  await page.reload()
+  await expect(tab('Board')).toHaveAttribute('aria-selected', 'true')
+  // B from the page, not from a field.
+  await page.keyboard.press('b')
+  await expect(tab('Tree')).toHaveAttribute('aria-selected', 'true')
+  await expect(page).toHaveURL(new RegExp(`/projects/${id}$`))
+})
+
+test('a pinned resource is a chip with its digit, and the digit opens it (FR-046)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const id = await makeProject(page, 'Job hunt')
+  // Outside addresses answer from here: the test is about which one opens, not the web.
+  await page
+    .context()
+    .route(/^https:\/\/(docs\.google|github)\.com\//, (r) =>
+      r.fulfill({ contentType: 'text/html', body: '<title>outside</title>' }),
     )
-    await expect(sentence(page), row.projectName).toContainText(`${row.remaining} open`)
-    // "0 overdue" is not news, so a line with none says nothing about it.
-    if (row.overdue > 0)
-      await expect(sentence(page), row.projectName).toContainText(`${row.overdue} overdue`)
-    else await expect(sentence(page), row.projectName).not.toContainText('overdue')
-    // The day is the SERVER's, read back in the app's words.
-    expect(row.quietDays).toBe(0)
-    await expect(sentence(page), row.projectName).toContainText('Last moved today.')
+  await page.goto(`/projects/${id}`)
+  const pinned = header(page).locator('[data-pinned-resources]')
+  // With none pinned, only the +.
+  await expect(pinned.locator('[data-pinned]')).toHaveCount(0)
+
+  const pin = async (url: string, name?: string) => {
+    await header(page).getByRole('button', { name: 'Pin a resource' }).click()
+    const form = page.getByRole('form', { name: 'Pin a resource' })
+    await form.getByLabel('Address').fill(url)
+    if (name) await form.getByLabel('Name (optional)').fill(name)
+    return form
   }
+  const first = await pin('https://docs.google.com/document/d/abc/edit', 'CV master')
+  // Told what it is before it is pinned.
+  await expect(first.locator('[data-recognised]')).toHaveText('Google Docs')
+  await first.getByRole('button', { name: 'Pin' }).click()
+  await expect(pinned.locator('[data-pinned="1"]')).toHaveText('CV master1')
 
-  // A quiet line says the DAY it last moved -- which is the sentence's whole point.
-  backdateProjectActivity(calm, '9 days')
-  await page.goto(`/projects/${calm}`)
-  const quiet = (await movementOf(page)).find((r) => r.projectId === calm)!
-  expect(quiet.quietDays).toBe(9)
-  const [, month, day] = quiet.lastActivityOn!.split('-').map(Number)
-  await expect(sentence(page)).toContainText(`Last moved ${MONTHS[month! - 1]} ${day}.`)
+  // A pull request with no name of its own is called by its number.
+  await (await pin('https://github.com/o/r/pull/12')).getByRole('button', { name: 'Pin' }).click()
+  await expect(pinned.locator('[data-pinned="2"]')).toHaveText('#122')
+
+  // The digit opens it, in a tab of its own; the server kept both, in their places.
+  const opened = page.waitForEvent('popup')
+  await page.keyboard.press('2')
+  expect((await opened).url()).toBe('https://github.com/o/r/pull/12')
+  await page.reload()
+  await expect(pinned.locator('[data-pinned]')).toHaveText(['CV master1', '#122'])
 })
-
-/**
- * The head is a live number, not a page-load snapshot. It is also the reason the create path
- * awaits only its project's list, not the movement refetch: the typist waits for the row, not for
- * the count. That change would be invisible if nothing asserted the count still catches up -- and
- * silently stale is exactly how a number stops being worth reading.
- */
-test('the head’s numbers follow a task added on the page, without a reload', async ({ page }) => {
-  await registerFreshUser(page)
-  await page.setViewportSize(WIDE)
-  const pid = await makeProject(page, '会变的线')
-  await makeTask(page, pid, '本来就有的')
-  await page.goto(`/projects/${pid}`)
-  await expect(sentence(page)).toContainText('1 open')
-
-  await page.getByRole('textbox', { name: 'New task' }).fill('刚加的')
-  await page.getByRole('textbox', { name: 'New task' }).press('Enter')
-  await expect(page.getByRole('button', { name: 'Task: 刚加的', exact: true })).toBeVisible()
-  await expect(sentence(page)).toContainText('2 open')
-  // ...and the server agrees, so this is not a count the page made up on its own.
-  expect((await movementOf(page)).find((r) => r.projectId === pid)!.remaining).toBe(2)
-})
-
-/**
- * A percentage in words: the sentence's "Last moved" beside it is what tells a busy 60% from one
- * nobody has touched for three weeks.
- */
-test('the project head says how much is done, as the mean of the root tasks', async ({ page }) => {
-  await registerFreshUser(page)
-  await page.setViewportSize(WIDE)
-  const pid = await makeProject(page, '有进展的线')
-  for (const t of ['做完一', '做完二']) await makeTask(page, pid, t, { status: 'done' })
-  await makeTask(page, pid, '没做的', { status: 'todo' })
-  const parent = await makeTask(page, pid, '做了一半的', { status: 'todo' })
-  await makeTask(page, pid, '半边做完', { status: 'done' }, parent)
-  await makeTask(page, pid, '半边没做', { status: 'todo' }, parent)
-  // Backlog is left out of the mean, not counted as zero.
-  await makeTask(page, pid, '还没排的', { status: 'backlog' })
-
-  await page.goto(`/projects/${pid}`)
-  // (1 + 1 + 0 + 0.5) / 4: the parent is the mean of its own children, the same rule all the way up.
-  await expect(sentence(page)).toContainText('63% done')
-})
-
-// -------------------------------------------------------- the tree in a panel, the detail beside it
 
 test('the tree is a panel spanning two columns and the detail is the third, at 1440', async ({
   page,

@@ -151,8 +151,8 @@ function calendarProvider(moduleId: string, c: CalendarContribution): CalendarPr
     },
   }
 }
-type RegisteredProjectBlock = { moduleId: string; moduleLabel: string } & NonNullable<
-  ProjectContribution['Block']
+type RegisteredProjectMain = { moduleId: string; moduleLabel: string } & NonNullable<
+  ProjectContribution['Main']
 >
 
 export type Registry = {
@@ -174,8 +174,7 @@ export type Registry = {
   todayBlocks: (TodayBlock & { moduleId: string })[]
   relations: RegisteredRelation[]
   relationFor: (type: ObjectType) => RegisteredRelation
-  projectBlocks: RegisteredProjectBlock[]
-  projectHeadlines: { moduleId: string; Component: ComponentType<{ projectId: ProjectId }> }[]
+  projectMain: RegisteredProjectMain | null
   projectRowFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectLead: ComponentType<{ projectId: ProjectId }> | null
@@ -263,12 +262,10 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       if (!found) throw new Error(`no module says where a ${type} lives`)
       return found
     },
-    projectBlocks: modules.flatMap((m) =>
-      m.project?.Block ? [{ moduleId: m.id, moduleLabel: m.label, ...m.project.Block }] : [],
-    ),
-    projectHeadlines: modules.flatMap((m) =>
-      m.project?.Headline ? [{ moduleId: m.id, Component: m.project.Headline }] : [],
-    ),
+    projectMain: (() => {
+      const m = modules.find((x) => x.project?.Main)
+      return m?.project?.Main ? { moduleId: m.id, moduleLabel: m.label, ...m.project.Main } : null
+    })(),
     projectRowFacts: modules.flatMap((m) =>
       m.project?.RowFacts ? [{ moduleId: m.id, Facts: m.project.RowFacts }] : [],
     ),

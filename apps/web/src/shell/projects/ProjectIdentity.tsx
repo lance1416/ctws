@@ -1,26 +1,21 @@
-import { projectColors, type ProjectColor, type ProjectId } from '@ctws/contracts'
+import { projectColors, type ProjectColor, type ProjectResponse } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { projectKeys, updateProject } from './api'
 import { problemText } from '../../platform/http/api'
 import { squareClass } from './projectColor'
+import { ProjectSquare } from './ProjectSquare'
 import { useInlineEdit } from '../../platform/ui/useInlineEdit'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
 
 /**
- * A project's name and colour, editable where they are shown. The menu names each slot in words,
- * so the swatch is never the only signal.
+ * A project's square and name at the head of its page (artboard 8), editable where they are
+ * shown: the square opens its colours, the name turns into a field. The menu names each colour in
+ * words, so the swatch is never the only signal.
  */
-export function ProjectIdentity({
-  projectId,
-  name,
-  color,
-}: {
-  projectId: ProjectId
-  name: string
-  color: ProjectColor
-}) {
+export function ProjectIdentity({ project }: { project: ProjectResponse }) {
+  const { id: projectId, name, color } = project
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(name)
   const field = useRef<HTMLInputElement>(null)
@@ -50,13 +45,15 @@ export function ProjectIdentity({
   return (
     // `flex-1`: sized from its content, the heading would collapse under `min-w-0` and truncate
     // the name to a few characters even at full width.
-    <div className="flex min-w-0 flex-1 items-center gap-2.5">
+    <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger
           aria-label="Project colour"
           data-project-chip={projectId}
-          className={`h-9 w-[4px] shrink-0 rounded-full ${squareClass(color)}`}
-        />
+          className="shrink-0 rounded-card"
+        >
+          <ProjectSquare project={project} size={34} />
+        </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content align="start" sideOffset={8} className={MENU_SURFACE}>
             {projectColors.map((slot) => (

@@ -8,7 +8,6 @@ import { buildRegistry, useRegistry, type ShellConfig } from './registry'
 
 /** Fake notes and files modules: one real module could not show that a second is picked up. */
 const NotesOnProject = () => null
-const NotesProjectNumbers = () => null
 const NotesFacts = () => null
 const NotesTileFacts = () => null
 const FilesLead = () => null
@@ -29,8 +28,7 @@ const notes: WorkspaceModule = {
     { id: 'recent', label: 'Recent notes', to: '/notes/recent', Component: () => null, span: 6 },
   ],
   project: {
-    Block: { Component: NotesOnProject, views: [{ id: 'all', label: 'All' }] },
-    Headline: NotesProjectNumbers,
+    Main: { Component: NotesOnProject, views: [{ id: 'all', label: 'All' }] },
     RowFacts: NotesFacts,
     TileFacts: NotesTileFacts,
     contents: async () => '3 notes',
@@ -50,7 +48,7 @@ const files: WorkspaceModule = {
   },
   widgets: [{ id: 'big', label: 'Bulky', Component: () => null, span: 8 }],
   project: {
-    Block: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
+    Main: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
     Lead: FilesLead,
     count: () => 4,
     counts: ['task'],
@@ -187,17 +185,12 @@ describe('search providers', () => {
 })
 
 describe('what a module hangs on a project page', () => {
-  it('collects every module that has rows for a project, in registration order', () => {
-    const views = build([notes, files]).projectBlocks
-    expect(views.map((v) => v.moduleId)).toEqual(['notes', 'files'])
-    expect(views.map((v) => v.moduleLabel)).toEqual(['Notes', 'Files'])
-    expect(views[0]!.Component).toBe(NotesOnProject)
-  })
-
-  it('collects the banner numbers separately, and skips a module that has none', () => {
-    const headlines = build([notes, files]).projectHeadlines
-    expect(headlines.map((h) => h.moduleId)).toEqual(['notes'])
-    expect(headlines[0]!.Component).toBe(NotesProjectNumbers)
+  it('takes the rows the page is about from the first module that gives them', () => {
+    const main = build([notes, files]).projectMain
+    expect(main?.moduleId).toBe('notes')
+    expect(main?.moduleLabel).toBe('Notes')
+    expect(main?.Component).toBe(NotesOnProject)
+    expect(build([files, notes]).projectMain?.moduleId).toBe('files')
   })
 
   it('collects the row and card facts and what a delete takes, in registration order', async () => {
@@ -233,8 +226,7 @@ describe('what a module hangs on a project page', () => {
       reads: [],
     }
     const registry = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
-    expect(registry.projectBlocks).toEqual([])
-    expect(registry.projectHeadlines).toEqual([])
+    expect(registry.projectMain).toBeNull()
     expect(registry.projectRowFacts).toEqual([])
     expect(registry.projectTileFacts).toEqual([])
     expect(registry.projectContents).toEqual([])

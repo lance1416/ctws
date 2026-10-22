@@ -59,13 +59,6 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
   await page.keyboard.press('Shift+Tab')
   await expect(aboveTree(page)).toBeFocused()
 
-  // The block's own New… is a stop too, and it comes BEFORE the box: it lives in the block
-  // header, so reading order puts it first: the full form in the head, the one-line box leading
-  // the rows.
-  await page.getByRole('button', { name: 'New…', exact: true }).focus()
-  await page.keyboard.press('Tab')
-  await expect(aboveTree(page)).toBeFocused()
-
   // Tab is still bound to nothing: it reorganised nothing on the way through.
   expect(moves).toEqual([])
   await expect(page.getByRole('listitem')).toHaveText(flat(12).map(([t]) => new RegExp(t)))

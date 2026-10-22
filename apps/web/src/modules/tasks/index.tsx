@@ -1,12 +1,7 @@
 import type { WorkspaceModule } from '../../shell/contract'
 import { topPage } from '../../shell/layout'
 import { projectTasksQuery, taskKeys } from './api'
-import {
-  NewTaskAction,
-  PROJECT_VIEWS,
-  ProjectNumbers,
-  ProjectTasks,
-} from './components/ProjectBlock'
+import { PROJECT_VIEWS, ProjectTasks } from './components/ProjectBlock'
 import { ProjectLead, ProjectRowFacts, ProjectTileFacts } from './components/ProjectFacts'
 import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind'
 import { TodayDate, TodayGlance } from './components/TodayGlance'
@@ -95,8 +90,7 @@ export const taskModule: WorkspaceModule = {
     },
   ],
   project: {
-    Block: { Component: ProjectTasks, views: PROJECT_VIEWS, Action: NewTaskAction },
-    Headline: ProjectNumbers,
+    Main: { Component: ProjectTasks, views: PROJECT_VIEWS },
     RowFacts: ProjectRowFacts,
     TileFacts: ProjectTileFacts,
     Lead: ProjectLead,
