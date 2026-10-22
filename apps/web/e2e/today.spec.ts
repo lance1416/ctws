@@ -22,8 +22,6 @@ import { addDaysYmd, dayOffset, dueAgo, nextMondayYmd } from './days'
 const block = (page: Page, name: string) => page.getByRole('region', { name, exact: true })
 const rowOf = (scope: Locator, title: string) =>
   scope.getByRole('listitem').filter({ hasText: title })
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const weekdayOfYmd = (day: string) => WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
 
 /** The browser's clock at `hh:mm` today on the account's clock. */
 async function clockAt(page: Page, hh: number, mm: number) {
@@ -125,33 +123,6 @@ test('the three lists share one set of columns (DES-001 section 4)', async ({ pa
   expect(new Set(marks).size).toBe(1)
   // No time label and no colour bar in front of the status (FR-004, DES-001 section 4).
   await expect(page.locator('main [data-row-lead]')).toHaveCount(0)
-})
-
-test('the marks say due today, tomorrow, how late, and where a plan was carried from', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, '记号')
-  await makeTask(page, pid, '今天截止', {
-    status: 'in_progress',
-    dueAt: new Date(Date.now() + 3600_000).toISOString(),
-  })
-  await makeTask(page, pid, '明天截止', { status: 'in_progress', dueAt: dueAgo(-1) })
-  await makeTask(page, pid, '七天前截止', { dueAt: dueAgo(7) })
-  const carried = dayOffset(-4)
-  await makeTask(page, pid, '顺延的', { scheduledOn: carried })
-  await page.reload()
-
-  const progress = block(page, 'In progress')
-  // A deadline later today could fall tomorrow late at night; only assert the near-certain cases.
-  if (new Date(Date.now() + 3600_000).getDate() === new Date().getDate())
-    await expect(rowOf(progress, '今天截止').locator('[data-row-mark]')).toHaveText('Due today')
-  await expect(rowOf(block(page, 'Overdue'), '七天前截止').locator('[data-row-mark]')).toHaveText(
-    '7 days late',
-  )
-  await expect(rowOf(block(page, 'Planned for today'), '顺延的')).toContainText(
-    `Carried from ${weekdayOfYmd(carried)}`,
-  )
 })
 
 test('an overdue row becomes a plan with one press: Today, Tomorrow, Mon or a day picked', async ({

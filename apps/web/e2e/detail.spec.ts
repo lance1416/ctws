@@ -12,12 +12,14 @@ import {
   submitCreate,
   navLink,
 } from './helpers'
-import { addDaysYmd, dayOffset, dayWords } from './days'
+import { addDaysYmd, dayOffset } from './days'
 
 const PATCH_URL = /\/tasks\/[^/]+$/
 
-/** A plan and a deadline a few days ahead, so neither reads as overdue. */
-const PLAN = dayOffset(2)
+/** A plan on a fixed day in a past year: said with its year whenever the suite runs. */
+const PLAN = '2019-03-14'
+const PLAN_SAID = 'Mar 14, 2019'
+/** A deadline a few days ahead, so it does not read as overdue. */
 const DUE = dayOffset(3)
 
 /** Clicks Save and resolves once the server has accepted the request, i.e. it is persisted. */
@@ -87,7 +89,7 @@ test('edits persist across a reload', async ({ page }) => {
   await reopen(page, '写方案')
   await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('先问清需求')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(PLAN))
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(PLAN_SAID)
 })
 
 test('title and due time persist across a reload', async ({ page }) => {
@@ -131,7 +133,7 @@ test('clearing a date removes it rather than sending an empty string', async ({ 
   // The date really was stored; otherwise clearing it proves nothing.
   await page.reload()
   await reopen(page, '写方案')
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(PLAN))
+  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(PLAN_SAID)
 
   await page.getByLabel('Plan', { exact: true }).fill('')
   const res = await save(page)

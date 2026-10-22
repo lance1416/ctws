@@ -93,10 +93,18 @@ pnpm --filter @ctws/web exec playwright install chromium   # once
 docker compose up -d --wait postgres
 pnpm --filter @ctws/api db:migrate
 docker compose up -d --build --wait api
+docker compose --profile pinned up -d --build --force-recreate --wait api-pinned
 pnpm --filter @ctws/web e2e
 ```
 
 After changing `.env`, recreate the API container (`docker compose up -d --force-recreate api`).
+
+A spec whose answer depends on what time it is (a weekday, a year, the account's day against the
+server's) never reads the wall clock and never branches on it. It is named `*.pinned.spec.ts` and
+runs in the `pinned` Playwright project, against `api-pinned` on `http://localhost:3001`: the same
+image and database, with its clock started at `CLOCK_PINNED_AT` (see `apps/web/e2e/pinned.ts`).
+That clock runs on from when the container starts, so recreate it before a run, as above; its specs
+assert days, which hold for ten hours after.
 
 ## Licensing
 

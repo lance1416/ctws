@@ -182,15 +182,28 @@ export async function setDetailStatus(page: Page, label: string): Promise<void> 
   await page.getByRole('radio', { name: label, exact: true }).check()
 }
 
-// Moves a finished task's completion back in time. The API (rightly) offers no way to set
-// completed_at, and a view grouped by day cannot be tested without days of history, so this goes
-// to the database the stack is running on. Needs `docker compose` and the stack up, like the
-// rest of the e2e.
-export function backdateCompletion(taskId: string, ago: string): void {
-  if (!/^[0-9a-f-]{36}$/.test(taskId) || !/^\d+ (minutes|hours|days)$/.test(ago)) {
-    throw new Error('backdateCompletion: refusing a malformed argument')
-  }
-  const out = execFileSync(
+/** Presses Save and returns the PATCH the press produced, so the BODY can be asserted. */
+export async function saveTaskBody(page: Page): Promise<Record<string, unknown>> {
+  const done = taskPatched(page)
+  await page.getByRole('button', { name: 'Save' }).click()
+  const res = await done
+  return res.request().postDataJSON() as Record<string, unknown>
+}
+
+/**
+ * Opens a task's pane from its project. `edit` presses Edit, because the pane opens in READING
+ * mode and the date and status controls exist only in editing mode.
+ */
+export async function openTaskPane(page: Page, projectId: string, title: string, edit = true) {
+  await page.goto(`/projects/${projectId}`)
+  await page.getByRole('listitem').filter({ hasText: title }).first().click()
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+  if (edit) await editDetail(page)
+}
+
+/** Runs one statement on the stack's database; the e2e needs `docker compose` and the stack up. */
+function psql(statement: string): string {
+  return execFileSync(
     'docker',
     [
       'compose',
@@ -205,17 +218,31 @@ export function backdateCompletion(taskId: string, ago: string): void {
       '-d',
       'ctws',
       '-c',
-      `update tasks set completed_at = now() - interval '${ago}' where id = '${taskId}' and status = 'done'`,
+      statement,
     ],
     { stdio: 'pipe' },
   ).toString()
-  // A no-op update would leave the test proving nothing about history.
-  if (!out.includes('UPDATE 1')) throw new Error(`backdateCompletion: no row updated: ${out}`)
+}
+
+/**
+ * Sets a finished task's completion to a fixed instant. The API (rightly) offers no way to set
+ * completed_at, and a view grouped by day cannot be tested without days of history, so this goes to
+ * the database the stack is running on. A fixed instant, not one counted back from now: the day it
+ * lands on is then the same whenever the suite runs (a pinned spec's, see pinned.ts).
+ */
+export function completedAt(taskId: string, at: string): void {
+  if (!/^[0-9a-f-]{36}$/.test(taskId) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(at)) {
+    throw new Error('completedAt: refusing a malformed argument')
+  }
+  const out = psql(
+    `update tasks set completed_at = '${at}' where id = '${taskId}' and status = 'done'`,
+  )
+  if (!out.includes('UPDATE 1')) throw new Error(`completedAt: no row updated: ${out}`)
 }
 
 /**
  * Pushes a project's whole logged history back in time, so Movement's stagnation line can be
- * tested without waiting a week. Like `backdateCompletion` this goes to the database the stack is
+ * tested without waiting a week. Like `completedAt` this goes to the database the stack is
  * running on: the API (rightly) offers no way to write an event's timestamp, and a panel about
  * "how long has this been quiet" cannot be tested without history.
  *
@@ -227,29 +254,13 @@ export function backdateProjectActivity(projectId: string, ago: string): void {
   if (!/^[0-9a-f-]{36}$/.test(projectId) || !/^\d+ (minutes|hours|days)$/.test(ago)) {
     throw new Error('backdateProjectActivity: refusing a malformed argument')
   }
-  const out = execFileSync(
-    'docker',
-    [
-      'compose',
-      'exec',
-      '-T',
-      'postgres',
-      'psql',
-      '-v',
-      'ON_ERROR_STOP=1',
-      '-U',
-      'ctws',
-      '-d',
-      'ctws',
-      '-c',
-      // A task's history is in the shell's change log since the redesign (RFC-001).
-      `update events set occurred_at = now() - interval '${ago}' ` +
-        `where object_type = 'task' and object_id in (select id from tasks where project_id = '${projectId}')`,
-    ],
-    { stdio: 'pipe' },
-  ).toString()
+  const out = psql(
+    // A task's history is in the shell's change log since the redesign (RFC-001).
+    `update events set occurred_at = now() - interval '${ago}' ` +
+      `where object_type = 'task' and object_id in (select id from tasks where project_id = '${projectId}')`,
+  )
   // A no-op update would leave the test proving nothing about history.
-  if (/UPDATE 0/.test(out) || !out.includes('UPDATE')) {
+  if (/UPDATE 0/.test(out) || !out.includes('UPDATE')) {
     throw new Error(`backdateProjectActivity: no row updated: ${out}`)
   }
 }

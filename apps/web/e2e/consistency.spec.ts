@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { dayOffset, MONTHS } from './days'
+import { dayOffset } from './days'
 import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
 
 /** The same thing in the same place, drawn the same way, across the panes and dialogs. */
@@ -268,10 +268,9 @@ test("panes write days the app's way, never in a wire format like 2026-10-19", a
     name: 'Ying Chen',
     birthday: { calendar: 'solar', year: 1991, month: 10, day: 17 },
   })
-  // A day a week or two out, said the way `shortDay` says it (the year only when it is not this one).
-  const day = dayOffset(9)
-  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-  const said = `${MONTHS[m - 1]} ${d}${y === new Date().getFullYear() ? '' : `, ${y}`}`
+  // A fixed day in a past year, so it is said with its year whenever the suite runs.
+  const day = '2019-03-14'
+  const said = 'Mar 14, 2019'
   const meeting = await apiPost(page, '/meetings', {
     title: 'Weekly',
     startsLocal: `${day}T18:00`,

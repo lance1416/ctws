@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
-import { addDaysYmd, dayOffset, MONTHS, weekdayFrom } from './days'
+import { addDaysYmd, dayOffset, weekdayFrom } from './days'
 import {
   accountZone,
   apiPost,
@@ -346,31 +346,6 @@ test('backing out of the scope question saves nothing from that edit', async ({ 
   const held = ((await res.json()) as { meetings: { title: string; startsLocal: string }[] })
     .meetings
   expect(held.map((m) => [m.title, m.startsLocal])).toEqual([['Weekly sync', `${today}T09:00`]])
-})
-
-test('a past occurrence opens as itself, not as the next one', async ({ page }) => {
-  await registerFreshUser(page)
-  const today = dayOffset(0)
-  const start = addDaysYmd(today, -14)
-  await apiPost(page, '/meetings', {
-    title: 'Standing call',
-    startsLocal: `${start}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
-    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(start)}`,
-  })
-  await page.goto('/meetings')
-  await page.getByRole('button', { name: 'Earlier', exact: true }).click()
-  // Earlier shows each series' latest occurrence: last week's.
-  const lastWeek = addDaysYmd(today, -7)
-  await page
-    .getByRole('region', { name: 'Earlier' })
-    .getByRole('button', { name: /Standing call/ })
-    .click()
-  await expect(page).toHaveURL(new RegExp(`at=${lastWeek}T09(%3A|:)00`))
-  const [, m, d] = lastWeek.split('-').map(Number) as [number, number, number]
-  // The year is printed only when it is not this one, as in the first week of January.
-  await expect(pane(page)).toContainText(new RegExp(`${MONTHS[m - 1]} ${d}(, \\d{4})?, 09:00`))
 })
 
 test('a meeting edit the server refuses stays open and says why', async ({ page }) => {

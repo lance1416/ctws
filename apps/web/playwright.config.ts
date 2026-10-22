@@ -10,9 +10,22 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'html' : 'list',
   use: {
-    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  projects: [
+    {
+      name: 'app',
+      testIgnore: /\.pinned\.spec\.ts$/,
+      use: { baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000' },
+    },
+    {
+      // The specs whose answer depends on what time it is, against the app whose clock is pinned
+      // (`api-pinned` in docker-compose.yml): their expectations come from `e2e/pinned.ts`.
+      name: 'pinned',
+      testMatch: /\.pinned\.spec\.ts$/,
+      use: { baseURL: process.env.E2E_PINNED_URL ?? 'http://localhost:3001' },
+    },
+  ],
 })

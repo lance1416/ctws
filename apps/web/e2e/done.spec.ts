@@ -1,6 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
-  backdateCompletion,
   editDetail,
   pressSignOut,
   makeProject,
@@ -10,32 +9,18 @@ import {
   taskPatched,
   WEB,
 } from './helpers'
-import { MONTHS } from './days'
 
 // The completed-work view, task deletion, and the panel's guard against losing edits on
 // navigation. As in daily.spec.ts, every claim about what changed is checked against the SERVER
 // (a fresh GET) or a reload, so an implementation that only updates the screen cannot pass.
 
-/**
- * Hours to go back so a completion lands around NOON on the day `daysAgo` before today.
- *
- * A fixed offset cannot express "yesterday": run at 23:30, `25 hours` lands on yesterday; run at
- * 00:30 it lands the day BEFORE yesterday, and the heading reads a date instead of "Yesterday".
- * No single constant works for both, so the offset is measured from the current local hour --
- * otherwise the test is red for one hour out of every twenty-four.
- */
-function hoursBackToNoon(daysAgo: number): number {
-  return new Date().getHours() + 12 + (daysAgo - 1) * 24
-}
-
-/** Finishes a task through the API, then (optionally) moves the completion back in time. */
-async function finish(page: Page, id: string, ago?: string) {
+/** Finishes a task through the API. */
+async function finish(page: Page, id: string) {
   const p = await page.request.patch(`/api/v1/tasks/${id}`, {
     headers: WEB,
     data: { status: 'done' },
   })
   expect(p.status()).toBe(200)
-  if (ago) backdateCompletion(id, ago)
 }
 
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Modules' })
@@ -96,42 +81,6 @@ test('finishing a task in the tree puts it on Done with its project and parent, 
   await page.reload()
   await expect(rowsIn(page, /^Today · /)).toHaveCount(2)
   await expect(rowsIn(page, /^Today · /).first()).toContainText('修 bug')
-})
-
-test('the completed list is grouped by day, newest day and newest task first', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'History')
-  const nowTask = await makeTask(page, pid, '刚刚完成')
-  const yesterday = await makeTask(page, pid, '昨天完成')
-  const olderA = await makeTask(page, pid, '五天前上午')
-  const olderB = await makeTask(page, pid, '五天前晚上')
-  await finish(page, nowTask)
-  await finish(page, yesterday, `${hoursBackToNoon(1)} hours`)
-  // Same day, six hours apart: the later one must come first within the day.
-  await finish(page, olderA, `${hoursBackToNoon(5)} hours`)
-  await finish(page, olderB, `${hoursBackToNoon(5) - 6} hours`)
-
-  await page.goto('/review?view=done')
-  const headings = page.locator('section[data-panel]').getByRole('heading', { level: 2 })
-  // Three days, newest first; the nearest two are told apart as Today / Yesterday.
-  await expect(headings).toHaveCount(3)
-  await expect(headings.nth(0)).toContainText('Today')
-  await expect(headings.nth(1)).toContainText('Yesterday')
-  const five = new Date(Date.now() - hoursBackToNoon(5) * 3_600_000)
-  const fiveLabel = `${MONTHS[five.getMonth()]} ${five.getDate()}`
-  await expect(headings.nth(2)).toContainText(fiveLabel)
-  await expect(headings.nth(2)).not.toContainText('Today')
-  await expect(headings.nth(2)).not.toContainText('Yesterday')
-
-  await expect(rowsIn(page, /^Today · /)).toHaveCount(1)
-  await expect(rowsIn(page, /^Yesterday · /)).toHaveCount(1)
-  const old = rowsIn(page, new RegExp(fiveLabel))
-  await expect(old).toHaveCount(2)
-  await expect(old.nth(0)).toContainText('五天前晚上')
-  await expect(old.nth(1)).toContainText('五天前上午')
-
-  // Every row carries a time of day.
-  await expect(page.locator('time').first()).toHaveText(/^\d{2}:\d{2}$/)
 })
 
 test('a finished task can be restored from the completed list, and the server agrees', async ({

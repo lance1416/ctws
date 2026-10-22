@@ -64,6 +64,35 @@ services:
     ports:
       - '3000:3000'
 
+  # The same app with its clock pinned (`CLOCK_PINNED_AT`), for the e2e specs whose answer depends
+  # on what time it is (`apps/web/e2e/*.pinned.spec.ts`): their expectations come from this instant,
+  # never from the wall clock. The clock starts here when the container does and runs on, so
+  # recreate it before a run. Only with `--profile pinned`.
+  api-pinned:
+    profiles: ['pinned']
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ctws}:${POSTGRES_PASSWORD:-ctws}@postgres:5432/${POSTGRES_DB:-ctws}
+      AUTH_CEILING: ${AUTH_CEILING:-100000}
+      READING_UNFURL: 'false'
+      CLOCK_PINNED_AT: '2026-10-22T00:30:00Z'
+      BACKUPS_DIR: /backups
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - backups:/backups:ro
+    ports:
+      - '3001:3000'
+
 volumes:
   pgdata:
   backups:

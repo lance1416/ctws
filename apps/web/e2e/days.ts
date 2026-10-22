@@ -1,7 +1,8 @@
 /**
  * THE SUITE'S DATE ARITHMETIC, in the runner's local days. The browser registers its user with its
- * own zone, so the account's days and the runner's are the same; `timezone.spec.ts` sets another
- * zone and computes its own.
+ * own zone, so the account's days and the runner's are the same. A spec whose answer turns on the
+ * day itself (a weekday, a year, an hour) is not built from these: it is a `*.pinned.spec.ts`, and
+ * takes its days from `pinned.ts`.
  */
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -61,14 +62,3 @@ export function addDaysYmd(day: string, n: number): string {
 
 /** The calendar day after `day`. */
 export const dayAfter = (day: string): string => addDaysYmd(day, 1)
-
-/**
- * A day as the shared date field shows it once left (FR-034): "Oct 29", with the year when it is
- * not this year's. An empty day is an empty field.
- */
-export function dayWords(day: string): string {
-  if (!day) return ''
-  const [y, m, dd] = day.split('-').map(Number) as [number, number, number]
-  const words = `${MONTHS[m - 1]} ${dd}`
-  return y === new Date().getFullYear() ? words : `${words}, ${y}`
-}

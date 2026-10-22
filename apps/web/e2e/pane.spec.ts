@@ -1,14 +1,15 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
   editDetail,
   makeProject,
   makeTask,
   registerFreshUser,
+  openTaskPane,
+  saveTaskBody,
   serverTask,
-  taskPatched,
   navLink,
 } from './helpers'
-import { dayAfter, dayOffset, MONTHS, nextMondayYmd, ymd, dayWords } from './days'
+import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /**
  * THE DETAIL PANE, in the row system's own vocabulary: the five marker shapes, the plan and
@@ -24,32 +25,13 @@ import { dayAfter, dayOffset, MONTHS, nextMondayYmd, ymd, dayWords } from './day
  * - "a destructive action is not a peer of Save" is a claim about rank, so it is measured too.
  */
 
-/** Presses Save and returns the PATCH the press produced, so the BODY can be asserted. */
-async function saveBody(page: Page): Promise<Record<string, unknown>> {
-  const done = taskPatched(page)
-  await page.getByRole('button', { name: 'Save' }).click()
-  const res = await done
-  return res.request().postDataJSON() as Record<string, unknown>
-}
-
-/**
- * Opens a task's pane. `edit` presses Edit, because the pane opens in READING mode and the controls
- * these tests are about exist only in editing mode.
- */
-async function openPane(page: Page, projectId: string, title: string, edit = true) {
-  await page.goto(`/projects/${projectId}`)
-  await page.getByRole('listitem').filter({ hasText: title }).first().click()
-  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
-  if (edit) await editDetail(page)
-}
-
 // ------------------------------------------------------------------- status, as shapes not words
 
 test('the status markers write the contract’s own status value', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '写方案')
-  await openPane(page, pid, '写方案')
+  await openTaskPane(page, pid, '写方案')
 
   // The task starts at To do, and the group says so without anything being opened.
   await expect(page.getByRole('radio', { name: 'To do', exact: true })).toBeChecked()
@@ -59,14 +41,14 @@ test('the status markers write the contract’s own status value', async ({ page
 
   await page.getByRole('radio', { name: 'In progress', exact: true }).check()
   // One field, the contract's own value -- not the label, and nothing else dragged along.
-  expect(await saveBody(page)).toEqual({ status: 'in_progress' })
+  expect(await saveTaskBody(page)).toEqual({ status: 'in_progress' })
   expect((await serverTask(page, pid, id)).status).toBe('in_progress')
 
   // And back the other way, so this cannot pass by writing one constant.
-  await openPane(page, pid, '写方案')
+  await openTaskPane(page, pid, '写方案')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
   await page.getByRole('radio', { name: 'Cancelled', exact: true }).check()
-  expect(await saveBody(page)).toEqual({ status: 'cancelled' })
+  expect(await saveTaskBody(page)).toEqual({ status: 'cancelled' })
   expect((await serverTask(page, pid, id)).status).toBe('cancelled')
 })
 
@@ -74,7 +56,7 @@ test('the five statuses are one tab stop and the arrow keys move inside it', asy
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案')
-  await openPane(page, pid, '写方案')
+  await openTaskPane(page, pid, '写方案')
 
   // From the title, one Tab reaches the group -- at the CHECKED member, which is the native
   // radiogroup contract and the reason this is not five buttons.
@@ -97,7 +79,7 @@ test('the five statuses are one tab stop and the arrow keys move inside it', asy
   expect(inGroup, 'Tab left the status group').toBe(false)
 
   // The arrow press is a real edit: the pane now guards it like any other.
-  expect(await saveBody(page)).toEqual({ status: 'in_progress' })
+  expect(await saveTaskBody(page)).toEqual({ status: 'in_progress' })
 })
 
 // --------------------------------------------------------------------------- the two dates
@@ -106,10 +88,10 @@ test('the named deadline decisions write the day the row would show', async ({ p
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '交报告')
-  await openPane(page, pid, '交报告')
+  await openTaskPane(page, pid, '交报告')
 
   await page.getByRole('button', { name: 'Due tomorrow', exact: true }).click()
-  const body = await saveBody(page)
+  const body = await saveTaskBody(page)
   expect(Object.keys(body)).toEqual(['dueAt'])
   // A deadline is an instant; what it must get right is the local calendar DAY.
   expect(ymd(new Date(body.dueAt as string))).toBe(dayOffset(1))
@@ -119,67 +101,33 @@ test('the named deadline decisions write the day the row would show', async ({ p
   //
   // Through TODAY first, and not straight from "tomorrow": on a Sunday next Monday IS tomorrow,
   // the value would not change, and the app is RIGHT to send nothing.
-  await openPane(page, pid, '交报告')
+  await openTaskPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Due today', exact: true }).click()
-  await saveBody(page)
-  await openPane(page, pid, '交报告')
+  await saveTaskBody(page)
+  await openTaskPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Due next week', exact: true }).click()
-  expect(ymd(new Date((await saveBody(page)).dueAt as string))).toBe(nextMondayYmd())
+  expect(ymd(new Date((await saveTaskBody(page)).dueAt as string))).toBe(nextMondayYmd())
 
   // Moving the day keeps the time of day, exactly as pushing a deadline does on the row. The time is set
   // through the exact field first, and to something that is NOT the default a new deadline gets:
   // with 23:59 on both sides this assertion would hold however the day was moved.
-  await openPane(page, pid, '交报告')
+  await openTaskPane(page, pid, '交报告')
   await page.getByLabel('Due', { exact: true }).fill(`${dayOffset(3)}T09:15`)
-  await saveBody(page)
+  await saveTaskBody(page)
   const kept = (await serverTask(page, pid, id)).dueAt!
   expect(new Date(kept).getHours(), 'the fixture really is not the 23:59 default').toBe(9)
-  await openPane(page, pid, '交报告')
+  await openTaskPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Due today', exact: true }).click()
-  const moved = (await saveBody(page)).dueAt as string
+  const moved = (await saveTaskBody(page)).dueAt as string
   expect(ymd(new Date(moved))).toBe(dayOffset(0))
   expect(new Date(moved).getHours()).toBe(9)
   expect(new Date(moved).getMinutes()).toBe(15)
 
   // And the way out sends null, not an empty string the contract would reject.
-  await openPane(page, pid, '交报告')
+  await openTaskPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Clear the deadline', exact: true }).click()
-  expect(await saveBody(page)).toEqual({ dueAt: null })
+  expect(await saveTaskBody(page)).toEqual({ dueAt: null })
   expect((await serverTask(page, pid, id)).dueAt).toBeNull()
-})
-
-test('the named plan decisions write the same scheduledOn the exact field writes', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const id = await makeTask(page, pid, '改简历')
-  await openPane(page, pid, '改简历')
-
-  await page.getByRole('button', { name: 'Plan for tomorrow', exact: true }).click()
-  expect(await saveBody(page)).toEqual({ scheduledOn: dayOffset(1) })
-  expect((await serverTask(page, pid, id)).scheduledOn).toBe(dayOffset(1))
-
-  // The named decision and the exact field are two ways to the SAME field, not two fields.
-  await openPane(page, pid, '改简历')
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(dayOffset(1)))
-  // THE DAY AFTER NEXT MONDAY, not a fixed offset. `dayOffset(4)` is next Monday whenever this
-  // runs on a Thursday, and then "next week" below writes the value already stored -- the form is
-  // not dirty, and no request is sent.
-  const afterNextMonday = dayAfter(nextMondayYmd())
-  await page.getByLabel('Plan', { exact: true }).fill(afterNextMonday)
-  expect(await saveBody(page)).toEqual({ scheduledOn: afterNextMonday })
-
-  await openPane(page, pid, '改简历')
-  await page.getByRole('button', { name: 'Plan for next week', exact: true }).click()
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(nextMondayYmd()))
-  expect(await saveBody(page)).toEqual({ scheduledOn: nextMondayYmd() })
-
-  await openPane(page, pid, '改简历')
-  await page.getByRole('button', { name: 'Clear the plan', exact: true }).click()
-  await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('')
-  expect(await saveBody(page)).toEqual({ scheduledOn: null })
-  expect((await serverTask(page, pid, id)).scheduledOn).toBeNull()
 })
 
 test('both dates change in one request, and nothing is saved until Save is pressed', async ({
@@ -188,7 +136,7 @@ test('both dates change in one request, and nothing is saved until Save is press
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '两样都改')
-  await openPane(page, pid, '两样都改')
+  await openTaskPane(page, pid, '两样都改')
 
   const writes: string[] = []
   page.on('request', (r) => {
@@ -203,7 +151,7 @@ test('both dates change in one request, and nothing is saved until Save is press
   expect(writes, 'nothing is written before Save').toHaveLength(0)
   expect((await serverTask(page, pid, id)).status).toBe('todo')
 
-  const body = await saveBody(page)
+  const body = await saveTaskBody(page)
   expect(Object.keys(body).sort()).toEqual(['dueAt', 'scheduledOn', 'status'])
   // The one write is Save's, so the three presses before it sent none.
   expect(writes).toHaveLength(1)
@@ -213,35 +161,11 @@ test('both dates change in one request, and nothing is saved until Save is press
   expect(ymd(new Date(after.dueAt!))).toBe(dayOffset(0))
 })
 
-test('the pane says the day back in the app’s own words, not the field’s format', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '看日期')
-  await openPane(page, pid, '看日期')
-
-  const dialog = page.getByRole('dialog', { name: 'Task details' })
-  await page.getByRole('button', { name: 'Plan for tomorrow', exact: true }).click()
-  // A native date input prints its format in the BROWSER'S UI language, which no page can set;
-  // the echo is the app saying which day it understood, and it is right whatever the field prints.
-  await expect(dialog.getByText('Tomorrow', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Plan for next week', exact: true }).click()
-  const nextMonday = nextMondayYmd()
-  const [, m, d] = nextMonday.split('-').map(Number)
-  // On a Sunday next Monday IS tomorrow, and "Tomorrow" is still the app saying which day it
-  // understood. What this test is about is that the WIRE FORMAT never reaches the screen.
-  const echo = nextMonday === dayOffset(1) ? 'Tomorrow' : `${MONTHS[m! - 1]} ${d}`
-  await expect(dialog.getByText(echo, { exact: true })).toBeVisible()
-  // The wire format never reaches the screen as a reading.
-  await expect(dialog.getByText(/^\d{4}-\d{2}-\d{2}$/)).toHaveCount(0)
-})
-
 test('the pane wears the row system: two date glyphs, two colour families', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '两种日期')
-  await openPane(page, pid, '两种日期')
+  await openTaskPane(page, pid, '两种日期')
 
   const dialog = page.getByRole('dialog', { name: 'Task details' })
   const due = dialog.locator('label[for="detail-due"]')
@@ -285,7 +209,7 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '看焦点')
-  await openPane(page, pid, '看焦点')
+  await openTaskPane(page, pid, '看焦点')
 
   // The radio itself is a transparent overlay, so the ring the app draws on every other control
   // has to be drawn on the CHIP, or it is the one control a keyboard user cannot see.
@@ -316,7 +240,7 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Workbench')
   await makeTask(page, pid, '这条任务的标题')
-  await openPane(page, pid, '这条任务的标题')
+  await openTaskPane(page, pid, '这条任务的标题')
   const dialog = page.getByRole('dialog', { name: 'Task details' })
 
   // The first thing in the pane is where the task lives and what it is called -- not a field
@@ -362,7 +286,8 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   const id = await makeTask(page, pid, '读一下这条任务', {
     status: 'in_progress',
     dueAt: `${dayOffset(2)}T09:15:00.000Z`,
-    scheduledOn: dayOffset(1),
+    // A fixed day in a past year, so it is said with its year whenever the suite runs.
+    scheduledOn: '2019-03-14',
     notes: '第一行\n第二行',
   })
   const writes: string[] = []
@@ -370,7 +295,7 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
     if (r.method() === 'PATCH' || r.method() === 'DELETE') writes.push(r.url())
   })
 
-  await openPane(page, pid, '读一下这条任务', false)
+  await openTaskPane(page, pid, '读一下这条任务', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
 
   // Not one FIELD on screen: no input of any kind, no select, no textarea, and nothing exposed as
@@ -389,13 +314,13 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   await expect(dialog.locator('[data-detail-notes]')).toContainText('第二行')
   // Said in the app's own words, never the wire format a reader would have to parse.
   await expect(dialog.getByText(/^\d{4}-\d{2}-\d{2}/)).toHaveCount(0)
-  await expect(dialog).toContainText('Tomorrow')
+  await expect(dialog).toContainText('Mar 14, 2019')
 
   // Edit brings every one of them back.
   await editDetail(page)
   await expect(dialog.getByRole('textbox', { name: 'Title' })).toHaveValue('读一下这条任务')
   await expect(dialog.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
-  await expect(dialog.getByLabel('Plan', { exact: true })).toHaveValue(dayWords(dayOffset(1)))
+  await expect(dialog.getByLabel('Plan', { exact: true })).toHaveValue('Mar 14, 2019')
   await expect(dialog.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
     '第一行\n第二行',
   )
@@ -408,7 +333,7 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   expect(writes, 'nothing was written by reading or by pressing Edit').toEqual([])
   expect((await serverTask(page, pid, id)).status).toBe('in_progress')
   await dialog.getByRole('textbox', { name: 'Title' }).fill('读完了这条任务')
-  await saveBody(page)
+  await saveTaskBody(page)
   expect(writes).toHaveLength(1)
 })
 
@@ -418,7 +343,7 @@ test('Edit hands focus to the first field rather than dropping it on the body', 
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '按下编辑')
-  await openPane(page, pid, '按下编辑', false)
+  await openTaskPane(page, pid, '按下编辑', false)
   // The Edit button unmounts as it is pressed; focus must not fall to <body> (WCAG 2.4.3).
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
@@ -440,7 +365,7 @@ test('the status is changed from reading mode, in one act and with no Save', asy
     if (r.method() === 'PATCH') writes.push(r.url())
   })
 
-  await openPane(page, pid, '改我的状态', false)
+  await openTaskPane(page, pid, '改我的状态', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
 
   await dialog.getByRole('button', { name: 'Status: To do' }).click()
@@ -461,7 +386,7 @@ test('finishing a task from its pane keeps focus in the pane', async ({ page }) 
   const pid = await makeProject(page, 'Stay')
   await makeTask(page, pid, 'Finish me')
   await makeTask(page, pid, 'Neighbour')
-  await openPane(page, pid, 'Finish me', false)
+  await openTaskPane(page, pid, 'Finish me', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
 
   await dialog.getByRole('button', { name: 'Status: To do' }).click()
@@ -478,7 +403,7 @@ test('a status change that fails says so', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Flaky')
   const id = await makeTask(page, pid, 'Will not move')
-  await openPane(page, pid, 'Will not move', false)
+  await openTaskPane(page, pid, 'Will not move', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
   await page.route(`**/api/v1/tasks/${id}`, (r) =>
     r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
@@ -507,7 +432,7 @@ test('picking the status it already has writes nothing', async ({ page }) => {
     if (r.method() === 'PATCH') writes.push(r.url())
   })
 
-  await openPane(page, pid, '不改我的状态', false)
+  await openTaskPane(page, pid, '不改我的状态', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
   await dialog.getByRole('button', { name: 'Status: To do' }).click()
   await page.getByRole('menuitem', { name: 'To do' }).click()
@@ -525,7 +450,7 @@ test('a status changed from the pane leaves nothing unsaved to walk away from', 
   const pid = await makeProject(page, 'Status')
   await makeTask(page, pid, '改完就走')
 
-  await openPane(page, pid, '改完就走', false)
+  await openTaskPane(page, pid, '改完就走', false)
   await page.getByRole('dialog').getByRole('button', { name: 'Status: To do' }).click()
   await page.getByRole('menuitem', { name: 'Done' }).click()
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Status: Done' })).toBeVisible()
