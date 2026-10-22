@@ -302,6 +302,42 @@ describe('listToday timezone and DST', () => {
       cols: { dueAt: '2026-10-01T10:00:00Z', status: 'in_progress' },
       expected: 'overdue',
     },
+    // A late task planned for a day (FR-079, "交申请"): its deadline stays, and the plan decides.
+    {
+      name: 'late and planned for today: today’s, not overdue',
+      tz: 'Asia/Shanghai',
+      now: NOW,
+      cols: { dueAt: '2026-09-25T10:00:00Z', scheduledOn: '2026-10-02' },
+      expected: 'today',
+    },
+    {
+      name: 'late and planned for a later day: off Today until that day',
+      tz: 'Asia/Shanghai',
+      now: NOW,
+      cols: { dueAt: '2026-09-25T10:00:00Z', scheduledOn: '2026-10-03' },
+      expected: 'absent',
+    },
+    {
+      name: 'late and planned for Oct 2: still tomorrow in Los Angeles',
+      tz: 'America/Los_Angeles',
+      now: NOW,
+      cols: { dueAt: '2026-09-25T10:00:00Z', scheduledOn: '2026-10-02' },
+      expected: 'absent',
+    },
+    {
+      name: 'late and its planned day gone by: overdue again, not carried',
+      tz: 'Asia/Shanghai',
+      now: NOW,
+      cols: { dueAt: '2026-09-25T10:00:00Z', scheduledOn: '2026-10-01' },
+      expected: 'overdue',
+    },
+    {
+      name: 'late, planned for a later day and started: in progress',
+      tz: 'Asia/Shanghai',
+      now: NOW,
+      cols: { dueAt: '2026-09-25T10:00:00Z', scheduledOn: '2026-10-05', status: 'in_progress' },
+      expected: 'in_progress',
+    },
     // Fall back, 2026-11-01 in Los Angeles: the local day is 25h (07:00Z..08:00Z next day) and
     // 01:00-02:00 happens twice. A day is not 24h here.
     {

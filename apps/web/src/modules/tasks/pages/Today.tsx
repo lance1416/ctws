@@ -201,7 +201,8 @@ export function Today() {
                   overdue={overdue}
                   day={day}
                   line={line}
-                  onMove={(id, to) => patch(id, { dueAt: null, scheduledOn: to })}
+                  // A plan, not a new deadline: the deadline stays, and so does how late it is.
+                  onMove={(id, to) => patch(id, { scheduledOn: to })}
                 />
               )}
             </>
@@ -308,7 +309,9 @@ function PlannedBlock({
 
 /**
  * OVERDUE: what is late, how late, and the days it can move to, which make it a plan (FR-079):
- * Today, Tomorrow, next Monday, or a day picked. Past five, the head moves them all at once. A
+ * Today, Tomorrow, next Monday, or a day picked. The deadline stays: the row leaves Overdue for
+ * that day, comes back on it in Planned for today, still "N days late", and is overdue again the
+ * day after if it is still open. Past five, the head moves them all at once. A
  * parent has no plan of its own (FR-043): its row offers no day, and moving them all passes it
  * by; it is opened to change its deadline or to get on with what is under it.
  */

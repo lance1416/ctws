@@ -48,6 +48,52 @@ test('the marks say due today, tomorrow, how late, and where a plan was carried 
   await expect(row(page, 'Planned for today', '顺延的')).toContainText('Carried from Sun')
 })
 
+test('a late task given a day keeps its deadline, waits for that day, and is late on it', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const project = await apiPost(page, '/projects', { name: '申请' })
+  // FR-079's example: due Thursday the 15th, a week late on the 22nd.
+  const due = '2026-10-15T11:00:00Z'
+  await task(page, project.id, '交申请', { dueAt: due })
+  await task(page, project.id, '交材料', { dueAt: due })
+  // Given yesterday, and not done: back in Overdue, not carried like a plain plan.
+  await task(page, project.id, '交照片', { dueAt: due, scheduledOn: '2026-10-21' })
+  await page.goto('/today')
+
+  await expect(row(page, 'Overdue', '交照片').locator('[data-row-mark]')).toHaveText('7 days late')
+  await expect(row(page, 'Overdue', '交照片')).not.toContainText('Carried')
+
+  await row(page, 'Overdue', '交申请')
+    .getByRole('button', { name: /for tomorrow$/ })
+    .click()
+  await expect(row(page, 'Overdue', '交申请')).toHaveCount(0)
+  await row(page, 'Overdue', '交材料')
+    .getByRole('button', { name: /for today$/ })
+    .click()
+  // On its day it is today's plan, and still says how late it is.
+  await expect(row(page, 'Planned for today', '交材料').locator('[data-row-mark]')).toHaveText(
+    '7 days late',
+  )
+  await expect(row(page, 'Planned for today', '交材料')).not.toContainText('Carried')
+
+  const listed = await page.request.get(`/api/v1/tasks?projectId=${project.id}`)
+  const tasks = (await listed.json()).tasks as {
+    title: string
+    dueAt: string
+    scheduledOn: string
+  }[]
+  const of = (title: string) => tasks.find((t) => t.title === title)!
+  expect([Date.parse(of('交申请').dueAt), of('交申请').scheduledOn]).toEqual([
+    Date.parse(due),
+    '2026-10-23',
+  ])
+  expect([Date.parse(of('交材料').dueAt), of('交材料').scheduledOn]).toEqual([
+    Date.parse(due),
+    '2026-10-22',
+  ])
+})
+
 test('a parent by its deadline: a row of today’s or overdue, with its progress square', async ({
   page,
 }) => {

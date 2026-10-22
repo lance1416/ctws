@@ -31,6 +31,19 @@ export const taskFinishedSql = (task: string): SQL => sql`${ident(task)}.status 
 export const taskOpenSql = (task: string): SQL => sql`${ident(task)}.status not in (${FINISHED})`
 
 /**
+ * The task under the alias is OVERDUE (FR-079): open, its deadline before the day that starts at
+ * `dayStarts`, and not planned for `today` or a later day. Planning a late task for a day takes it
+ * out until that day has gone by with it still open; its deadline stays as it was.
+ */
+export const overdueSql = (task: string, { dayStarts, today }: { dayStarts: SQL; today: SQL }) =>
+  sql`(
+    ${taskOpenSql(task)}
+    and ${ident(task)}.due_at is not null
+    and ${ident(task)}.due_at < ${dayStarts}
+    and (${ident(task)}.scheduled_on is null or ${ident(task)}.scheduled_on < ${today})
+  )`
+
+/**
  * How many live open leaves the project `projectId` names has: a parent organises the work under
  * it, and is not one more thing open (FR-037). The project list correlates it through the literal
  * `projects.id`: a drizzle column would render unqualified.

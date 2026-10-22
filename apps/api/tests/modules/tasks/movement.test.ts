@@ -297,6 +297,16 @@ describe('GET /tasks/movement', () => {
     ).toBe(204)
     // A deadline a long way off is not overdue.
     await dueAt(await createTask(ctx, pid, 'next decade'), '2099-01-01T09:00:00Z')
+    // Late but planned for a day to come: not overdue until that day goes by (FR-079).
+    const planned = await createTask(ctx, pid, 'planned again')
+    await dueAt(planned, '2020-01-01T09:00:00Z')
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${planned}`,
+      headers: ctx.authed,
+      payload: { scheduledOn: '2099-01-01' },
+    })
+    expect(res.statusCode).toBe(200)
 
     expect(rowFor(await movement(), pid).overdue).toBe(1)
   })

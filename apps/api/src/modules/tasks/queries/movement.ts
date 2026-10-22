@@ -6,7 +6,7 @@ import { rowsOf } from '../../../platform/db/raw'
 import { dayStart, localDay, weekStart } from '../../../platform/db/time'
 import { unarchivedProjects } from '../../../shell/projects'
 import { isLeafSql } from './rows'
-import { openTaskCountSql, taskOpenSql } from './scope'
+import { openTaskCountSql, overdueSql, taskOpenSql } from './scope'
 
 const movementRow = z.object({
   projectId: z.string(),
@@ -55,9 +55,7 @@ export async function listProjectMovement(
         select count(*) from tasks late_t
         where late_t.project_id = ${project}
           and late_t.deleted_at is null
-          and ${taskOpenSql('late_t')}
-          and late_t.due_at is not null
-          and late_t.due_at < ${todayStarts}
+          and ${overdueSql('late_t', { dayStarts: todayStarts, today })}
       ) as overdue,
       last_activity.day as "lastActivityOn",
       ${today} - last_activity.day as "quietDays",

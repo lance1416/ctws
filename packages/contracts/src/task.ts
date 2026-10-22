@@ -269,7 +269,7 @@ export const projectMovementResponse = z.object({
   projectName: z.string(),
   doneThisWeek: z.number().int().nonnegative(),
   remaining: z.number().int().nonnegative(),
-  /** Open and due before today, counted as Today's overdue segment is. */
+  /** Late and not planned for today or later, counted as Today's Overdue is (FR-079). */
   overdue: z.number().int().nonnegative(),
   lastActivityOn: calendarDate.nullable(),
   quietDays: z.number().int().nonnegative().nullable(),

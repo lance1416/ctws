@@ -132,16 +132,18 @@ test('an overdue row becomes a plan with one press: Today, Tomorrow, Mon or a da
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '逾期')
+  const due = dueAgo(2)
   for (const t of ['改到今天', '改到明天', '改到周一', '另选一天'])
-    await makeTask(page, pid, t, { dueAt: dueAgo(2) })
+    await makeTask(page, pid, t, { dueAt: due })
   await page.reload()
   const overdue = block(page, 'Overdue')
 
   await overdue.getByRole('button', { name: 'Plan “改到明天” for tomorrow' }).click()
   await expect(rowOf(overdue, '改到明天')).toHaveCount(0)
-  // A plan now, nobody waiting: the deadline goes (FR-079), and tomorrow it is on Planned.
+  // A plan, not a new deadline (FR-079): the deadline stays, and tomorrow it is on Planned.
   const tomorrow = await serverTask(page, pid, '改到明天')
-  expect([tomorrow.dueAt, tomorrow.scheduledOn]).toEqual([null, dayOffset(1)])
+  expect(tomorrow.scheduledOn).toBe(dayOffset(1))
+  expect(Date.parse(tomorrow.dueAt!)).toBe(Date.parse(due))
 
   await overdue.getByRole('button', { name: 'Plan “改到今天” for today' }).click()
   await expect(rowOf(block(page, 'Planned for today'), '改到今天')).toBeVisible()
@@ -175,8 +177,12 @@ test('past five overdue, the head moves them all, and All N shows the rest', asy
   await overdue.getByRole('button', { name: /^Move all to/ }).click()
   await page.getByRole('menuitem', { name: 'Tomorrow' }).click()
   await expect(overdue).toHaveCount(0)
-  for (let i = 1; i <= 7; i++)
-    expect((await serverTask(page, pid, `逾期${i}`)).scheduledOn).toBe(dayOffset(1))
+  // Plans only: every deadline stays where it was (FR-079).
+  for (let i = 1; i <= 7; i++) {
+    const moved = await serverTask(page, pid, `逾期${i}`)
+    expect(moved.scheduledOn).toBe(dayOffset(1))
+    expect(moved.dueAt).not.toBeNull()
+  }
 })
 
 test('the timeline: now, the free stretch, the meeting with Join and the timed deadline', async ({
