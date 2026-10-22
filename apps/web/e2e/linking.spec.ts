@@ -159,7 +159,7 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
   await expect(pane).toBeVisible()
   await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
 
-  await pane.getByRole('button', { name: '+ Link' }).click()
+  await pane.getByRole('button', { name: 'Link something' }).click()
   await picker(page).getByRole('combobox', { name: 'Search' }).fill('Ying')
   await picker(page)
     .getByRole('option', { name: /Ying Chen/ })
@@ -167,13 +167,46 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
   // No line of why: Enter skips it.
   await page.getByRole('textbox', { name: 'Why' }).press('Enter')
 
-  await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('Ying Chen')
+  // A chip of the person's kind, by name (FR-056, artboard 8).
+  await expect(pane.getByRole('region', { name: 'Linked' }).getByRole('link')).toHaveText(
+    'Ying Chen',
+  )
 
   // The person's side shows it too: a link is read from both ends.
   await page.goto(`/people/${person.id}`)
   await expect(
     page.getByRole('dialog', { name: 'People' }).getByRole('region', { name: 'Linked' }),
   ).toContainText('准备一面')
+})
+
+test('a task whose notes mention someone shows them by name, never the mention’s Markdown', async ({
+  page,
+}) => {
+  const { person } = await world(page)
+  const project = await apiPost(page, '/projects', { name: '找工作' })
+  await apiPost(page, '/tasks', {
+    title: 'Prepare the system design round',
+    projectId: project.id,
+    notes: `Ask [@Ying Chen](ctws://person/${person.id as string}) which questions came up.`,
+  })
+  await page.goto(`/projects/${project.id as string}`)
+  await page.getByRole('listitem').filter({ hasText: 'Prepare the system design round' }).click()
+  const linked = page
+    .getByRole('dialog', { name: 'Task details' })
+    .getByRole('region', { name: 'Linked' })
+  // BUG-036: the name, whole; the sentence and its address stay out of the chip.
+  await expect(linked.getByRole('link')).toHaveText('Ying Chen')
+  await expect(linked).not.toContainText('ctws://')
+  // A mention goes with its sentence: no × to unlink it here.
+  await expect(linked.getByRole('button', { name: /^Unlink/ })).toHaveCount(0)
+
+  // The person's side says the sentence as it reads.
+  await page.goto(`/people/${person.id as string}`)
+  const theirs = page
+    .getByRole('dialog', { name: 'People' })
+    .getByRole('region', { name: 'Linked' })
+  await expect(theirs).toContainText('Ask @Ying Chen which questions came up.')
+  await expect(theirs).not.toContainText('ctws://')
 })
 
 // ------------------------------------------------------------------- a task's sheet has an address

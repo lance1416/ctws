@@ -9,7 +9,7 @@ import { DetailHead } from '../../../platform/ui/DetailPane'
 import { label } from '../../../platform/ui/formStyles'
 import { EditIcon, FlagIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
-import { LinkedSection } from '../../../shell/links'
+import { LinkedChips } from '../../../shell/links'
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { Resources } from '../../../shell/resources'
 import { Timeline } from '../../../shell/timeline'
@@ -176,9 +176,9 @@ export function TaskReading({
       <Resources owner={{ type: 'task', id: task.id }} />
 
       {/* Who or what it is about, after its own fields; the project is already in the head. */}
-      <LinkedSection
+      <LinkedChips
         of={{ type: 'task', id: task.id }}
-        types={['task', 'reading', 'person', 'meeting']}
+        types={['task', 'reading', 'person', 'meeting', 'organisation']}
       />
 
       <Timeline of={{ type: 'task', id: task.id }} />

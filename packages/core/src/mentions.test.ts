@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mentionAddress, mentionsIn } from './mentions'
+import { linkWords, mentionAddress, mentionsIn } from './mentions'
 
 const mira = '0199f1a2-0000-7000-8000-000000000001'
 const amazon = '0199f1a2-0000-7000-8000-000000000002'
@@ -54,6 +54,15 @@ describe('mentionsIn', () => {
   it('has nothing to say about empty text', () => {
     expect(mentionsIn(null)).toEqual([])
     expect(mentionsIn('')).toEqual([])
+  })
+
+  it('reads links as their words, one an excerpt cut off included', () => {
+    expect(linkWords(`Ask [@Mira Chen](ctws://person/${mira}) which questions came up.`)).toBe(
+      'Ask @Mira Chen which questions came up.',
+    )
+    expect(linkWords('See [the doc](https://example.com).')).toBe('See the doc.')
+    expect(linkWords(`Ask [@Mira Chen](ctws://person/${mira.slice(0, 8)}`)).toBe('Ask @Mira Chen')
+    expect(linkWords('No links [here] (or there).')).toBe('No links [here] (or there).')
   })
 
   it('writes the address the editor inserts', () => {

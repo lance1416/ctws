@@ -27,6 +27,16 @@ const MENTION = new RegExp(String.raw`\[@[^\]\n]+\]\(ctws://(${TYPES})/([0-9a-fA
 const SENTENCE_END =
   /(?<=[。．!?！？\n])|(?<=\.(?<!\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|No)\.)(?<!\b[A-Za-z]\.))(?=\s|$)/
 
+/** A Markdown link, a mention included, and one an excerpt's cut has left without its end. */
+const LINK = /\[([^\]\n]+)\]\([^)\s]+\)/g
+const CUT_LINK = /\[([^\]\n]+)\]\([^)\s]*$/
+
+/**
+ * Text with Markdown links in it as it reads: each link, a mention included, as its words. An
+ * excerpt then says "Ask @Mira Chen which questions came up", never an address (BUG-036).
+ */
+export const linkWords = (text: string): string => text.replace(LINK, '$1').replace(CUT_LINK, '$1')
+
 /** The address of a mention of `thing`, for the editor to insert. */
 export const mentionAddress = (type: ObjectType, id: string): string => `ctws://${type}/${id}`
 

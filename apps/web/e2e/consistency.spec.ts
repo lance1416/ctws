@@ -31,15 +31,8 @@ async function panes(page: Page) {
 test('in every pane, Linked lines up on the left with the other labels', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const w = await panes(page)
+  // The task's inspector has its own Linked, chips under a head with its +; checked below.
   const open: [string, () => Promise<unknown>, string][] = [
-    [
-      'Task details',
-      async () => {
-        await page.goto(`/projects/${w.pid}`)
-        await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
-      },
-      'Notes',
-    ],
     ['Meetings', () => page.goto(`/meetings/${w.meeting.meetingId}`), 'Notes'],
     ['People', () => page.goto(`/people/${w.person.id}`), 'Notes'],
     ['Reading', () => page.goto(`/reading/${w.book.id}`), 'Status'],
@@ -59,14 +52,21 @@ test('in every pane, Linked lines up on the left with the other labels', async (
   }
 })
 
-test('in the task pane Linked follows the notes, as in the other panes', async ({ page }) => {
+test('in the task pane Linked follows the notes, its head lined up with theirs', async ({
+  page,
+}) => {
   const w = await panes(page)
   await page.goto(`/projects/${w.pid}`)
   await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
   const notes = (await pane.locator('[data-detail-notes]').boundingBox())!
-  const linked = (await pane.getByRole('region', { name: 'Linked' }).boundingBox())!
+  const region = pane.getByRole('region', { name: 'Linked' })
+  const linked = (await region.boundingBox())!
   expect(linked.y).toBeGreaterThan(notes.y + notes.height)
+  await expect(region.getByRole('button', { name: 'Link something' })).toBeVisible()
+  expect(await textLeft(region.getByText('Linked', { exact: true }))).toBe(
+    await textLeft(pane.getByText('Notes', { exact: true }).first()),
+  )
 })
 
 /** `a` sits to the left of `b` on the same line. */

@@ -1,4 +1,5 @@
 import { api, type ObjectType, type TimelineEntry } from '@ctws/contracts'
+import { linkWords } from '@ctws/core'
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { call } from '../../platform/http/api'
@@ -83,7 +84,7 @@ function lineOf(
       return describeChange?.(entry.event, timeZone) ?? null
     case 'message': {
       const Icon = KIND_ICON.communication
-      const what = entry.message.subject ?? entry.message.excerpt ?? ''
+      const what = entry.message.subject ?? linkWords(entry.message.excerpt ?? '')
       return {
         mark: <Icon size={16} />,
         text: `${entry.message.direction === 'received' ? 'Received' : 'Sent'}: ${what}`,
@@ -95,9 +96,12 @@ function lineOf(
     }
     case 'note': {
       const Icon = KIND_ICON.note
-      return { mark: <Icon size={16} />, text: entry.note.title ?? entry.note.excerpt }
+      return {
+        mark: <Icon size={16} />,
+        text: entry.note.title ?? linkWords(entry.note.excerpt),
+      }
     }
     case 'mention':
-      return { mark: null, text: `Mentioned in “${entry.from.title}”: ${entry.excerpt}` }
+      return { mark: null, text: `Mentioned in “${entry.from.title}”: ${linkWords(entry.excerpt)}` }
   }
 }

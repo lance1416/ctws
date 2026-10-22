@@ -23,3 +23,15 @@ export const KIND_TINT: Record<Kind, string> = {
   communication: 'bg-communication-bg',
   note: 'bg-note-bg',
 }
+
+/** A kind's word on its own tint, a chip's: the darker text that keeps 4.5:1 there. */
+export const KIND_ON_TINT: Record<Kind, string> = {
+  task: 'text-task-t',
+  meeting: 'text-meeting-t',
+  person: 'text-person-t',
+  reading: 'text-reading-t',
+  project: 'text-project-t',
+  organisation: 'text-organisation-t',
+  communication: 'text-communication-t',
+  note: 'text-note-t',
+}
