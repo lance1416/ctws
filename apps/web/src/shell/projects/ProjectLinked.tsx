@@ -1,6 +1,7 @@
 import type { ObjectType, ProjectId } from '@ctws/contracts'
 import { useContext, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { Avatar } from '../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../platform/ui/Block'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { inColumns } from '../../platform/ui/columns'
@@ -24,7 +25,14 @@ const ORDER: readonly ObjectType[] = [
 const SHOWN = 5
 
 /** One row: a module's own thing in the project, or a thing linked to it by hand. */
-type Row = { id: string; title: string; to: string; lead?: string | null; fact?: string | null }
+type Row = {
+  id: string
+  title: string
+  to: string
+  lead?: string | null
+  initials?: string | null
+  fact?: string | null
+}
 
 type KindBlockProps = {
   kind: Kind
@@ -192,7 +200,10 @@ function KindBlock({
   )
 }
 
-/** A module's own thing: a word or two first (a meeting's day and time), the title, a fact. */
+/**
+ * A module's own thing: first a person's avatar or a word or two (a meeting's day and time), then
+ * the title, then a fact.
+ */
 function ThingRow({ row }: { row: Row }) {
   return (
     <Link
@@ -200,7 +211,11 @@ function ThingRow({ row }: { row: Row }) {
       data-linked={row.id}
       className="grid min-h-9 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui text-ink hover:bg-hover"
     >
-      <span className="font-mono text-meta whitespace-nowrap text-muted">{row.lead ?? ''}</span>
+      {row.initials ? (
+        <Avatar initials={row.initials} />
+      ) : (
+        <span className="font-mono text-meta whitespace-nowrap text-muted">{row.lead ?? ''}</span>
+      )}
       <span className="truncate">{row.title}</span>
       <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>
     </Link>

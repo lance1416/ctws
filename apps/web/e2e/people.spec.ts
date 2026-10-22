@@ -301,6 +301,8 @@ test('a project page carries its people, in its People block (FR-055)', async ({
   const people = page.getByRole('region', { name: 'People' })
   await expect(people).toContainText('某招聘')
   await expect(people).not.toContainText('不相干的人')
+  // A person in a list is their avatar and their name (FR-049).
+  await expect(people.locator('[data-linked]').first()).toContainText('某')
 })
 
 test('search reaches a person by their address, from the shell box', async ({ page }) => {
