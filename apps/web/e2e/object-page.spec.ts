@@ -149,4 +149,22 @@ test('a project’s blocks: what is in it first, the empty ones as their heads, 
   const dialog = page.getByRole('dialog', { name: 'New meeting' })
   await expect(dialog).toBeVisible()
   await expect(dialog).toContainText('Job hunt')
+  // FR-026: made from the page's block, it stays on the page and shows in that block.
+  await dialog.getByLabel('Title').fill('Onsite')
+  await dialog.getByLabel('Date').fill(dayOffset(1))
+  await dialog.getByLabel('Start time').fill('10:00')
+  await dialog.getByRole('button', { name: 'Create' }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page).toHaveURL(new RegExp(`/projects/${project.id as string}$`))
+  await expect(page.getByRole('region', { name: 'Meetings' })).toContainText('Onsite')
+
+  // And N P on the page: the person is the project's, and the page stays.
+  await page.keyboard.press('n')
+  await page.keyboard.press('p')
+  const person = page.getByRole('dialog', { name: 'New person' })
+  await person.getByLabel('Name').fill('Priya Nair')
+  await person.getByRole('button', { name: 'Create' }).click()
+  await expect(person).toHaveCount(0)
+  await expect(page).toHaveURL(new RegExp(`/projects/${project.id as string}$`))
+  await expect(page.getByRole('region', { name: 'People' })).toContainText('Priya Nair')
 })

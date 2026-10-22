@@ -87,7 +87,7 @@ function Frame({
   const [searching, setSearching] = useState(false)
   const [help, setHelp] = useState(false)
   const [linking, setLinking] = useState(false)
-  const [creating, setCreating] = useState<Creator | null>(null)
+  const [creating, setCreating] = useState<{ creator: Creator; opens: boolean } | null>(null)
   const [barExpanded, setBarExpanded] = useRemembered('ctws:iconbar', () => false)
   // A choice made by hand is kept whatever the width (handoff §4).
   const [sidebarOpen, setSidebarOpen] = useRemembered(
@@ -102,9 +102,9 @@ function Frame({
   const onProject = useMatch('/projects/:id')
   const projectId = onProject?.params.id ? idFrom(projectIdSchema, onProject.params.id) : null
 
-  const openNew = (creator: Creator) => {
+  const openNew = (creator: Creator, { opens }: { opens: boolean } = { opens: false }) => {
     rememberKind(creator.kind)
-    if (creator.Dialog) setCreating(creator)
+    if (creator.Dialog) setCreating({ creator, opens })
     else if (creator.to) navigate(creator.to)
   }
 
@@ -149,8 +149,12 @@ function Frame({
           onNew={openNew}
         />
         {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
-        {creating?.Dialog && (
-          <creating.Dialog projectId={projectId} onClose={() => setCreating(null)} />
+        {creating?.creator.Dialog && (
+          <creating.creator.Dialog
+            projectId={projectId}
+            opens={creating.opens}
+            onClose={() => setCreating(null)}
+          />
         )}
         <BottomBar onSearch={() => setSearching(true)} />
       </div>

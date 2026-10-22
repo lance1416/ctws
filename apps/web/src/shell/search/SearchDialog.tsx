@@ -292,7 +292,8 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       navigate(inbox.target.to)
     } else if (creator) {
       onClose()
-      openNew(creator)
+      // Made from a search, which is no page's: it opens, as the task made here does.
+      openNew(creator, { opens: true })
     }
   }
   const scopeTo = (type: ObjectType) => {

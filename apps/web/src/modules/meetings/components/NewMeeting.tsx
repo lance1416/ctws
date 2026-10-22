@@ -3,13 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import { MEETINGS_ID } from '../logic/id'
 import { NewMeetingDialog } from './NewMeetingDialog'
 
-/** `N M` from anywhere: the new meeting's page opens once it is made (FR-026). */
+/**
+ * `N M`, a block's `+`, the sidebar's: made from Meetings itself, its page opens once made; from
+ * anywhere else that page stays (FR-026).
+ */
 export function NewMeeting({
   projectId,
   onClose,
+  opens,
 }: {
   projectId: ProjectId | null
   onClose: () => void
+  opens: boolean
 }) {
   const navigate = useNavigate()
   return (
@@ -18,9 +23,10 @@ export function NewMeeting({
       onClose={onClose}
       onMade={(made) => {
         onClose()
-        navigate(
-          `/${MEETINGS_ID}/${made.meetingId}?${new URLSearchParams({ at: made.recurrenceId })}`,
-        )
+        if (opens)
+          navigate(
+            `/${MEETINGS_ID}/${made.meetingId}?${new URLSearchParams({ at: made.recurrenceId })}`,
+          )
       }}
     />
   )

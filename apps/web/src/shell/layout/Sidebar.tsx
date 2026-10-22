@@ -31,7 +31,7 @@ export function Sidebar({ place }: { place: Place }) {
           creator && (
             <button
               type="button"
-              onClick={() => openNew(creator)}
+              onClick={() => openNew(creator, { opens: true })}
               aria-label={`New ${creator.label.toLocaleLowerCase()}`}
               title={`New ${creator.label.toLocaleLowerCase()}  N ${creator.key.toUpperCase()}`}
               className={ICON_BUTTON}

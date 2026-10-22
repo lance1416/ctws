@@ -320,7 +320,15 @@ export type Creator = {
   key: string
   /** "Task", "Meeting": the menu's word. */
   label: string
-  Dialog?: ComponentType<{ projectId: ProjectId | null; onClose: () => void }>
+  Dialog?: ComponentType<{
+    projectId: ProjectId | null
+    onClose: () => void
+    /**
+     * Open the made thing's page once it is made: it was made from its module's own sidebar or
+     * page (FR-026). Otherwise the page it was made from stays, and its block shows it.
+     */
+    opens: boolean
+  }>
   /** Where to go instead, when the kind is made on its own page. */
   to?: string
 }

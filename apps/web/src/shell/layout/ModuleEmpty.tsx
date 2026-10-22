@@ -33,7 +33,7 @@ export function ModuleEmpty({
       {creator && (
         <button
           type="button"
-          onClick={() => (onNew ? onNew() : openNew(creator))}
+          onClick={() => (onNew ? onNew() : openNew(creator, { opens: true }))}
           className={`${BUTTON.primary} h-7 px-2.5 text-meta`}
         >
           <NewIcon size={14} aria-hidden="true" />

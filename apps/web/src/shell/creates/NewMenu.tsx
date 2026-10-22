@@ -7,8 +7,13 @@ import { KIND_TEXT } from '../../platform/ui/kinds'
 import { useRegistry } from '../registry'
 import { menuOrder, recentKinds } from './recent'
 
-/** How the frame opens a creator, for the menu and the `N` keys. */
-export const NewContext = createContext<(creator: Creator) => void>(() => {})
+/**
+ * How the frame opens a creator, for the menu, the `N` keys and the blocks' `+`. What is made
+ * stays on the page it was made from, unless `opens`: its module's own sidebar or page (FR-026).
+ */
+export const NewContext = createContext<(creator: Creator, how?: { opens: boolean }) => void>(
+  () => {},
+)
 const useOpenNew = () => useContext(NewContext)
 
 /**
