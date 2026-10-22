@@ -214,7 +214,7 @@ describe('listToday timezone and DST', () => {
     name: string
     tz: string
     now: string
-    cols: { scheduledOn?: string; dueAt?: string }
+    cols: { scheduledOn?: string; dueAt?: string; status?: 'in_progress' }
     expected: string
   }
 
@@ -278,6 +278,29 @@ describe('listToday timezone and DST', () => {
       now: NOW,
       cols: { scheduledOn: '2026-10-01' },
       expected: 'today',
+    },
+    // What is being done stays In progress when it is also planned or due today; late still wins
+    // (FR-079, artboard 12: "Due today" is a mark on an In progress row).
+    {
+      name: 'in progress and due later today: in progress',
+      tz: 'Asia/Shanghai',
+      now: NOW,
+      cols: { dueAt: '2026-10-02T10:00:00Z', status: 'in_progress' },
+      expected: 'in_progress',
+    },
+    {
+      name: 'in progress and planned for an earlier day: in progress',
+      tz: 'Asia/Shanghai',
+      now: NOW,
+      cols: { scheduledOn: '2026-10-01', status: 'in_progress' },
+      expected: 'in_progress',
+    },
+    {
+      name: 'in progress and past its deadline: overdue',
+      tz: 'Asia/Shanghai',
+      now: NOW,
+      cols: { dueAt: '2026-10-01T10:00:00Z', status: 'in_progress' },
+      expected: 'overdue',
     },
     // Fall back, 2026-11-01 in Los Angeles: the local day is 25h (07:00Z..08:00Z next day) and
     // 01:00-02:00 happens twice. A day is not 24h here.

@@ -12,8 +12,9 @@ export type TodayTask = z.output<typeof todayRow>
 
 /**
  * Open LEAVES in unarchived projects that are in progress, planned up to today, or due before
- * tomorrow. Each falls in exactly one segment (overdue, then today, then in progress) so no row
- * shows twice; a plan from an earlier day stays until it is done. A parent never shows: its
+ * tomorrow. Each falls in exactly one segment so no row shows twice: overdue wins, then in
+ * progress (what is being done stays there, due today or not, FR-079), then today's plans and
+ * deadlines. A plan from an earlier day stays until it is done. A parent never shows: its
  * status is its children's, and the child that is in progress is the row (FR-037). A parent's
  * deadline is its own (FR-043), but it is the calendar that shows it, not Today's list.
  */
@@ -39,9 +40,8 @@ export async function listToday(
         ${pathSql('t')} as path,
         case
           when t.due_at is not null and t.due_at < b.t0 then 'overdue'
-          when (t.scheduled_on is not null and t.scheduled_on <= b.today)
-            or (t.due_at >= b.t0 and t.due_at < b.t1) then 'today'
-          else 'in_progress'
+          when t.status = 'in_progress' then 'in_progress'
+          else 'today'
         end as segment
       from tasks t
       join projects p on p.id = t.project_id
