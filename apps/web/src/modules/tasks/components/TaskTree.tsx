@@ -246,6 +246,7 @@ export function TaskTree({
             <div
               role="presentation"
               aria-hidden="true"
+              data-tree-head
               className={`${TREE_ROW} min-h-7.5 border-b border-line text-meta text-muted`}
             >
               <span>Name</span>

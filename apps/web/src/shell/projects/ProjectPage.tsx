@@ -4,7 +4,6 @@ import { Fragment } from 'react'
 import { useParams } from 'react-router-dom'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { DangerZone } from '../../platform/ui/DangerZone'
-import { RowsPanel } from '../../platform/ui/Panel'
 import { useViewParam } from '../../platform/ui/ViewTabs'
 import { DeletedNotice } from '../detail/DeletedNotice'
 import type { Crumbs } from '../layout/page'
@@ -91,9 +90,17 @@ function OpenProject({ id }: { id: ProjectId }) {
         <div className="grid min-w-0 grid-cols-1 items-start gap-10 @5xl:grid-cols-[minmax(0,1fr)_20rem] @5xl:gap-14">
           <div className="flex min-w-0 flex-col gap-4">
             {main && (
-              <RowsPanel label={main.moduleLabel}>
+              // Named for a screen reader; on screen the tree's own column names head it.
+              <section
+                aria-labelledby="project-main"
+                data-panel={main.moduleLabel}
+                className="min-w-0"
+              >
+                <h2 id="project-main" className="sr-only">
+                  {main.moduleLabel}
+                </h2>
                 <main.Component projectId={id} view={view} />
-              </RowsPanel>
+              </section>
             )}
           </div>
           <section aria-label="Linked" data-panel="Linked" className="min-w-0 @5xl:pt-1">

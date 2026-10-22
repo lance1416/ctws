@@ -209,9 +209,9 @@ test('N T opens the dialog, obeys the off switch and is two letters while typing
   await expect(box).toHaveValue('nt')
   await box.press('Escape')
 
-  // Clicks land on the Tasks block's heading rather than the page's <h1>: the project title is
-  // an editable control. A block heading is the neutral spot this needs.
-  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
+  // Clicks land on the tree's column names rather than the page's <h1>: the project title is an
+  // editable control. The column names are the neutral spot this needs.
+  await page.locator('[data-tree-head]').click()
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   await expect(dialog(page)).toBeVisible()
@@ -221,7 +221,7 @@ test('N T opens the dialog, obeys the off switch and is two letters while typing
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await page.getByRole('switch', { name: /Single-key shortcuts/ }).uncheck()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
+  await page.locator('[data-tree-head]').click()
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   await expect(dialog(page)).toHaveCount(0)
@@ -248,7 +248,7 @@ test('the quick paths are untouched: the new-task box and capture behave as they
   await expect(page.getByRole('listitem')).toHaveCount(2)
 
   // `c` opens capture, and capture still files to the inbox with its landing line.
-  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
+  await page.locator('[data-tree-head]').click()
   await page.keyboard.press('c')
   await expect(captureBox(page)).toBeFocused()
   const captured = page.waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
@@ -357,13 +357,13 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   await expect(toggle).toBeChecked()
   await toggle.uncheck()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
+  await page.locator('[data-tree-head]').click()
   await page.keyboard.press('?')
   await expect(help).toHaveCount(0)
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
   await help.getByRole('switch', { name: /Single-key shortcuts/ }).check()
   await page.keyboard.press('Escape')
-  await page.getByRole('heading', { name: 'Tasks', exact: true }).click()
+  await page.locator('[data-tree-head]').click()
   await page.keyboard.press('?')
   await expect(help).toBeVisible()
 })

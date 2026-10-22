@@ -60,7 +60,6 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     title: '[data-row-title]',
     // The Due column: the meta step.
     due: '[data-row-due]',
-    panel: '[data-panel="Tasks"] h2',
     caption: 'nav[aria-label="Projects"] [data-count]',
   } as const
   const measure = async () =>
@@ -82,10 +81,6 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     // A tree row's title is the UI step, in a row 36 high (artboard 8).
     title: { size: '13px', line: '20px' },
     due: { size: '12px', line: '16px' },
-    // A section's heading is body size in semibold: with no box round it, the heading is the
-    // only thing that says where a section starts, and a 20px heading over every block made a
-    // page of shouting.
-    panel: { size: '15px', line: '24px' },
     caption: { size: '12px', line: '16px' },
   })
 
@@ -98,7 +93,6 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     h1: { size: '32.5px', line: '42.5px' },
     title: { size: '16.25px', line: '25px' },
     due: { size: '15px', line: '20px' },
-    panel: { size: '18.75px', line: '30px' },
     caption: { size: '15px', line: '20px' },
   })
 
