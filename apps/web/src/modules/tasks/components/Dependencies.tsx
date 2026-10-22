@@ -1,13 +1,14 @@
 import { type DependencyRef, type ProjectId, type TaskId } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { ApiError } from '../../../platform/http/api'
+import { field } from '../../../platform/ui/formStyles'
+import { CloseIcon, LockIcon } from '../../../platform/ui/icons'
 import { addDependency, dependenciesQuery, removeDependency, taskSearchQuery } from '../api'
-import { field, label } from '../../../platform/ui/formStyles'
-import { CloseIcon } from '../../../platform/ui/icons'
+import { Field } from './InspectorField'
 
-// The pane shows both directions and finished blockers too, the only place to remove such an
-// edge. Adding goes through search: a dependency can reach any task in any project.
+// Both directions, finished blockers too, the only place to remove such an edge. Adding goes
+// through search: a dependency can reach any task in any project.
 
 // `item`, not `ref`: React reserves that name in JSX.
 function Row({
@@ -18,10 +19,10 @@ function Row({
   item: DependencyRef
   /** The project the open task is in. */
   here: string
-  onRemove?: () => void
+  onRemove?: (() => void) | undefined
 }) {
   return (
-    <li className="flex min-h-8 items-center gap-2 text-ui">
+    <li className="flex min-h-8 min-w-0 items-center gap-2 text-ui">
       <span className={`truncate ${task.done ? 'text-subtle line-through' : 'text-ink'}`}>
         {task.title}
       </span>
@@ -34,26 +35,30 @@ function Row({
           type="button"
           onClick={onRemove}
           aria-label={`Remove dependency “${task.title}”`}
-          className="ml-auto h-7 w-7 shrink-0 rounded-control text-subtle hover:bg-hover hover:text-ink"
+          className="ml-auto grid size-7 shrink-0 place-items-center rounded-control text-subtle hover:bg-hover hover:text-ink"
         >
-          <CloseIcon size={16} className="mx-auto h-3.5 w-3.5" />
+          <CloseIcon size={14} aria-hidden="true" />
         </button>
       )}
     </li>
   )
 }
 
-/** One direction beside its list -- the label-then-value rhythm of Status, Due and Plan above. */
-function Group({ tag, children }: { tag: string; children: ReactNode }) {
-  return (
-    <div className="flex gap-2">
-      <span className="w-8 shrink-0 pt-1.5 text-meta text-subtle">{tag}</span>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  )
-}
-
-export function Dependencies({ taskId, projectId }: { taskId: TaskId; projectId: ProjectId }) {
+/**
+ * WHAT IT WAITS ON AND HOLDS UP, as the inspector's field rows (FR-056, artboard 8): "Waiting on"
+ * and "Blocks" beside Status and Due, behind a lock, each only when there is one. Editing, Waiting
+ * on is always there, to add to and take from; each change is written the moment it is made.
+ * Blocks is the other task's to change.
+ */
+export function DependencyRows({
+  taskId,
+  projectId,
+  editing,
+}: {
+  taskId: TaskId
+  projectId: ProjectId
+  editing: boolean
+}) {
   const [adding, setAdding] = useState(false)
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -92,83 +97,86 @@ export function Dependencies({ taskId, projectId }: { taskId: TaskId; projectId:
   const blocks = lists.data?.blocks ?? []
   // Never offer this task itself: the server refuses that edge outright.
   const candidates = (hits.data ?? []).filter((t) => t.id !== taskId).slice(0, 6)
+  const lock = <LockIcon size={16} aria-hidden="true" />
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-baseline gap-2">
-        <span className={label}>Dependencies</span>
-        <button
-          type="button"
-          onClick={() => setAdding((v) => !v)}
-          className="-mx-1 rounded-control px-1 text-meta text-muted hover:text-ink"
-        >
-          {adding ? 'Cancel' : 'Add'}
-        </button>
-      </div>
-
-      {adding && (
-        <div>
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.stopPropagation()
-                setAdding(false)
-              }
-            }}
-            placeholder="Search for a task to wait on"
-            aria-label="Search for a task to wait on"
-            className={`${field} text-ui`}
-          />
-          <ul data-dep-candidates className="mt-1 flex flex-col">
-            {candidates.map((t) => (
-              <li key={t.id}>
+    <>
+      {(editing || blockedBy.length > 0) && (
+        <Field icon={lock} name="Waiting on" top>
+          <div className="flex min-w-0 flex-1 flex-col">
+            {blockedBy.length > 0 && (
+              <ul data-blocked-by className="flex flex-col">
+                {blockedBy.map((t) => (
+                  <Row
+                    key={t.id}
+                    item={t}
+                    here={projectId}
+                    onRemove={editing ? () => drop.mutate(t.id) : undefined}
+                  />
+                ))}
+              </ul>
+            )}
+            {editing &&
+              (adding ? (
+                <div className="py-1">
+                  <input
+                    autoFocus
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        e.stopPropagation()
+                        setAdding(false)
+                      }
+                    }}
+                    placeholder="Search for a task to wait on"
+                    aria-label="Search for a task to wait on"
+                    className={`${field} text-ui`}
+                  />
+                  <ul data-dep-candidates className="mt-1 flex flex-col">
+                    {candidates.map((t) => (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          onClick={() => add.mutate(t.id)}
+                          className="flex min-h-8 w-full items-center gap-2 rounded-control px-2 text-left text-ui hover:bg-hover"
+                        >
+                          <span className="truncate text-ink">{t.title}</span>
+                          <span className="ml-auto shrink-0 text-meta text-subtle">
+                            {t.projectName}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => add.mutate(t.id)}
-                  className="flex min-h-8 w-full items-center gap-2 rounded-control px-2 text-left text-ui hover:bg-hover"
+                  onClick={() => setAdding(true)}
+                  className="-mx-1.5 h-8 self-start rounded-control px-1.5 text-ui text-muted hover:bg-hover hover:text-ink"
                 >
-                  <span className="truncate text-ink">{t.title}</span>
-                  <span className="ml-auto shrink-0 text-meta text-subtle">{t.projectName}</span>
+                  Add
                 </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+              ))}
+            {error && (
+              <p role="alert" className="text-ui text-stop-t">
+                {error}
+              </p>
+            )}
+          </div>
+        </Field>
       )}
-
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
-
-      {blockedBy.length > 0 && (
-        <Group tag="Waits on">
-          <ul data-blocked-by className="flex flex-col">
-            {blockedBy.map((t) => (
-              <Row key={t.id} item={t} here={projectId} onRemove={() => drop.mutate(t.id)} />
-            ))}
-          </ul>
-        </Group>
-      )}
-
       {blocks.length > 0 && (
-        <Group tag="Blocks">
+        <Field icon={lock} name="Blocks" top>
           {/* No remove on this side: the edge belongs to the other task, which is not open. */}
-          <ul data-blocks className="flex flex-col">
+          <ul data-blocks className="flex min-w-0 flex-1 flex-col">
             {blocks.map((t) => (
               <Row key={t.id} item={t} here={projectId} />
             ))}
           </ul>
-        </Group>
+        </Field>
       )}
-
-      {!adding && blockedBy.length === 0 && blocks.length === 0 && (
-        <p className="text-ui text-subtle">None</p>
-      )}
-    </div>
+    </>
   )
 }

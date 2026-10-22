@@ -91,7 +91,7 @@ export function DetailPane({
         className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
           // Below 1024 the overlay stops 12px above the tab bar.
           `right-3 bottom-3 rounded-block bg-float shadow-float ${
-            wide ? 'w-[22rem]' : 'w-[calc(100%-1.5rem)] max-w-md max-lg:bottom-19'
+            wide ? 'w-inspector' : 'w-[calc(100%-1.5rem)] max-w-md max-lg:bottom-19'
           }`
         }`}
       >
@@ -122,7 +122,7 @@ export function DetailHead({
   )
 }
 
-export function CloseButton({ onClick }: { onClick: () => void }) {
+function CloseButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"

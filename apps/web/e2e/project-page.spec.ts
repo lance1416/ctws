@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  apiPost,
   headNew,
   makeProject,
   makeTask,
@@ -99,6 +100,19 @@ test('a pinned resource is a chip with its digit, and the digit opens it (FR-046
     if (name) await form.getByLabel('Name (optional)').fill(name)
     return form
   }
+  // An address that cannot be followed is refused, and the field says why as it is typed
+  // (BUG-035); a scheme still being typed is not.
+  const refused = await pin('example.com')
+  const why = refused.getByText('Use an address that starts with https://')
+  await expect(why).toBeVisible()
+  await expect(refused.getByLabel('Address')).toHaveAttribute('aria-invalid', 'true')
+  await expect(refused.getByRole('button', { name: 'Pin' })).toBeDisabled()
+  await refused.getByLabel('Address').fill('javascript:alert(1)')
+  await expect(why).toBeVisible()
+  await refused.getByLabel('Address').fill('http')
+  await expect(why).toHaveCount(0)
+  await refused.getByLabel('Address').press('Escape')
+
   const first = await pin('https://docs.google.com/document/d/abc/edit', 'CV master')
   // Told what it is before it is pinned.
   await expect(first.locator('[data-recognised]')).toHaveText('Google Docs')
@@ -145,10 +159,12 @@ test('the tree is a panel spanning two columns and the detail is the third, at 1
   const openBox = (await treePanel.boundingBox())!
   // Beside, not under -- and the tree panel really gave up the width rather than being covered.
   expect(openBox.x + openBox.width).toBeLessThanOrEqual(paneBox.x + 1)
-  // TWO of the three columns against ONE: the ratio, not merely "wider than". A grid that gave the
-  // detail half the content area, or a sliver of it, fails here while passing "it is to the left".
+  // The detail is the inspector's width (tokens.md, 400) and the tree keeps the rest: the
+  // ratio, not merely "wider than". A grid that gave the detail half the content area, or a sliver
+  // of it, fails here while passing "it is to the left".
+  expect(Math.round(paneBox.width)).toBe(400)
   const ratio = openBox.width / paneBox.width
-  expect(ratio, `tree ${openBox.width} : detail ${paneBox.width}`).toBeGreaterThan(1.8)
+  expect(ratio, `tree ${openBox.width} : detail ${paneBox.width}`).toBeGreaterThan(1.6)
   expect(ratio, `tree ${openBox.width} : detail ${paneBox.width}`).toBeLessThan(2.4)
 
   // It coexists: the tree is still operable, and clicking another row loads it into the same
@@ -341,4 +357,22 @@ test('the tree says it is reading, or that it could not, and is never an empty p
   failing = false
   await tree.getByRole('button', { name: 'Try again' }).click()
   await expect(tree.getByRole('listitem').filter({ hasText: 'Somewhere' })).toBeVisible()
+})
+
+test('a node linked to an organisation carries its mark after the name', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  const stripe = await makeTask(page, pid, 'Stripe')
+  await makeTask(page, pid, 'Update the CV')
+  const org = await apiPost(page, '/organisations', { name: 'Stripe' })
+  await apiPost(page, '/relations', {
+    from: { type: 'task', id: stripe },
+    to: { type: 'organisation', id: org.id },
+  })
+  await page.goto(`/projects/${pid}`)
+
+  // BUG-033: the building after the name, saying which, and on no other row.
+  const row = page.locator('[data-task-tree] li').filter({ hasText: 'Stripe' })
+  await expect(row.locator('[data-row-organisation]')).toHaveAttribute('title', 'Stripe')
+  await expect(page.locator('[data-row-organisation]')).toHaveCount(1)
 })

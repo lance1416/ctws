@@ -161,46 +161,30 @@ test('both dates change in one request, and nothing is saved until Save is press
   expect(ymd(new Date(after.dueAt!))).toBe(dayOffset(0))
 })
 
-test('the pane wears the row system: two date glyphs, two colour families', async ({ page }) => {
+test('the edit is the reading, in place: the same rows, each its control', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '两种日期')
-  await openTaskPane(page, pid, '两种日期')
+  await makeTask(page, pid, '原地编辑')
+  await openTaskPane(page, pid, '原地编辑', false)
 
   const dialog = page.getByRole('dialog', { name: 'Task details' })
-  const due = dialog.locator('label[for="detail-due"]')
-  const plan = dialog.locator('label[for="detail-go"]')
-  await expect(due).toHaveText('Due')
-  await expect(plan).toHaveText('Plan')
+  const names = () => dialog.locator('dl > dt').allTextContents()
+  const read = await names()
+  expect(read).toEqual(['Status', 'Planned', 'Due'])
 
-  // Cool against warm, and they are the ROW's two tokens, not two more colours invented here.
-  const colours = await page.evaluate(() => {
-    const probe = document.createElement('span')
-    document.body.append(probe)
-    const read = (token: string) => {
-      probe.style.color = `var(${token})`
-      return getComputedStyle(probe).color
-    }
-    // The text colours of the two states (`-t`): a word is held to 4.5:1, a glyph to 3:1.
-    const out = { deadline: read('--color-warn-t'), plan: read('--color-go-t') }
-    probe.remove()
-    return out
-  })
-  expect(await due.evaluate((el) => getComputedStyle(el).color)).toBe(colours.deadline)
-  expect(await plan.evaluate((el) => getComputedStyle(el).color)).toBe(colours.plan)
-  expect(colours.deadline).not.toBe(colours.plan)
-
-  // ...and they differ in SILHOUETTE, not only in hue: the flag is upright, the plan tick is wide.
-  // Measured on drawn ink, so a copied path or a recoloured twin fails.
-  const ink = async (label: typeof due) =>
-    label.locator('svg').evaluate((svg) => {
-      const b = (svg as SVGSVGElement).getBBox()
-      return { w: b.width, h: b.height }
-    })
-  const dueInk = await ink(due)
-  const planInk = await ink(plan)
-  expect(dueInk.h, 'the deadline flag is taller than it is wide').toBeGreaterThan(dueInk.w)
-  expect(planInk.w, 'the plan tick is wider than it is tall').toBeGreaterThan(planInk.h)
+  // FR-056: Edit turns the rows into their controls where they stand, the title too.
+  await dialog.getByRole('button', { name: 'Edit', exact: true }).click()
+  expect((await names()).slice(0, 3)).toEqual(read)
+  await expect(dialog.getByRole('textbox', { name: 'Title' })).toHaveValue('原地编辑')
+  await expect(dialog.getByRole('radiogroup', { name: 'Status' })).toBeVisible()
+  // The date fields keep a name a screen reader says, though the row already shows it.
+  await expect(dialog.locator('label[for="detail-due"]')).toHaveText('Due')
+  await expect(dialog.locator('label[for="detail-go"]')).toHaveText('Plan')
+  // Waiting on is there to add to, behind the same lock as when it is read (P-07).
+  await expect(dialog.locator('dl > dt').filter({ hasText: 'Waiting on' })).toHaveCount(1)
+  // Save is where Edit was.
+  await expect(dialog.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
 })
 
 test('the status chip wears the app’s focus ring when the keyboard reaches it', async ({

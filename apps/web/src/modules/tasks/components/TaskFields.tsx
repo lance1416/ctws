@@ -21,14 +21,23 @@ const namedDays = (today: string): readonly (readonly [word: string, day: string
  * The statuses as native radios: one tab stop, arrow keys inside. Each input covers its whole
  * chip, so the chip is the radio.
  */
-export function StatusRadios({ id, field }: { id: string; field: UseFormRegisterReturn }) {
+export function StatusRadios({
+  id,
+  field,
+  bare = false,
+}: {
+  id: string
+  field: UseFormRegisterReturn
+  /** In a field row whose name says Status already: the label is for a screen reader only. */
+  bare?: boolean
+}) {
   return (
     <div role="radiogroup" aria-labelledby={`${id}-status-label`}>
-      <span id={`${id}-status-label`} className={label}>
+      <span id={`${id}-status-label`} className={bare ? 'sr-only' : label}>
         Status
       </span>
       {/* Sized to the words and wrapped where they run out, so no label wraps inside its chip. */}
-      <div className="mt-1.5 flex flex-wrap gap-1">
+      <div className={`flex flex-wrap gap-1 ${bare ? 'py-1' : 'mt-1.5'}`}>
         {TASK_STATUSES.map((s) => (
           <label key={s} className={STATUS_CHIP}>
             <input
@@ -79,6 +88,7 @@ export function DateDecisions({
   htmlFor,
   exact,
   echo,
+  bare = false,
 }: {
   kind: 'due' | 'plan'
   today: string
@@ -89,6 +99,8 @@ export function DateDecisions({
   exact?: ReactNode
   /** The chosen day said back in the app's words (`DateEcho`). */
   echo: string | null
+  /** In a field row that names the date already: the heading is for a screen reader only. */
+  bare?: boolean
 }) {
   const d = DATE[kind]
   const heading = (
@@ -97,9 +109,9 @@ export function DateDecisions({
       {d.word}
     </>
   )
-  const headingClass = `flex items-center gap-1 text-ui ${d.tone}`
+  const headingClass = bare ? 'sr-only' : `flex items-center gap-1 text-ui ${d.tone}`
   return (
-    <div>
+    <div className={bare ? 'min-w-0 flex-1 py-1' : undefined}>
       {htmlFor ? (
         <label htmlFor={htmlFor} className={headingClass}>
           {heading}
@@ -107,7 +119,7 @@ export function DateDecisions({
       ) : (
         <span className={headingClass}>{heading}</span>
       )}
-      <div className="mt-1.5 flex flex-wrap gap-1">
+      <div className={`flex flex-wrap gap-1 ${bare ? '' : 'mt-1.5'}`}>
         {namedDays(today).map(([word, day]) => (
           <button
             key={word}

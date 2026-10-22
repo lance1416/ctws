@@ -26,6 +26,8 @@ const openPane = async (page: Page, title: string) => {
 /** The pane's dependency lists, which are the only place an edge can be removed. */
 const waitingFor = (page: Page) => pane(page).locator('[data-blocked-by] li')
 const inTheWayOf = (page: Page) => pane(page).locator('[data-blocks] li')
+/** Dependencies are added and taken away in the edit (P-07); read, they are only rows. */
+const edit = (page: Page) => pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
 
 test('a blocked row names what is in the way, and finishing that frees it', async ({ page }) => {
   await registerFreshUser(page)
@@ -70,7 +72,10 @@ test('a dependency is added by searching, and it reaches into another project', 
   await openTree(page, mine)
 
   await openPane(page, '发 v0.8.0')
-  await expect(pane(page).getByText('None', { exact: true })).toBeVisible()
+  // Read with none, there is no line for them at all, not a "None" (P-07).
+  await expect(pane(page).getByText('Waiting on', { exact: true })).toHaveCount(0)
+  await expect(pane(page).getByText('None', { exact: true })).toHaveCount(0)
+  await edit(page)
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
   await pane(page).getByLabel('Search for a task to wait on').fill('rrgen')
   await pane(page)
@@ -80,6 +85,8 @@ test('a dependency is added by searching, and it reaches into another project', 
   // The pane says which project the other end is in: a dependency that crosses projects is the
   // usual case here, and a bare title would not say where to go looking.
   await expect(waitingFor(page)).toContainText(['跑通 rrgen 的 CI'])
+  // FR-056's word for this side (BUG-037).
+  await expect(pane(page).getByText('Waiting on', { exact: true })).toBeVisible()
   await expect(waitingFor(page).first()).toContainText('rrgen')
   await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
     'title',
@@ -95,6 +102,7 @@ test('the search never offers the task itself', async ({ page }) => {
   await openTree(page, pid)
 
   await openPane(page, '配色重做的收尾')
+  await edit(page)
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
   await pane(page).getByLabel('Search for a task to wait on').fill('配色重做')
 
@@ -121,6 +129,9 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
   // The project is named only when it is a DIFFERENT one: repeating the name of the project you
   // are already looking at is noise, which is why the tree's rows leave it out too.
   await expect(waitingFor(page).first()).not.toContainText('改版')
+  // Read, it is a row of the fields; taken away in the edit.
+  await expect(pane(page).getByRole('button', { name: /Remove dependency/ })).toHaveCount(0)
+  await edit(page)
   await pane(page).getByRole('button', { name: 'Remove dependency “跑通 CI”' }).click()
   await expect(waitingFor(page)).toHaveCount(0)
   await expect(row(page, '发 v0.8.0').locator('[data-row-due="waiting"]')).toHaveCount(0)
@@ -135,6 +146,7 @@ test('a dependency removal that fails says so', async ({ page }) => {
   await page.request.put(`/api/v1/tasks/${ship}/dependencies/${ci}`, { headers: WEB })
   await openTree(page, pid)
   await openPane(page, 'Ship it')
+  await edit(page)
   await page.route('**/api/v1/tasks/*/dependencies/*', (r) =>
     r.request().method() === 'DELETE' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
   )
@@ -156,7 +168,9 @@ test('the other end shows the edge too, and offers no way to undo it from there'
   await openPane(page, '跑通 CI')
   await expect(inTheWayOf(page)).toContainText(['发 v0.8.0'])
   // The edge belongs to the WAITING task's list. Removing it from here would be editing a task
-  // that is not open.
+  // that is not open, so not even the edit offers it.
+  await edit(page)
+  await expect(inTheWayOf(page)).toContainText(['发 v0.8.0'])
   await expect(pane(page).getByRole('button', { name: /Remove dependency/ })).toHaveCount(0)
 })
 
@@ -170,6 +184,7 @@ test('a loop is refused in words, not by silently doing nothing', async ({ page 
 
   // A waiting for B would close the loop.
   await openPane(page, '搭脚手架')
+  await edit(page)
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
   await pane(page).getByLabel('Search for a task to wait on').fill('接上后端')
   await pane(page)

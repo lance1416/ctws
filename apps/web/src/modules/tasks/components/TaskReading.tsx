@@ -1,6 +1,5 @@
 import type { TaskResponse, TaskStatus } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -10,20 +9,20 @@ import { label } from '../../../platform/ui/formStyles'
 import { EditIcon, FlagIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
 import { LinkedChips } from '../../../shell/links'
-import { ProjectSquare, useEveryProject } from '../../../shell/projects'
+import { ProjectSquare } from '../../../shell/projects'
 import { Resources } from '../../../shell/resources'
 import { Timeline } from '../../../shell/timeline'
-import { patchTask, projectTasksQuery } from '../api'
+import { patchTask } from '../api'
 import { instantPhrase, lateNote } from '../logic/dueDates'
 import { STATUS_LABEL } from '../logic/status'
-import { ancestorsOf } from '../logic/tree/ancestors'
-import { leafCounts } from '../logic/tree/leafCounts'
 import { treeDue } from '../logic/tree/treeDue'
-import { Dependencies } from './Dependencies'
+import { DependencyRows } from './Dependencies'
+import { Field, FIELDS } from './InspectorField'
 import { ProgressSquare } from './ProgressSquare'
 import { StatusMark } from './StatusMark'
 import { StatusPicker } from './StatusPicker'
 import { WRITE_AWAITS } from './useTaskDetailForm'
+import { useTaskPlace } from './useTaskPlace'
 
 const DUE_CHIP = {
   soon: 'rounded-control bg-warn-bg px-2 py-0.5 text-warn-t',
@@ -32,7 +31,8 @@ const DUE_CHIP = {
 
 /**
  * THE TASK IN THE INSPECTOR (FR-056, artboard 8), reading: where it sits, what it is, its fields
- * a line each, what it waits on or holds up, its notes, its resources, and what it is linked to.
+ * a line each with what it waits on or holds up among them, its notes, its resources, and what
+ * it is linked to.
  * Nothing a stray click can change but the status. A parent's status is its children's, and it
  * has no plan of its own (FR-038, FR-043).
  */
@@ -48,20 +48,7 @@ export function TaskReading({
   const timeZone = useTimeZone()
   const now = useNow()
   const today = ymd(now, timeZone)
-  // Live and archived: the task's project may be archived.
-  const project = useEveryProject().data?.find((p) => p.id === task.projectId)
-  // The project's tasks say where this one sits and whether it is a parent.
-  const tree = useQuery(projectTasksQuery(task.projectId)).data?.tasks ?? []
-  const titleOf = new Map(tree.map((t) => [t.id, t.title]))
-  const path = [
-    project?.name,
-    ...ancestorsOf(tree, task.id)
-      .reverse()
-      .map((id) => titleOf.get(id)),
-  ].filter((step): step is string => step !== undefined)
-  const counts = tree.some((t) => t.parentId === task.id)
-    ? leafCounts(tree).get(task.id)
-    : undefined
+  const { project, path, counts } = useTaskPlace(task)
 
   /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
   const setStatus = useMutation({
@@ -121,7 +108,7 @@ export function TaskReading({
         </h2>
       </div>
 
-      <dl className="grid grid-cols-[16px_76px_minmax(0,1fr)] items-center gap-x-2.5">
+      <dl className={FIELDS}>
         <Field icon={<StatusMark status={task.status} size={16} />} name="Status">
           {counts ? (
             // Its children's to change (FR-038).
@@ -151,15 +138,14 @@ export function TaskReading({
             {dueReading ?? 'Not set'}
           </span>
         </Field>
+        {/* Beside the fields, each only when there is one (P-07); changed in the edit. */}
+        <DependencyRows taskId={task.id} projectId={task.projectId} editing={false} />
       </dl>
       {setStatus.isError && (
         <p role="alert" className="text-ui text-stop-t">
           Couldn't change the status
         </p>
       )}
-
-      {/* Here, not in the form: an edge is written the moment it is named. */}
-      <Dependencies taskId={task.id} projectId={task.projectId} />
 
       <div>
         <span className={label}>Notes</span>
@@ -183,18 +169,5 @@ export function TaskReading({
 
       <Timeline of={{ type: 'task', id: task.id }} />
     </div>
-  )
-}
-
-/** One field, a line of its own: its icon, its name, then its value (artboard 8). */
-function Field({ icon, name, children }: { icon: ReactNode; name: string; children: ReactNode }) {
-  return (
-    <>
-      <span aria-hidden="true" className="flex text-muted">
-        {icon}
-      </span>
-      <dt className="text-ui text-muted">{name}</dt>
-      <dd className="flex min-h-8 min-w-0 items-center">{children}</dd>
-    </>
   )
 }
