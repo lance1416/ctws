@@ -12,6 +12,7 @@ import { useTimeZone } from '../../../shell/auth'
 import { LinkedSection } from '../../../shell/links'
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { Resources } from '../../../shell/resources'
+import { Timeline } from '../../../shell/timeline'
 import { patchTask, projectTasksQuery } from '../api'
 import { instantPhrase, lateNote } from '../logic/dueDates'
 import { STATUS_LABEL } from '../logic/status'
@@ -179,6 +180,8 @@ export function TaskReading({
         of={{ type: 'task', id: task.id }}
         types={['task', 'reading', 'person', 'meeting']}
       />
+
+      <Timeline of={{ type: 'task', id: task.id }} />
     </div>
   )
 }

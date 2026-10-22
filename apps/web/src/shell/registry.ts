@@ -28,6 +28,7 @@ import type { KeyTable } from '../platform/keyboard/keyTable'
 import { useTimeZone } from './auth/useMe'
 import { said } from './calendar/said'
 import { linkKeys } from './links/api'
+import { timelineKeys } from './timeline/Timeline'
 import { CommunicationFact, OrganisationFact } from './links/ShellFacts'
 import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
@@ -225,6 +226,8 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
   const reads: Reads[] = [
     // An edge's far end can be anything, and the list shows its name.
     { queryKey: linkKeys.all, of: OBJECT_TYPES },
+    // A timeline holds a thing's changes and whatever is said about it: any write may add a line.
+    { queryKey: timelineKeys.all, of: OBJECT_TYPES },
     {
       queryKey: projectKeys.all,
       of: ['project', ...modules.flatMap((m) => m.project?.counts ?? [])],

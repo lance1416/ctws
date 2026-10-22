@@ -494,9 +494,17 @@ test('the task in the inspector: where it sits, its fields a line each, its reso
   await expect(resource).toHaveText('System design prepGoogle Doc')
   await expect(resource).toHaveAttribute('href', 'https://docs.google.com/document/d/prep/edit')
 
+  // Its timeline, newest first, in the module's words (FR-045).
+  await dialog.getByRole('button', { name: 'Status: To do' }).click()
+  await page.getByRole('menuitem', { name: 'In progress' }).click()
+  const timeline = dialog.getByRole('region', { name: 'Timeline' })
+  await expect(timeline.locator('[data-timeline-entry]').first()).toContainText('Started')
+  await expect(timeline.locator('[data-timeline-entry]').last()).toContainText('Created')
+
   // A parent: no plan of its own, and a status that is its children's (FR-038, FR-043).
   await openTaskPane(page, pid, 'SDE II', false)
   await expect(dialog.locator('dt')).toHaveText(['Status', 'Due'])
   await expect(dialog.getByRole('button', { name: /^Status:/ })).toHaveCount(0)
-  await expect(dialog.locator('dd').first()).toHaveText('To do')
+  // In progress, because the task under it was started above: said, not offered to change.
+  await expect(dialog.locator('dd').first()).toHaveText('In progress')
 })

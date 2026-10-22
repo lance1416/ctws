@@ -7,6 +7,7 @@ import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind
 import { TodayDate, TodayGlance } from './components/TodayGlance'
 import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
+import { describeTaskChange } from './logic/describeChange'
 import { TASK_KEYS } from './logic/keys'
 import { TaskFact, TaskMark } from './components/TaskFacts'
 import { ReadyBlock } from './pages/today/ReadyBlock'
@@ -108,7 +109,15 @@ export const taskModule: WorkspaceModule = {
     { id: 'week', order: 30, Block: WeekBlock },
   ],
   relations: [
-    { type: 'task', kind: 'Task', plural: 'Tasks', to: taskPage, Mark: TaskMark, Fact: TaskFact },
+    {
+      type: 'task',
+      kind: 'Task',
+      plural: 'Tasks',
+      to: taskPage,
+      Mark: TaskMark,
+      Fact: TaskFact,
+      describeChange: describeTaskChange,
+    },
   ],
   // A task row names its project, and search says whether that project is archived.
   reads: [{ queryKey: taskKeys.all, of: ['task', 'project'] }],

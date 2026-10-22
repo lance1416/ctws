@@ -282,19 +282,20 @@ describe('what a write leaves stale', () => {
   const staleFor = build([notes, files]).staleFor
 
   it("is every module's queries that read the kind of thing it changed", () => {
-    expect(staleFor(['reading'])).toEqual([['links'], ['notes']])
+    expect(staleFor(['reading'])).toEqual([['links'], ['timeline'], ['notes']])
   })
 
   it("takes in the project list when a module counts that kind into a project's columns", () => {
-    expect(staleFor(['task'])).toEqual([['links'], ['projects'], ['files']])
+    expect(staleFor(['task'])).toEqual([['links'], ['timeline'], ['projects'], ['files']])
   })
 
   it('reaches whatever names a project when a project changes', () => {
-    expect(staleFor(['project'])).toEqual([['links'], ['projects'], ['notes']])
+    expect(staleFor(['project'])).toEqual([['links'], ['timeline'], ['projects'], ['notes']])
   })
 
-  it('is the links alone for a kind no module reads', () => {
-    expect(staleFor(['person'])).toEqual([['links']])
+  it('is the links and timelines alone for a kind no module reads', () => {
+    // Any write may add a line to some thing's timeline, as it may change an edge's far end.
+    expect(staleFor(['person'])).toEqual([['links'], ['timeline']])
   })
 })
 

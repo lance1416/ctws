@@ -136,7 +136,18 @@ export type RelationContribution = {
   Mark?: ComponentType<{ thing: LinkCandidate }>
   /** The one fact in the third column, from what the kind carries; nothing when there is none. */
   Fact?: ComponentType<{ thing: LinkCandidate }>
+  /**
+   * A change this kind logged, as a line of its timeline (FR-045): a mark and words, or null for
+   * a change not worth a line of its own.
+   */
+  describeChange?: (
+    event: { type: string; payload: unknown },
+    timeZone: string,
+  ) => ChangeLine | null
 }
+
+/** One change on a timeline, in its module's words. */
+export type ChangeLine = { mark: ReactNode; text: string }
 
 /** A calendar entry with its times said on the account's clock, as every reader of one draws it. */
 export type SaidEntry = CalendarEntry & {
