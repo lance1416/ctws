@@ -31,16 +31,15 @@ export const taskFinishedSql = (task: string): SQL => sql`${ident(task)}.status 
 export const taskOpenSql = (task: string): SQL => sql`${ident(task)}.status not in (${FINISHED})`
 
 /**
- * The task under the alias is OVERDUE (FR-079): open, its deadline before the day that starts at
- * `dayStarts`, and not planned for `today` or a later day. Planning a late task for a day takes it
- * out until that day has gone by with it still open; its deadline stays as it was.
+ * The task under the alias is LATE (FR-079): open, and its deadline before the day that starts at
+ * `dayStarts`. One meaning everywhere a missed deadline is counted or coloured; planning it for a
+ * day does not unmiss it.
  */
-export const overdueSql = (task: string, { dayStarts, today }: { dayStarts: SQL; today: SQL }) =>
+export const lateSql = (task: string, dayStarts: SQL) =>
   sql`(
     ${taskOpenSql(task)}
     and ${ident(task)}.due_at is not null
     and ${ident(task)}.due_at < ${dayStarts}
-    and (${ident(task)}.scheduled_on is null or ${ident(task)}.scheduled_on < ${today})
   )`
 
 /**

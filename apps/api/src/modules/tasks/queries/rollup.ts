@@ -10,8 +10,8 @@ import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
-import { dayStart, localDay } from '../../../platform/db/time'
-import { overdueSql, visibleTasks } from './scope'
+import { dayStart } from '../../../platform/db/time'
+import { lateSql, visibleTasks } from './scope'
 
 const rollupRow = z.object({
   id: taskId,
@@ -21,8 +21,8 @@ const rollupRow = z.object({
 })
 
 /**
- * Each task's rollup across one project's tree. SQL decides `overdue` by the rule Today's Overdue
- * uses; `rollup` does the fold. The caller checks the project first.
+ * Each task's rollup across one project's tree. SQL decides `overdue`: late, planned again or not
+ * (`lateSql`); `rollup` does the fold. The caller checks the project first.
  */
 export async function projectRollups(
   q: Queryable,
@@ -36,8 +36,7 @@ export async function projectRollups(
       t.id,
       t.parent_id as "parentId",
       t.status,
-      ${overdueSql('t', { dayStarts: dayStart(now, timezone), today: localDay(now, timezone) })}
-        as overdue
+      ${lateSql('t', dayStart(now, timezone))} as overdue
     from tasks t
     join projects p on p.id = t.project_id
     where p.id = ${projectId}

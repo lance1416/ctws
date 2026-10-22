@@ -183,7 +183,7 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
 
 // ---------------------------------------------------------------------------------- overdue exits
 
-test('only a deadline change takes a task out of Overdue: a bare scheduledOn does not', async ({
+test('a late task given a day leaves Overdue, its deadline kept; moving the deadline does too', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -199,18 +199,27 @@ test('only a deadline change takes a task out of Overdue: a bare scheduledOn doe
   }
   expect(await segmentOf()).toBe('overdue')
 
-  // Scheduling it for tomorrow must NOT hide the missed deadline.
+  // Given tomorrow, it waits for tomorrow (FR-079, Lance 2026-10-22): off Today, the deadline as
+  // it was. The day-by-day of it is the pinned spec's ("交申请").
+  const due = (await serverTask(page, pid, '过期了')).dueAt
   const p = await page.request.patch(`/api/v1/tasks/${id}`, {
     headers: WEB,
     data: { scheduledOn: tomorrow },
   })
   expect(p.status()).toBe(200)
   expect((await serverTask(page, pid, '过期了')).scheduledOn).toBe(tomorrow)
-  expect(await segmentOf()).toBe('overdue')
+  expect((await serverTask(page, pid, '过期了')).dueAt).toBe(due)
+  expect(await segmentOf()).toBe('absent')
   await page.goto('/today')
-  await expect(page.getByRole('region', { name: 'Overdue' }).getByText('过期了')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Overdue' })).toHaveCount(0)
 
-  // Whereas moving the deadline itself does take it out.
+  // Unplanned again, it is overdue again; then moving the deadline itself takes it out.
+  const back = await page.request.patch(`/api/v1/tasks/${id}`, {
+    headers: WEB,
+    data: { scheduledOn: null },
+  })
+  expect(back.status()).toBe(200)
+  expect(await segmentOf()).toBe('overdue')
   const q = await page.request.patch(`/api/v1/tasks/${id}`, {
     headers: WEB,
     data: { dueAt: new Date(Date.now() + 3 * DAY).toISOString() },

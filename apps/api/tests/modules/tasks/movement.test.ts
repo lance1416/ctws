@@ -297,7 +297,7 @@ describe('GET /tasks/movement', () => {
     ).toBe(204)
     // A deadline a long way off is not overdue.
     await dueAt(await createTask(ctx, pid, 'next decade'), '2099-01-01T09:00:00Z')
-    // Late but planned for a day to come: not overdue until that day goes by (FR-079).
+    // Late and planned for a day to come: still a deadline missed (FR-079).
     const planned = await createTask(ctx, pid, 'planned again')
     await dueAt(planned, '2020-01-01T09:00:00Z')
     const res = await ctx.app.inject({
@@ -308,7 +308,7 @@ describe('GET /tasks/movement', () => {
     })
     expect(res.statusCode).toBe(200)
 
-    expect(rowFor(await movement(), pid).overdue).toBe(1)
+    expect(rowFor(await movement(), pid).overdue).toBe(2)
   })
 
   /**
@@ -361,16 +361,25 @@ describe('GET /tasks/movement', () => {
   })
 
   /**
-   * The number in the project's head and the rows in Today's Overdue section are two different
-   * queries answering one question. This asserts they agree, per project, rather than asserting
-   * each against a constant -- which is the only way a drift between them would ever be noticed.
+   * The number in the project's head counts deadlines missed; Today's Overdue lists the missed ones
+   * not yet given a day (FR-079). Two queries, so they are held to each other here, per project:
+   * equal where nothing late is planned, and apart by exactly the late tasks given a day.
    */
-  it('agrees with the overdue segment of today, project by project', async () => {
+  it('agrees with Today’s Overdue, but for the late tasks already given a day', async () => {
     const a = await createProject(ctx, 'agree a')
     const b = await createProject(ctx, 'agree b')
     await dueAt(await createTask(ctx, a, 'a late'), '2020-02-02T09:00:00Z')
     await dueAt(await createTask(ctx, b, 'b late 1'), '2020-02-02T09:00:00Z')
     await dueAt(await createTask(ctx, b, 'b late 2'), '2020-03-03T09:00:00Z')
+    const given = await createTask(ctx, b, 'b late, given a day')
+    await dueAt(given, '2020-03-03T09:00:00Z')
+    const planned = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/tasks/${given}`,
+      headers: ctx.authed,
+      payload: { scheduledOn: '2099-01-01' },
+    })
+    expect(planned.statusCode).toBe(200)
 
     const today = await ctx.app.inject({
       method: 'GET',
@@ -388,8 +397,9 @@ describe('GET /tasks/movement', () => {
     expect(fromToday.get(a)).toBe(1)
     expect(fromToday.get(b)).toBe(2)
 
-    for (const row of await movement())
-      expect(row.overdue, row.projectName).toBe(fromToday.get(row.projectId) ?? 0)
+    const rows = await movement()
+    expect(rowFor(rows, a).overdue).toBe(fromToday.get(a))
+    expect(rowFor(rows, b).overdue).toBe(fromToday.get(b)! + 1)
   })
 
   it('reports no activity at all for a project nothing has ever happened in', async () => {

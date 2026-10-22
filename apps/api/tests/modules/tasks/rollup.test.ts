@@ -203,7 +203,7 @@ describe('the overdue flag, decided in the account timezone', () => {
     expect(r[root]!.overdue).toBe(0)
   })
 
-  it('stops counting a passed deadline while the task is planned for today or later', async () => {
+  it('still counts a passed deadline once the task is planned for another day', async () => {
     const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const late = await createTask(ctx, pid, '交申请')
@@ -215,13 +215,11 @@ describe('the overdue flag, decided in the account timezone', () => {
         headers: { ...ctx.authed, 'x-ctws-client': 'web' },
         payload: { scheduledOn },
       })
-    // Today in Kiritimati is the 13th.
+    // Today in Kiritimati is the 13th. A deadline missed stays missed, whatever day it is given:
+    // only Today's Overdue block leaves out the late ones planned (FR-079).
     await plan('2026-10-14')
-    expect((await rollups(ctx, pid))[late]).toMatchObject({ overdue: 0 })
+    expect((await rollups(ctx, pid))[late]).toMatchObject({ overdue: 1 })
     await plan('2026-10-13')
-    expect((await rollups(ctx, pid))[late]).toMatchObject({ overdue: 0 })
-    // A plan for a day gone by does not hold it off.
-    await plan('2026-10-12')
     expect((await rollups(ctx, pid))[late]).toMatchObject({ overdue: 1 })
   })
 

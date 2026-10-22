@@ -5,7 +5,7 @@ import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { dayStart, localDay } from '../../../platform/db/time'
 import { pathRow, pathSql, TASK_COLUMNS } from './rows'
-import { overdueSql, taskOpenSql, visibleTasks } from './scope'
+import { lateSql, taskOpenSql, visibleTasks } from './scope'
 
 const todayRow = pathRow.extend({
   segment: todayTaskResponse.shape.segment,
@@ -18,7 +18,8 @@ export type TodayTask = z.output<typeof todayRow>
  * tomorrow, except a late one planned for a later day, which waits for that day. Each falls in
  * exactly one segment so no row shows twice: overdue wins, then in progress (what is being done
  * stays there, due today or not, FR-079), then today's plans and deadlines. A plan from an earlier
- * day stays until it is done; a late one is overdue again instead (`overdueSql`).
+ * day stays until it is done; a late one is overdue again instead. Overdue here is late and not
+ * yet given a day: a late task planned for today is today's, still saying how late it is.
  *
  * A parent shows only by its own deadline (FR-043): due today it is a row of today's, missed it is
  * overdue, and it carries its children's counts. Never in progress: its status is its children's,
@@ -46,7 +47,8 @@ export async function listToday(
         ${pathSql('t')} as path,
         kids.total > 0 as is_parent,
         case
-          when ${overdueSql('t', { dayStarts: sql`b.t0`, today: sql`b.today` })} then 'overdue'
+          when ${lateSql('t', sql`b.t0`)}
+            and (t.scheduled_on is null or t.scheduled_on < b.today) then 'overdue'
           when t.status = 'in_progress' and kids.total = 0 then 'in_progress'
           else 'today'
         end as segment
