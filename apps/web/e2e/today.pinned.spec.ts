@@ -122,3 +122,23 @@ test('a birthday is a row of who, the day and how far off, each in its column', 
   await expect(birthday.locator('[data-birthday-day]')).toHaveText('Thu, Oct 29')
   await expect(birthday.locator('[data-birthday-in]')).toHaveText('7 d')
 })
+
+test('deadlines at the same moment are one flag that lists them, never a meeting', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const project = await apiPost(page, '/projects', { name: '同一刻' })
+  // Both at 18:00 in London.
+  await task(page, project.id, 'Send the onsite availability', { dueAt: '2026-10-22T17:00:00Z' })
+  await task(page, project.id, 'Sign the lease', { dueAt: '2026-10-22T17:00:00Z' })
+  await page.goto('/today')
+
+  const line = page.getByRole('region', { name: 'Timeline of the day' })
+  await expect(line.locator('[data-timeline-meeting]')).toHaveCount(0)
+  const flag = line.getByRole('button', { name: '2 deadlines, 18:00' })
+  await flag.focus()
+  await page.keyboard.press('Enter')
+  const list = page.getByRole('list', { name: '2 deadlines' })
+  await expect(list).toContainText('Send the onsite availability')
+  await expect(list).toContainText('Sign the lease')
+})

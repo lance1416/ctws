@@ -67,19 +67,25 @@ export function Timeline({
         {line.nodes.map((node) => {
           const first = node.items[0]!
           const many = node.items.length > 1
-          if (first.kind === 'due' && !many)
+          // Deadlines alone are flags, however many share the moment; a meeting among them makes
+          // the node a meeting's.
+          if (node.items.every((i) => i.kind === 'due'))
             return (
               <div key={node.key} data-timeline-due>
                 <div className="absolute top-0 h-10 w-0.5 bg-warn" style={{ left: pct(node.at) }} />
                 <div
-                  className="absolute top-0 flex h-10 min-w-0 items-center gap-1.5 pl-2 text-warn-t"
+                  className={`absolute top-0 flex h-10 min-w-0 items-center gap-1.5 pl-2 text-warn-t ${many ? '' : 'overflow-hidden'}`}
                   style={{ left: pct(node.at), width: pct(Math.max(node.room - node.at, 0.08)) }}
                 >
                   <FlagIcon size={14} aria-hidden="true" className="shrink-0" />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-meta font-medium">{first.title}</span>
-                    <span className="font-mono text-meta">{clock(first.start)}</span>
-                  </span>
+                  {many ? (
+                    <Cluster items={node.items} nowMinutes={nowMinutes} />
+                  ) : (
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-meta font-medium">{first.title}</span>
+                      <span className="font-mono text-meta">{clock(first.start)}</span>
+                    </span>
+                  )}
                 </div>
               </div>
             )
@@ -98,8 +104,9 @@ export function Timeline({
               </div>
               <div
                 className={`absolute top-0 flex h-10 min-w-0 items-center gap-2.5 pl-2 ${many ? '' : 'overflow-hidden'}`}
+                // After the node, which is never narrower than its count (min-w-6).
                 style={{
-                  left: `calc(${pct(node.until)} + 0px)`,
+                  left: `max(${pct(node.until)}, calc(${pct(node.at)} + 1.5rem))`,
                   width: pct(Math.max(node.room - node.until, 0.06)),
                 }}
               >
@@ -165,9 +172,20 @@ export function Timeline({
   )
 }
 
+const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`
+
+/** What a node of several holds, by kind: "3 meetings", "2 deadlines", "1 meeting and 1 deadline". */
+function clusterName(items: TimedItem[]): string {
+  const meetings = items.filter((i) => i.kind === 'meeting').length
+  const deadlines = items.length - meetings
+  if (deadlines === 0) return plural(meetings, 'meeting')
+  if (meetings === 0) return plural(deadlines, 'deadline')
+  return `${plural(meetings, 'meeting')} and ${plural(deadlines, 'deadline')}`
+}
+
 /**
- * Meetings too close to draw apart (FR-015): the count and the span, which list them on hover and
- * on a press, so a keyboard and a screen reader reach each one too (WCAG 2.1.1, 1.4.13). Esc and a
+ * Things too close to draw apart (FR-015): how many, and when, which list them on hover and on a
+ * press, so a keyboard and a screen reader reach each one too (WCAG 2.1.1, 1.4.13). Esc and a
  * press elsewhere put the list away.
  */
 function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number }) {
@@ -183,7 +201,10 @@ function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
   }, [pressed])
-  const span = `${clock(items[0]!.start)}–${clock(items.at(-1)!.start)}`
+  const name = clusterName(items)
+  const [from, to] = [clock(items[0]!.start), clock(items.at(-1)!.start)]
+  const span = from === to ? from : `${from}–${to}`
+  const tone = items.some((i) => i.kind === 'meeting') ? 'text-meeting-t' : 'text-warn-t'
   return (
     <span
       ref={box}
@@ -202,18 +223,16 @@ function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number
         type="button"
         data-timeline-cluster
         aria-expanded={open}
-        aria-label={`${items.length} meetings, ${span}`}
+        aria-label={`${name}, ${span}`}
         onClick={() => setPressed(!pressed)}
         className="flex min-w-0 flex-col rounded-control text-left"
       >
-        <span className="truncate text-meta font-medium text-meeting-t">
-          {items.length} meetings
-        </span>
+        <span className={`truncate text-meta font-medium ${tone}`}>{name}</span>
         <span className="truncate font-mono text-meta text-muted">{span}</span>
       </button>
       {open && (
         <ul
-          aria-label={`${items.length} meetings`}
+          aria-label={name}
           className={`absolute top-full left-0 ${LAYER.menu} mt-1.5 w-72 rounded-block bg-float p-1.5 shadow-float`}
         >
           {items.map((m) => {
@@ -221,6 +240,9 @@ function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number
             return (
               <li key={m.key} className="flex min-h-8 items-center gap-2.5 rounded-control px-2">
                 <span className="font-mono text-meta text-muted">{clock(m.start)}</span>
+                {m.kind === 'due' && (
+                  <FlagIcon size={12} aria-label="Due" className="shrink-0 text-warn-t" />
+                )}
                 {m.to ? (
                   <Link
                     to={m.to}
