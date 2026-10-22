@@ -273,7 +273,7 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
   await expect(pane).toHaveCount(0)
 })
 
-test('a parent row says how its subtree stands, and a quiet one says nothing', async ({ page }) => {
+test('a parent row says how far its leaves are, in its own column (FR-054)', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const live = await makeTask(page, pid, '接入 KaTeX')
@@ -283,16 +283,15 @@ test('a parent row says how its subtree stands, and a quiet one says nothing', a
   await makeTask(page, pid, '列个提纲', {}, quiet)
 
   await openTree(page, pid)
-  // The rollup line, on the parent that has something to report: half its children are done and
-  // one of them is running.
-  await expect(row(page, '接入 KaTeX').locator('[data-row-rollup]')).toHaveText(
-    '50% · 1 in progress',
+  // Half its leaves done: the bar and the count, and the square where a leaf has its status.
+  await expect(row(page, '接入 KaTeX').locator('[data-row-progress]')).toContainText('1/2')
+  await expect(row(page, '接入 KaTeX').locator('[data-progress-square]')).toHaveAttribute(
+    'data-progress-square',
+    '50',
   )
-  // And nothing at all on the parent whose subtree is merely unstarted: a lone "0%" would be a
-  // second line on half the rows in any tree, saying what the children below already say.
-  await expect(row(page, '写变更日志').locator('[data-row-rollup]')).toHaveCount(0)
-  // Leaves never carry one: their "progress" is the marker at the head of the row.
-  await expect(row(page, '公式换行').locator('[data-row-rollup]')).toHaveCount(0)
+  await expect(row(page, '写变更日志').locator('[data-row-progress]')).toContainText('0/1')
+  // Leaves never carry one: their progress is the mark at the head of the row.
+  await expect(row(page, '公式换行').locator('[data-row-progress]')).toHaveText('')
 })
 
 // ----------------------------------------------------------------- a project can be edited

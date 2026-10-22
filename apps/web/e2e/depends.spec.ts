@@ -37,11 +37,13 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   await openTree(page, pid)
 
   // NAMED, not merely marked: the point of the phrase is that nobody has to click to find out.
-  await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveText(
+  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
+    'title',
     'Blocked by “跑通 CI”',
   )
-  // Dimmed but PRESENT -- a list that drops tasks cannot be trusted.
+  // PRESENT, and its Due column says it is waiting -- a list that drops tasks cannot be trusted.
   await expect(row(page, '发 v0.8.0')).toBeVisible()
+  await expect(row(page, '发 v0.8.0').locator('[data-row-due]')).toHaveText('Waiting')
 
   // Finishing the blocker is the only write. Nothing touches the waiting task.
   await openPane(page, '跑通 CI')
@@ -50,7 +52,8 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   await pane(page).getByRole('button', { name: 'Save' }).click()
   await expect(row(page, '跑通 CI')).toHaveCount(0)
 
-  await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveCount(0)
+  await expect(row(page, '发 v0.8.0').locator('[data-row-due="waiting"]')).toHaveCount(0)
+  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).not.toHaveAttribute('title', /./)
 })
 
 test('a dependency is added by searching, and it reaches into another project', async ({
@@ -75,7 +78,8 @@ test('a dependency is added by searching, and it reaches into another project', 
   // usual case here, and a bare title would not say where to go looking.
   await expect(waitingFor(page)).toContainText(['跑通 rrgen 的 CI'])
   await expect(waitingFor(page).first()).toContainText('rrgen')
-  await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveText(
+  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
+    'title',
     'Blocked by “跑通 rrgen 的 CI”',
   )
 })
@@ -116,7 +120,8 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
   await expect(waitingFor(page).first()).not.toContainText('改版')
   await pane(page).getByRole('button', { name: 'Remove dependency “跑通 CI”' }).click()
   await expect(waitingFor(page)).toHaveCount(0)
-  await expect(row(page, '发 v0.8.0').locator('[data-row-blocked]')).toHaveCount(0)
+  await expect(row(page, '发 v0.8.0').locator('[data-row-due="waiting"]')).toHaveCount(0)
+  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).not.toHaveAttribute('title', /./)
 })
 
 test('a dependency removal that fails says so', async ({ page }) => {

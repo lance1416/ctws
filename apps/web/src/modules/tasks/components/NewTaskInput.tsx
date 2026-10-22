@@ -1,11 +1,6 @@
 import { useId, useRef } from 'react'
-import { HANG_WIDTH } from '../../../platform/ui/hang'
-import { ROW_BODY } from '../../../shell/rows'
-import { CHEVRON_PX, gutterPlus, HANDLE_PX, INDENT_PX } from './TaskRowParts'
+import { titleStart, TREE_ROW } from './TaskRowParts'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
-
-// The width of `StatusButton`, not of its glyph, so the input lines up with the rows' titles.
-const MARK_PX = 28
 
 type Props = {
   /** Depth of the task this input creates; a root task is 1. Indents it into place. */
@@ -26,18 +21,14 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
   const describedBy = useId()
 
   return (
-    // The row's anatomy with the margin and thread left empty: the cursor starts where titles do.
-    <li data-depth={depth} data-new-task className="flex items-stretch">
-      <span aria-hidden="true" className={`shrink-0 ${HANG_WIDTH}`} />
-      <span aria-hidden="true" className="w-[3px] shrink-0" />
+    // Across the row's columns, the cursor where titles start.
+    <li data-depth={depth} data-new-task className={TREE_ROW}>
       {/* A column, so the failure message sits under the box it is about. */}
       <div
-        style={{
-          paddingLeft: gutterPlus((depth - 1) * INDENT_PX + HANDLE_PX + CHEVRON_PX + MARK_PX + 8),
-        }}
-        className={`${ROW_BODY} flex-col justify-center`}
+        style={{ paddingLeft: titleStart(depth) }}
+        className="col-span-4 flex min-w-0 flex-col justify-center"
       >
-        <div className="flex min-h-11 items-center">
+        <div className="flex min-h-9 items-center">
           <input
             ref={input}
             autoFocus
@@ -59,7 +50,7 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
             aria-label="Add a task"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? describedBy : undefined}
-            className={`h-8 w-full border-b bg-transparent text-prose text-ink placeholder:text-muted ${
+            className={`h-7 w-full border-b bg-transparent text-ui text-ink placeholder:text-muted ${
               error ? 'border-stop' : 'border-line-strong'
             }`}
           />

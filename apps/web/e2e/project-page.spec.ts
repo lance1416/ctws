@@ -275,62 +275,6 @@ test('the overlay trap ignores a trailing control the keyboard cannot reach', as
 
 // ------------------------------------------------------------------------------ the rail, and the row
 
-/**
- * ONE SPINE, not a column of dashes. A segmented rail passes every assertion about colour, count
- * and x; only the GAP between one row's rail and the next's, and whether each rail is as tall as
- * its row, tell the two apart.
- */
-test('the tree’s rail reads as one continuous spine, not one dash per row', async ({ page }) => {
-  await registerFreshUser(page)
-  await page.setViewportSize(WIDE)
-  const pid = await makeProject(page, '一条脊')
-  const a = await makeTask(page, pid, '根')
-  const b = await makeTask(page, pid, '子', {}, a)
-  await makeTask(page, pid, '孙', {}, b)
-  await makeTask(page, pid, '另一根')
-  await page.goto(`/projects/${pid}`)
-  await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
-
-  const geometry = await page.evaluate(() => {
-    const rows = [...document.querySelectorAll<HTMLElement>('[data-task-tree] li[data-depth]')]
-    return rows.map((row) => {
-      const rail = row.querySelector<HTMLElement>('[data-project-rail]')!
-      const r = rail.getBoundingClientRect()
-      const b = row.getBoundingClientRect()
-      return {
-        x: Math.round(r.x),
-        top: r.top,
-        bottom: r.bottom,
-        rowTop: b.top,
-        rowBottom: b.bottom,
-        rowHeight: Math.round(b.height),
-        radius: getComputedStyle(rail).borderTopLeftRadius,
-        width: Math.round(r.width),
-      }
-    })
-  })
-  expect(geometry).toHaveLength(4)
-  // One x: a spine is vertical.
-  expect(new Set(geometry.map((g) => g.x)).size, `rail x values`).toBe(1)
-  for (const [i, g] of geometry.entries()) {
-    // Each rail is EXACTLY as tall as its row -- a dash is inset top and bottom.
-    expect(Math.round(g.bottom - g.top), `rail ${i} height`).toBe(g.rowHeight)
-    expect(Math.abs(g.top - g.rowTop), `rail ${i} top`).toBeLessThanOrEqual(0.5)
-    // ...and square, so two rails meeting read as one bar rather than two lozenges.
-    expect(g.radius, `rail ${i} radius`).toBe('0px')
-    expect(g.width, `rail ${i} width`).toBe(3)
-  }
-  // No gap anywhere down the tree: the bottom of each rail is the top of the next.
-  for (let i = 1; i < geometry.length; i++) {
-    expect(geometry[i]!.top - geometry[i - 1]!.bottom, `gap above row ${i}`).toBeLessThanOrEqual(
-      0.5,
-    )
-  }
-  // The spine covers the whole tree, top to bottom, rather than most of it.
-  expect(geometry[0]!.top - geometry[0]!.rowTop).toBeLessThanOrEqual(0.5)
-  expect(geometry.at(-1)!.rowBottom - geometry.at(-1)!.bottom).toBeLessThanOrEqual(0.5)
-})
-
 test('a delete question asked on one project does not follow to the next', async ({ page }) => {
   await registerFreshUser(page)
   await page.setViewportSize(WIDE)

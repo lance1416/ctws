@@ -1,40 +1,38 @@
 import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
-import { CollapseIcon, ExpandIcon, NewIcon } from '../../../platform/ui/icons'
+import { CollapseIcon, ExpandIcon, FlagIcon, LockIcon, NewIcon } from '../../../platform/ui/icons'
 import { useSortable } from '@dnd-kit/sortable'
-import { type ProjectId, type TaskId, type TaskResponse, type TaskStatus } from '@ctws/contracts'
+import type { ChildCounts, TaskId, TaskResponse, TaskStatus } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../logic/tree/flatten'
 import { blockedLabel } from '../logic/blockedLabel'
 import { ymd } from '../../../platform/time/dates'
-import { capturedLabel, lateNote } from '../logic/dueDates'
+import { capturedLabel } from '../logic/dueDates'
+import { treeDue, type TreeDue } from '../logic/tree/treeDue'
 import { useTimeZone } from '../../../shell/auth'
-import { leadFor, ProjectRail, ROW_BODY, RowLead } from '../../../shell/rows'
 import {
-  gutterPlus,
-  CHEVRON_PX,
-  HANDLE_PX,
   INDENT_PX,
   NotesMark,
   opensOnClick,
   OVER_ROW,
-  RowMeta,
-  RowNote,
   SavedMark,
+  TREE_ROW,
+  WIDE_ONLY,
 } from './TaskRowParts'
+import { ProgressSquare } from './ProgressSquare'
 import { StartButton, StatusButton } from './StatusControls'
 import { useNow } from '../../../platform/time/useNow'
 
 type Props = {
   row: FlatRow
-  /** The project every row in this tree belongs to: the rail is one continuous spine here. */
-  projectId: ProjectId
   /** What the row draws; missing only for the moment a moved row's list is read again. */
   task: TaskResponse | undefined
   /** Whether the row says how long ago it was captured: only the inbox's do. */
   aged: boolean
-  /** This row's subtree, said in words. Only a row with children gets one. */
-  rollup: string | null
-  /** What is still in the way. The row dims; it does not disappear. */
+  /** A parent's leaves, for its square and its "1/4"; a leaf has none. */
+  counts: ChildCounts | undefined
+  /** The stage it has reached, and whether that stage is one folded away by default. */
+  stage: { name: string; quiet: boolean } | null
+  /** What is still in the way: the Due column says Waiting while there is any. */
   blockedBy: readonly { id: TaskId; title: string }[] | undefined
   /**
    * `saved` is true for a moment after a save from the pane: the row says it worked. `tabStop` is
@@ -57,12 +55,16 @@ type RowActions = {
   addChild: () => void
 }
 
+/**
+ * ONE ROW OF THE TREE (FR-054, artboard 8), in its four columns: the name, behind its fold and its
+ * status (a leaf) or its progress square (a parent); the stage; a parent's progress; the deadline.
+ */
 export function TaskRow({
   row,
-  projectId,
   task,
   aged,
-  rollup,
+  counts,
+  stage,
   blockedBy,
   state: { saved, selected, tabStop },
   handleRef,
@@ -71,27 +73,30 @@ export function TaskRow({
   const title = task?.title ?? ''
   const status = task?.status ?? 'todo'
   const dueAt = task?.dueAt ?? null
-  const scheduledOn = task?.scheduledOn ?? null
   const hasNotes = (task?.notes ?? '') !== ''
-  const capturedAt = aged ? (task?.createdAt ?? null) : null
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   })
-  const inactive = isFinished(status)
+  const settled = isFinished(status)
+  const blocked = blockedLabel(blockedBy)
   // The account's zone, not the browser's: the server decides what is overdue in that zone.
   const timeZone = useTimeZone()
   const now = useNow()
-  const late = lateNote({ status, dueAt }, timeZone, now)
-  // A settled task's dates no longer tell the reader anything: its margin is empty.
-  const lead = inactive ? null : leadFor({ dueAt, scheduledOn }, ymd(now, timeZone), timeZone)
+  const today = ymd(now, timeZone)
+  const due = treeDue({ dueAt, status, waiting: blocked !== null }, today, timeZone)
+  // The inbox's rows say their age while no date says more (STORY-016).
+  const age =
+    aged && !dueAt && !task?.scheduledOn && task
+      ? capturedLabel(task.createdAt, timeZone, now)
+      : null
 
   return (
     <li
       ref={setNodeRef}
       role="listitem"
       data-depth={row.depth}
-      // A click on the row body opens the detail; the chevron and the handle are buttons with
-      // their own jobs. A drag starts on the handle, so it never reaches here as a row click.
+      // A click on the row opens the detail; the fold, the handle and the controls are buttons
+      // with their own jobs. A drag starts on the handle, so it never reaches here as a click.
       onClick={(e) => {
         if (!opensOnClick(e)) return
         // Shift picks rows instead of opening one.
@@ -106,135 +111,187 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      // The margin, the thread, then the body; `items-stretch` so the thread runs the row's height.
-      className={`group relative flex cursor-pointer items-stretch ${isDragging ? 'opacity-70' : ''} ${
-        // Blocked rows dim but stay; what is in the way is named under the title.
-        blockedBy && blockedBy.length > 0 ? 'opacity-60' : ''
+      className={`group relative cursor-pointer ${TREE_ROW} hover:bg-hover ${
+        isDragging ? 'bg-float opacity-70' : ''
+      } ${
+        // A selected row wears the select layer plus an ink edge: a layer alone would be hard to
+        // tell from whatever the pointer happens to be over.
+        selected ? 'bg-select shadow-[inset_2px_0_0_0_var(--color-ink)]' : ''
       }`}
     >
-      <RowLead lead={lead} />
-      <ProjectRail projectId={projectId} />
-      {/* The body is the only part indented, hovered and selected. `items-start`: each glyph is
-          44px tall, so it centres on the title whether or not a second line follows. */}
-      <div
-        style={{ paddingLeft: gutterPlus((row.depth - 1) * INDENT_PX) }}
-        className={`${ROW_BODY} relative min-h-11 items-start pr-2 group-hover:bg-hover ${
-          isDragging ? 'bg-float' : ''
-        } ${
-          // A selected row wears the select layer plus an ink edge: a layer alone would be hard to
-          // tell from whatever the pointer happens to be over.
-          selected ? 'bg-select shadow-[inset_2px_0_0_0_var(--color-ink)]' : ''
-        }`}
+      {/* The focus carrier and drag handle, in the row's left gutter. Only the pointer sensor is
+          registered, so `listeners` is just onPointerDown and our own onKeyDown owns the keys. */}
+      <button
+        type="button"
+        ref={handleRef}
+        aria-label={`Task: ${title}`}
+        data-handle-id={row.id}
+        {...attributes}
+        {...listeners}
+        // After the spread: dnd-kit's sortable attributes include a tabIndex of their own, and
+        // letting it win would put every row back in the tab order.
+        tabIndex={tabStop ? 0 : -1}
+        onFocus={on.focus}
+        onKeyDown={on.keyDown}
+        className="absolute inset-y-0 left-0 flex w-3 cursor-grab touch-none items-center justify-center text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
-        {/* One hairline per ancestor level, centred under that level's chevron column. Depth is
-            carried by these guides, never by the thread. */}
-        {Array.from({ length: row.depth - 1 }, (_, i) => (
-          <span
-            key={i}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 w-px bg-line"
-            style={{ left: gutterPlus(i * INDENT_PX + HANDLE_PX + CHEVRON_PX / 2) }}
-          />
-        ))}
-        {/* The focus carrier and drag handle. Only the pointer sensor is registered, so
-            `listeners` is just onPointerDown and our own onKeyDown owns the keyboard. */}
-        <button
-          type="button"
-          ref={handleRef}
-          aria-label={`Task: ${title}`}
-          data-handle-id={row.id}
-          {...attributes}
-          {...listeners}
-          // After the spread: dnd-kit's sortable attributes include a tabIndex of their own, and
-          // letting it win would put every row back in the tab order.
-          tabIndex={tabStop ? 0 : -1}
-          onFocus={on.focus}
-          onKeyDown={on.keyDown}
-          style={{ width: HANDLE_PX }}
-          className="flex h-11 shrink-0 cursor-grab touch-none items-center justify-center text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-        >
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
-            {[5.5, 10.5].flatMap((x) =>
-              [4, 8, 12].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.1" />),
-            )}
-          </svg>
-        </button>
+        <svg viewBox="0 0 6 12" width="6" height="12" aria-hidden="true" fill="currentColor">
+          {[1.5, 4.5].flatMap((x) =>
+            [2, 6, 10].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r="0.9" />),
+          )}
+        </svg>
+      </button>
+
+      <span
+        data-row-cell
+        className="flex min-w-0 items-center gap-1.5"
+        style={{ paddingLeft: (row.depth - 1) * INDENT_PX }}
+      >
         {/* Gated on hasChildren, not on collapsed: a stale collapsed id for a row that has since
-            become a leaf yields collapsed: true with no children, and must not show a chevron. */}
+            become a leaf yields collapsed: true with no children, and must not show a fold. */}
         {row.hasChildren ? (
           <button
             type="button"
             aria-label={row.collapsed ? 'Expand' : 'Collapse'}
             aria-expanded={!row.collapsed}
             onClick={on.toggle}
-            style={{ width: CHEVRON_PX }}
-            className="flex h-11 shrink-0 items-center justify-center text-muted hover:text-ink"
+            className="-my-2 -ml-1 flex h-9 w-5 shrink-0 items-center justify-center text-muted hover:text-ink"
           >
-            {row.collapsed ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
+            {row.collapsed ? <CollapseIcon size={14} /> : <ExpandIcon size={14} />}
           </button>
         ) : (
-          <span style={{ width: CHEVRON_PX }} className="shrink-0" aria-hidden="true" />
+          <span aria-hidden="true" className="-ml-1 w-5 shrink-0" />
         )}
-        <span className="mr-2 flex h-11 shrink-0 items-center">
-          <StatusButton
-            status={status}
-            title={title}
-            onClick={() => on.setStatus(toggleDoneTarget(status))}
-          />
-        </span>
-        {/* Under the title: what it waits on, its children, or its age; never a breadcrumb. */}
-        <span data-row-cell className="flex min-w-0 flex-1 flex-col py-2.5">
-          <span className="flex min-w-0 items-center">
-            <span
-              data-row-title
-              className={`truncate text-prose ${
-                status === 'in_progress' ? 'font-medium' : ''
-              } ${inactive ? 'text-muted' : 'text-ink'} ${status === 'cancelled' ? 'line-through' : ''}`}
-            >
-              {title}
-              {saved && <SavedMark />}
-            </span>
-            {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
-            {selected && <span className="sr-only">Selected</span>}
-            {hasNotes && (
-              <span className="ml-2 flex shrink-0 items-center text-subtle">
-                <NotesMark />
-              </span>
-            )}
+        {counts ? (
+          <span className="flex shrink-0">
+            <ProgressSquare status={status} children={counts} />
           </span>
-          <RowMeta
-            // An age only while there is no date: a date says more.
-            age={
-              capturedAt && !dueAt && !scheduledOn ? capturedLabel(capturedAt, timeZone, now) : null
-            }
-            rollup={rollup}
-            blocked={blockedLabel(blockedBy)}
-          />
-        </span>
-        {/* How late, on the right: the margin says which day it was due. */}
-        {late && <RowNote>{late}</RowNote>}
-        {/* The hover controls sit over the body (`OVER_ROW` is opaque), reserving no width.
-            Without hover they always show, so they go `static` and stay off the text. */}
+        ) : (
+          <span className="-m-1.5 flex shrink-0">
+            <StatusButton
+              status={status}
+              title={title}
+              size={16}
+              onClick={() => on.setStatus(toggleDoneTarget(status))}
+            />
+          </span>
+        )}
         <span
-          className={`absolute top-0 right-1 flex h-11 shrink-0 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:bg-transparent [@media(hover:none)]:opacity-100 [@media(hover:none)]:shadow-none ${OVER_ROW}`}
+          data-row-title
+          title={blocked ?? undefined}
+          className={`ml-1 truncate text-ui ${counts ? 'font-medium' : ''} ${
+            settled ? 'text-muted' : 'text-ink'
+          } ${status === 'cancelled' ? 'line-through' : ''}`}
         >
-          <StartButton
-            status={status}
-            title={title}
-            onClick={() => on.setStatus(toggleStartTarget(status))}
-          />
-          {/* The pointer's way to add a subtask; the keyboard has Alt+Enter. */}
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label={`Add a subtask to “${title}”`}
-            onClick={on.addChild}
-            className="flex h-9 w-8 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink"
-          >
-            <NewIcon size={16} />
-          </button>
+          {title}
         </span>
-      </div>
+        {saved && <SavedMark />}
+        {/* The select layer is drawn; this says it. A list item cannot carry aria-selected. */}
+        {selected && <span className="sr-only">Selected</span>}
+        {blocked && <span className="sr-only">, {blocked}</span>}
+        {hasNotes && (
+          <span className="flex shrink-0 items-center text-subtle">
+            <NotesMark />
+          </span>
+        )}
+      </span>
+
+      <span data-row-stage className={`flex min-w-0 ${WIDE_ONLY}`}>
+        {stage && (
+          <span
+            className={`inline-flex h-5.5 min-w-0 items-center gap-1.5 rounded-control bg-hover px-2 text-meta ${
+              stage.quiet ? 'text-subtle' : 'text-ink'
+            }`}
+          >
+            <span className="sr-only">Stage </span>
+            <i
+              aria-hidden="true"
+              className={`size-1.5 shrink-0 rounded-full ${stage.quiet ? 'bg-subtle' : 'bg-muted'}`}
+            />
+            <span className="truncate">{stage.name}</span>
+          </span>
+        )}
+      </span>
+
+      <span data-row-progress className={`flex min-w-0 items-center gap-2 ${WIDE_ONLY}`}>
+        {counts && (
+          <>
+            <span aria-hidden="true" className="h-1 min-w-0 flex-1 rounded-full bg-hover">
+              <span
+                className="block h-full rounded-full bg-go"
+                style={{
+                  width: `${counts.counted === 0 ? 0 : (counts.done / counts.counted) * 100}%`,
+                }}
+              />
+            </span>
+            <span className="text-meta text-muted tabular-nums">
+              <span className="sr-only">Done </span>
+              {counts.done}/{counts.counted}
+            </span>
+          </>
+        )}
+      </span>
+
+      <span data-row-due-cell className="flex min-w-0">
+        {due ? (
+          <DueLabel due={due} />
+        ) : (
+          age && (
+            <span data-row-age className="truncate text-meta text-subtle">
+              {age}
+            </span>
+          )
+        )}
+      </span>
+
+      {/* The hover controls sit over the row's end (`OVER_ROW` is opaque), reserving no width.
+          Without hover they always show, at the end of the name. */}
+      <span
+        className={`absolute top-0 right-2 flex h-9 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 ${OVER_ROW}`}
+      >
+        <StartButton
+          status={status}
+          title={title}
+          onClick={() => on.setStatus(toggleStartTarget(status))}
+        />
+        {/* The pointer's way to add a subtask; the keyboard has Alt+Enter. */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={`Add a subtask to “${title}”`}
+          onClick={on.addChild}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink"
+        >
+          <NewIcon size={16} />
+        </button>
+      </span>
     </li>
+  )
+}
+
+const DUE_TONE = {
+  soon: 'h-5.5 rounded-control bg-warn-bg px-2 font-medium text-warn-t',
+  late: 'h-5.5 rounded-control bg-stop-bg px-2 font-medium text-stop-t',
+  quiet: 'text-muted',
+  waiting: 'font-medium text-warn-t',
+} as const
+
+/**
+ * The Due column: within the week a flag on amber, missed one on red, further off grey words
+ * (FR-054); Waiting, behind a lock, for a leaf something unfinished holds up.
+ */
+function DueLabel({ due }: { due: TreeDue }) {
+  return (
+    <span
+      data-row-due={due.tone}
+      className={`inline-flex min-w-0 items-center gap-1 text-meta whitespace-nowrap tabular-nums ${DUE_TONE[due.tone]}`}
+    >
+      <span className="sr-only">{due.tone === 'waiting' ? '' : 'Due '}</span>
+      {(due.tone === 'soon' || due.tone === 'late') && (
+        <FlagIcon size={12} aria-hidden="true" className="shrink-0" />
+      )}
+      {due.tone === 'waiting' && <LockIcon size={12} aria-hidden="true" className="shrink-0" />}
+      {due.text}
+    </span>
   )
 }

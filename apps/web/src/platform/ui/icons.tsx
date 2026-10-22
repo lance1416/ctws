@@ -51,6 +51,7 @@ import {
   LayoutDashboard,
   Link,
   ListTree,
+  Lock,
   MessagesSquare,
   Moon,
   PanelRight,
@@ -143,6 +144,8 @@ export const DarkIcon = Moon
 /** Time on Today (FR-079): a deadline's flag, a birthday's cake, a call's camera. */
 export const FlagIcon = Flag
 export const CakeIcon = Cake
+/** Waiting on another task that is not finished (FR-054). */
+export const LockIcon = Lock
 export const JoinIcon = Video
 /** Finishing a row, and a plan carried over from a day already gone. */
 export const DoneIcon = Check

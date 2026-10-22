@@ -26,8 +26,8 @@ const tabStops = (page: Page) =>
       document.querySelectorAll('[data-task-tree] [data-handle-id]:not([tabindex="-1"])').length,
   )
 
-/** The last tab stop before the tree: the new-task box, which sits immediately above the rows. */
-const aboveTree = (page: Page) => page.getByRole('textbox', { name: 'New task' })
+/** The first tab stop after the tree's rows: the new-task box, its last line (FR-054). */
+const belowTree = (page: Page) => page.getByRole('textbox', { name: 'New task' })
 
 const flat = (n: number): [string, null][] =>
   Array.from({ length: n }, (_, i) => [`r${i}`, null] as [string, null])
@@ -45,19 +45,19 @@ test('the whole tree is one tab stop, however many rows it has', async ({ page }
 
   expect(await tabStops(page)).toBe(1)
 
-  // From the control above the tree, one Tab enters it and one more leaves it: two presses
+  // From the box under the rows, one Shift+Tab enters the tree and one more leaves it: two presses
   // whatever the number of rows.
-  await aboveTree(page).focus()
-  await page.keyboard.press('Tab')
+  await belowTree(page).focus()
+  await page.keyboard.press('Shift+Tab')
   expect(await inTree(page)).toBe(true)
-  await page.keyboard.press('Tab')
+  await page.keyboard.press('Shift+Tab')
   expect(await inTree(page)).toBe(false)
 
-  // Shift+Tab is symmetric: back in, and back out to the control above.
-  await page.keyboard.press('Shift+Tab')
+  // Tab is symmetric: back in, and back out to the box under the rows.
+  await page.keyboard.press('Tab')
   expect(await inTree(page)).toBe(true)
-  await page.keyboard.press('Shift+Tab')
-  await expect(aboveTree(page)).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(belowTree(page)).toBeFocused()
 
   // Tab is still bound to nothing: it reorganised nothing on the way through.
   expect(moves).toEqual([])
@@ -73,8 +73,8 @@ test('the tab stop follows the row last used, so Tab re-enters where you left of
 
   await handle(page, 'r3').focus()
   expect(await tabStops(page)).toBe(1)
-  await aboveTree(page).focus()
-  await page.keyboard.press('Tab')
+  await belowTree(page).focus()
+  await page.keyboard.press('Shift+Tab')
   // Not r0: a roving tabindex that always snapped back to the first row would make Tab a way of
   // losing your place.
   await expect(handle(page, 'r3')).toBeFocused()

@@ -3,11 +3,9 @@ import { makeProject, makeTask, registerFreshUser, sidewaysScroll } from './help
 import { dayOffset, dueAgo } from './days'
 
 /**
- * THE ROW ANATOMY: a MARGIN that says when, a THREAD in the project's colour, then the body --
- * marker, title, a second line that says where, and a short note on the right.
- *
- *   [margin 4.5rem][thread 3px][marker][title ............................][note]
- *                                       [where it came from]
+ * THE ROW ANATOMY of the lists that are not the tree: a MARGIN that says when, a THREAD in the
+ * project's colour, then the body -- marker, title, a second line that says where. The tree has
+ * columns of its own (FR-054), measured here too.
  *
  * What these guards are for, in order of how easy it would be to fake:
  * - "the margin is a column" is NOT provable by asserting a date is present. It is provable only by
@@ -38,13 +36,11 @@ async function rights(page: Page, selector: string): Promise<number[]> {
 }
 
 /**
- * In the tree the BODY is indented and nothing else is: the margin's words and the thread stay at
- * one x at every depth, so the dates still read as one column down a deep tree, while the titles
- * step in by one indent per level.
+ * In the tree only the NAME is indented (FR-054): the stage, progress and due columns stay at one
+ * x at every depth, so they read as columns down a deep tree, while the titles step in by one
+ * indent per level.
  */
-test('in the tree, depth indents the body and leaves the margin and the thread alone', async ({
-  page,
-}) => {
+test('in the tree, depth indents the name and leaves the other columns alone', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '深度')
@@ -54,25 +50,25 @@ test('in the tree, depth indents the body and leaves the margin and the thread a
   await page.goto(`/projects/${pid}`)
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(3)
 
-  const ends = await rights(page, '[data-task-tree] [data-row-lead-text]')
-  expect(new Set(ends).size, `margin ends: ${ends.join(',')}`).toBe(1)
-  const threads = await xs(page, '[data-task-tree] [data-project-rail]')
-  expect(new Set(threads).size, `thread x values: ${threads.join(',')}`).toBe(1)
+  for (const column of ['[data-row-stage]', '[data-row-progress]', '[data-row-due-cell]']) {
+    const at = await xs(page, `[data-task-tree] ${column}`)
+    expect(new Set(at).size, `${column} x values: ${at.join(',')}`).toBe(1)
+  }
   const title = (depth: number) =>
     page
       .locator(`[data-task-tree] li[data-depth="${depth}"] [data-row-title]`)
       .evaluate((el) => Math.round(el.getBoundingClientRect().x))
   const [one, two, three] = [await title(1), await title(2), await title(3)]
-  expect(two - one, 'one indent per level').toBe(20)
-  expect(three - two, 'one indent per level').toBe(20)
+  expect(two - one, 'one indent per level').toBe(22)
+  expect(three - two, 'one indent per level').toBe(22)
 })
 
 /**
- * A ROW WITH NOTHING UNDER ITS TITLE IS ONE LINE, 44px, dated or not and at any depth: the date is
- * in the margin, not on a second line. 10 + 24 + 10, from the type scale's 16/24 title. And the
- * title sits on the marker's own centre line, which the height alone does not say.
+ * EVERY ROW IS ONE LINE, 36px (artboard 8), dated or not and at any depth: the date is in its own
+ * column, not on a second line. And the title sits on the mark's own centre line, which the height
+ * alone does not say.
  */
-test('a dated row, a bare row and a nested row are all one line, 44px', async ({ page }) => {
+test('a dated row, a bare row and a nested row are all one line, 36px', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '两种行')
@@ -85,53 +81,44 @@ test('a dated row, a bare row and a nested row are all one line, 44px', async ({
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(3)
   const h = (title: string) =>
     row(title).evaluate((el) => Math.round(el.getBoundingClientRect().height))
-  expect(await h('过期两天的')).toBe(44)
-  expect(await h('什么都没有的')).toBe(44)
-  expect(await h('深一层的')).toBe(44)
-  await expect(row('过期两天的').locator('[data-row-meta]')).toHaveCount(0)
-  // The marker inside it is 20px, not a 16px glyph left sitting in a taller row.
+  expect(await h('过期两天的')).toBe(36)
+  expect(await h('什么都没有的')).toBe(36)
+  expect(await h('深一层的')).toBe(36)
+  // A leaf's mark is the row's 16, as on Today; a parent has its square there instead.
   expect(
     await row('深一层的')
       .getByRole('img', { name: 'To do' })
       .evaluate((el) => el.getBoundingClientRect().width),
-  ).toBe(20)
+  ).toBe(16)
+  await expect(row('什么都没有的').locator('[data-progress-square]')).toHaveCount(1)
 
   const centres = (title: string) =>
     row(title).evaluate((el) => {
       const t = el.querySelector('[data-row-title]')!.getBoundingClientRect()
-      const g = el.querySelector('[data-status-button]')!.getBoundingClientRect()
-      const lead = el.querySelector('[data-row-lead-text]')?.getBoundingClientRect()
+      const g = el.querySelector('[role="img"]')!.getBoundingClientRect()
       const top = el.getBoundingClientRect().top
-      return {
-        title: t.top + t.height / 2 - top,
-        glyph: g.top + g.height / 2 - top,
-        lead: lead ? lead.top + lead.height / 2 - top : null,
-      }
+      return { title: t.top + t.height / 2 - top, glyph: g.top + g.height / 2 - top }
     })
-  for (const title of ['过期两天的', '什么都没有的']) {
+  for (const title of ['过期两天的', '什么都没有的', '深一层的']) {
     const c = await centres(title)
     expect(Math.abs(c.title - c.glyph), `${title}: ${JSON.stringify(c)}`).toBeLessThanOrEqual(0.5)
-    // The margin's word sits on the title's line, not above or below it.
-    if (c.lead !== null)
-      expect(Math.abs(c.lead - c.title), JSON.stringify(c)).toBeLessThanOrEqual(1)
   }
 })
 
 /**
- * A task with BOTH a deadline and a plan shows the DEADLINE in its margin -- the one that bites --
- * flagged, with the moment in full as the margin's title.
+ * A task with BOTH a deadline and a plan shows the DEADLINE in the Due column -- the one that
+ * bites -- flagged on red once missed. The plan is the detail's to say.
  */
 test('a row with a plan and a deadline shows the deadline', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '两种日期都有', { dueAt: dueAgo(3), scheduledOn: dayOffset(2) })
   await page.goto(`/projects/${pid}`)
-  const lead = page.locator('[data-task-tree] li[data-depth]').first().locator('[data-row-lead]')
-  await expect(lead).toHaveAttribute('data-row-lead', 'missed')
-  await expect(lead.locator('[data-flag]')).toHaveCount(1)
-  await expect(lead).toHaveAttribute('title', /^Due /)
+  const due = page.locator('[data-task-tree] li[data-depth]').first().locator('[data-row-due]')
+  await expect(due).toHaveAttribute('data-row-due', 'late')
+  await expect(due.locator('svg')).toHaveCount(1)
   // Said, not only coloured: a screen reader hears what kind of date this is.
-  await expect(lead).toContainText('Overdue')
+  await expect(due).toContainText('Due')
 })
 
 /**
@@ -170,7 +157,7 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 /**
  * A REAL LONG TITLE KEEPS THE LINE, at 1440, with the detail closed (Linked beside the tree) and
  * open (the detail the third column, Linked under the tree): the title has most of the row either
- * way, and the margin, the thread and the note never take more than their own width.
+ * way, and the other columns never take more than their own width.
  *
  * Asserted at both panel widths, from the same page, with the window never changing: the closed
  * panel is 1118px and the open one 734px, and a guard that only checked the easy one would pass
@@ -182,16 +169,16 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
   const pid = await mixedProject(page, '长标题')
   await page.goto(`/projects/${pid}`)
   await expect(page.locator('[data-task-tree] li[data-depth]')).toHaveCount(4)
-  // The margin is really there, or this measures a list with no furniture in it.
-  await expect(page.locator('[data-task-tree] [data-row-lead-text]')).toHaveCount(2)
+  // The other columns are really there, or this measures a list with no furniture in it.
+  await expect(page.locator('[data-task-tree] [data-row-due]')).toHaveCount(1)
 
   const closed = await firstRow(page)
   expect(closed.needs, 'the title really is a long one').toBeGreaterThan(500)
-  // With the detail closed, Linked sits beside the tree: the title keeps most of the row.
+  // With the detail closed, Linked sits beside the tree: the title keeps the larger share.
   expect(
     closed.cell / closed.list,
     `title cell ${closed.cell}px of ${closed.list}px`,
-  ).toBeGreaterThan(0.6)
+  ).toBeGreaterThan(0.45)
 
   // Open the pane from ANOTHER row, so the row being measured is not the one that is selected.
   await page.locator('[data-task-tree] li[data-depth]').nth(1).click()
@@ -199,11 +186,13 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
   const open = await firstRow(page)
   expect(await page.evaluate(() => window.innerWidth), 'the window did not change').toBe(1440)
   expect(open.list, `list with the detail open: ${open.list}px`).toBeLessThan(800)
-  // Every pixel the list changed by came out of (or went to) the title: the margin, the thread and
-  // the note do not grow or shrink with it. (Opening the detail moves Linked under the tree, so
+  // Every pixel the list changed by came out of (or went to) the title: the stage, progress and
+  // due columns do not grow or shrink with it. (Opening the detail moves Linked under the tree, so
   // the list is about as wide either way.)
   expect(closed.cell - open.cell, 'the title moves with the list').toBe(closed.list - open.list)
-  expect(open.cell / open.list, `title cell ${open.cell}px of ${open.list}px`).toBeGreaterThan(0.6)
+  // The stage, progress and due columns are a fixed 336px with their gaps: the title has the
+  // rest, the larger share, at either width.
+  expect(open.cell / open.list, `title cell ${open.cell}px of ${open.list}px`).toBeGreaterThan(0.45)
 })
 
 /**
@@ -301,41 +290,49 @@ test('the status marker is the row’s heaviest mark, and only in progress has a
 
 // ------------------------------------------------------------- the two date semantics, by shape
 
-test('a deadline is flagged and a plan is not: they differ by shape as well as colour', async ({
+test('the Due column says how near: amber this week, red once missed, grey further off', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  const late = new Date()
-  late.setHours(23, 30, 0, 0)
-  await makeTask(page, pid, '有截止的', { dueAt: late.toISOString() })
-  await makeTask(page, pid, '有计划的', { scheduledOn: dayOffset(2) })
+  await makeTask(page, pid, '明天截止的', {
+    dueAt: new Date(`${dayOffset(1)}T12:00:00`).toISOString(),
+  })
+  await makeTask(page, pid, '过了的', { dueAt: dueAgo(2) })
+  await makeTask(page, pid, '还远的', {
+    dueAt: new Date(`${dayOffset(20)}T12:00:00`).toISOString(),
+  })
+  await makeTask(page, pid, '只有计划的', { scheduledOn: dayOffset(2) })
   await page.goto(`/projects/${pid}`)
-  const lead = (title: string) =>
+  const due = (title: string) =>
     page
       .locator('[data-task-tree] li[data-depth]')
       .filter({ hasText: title })
-      .locator('[data-row-lead]')
+      .locator('[data-row-due]')
 
-  // The flag is the channel that survives a grey screenshot and a colourblind reader: a deadline
-  // carries one, a plan never does.
-  await expect(lead('有截止的').locator('[data-flag]')).toHaveCount(1)
-  await expect(lead('有计划的').locator('[data-flag]')).toHaveCount(0)
-  // ...the colours are two families...
-  const colour = (title: string) => lead(title).evaluate((el) => getComputedStyle(el).color)
-  expect(await colour('有截止的')).not.toBe(await colour('有计划的'))
-  // ...and the words say which is which, for a screen reader.
-  await expect(lead('有截止的')).toContainText('Due')
-  await expect(lead('有计划的')).toContainText('Planned')
+  await expect(due('明天截止的')).toHaveAttribute('data-row-due', 'soon')
+  await expect(due('明天截止的')).toContainText('Tomorrow')
+  await expect(due('过了的')).toHaveAttribute('data-row-due', 'late')
+  await expect(due('还远的')).toHaveAttribute('data-row-due', 'quiet')
+  // The flag is the channel that survives a grey screenshot and a colourblind reader: a near or
+  // missed deadline carries one, a distant one is words alone.
+  await expect(due('明天截止的').locator('svg')).toHaveCount(1)
+  await expect(due('过了的').locator('svg')).toHaveCount(1)
+  await expect(due('还远的').locator('svg')).toHaveCount(0)
+  // ...and the near and the missed are two colour families.
+  const colour = (title: string) => due(title).evaluate((el) => getComputedStyle(el).color)
+  expect(await colour('明天截止的')).not.toBe(await colour('过了的'))
+  // A plan is not a deadline: the column says nothing for it.
+  await expect(due('只有计划的')).toHaveCount(0)
 })
 
 // ------------------------------------------------------------------- the phone, deep in a tree
 
 /**
- * THE MARGIN MUST NOT TAKE THE TITLE'S WIDTH. At 375 a deep tree row has what is left after the
- * margin, the thread, the indent, the handle, the chevron and the marker. The claim is that at the
- * same depth a dated row's title is exactly as wide as a bare one's -- the date costs the title
- * nothing -- and that this width is most of the row, not a sliver.
+ * THE DUE COLUMN MUST NOT TAKE THE TITLE'S WIDTH. At 375 the tree is the name and the due day; a
+ * deep row has what is left after the indent, the fold and the mark. The claim is that at the same
+ * depth a dated row's title is exactly as wide as a bare one's -- the date costs the title nothing
+ * -- and that this width is most of the row, not a sliver.
  */
 test.describe('the tree on a phone', () => {
   test.use({ viewport: { width: 375, height: 820 } })
@@ -365,12 +362,13 @@ test.describe('the tree on a phone', () => {
         .locator('[data-row-title]')
         .evaluate((el) => Math.round(el.clientWidth))
     const dated = await titleWidth('第三层上的一条很长的任务标题')
-    expect(dated, 'the margin takes nothing from the title').toBe(
+    expect(dated, 'the due column takes nothing from the title').toBe(
       await titleWidth('第三层上的一条很长的别的标题'),
     )
-    expect(dated).toBeGreaterThan(140)
+    // Three levels in, past the indent, the fold and the mark, with the due column beside it.
+    expect(dated).toBeGreaterThan(100)
     // The date is still shown: the title did not get its width by losing it.
-    await expect(row('第三层上的一条很长的任务标题').locator('[data-row-lead-text]')).toBeVisible()
+    await expect(row('第三层上的一条很长的任务标题').locator('[data-row-due]')).toBeVisible()
     expect(await sidewaysScroll(page)).toEqual({ doc: 0, body: 0 })
   })
 })

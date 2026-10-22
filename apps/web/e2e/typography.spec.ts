@@ -58,8 +58,8 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     body: 'body',
     h1: 'h1',
     title: '[data-row-title]',
-    // The margin: the meta size, on the TITLE's leading, so its word sits on the title's line.
-    lead: '[data-row-lead-text]',
+    // The Due column: the meta step.
+    due: '[data-row-due]',
     panel: '[data-panel="Tasks"] h2',
     caption: 'nav[aria-label="Projects"] [data-count]',
   } as const
@@ -79,9 +79,9 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
     body: { size: '13px', line: '20px' },
     // The project's name: the title step, the head of a page.
     h1: { size: '26px', line: '34px' },
-    // A row's title is what you wrote: the prose step.
-    title: { size: '15px', line: '24px' },
-    lead: { size: '13px', line: '24px' },
+    // A tree row's title is the UI step, in a row 36 high (artboard 8).
+    title: { size: '13px', line: '20px' },
+    due: { size: '12px', line: '16px' },
     // A section's heading is body size in semibold: with no box round it, the heading is the
     // only thing that says where a section starts, and a 20px heading over every block made a
     // page of shouting.
@@ -96,15 +96,15 @@ test('the scale follows the reader root font size: size AND leading, as a pair',
   expect(await measure()).toEqual({
     body: { size: '16.25px', line: '25px' },
     h1: { size: '32.5px', line: '42.5px' },
-    title: { size: '18.75px', line: '30px' },
-    lead: { size: '16.25px', line: '30px' },
+    title: { size: '16.25px', line: '25px' },
+    due: { size: '15px', line: '20px' },
     panel: { size: '18.75px', line: '30px' },
     caption: { size: '15px', line: '20px' },
   })
 
   // And smaller, so a floor written in px (`max(16px, ...)`) cannot hide behind the larger case.
   await setBrowserDefaultFontSize(page, 12)
-  expect((await measure()).title).toEqual({ size: '11.25px', line: '18px' })
+  expect((await measure()).title).toEqual({ size: '9.75px', line: '15px' })
 })
 
 test('Today names its day at the title step, and its rows are the UI step', async ({ page }) => {
@@ -225,9 +225,9 @@ test('numeric columns keep tabular figures', async ({ page }) => {
   })
   await page.goto(`/projects/${pid}`)
 
-  // antd's one positive numeric rule, adopted here. The row's date column and the banner's
-  // counts are the places a column of digits has to line up.
-  await expect(page.locator('[data-row-lead-text]').first()).toHaveCSS(
+  // antd's one positive numeric rule, adopted here. The tree's due column and the rail's counts
+  // are the places a column of digits has to line up.
+  await expect(page.locator('[data-row-due]').first()).toHaveCSS(
     'font-variant-numeric',
     'tabular-nums',
   )

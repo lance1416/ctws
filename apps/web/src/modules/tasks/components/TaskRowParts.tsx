@@ -1,21 +1,34 @@
-import { Fragment, type MouseEvent, type ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 
 /** The row parts only the task lists use; the shared anatomy is `shell/rows/RowParts`. */
 
 /** A click on a row opens it unless it landed on one of the row's own buttons. */
 export const opensOnClick = (e: MouseEvent) => !(e.target as HTMLElement).closest('button')
 
-/** Tree geometry, shared by the tree row and the inline new-task input so they stay aligned. */
-export const INDENT_PX = 20
-export const HANDLE_PX = 16
-export const CHEVRON_PX = 20
+/**
+ * The tree's four columns (FR-054, artboard 8): name, stage, progress, due, a row 36 high. On a
+ * phone only the name and the due day: the stage and the progress are in the detail.
+ */
+export const TREE_ROW =
+  'grid min-h-9 grid-cols-[minmax(0,1fr)_112px_96px_92px] items-center gap-x-3 px-3 max-md:grid-cols-[minmax(0,1fr)_84px]'
+
+/** A column the phone's tree leaves out. */
+export const WIDE_ONLY = 'max-md:hidden'
+
+/** One level deeper in the tree; a drag sideways by this much moves a row a level. */
+export const INDENT_PX = 22
+
+/** Where a row's mark (its status or its square) starts at `depth`: past its indent and fold. */
+export const markStart = (depth: number) => (depth - 1) * INDENT_PX + 16 + 6
+
+/** Where a row's title starts, past its mark: the inline new-task boxes start there too. */
+export const titleStart = (depth: number) => markStart(depth) + 16 + 6 + 4
 
 /**
  * The ground under controls over a hovered row's end: an opaque sheet under the hover layer, which
  * alone is translucent and would let the title show through.
  */
 export const OVER_ROW = 'bg-panel shadow-[inset_0_0_0_100vmax_var(--color-hover)]'
-export const gutterPlus = (px: number) => `calc(var(--gutter) + ${px}px)`
 
 /** The Done view's rows carry nothing on the right, so its list is kept narrow. */
 export const DONE_LIST_MEASURE = 'max-w-[36rem]'
@@ -81,84 +94,6 @@ export function NotesMark() {
       <path d="M2.5 7h9" />
       <path d="M2.5 10h5" />
     </svg>
-  )
-}
-
-/**
- * A row's second line, rendered only when it has something to say. Each phrase is kept whole, so
- * a narrow panel breaks the line between phrases.
- */
-export function RowMeta({
-  breadcrumb = null,
-  age = null,
-  rollup = null,
-  blocked = null,
-}: {
-  /** The project (and parent) a cross-project list shows; the tree passes none. */
-  breadcrumb?: string | null
-  /** "Captured 3 days ago": only the inbox passes one, dropped when the line has more to say. */
-  age?: string | null
-  /** "60% · 2 in progress · 1 overdue" for a row with children. */
-  rollup?: string | null
-  /** "Blocked by …": first on the line and never dropped. */
-  blocked?: string | null
-}) {
-  const parts = [
-    blocked ? (
-      <span key="blocked" data-row-blocked className="whitespace-nowrap text-subtle">
-        {blocked}
-      </span>
-    ) : null,
-    breadcrumb ? (
-      <span key="crumb" data-row-crumb className="min-w-0 truncate">
-        {breadcrumb}
-      </span>
-    ) : null,
-    rollup ? (
-      <span key="rollup" data-row-rollup className="whitespace-nowrap tabular-nums">
-        {rollup}
-      </span>
-    ) : null,
-    // Only on a line that would otherwise be empty.
-    age && !breadcrumb && !rollup && !blocked ? (
-      <span key="age" data-row-age className="whitespace-nowrap text-subtle">
-        {age}
-      </span>
-    ) : null,
-  ].filter((part) => part !== null)
-  if (parts.length === 0) return null
-  return (
-    <span
-      data-row-meta
-      className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-ui text-muted"
-    >
-      {parts.map((part, i) => (
-        // The separator travels with the phrase it follows, so no wrapped line starts with a ·.
-        <Fragment key={i}>
-          <span className="flex min-w-0 items-baseline gap-x-1.5">
-            {part}
-            {i < parts.length - 1 && (
-              <span aria-hidden="true" className="text-subtle">
-                ·
-              </span>
-            )}
-          </span>
-        </Fragment>
-      ))}
-    </span>
-  )
-}
-
-/** One short phrase at the end of the title's line, such as how late. Never wraps. */
-export function RowNote({ children }: { children: ReactNode }) {
-  return (
-    <span
-      data-row-note
-      // Not on a phone: the margin's word and colour say it there, and the title needs the room.
-      className="shrink-0 pt-2.5 pl-3 text-ui leading-6 whitespace-nowrap text-stop-t tabular-nums max-sm:hidden"
-    >
-      {children}
-    </span>
   )
 }
 

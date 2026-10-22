@@ -240,7 +240,7 @@ test('an overdue row is finished with its mark, and only overdue rows have the d
 
 // ---------------------------------------------------------------------------------- dates in tree
 
-test('the tree shows dates only where they mean something', async ({ page }) => {
+test('the tree shows deadlines only where they mean something', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const now = new Date()
@@ -252,35 +252,19 @@ test('the tree shows dates only where they mean something', async ({ page }) => 
   await makeTask(page, pid, '今天截止', { dueAt: todayLate.toISOString() })
   await makeTask(page, pid, '只排期', { scheduledOn: ymd(new Date(now.getTime() + DAY)) })
   await makeTask(page, pid, '没日期')
-  await makeTask(page, pid, '已完成逾期', { dueAt: dueAgo(9), status: 'done' })
   await openTree(page, pid)
 
-  const lead = (title: string) => treeRow(page, title).locator('[data-row-lead]')
+  const due = (title: string) => treeRow(page, title).locator('[data-row-due]')
   const d = new Date(lateDue)
-  // The margin says WHEN in one word, and the moment in full is its title: an overdue row the day
-  // it was due, flagged, with how late on the right.
-  await expect(lead('逾期的')).toHaveAttribute('data-row-lead', 'missed')
-  await expect(lead('逾期的').locator('[data-row-lead-text]')).toHaveText(
-    `${MONTHS[d.getMonth()]} ${d.getDate()}`,
-  )
-  await expect(treeRow(page, '逾期的').locator('[data-row-note]')).toHaveText('5 days late')
+  // Missed: the day it was due, on red, flagged.
+  await expect(due('逾期的')).toHaveAttribute('data-row-due', 'late')
+  await expect(due('逾期的')).toContainText(`${MONTHS[d.getMonth()]} ${d.getDate()}`)
   // Due today at the end of the day is a day, not a minute before midnight.
-  await expect(lead('今天截止')).toHaveAttribute('data-row-lead', 'deadline')
-  await expect(lead('今天截止').locator('[data-row-lead-text]')).toHaveText('23:30')
-  await expect(lead('只排期')).toHaveAttribute('data-row-lead', 'plan')
-  // Tomorrow by its weekday, as a deadline is: "Tomorrow" is wider than a phone's margin.
-  const planned = ymd(new Date(now.getTime() + DAY))
-  await expect(lead('只排期').locator('[data-row-lead-text]')).toHaveText(
-    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
-      new Date(`${planned}T12:00:00Z`).getUTCDay()
-    ]!,
-  )
-  // A dateless row and a finished row say nothing in the margin: the row is still a row.
-  await expect(lead('没日期').locator('[data-row-lead-text]')).toHaveCount(0)
-  await expect(lead('已完成逾期').locator('[data-row-lead-text]')).toHaveCount(0)
-
-  // Overdue is told apart by its words as well as its colour, and the due-today row never says it.
-  await expect(treeRow(page, '今天截止')).not.toContainText('late')
+  await expect(due('今天截止')).toHaveAttribute('data-row-due', 'soon')
+  await expect(due('今天截止')).toContainText('Today')
+  // A plan is the detail's to say, and a dateless row says nothing: the row is still a row.
+  await expect(due('只排期')).toHaveCount(0)
+  await expect(due('没日期')).toHaveCount(0)
 })
 
 // ----------------------------------------------------------------------------- destructive guards

@@ -1,20 +1,26 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { type TaskResponse, type TaskStatus, type ProjectId, type TaskId } from '@ctws/contracts'
+import {
+  type ProjectId,
+  type StageId,
+  type TaskId,
+  type TaskResponse,
+  type TaskStatus,
+} from '@ctws/contracts'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { EMPTY_ACTION, EmptyState } from '../../../platform/ui/EmptyState'
 import { useProjects } from '../../../shell/projects'
-import { LIST_MEASURE, ROW_LIST } from '../../../shell/rows'
 import { projectTasksQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
-import { rollupPhrase } from '../logic/rollupPhrase'
 import { isFinished } from '../logic/status'
 import { blockLength, flatten } from '../logic/tree/flatten'
+import { leafCounts } from '../logic/tree/leafCounts'
 import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
+import { TREE_ROW, WIDE_ONLY } from './TaskRowParts'
 import { useRowPane, useRowRefs } from './useRowPane'
 import { useSavedFlash } from './useSavedFlash'
 import { useBulkSelection } from './tree/useBulkSelection'
@@ -27,13 +33,19 @@ import { useTreeVisibility } from './tree/useTreeVisibility'
 
 const NONE: readonly TaskResponse[] = []
 
+/**
+ * THE TREE (FR-054, artboard 8): one block, a row of column names, then the tasks in their
+ * columns; `last` is the row that adds a task at the end.
+ */
 export function TaskTree({
   projectId,
   addFirst,
+  last,
 }: {
   projectId: ProjectId
-  /** Puts the cursor in the box above the tree that adds a root task. */
+  /** Puts the cursor in the box that adds a root task. */
   addFirst: () => void
+  last: ReactNode
 }) {
   const qc = useQueryClient()
   const allProjects = useProjects()
@@ -43,6 +55,12 @@ export function TaskTree({
   const tasks = useQuery(projectTasksQuery(projectId))
   const all = tasks.data?.tasks ?? NONE
   const byId = useMemo(() => new Map(all.map((t) => [t.id, t])), [all])
+  // Every parent's leaves, from the whole list: a folded parent still says how far along it is.
+  const counts = useMemo(() => leafCounts(all), [all])
+  const stages = useMemo(
+    () => new Map((tasks.data?.stages ?? []).map((stage) => [stage.id, stage])),
+    [tasks.data],
+  )
 
   // Said above the tree: a refused move or a depth limit has no single row to sit beside.
   const [error, setError] = useState<string | null>(null)
@@ -128,6 +146,11 @@ export function TaskTree({
     },
   })
 
+  const stageOf = (id: StageId | null) => {
+    const stage = id === null ? undefined : stages.get(id)
+    return stage ? { name: stage.name, quiet: stage.collapsed } : null
+  }
+
   // The input sits after the last visible row of its parent's subtree (or of the whole list for
   // the root level): the end of the sibling group, where the server will put the new task.
   let inputSlot = -1
@@ -198,42 +221,56 @@ export function TaskTree({
           }
         />
       )}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-          <ul data-task-tree className={`${ROW_LIST} ${LIST_MEASURE}`}>
-            {/* One flat list with the input keyed beside the rows, not inside the one it follows:
+      <div className="mt-2 rounded-block border border-line bg-panel">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+            <div
+              role="presentation"
+              aria-hidden="true"
+              className={`${TREE_ROW} min-h-7.5 border-b border-line text-meta text-muted`}
+            >
+              <span>Name</span>
+              <span className={WIDE_ONLY}>Stage</span>
+              <span className={WIDE_ONLY}>Progress</span>
+              <span>Due</span>
+            </div>
+            <ul data-task-tree className="flex flex-col py-1">
+              {/* One flat list with the input keyed beside the rows, not inside the one it follows:
                 when a created row lands the input moves after it instead of being rebuilt, and an
                 Enter typed into a rebuilt box would be dropped. */}
-            {rows.flatMap((row, i) => [
-              <TaskRow
-                key={row.id}
-                row={row}
-                projectId={projectId}
-                task={byId.get(row.id)}
-                aged={inInbox}
-                rollup={row.hasChildren ? rollupPhrase(tasks.data?.rollups[row.id]) : null}
-                blockedBy={tasks.data?.blockers[row.id]}
-                state={{
-                  saved: savedId === row.id,
-                  selected: picked.selected.has(row.id),
-                  tabStop: row.id === tabId,
-                }}
-                handleRef={handles.ref(row.id)}
-                on={{
-                  focus: () => setActiveId(row.id),
-                  setStatus: (status) => setStatus(row.id, status),
-                  toggle: () => folds.toggle(row.id),
-                  keyDown: (e) => onKeyDown(e, row.id),
-                  open: () => setOpenId(row.id),
-                  toggleSelected: () => picked.toggle(row.id),
-                  addChild: () => adder.addChild(row),
-                }}
-              />,
-              ...(inputSlot === i + 1 ? [<Fragment key="new-task">{input}</Fragment>] : []),
-            ])}
-          </ul>
-        </SortableContext>
-      </DndContext>
+              {rows.flatMap((row, i) => [
+                <TaskRow
+                  key={row.id}
+                  row={row}
+                  task={byId.get(row.id)}
+                  aged={inInbox}
+                  counts={row.hasChildren ? counts.get(row.id) : undefined}
+                  stage={stageOf(byId.get(row.id)?.stageId ?? null)}
+                  blockedBy={tasks.data?.blockers[row.id]}
+                  state={{
+                    saved: savedId === row.id,
+                    selected: picked.selected.has(row.id),
+                    tabStop: row.id === tabId,
+                  }}
+                  handleRef={handles.ref(row.id)}
+                  on={{
+                    focus: () => setActiveId(row.id),
+                    setStatus: (status) => setStatus(row.id, status),
+                    toggle: () => folds.toggle(row.id),
+                    keyDown: (e) => onKeyDown(e, row.id),
+                    open: () => setOpenId(row.id),
+                    toggleSelected: () => picked.toggle(row.id),
+                    addChild: () => adder.addChild(row),
+                  }}
+                />,
+                ...(inputSlot === i + 1 ? [<Fragment key="new-task">{input}</Fragment>] : []),
+              ])}
+            </ul>
+          </SortableContext>
+        </DndContext>
+        {/* After the list, not in it: it is a way to add a row, not one of them. */}
+        {last}
+      </div>
       {openTask && (
         // A save marks the row and leaves the pane open, reading back what was written.
         <TaskDetail

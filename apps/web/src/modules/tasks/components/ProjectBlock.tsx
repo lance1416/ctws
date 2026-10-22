@@ -3,10 +3,11 @@ import type { ProjectId } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useRef } from 'react'
 import { textbox } from '../../../platform/ui/formStyles'
-import { BoardIcon, TreeIcon } from '../../../platform/ui/icons'
+import { BoardIcon, NewIcon, TreeIcon } from '../../../platform/ui/icons'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { createTask, projectTasksQuery } from '../api'
 import { TaskBoard } from './TaskBoard'
+import { markStart, TREE_ROW } from './TaskRowParts'
 import { TaskTree } from './TaskTree'
 import { BODY_START } from '../../../shell/rows'
 
@@ -27,40 +28,68 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
     meta: { changes: ['task'], awaits: [projectTasksQuery(projectId).queryKey], ownsError: true },
   })
 
-  return (
-    <>
-      {/* A line and Enter, inset to where the rows' bodies start. */}
-      <div className={`mb-1 flex max-w-[52ch] flex-wrap items-center gap-2 pr-2 ${BODY_START}`}>
-        <input
-          ref={box}
-          {...title.field({ onSubmit: create.mutate, busy: create.isPending })}
-          placeholder="New task"
-          aria-label="New task"
-          aria-invalid={create.isError ? true : undefined}
-          aria-describedby={create.isError ? failureId : undefined}
-          // The border follows `aria-invalid` (see `textbox`), so colour and announced state agree.
-          className={`min-w-0 flex-1 basis-[22ch] bg-panel ${textbox}`}
-        />
-      </div>
-      {/* The typed title stays in the box after a failure. */}
-      {create.isError && (
-        <p
-          id={failureId}
-          role="alert"
-          className={`mt-1 flex items-center gap-2 text-ui text-stop-t ${BODY_START}`}
-        >
-          Couldn’t save. What you typed is still here.
-          <button type="button" onClick={() => create.mutate(title.value.trim())} className={LINK}>
-            Try again
-          </button>
-        </p>
-      )}
-      {/* The board is a view of this block, so the box above stays either way. */}
-      {view === 'board' ? (
+  const field = title.field({ onSubmit: create.mutate, busy: create.isPending })
+  const invalid = create.isError ? true : undefined
+  const describedBy = create.isError ? failureId : undefined
+  // The typed title stays in the box after a failure.
+  const failure = create.isError && (
+    <p id={failureId} role="alert" className="flex items-center gap-2 text-ui text-stop-t">
+      Couldn’t save. What you typed is still here.
+      <button type="button" onClick={() => create.mutate(title.value.trim())} className={LINK}>
+        Try again
+      </button>
+    </p>
+  )
+
+  // The board has a line and Enter above its columns; the tree has it as its last row.
+  if (view === 'board')
+    return (
+      <>
+        <div className={`mb-1 flex max-w-[52ch] flex-col gap-1 pr-2 ${BODY_START}`}>
+          <input
+            ref={box}
+            {...field}
+            placeholder="New task"
+            aria-label="New task"
+            aria-invalid={invalid}
+            aria-describedby={describedBy}
+            // The border follows `aria-invalid` (see `textbox`), so colour and announced state agree.
+            className={`min-w-0 bg-panel ${textbox}`}
+          />
+          {failure}
+        </div>
         <TaskBoard key={projectId} projectId={projectId} />
-      ) : (
-        <TaskTree key={projectId} projectId={projectId} addFirst={() => box.current?.focus()} />
-      )}
-    </>
+      </>
+    )
+  return (
+    <TaskTree
+      key={projectId}
+      projectId={projectId}
+      addFirst={() => box.current?.focus()}
+      last={
+        // "New task", typed into where it will land: no dialog (FR-054).
+        <div data-new-root className={`${TREE_ROW} pb-1`}>
+          <div
+            style={{ paddingLeft: markStart(1) }}
+            className="col-span-4 flex min-w-0 flex-col justify-center"
+          >
+            <label className="flex min-h-9 items-center gap-1.5 text-muted">
+              <NewIcon size={16} aria-hidden="true" className="shrink-0" />
+              <input
+                ref={box}
+                {...field}
+                data-bare
+                placeholder="New task"
+                aria-label="New task"
+                aria-invalid={invalid}
+                aria-describedby={describedBy}
+                className="ml-1 h-7 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted"
+              />
+            </label>
+            {failure}
+          </div>
+        </div>
+      }
+    />
   )
 }
