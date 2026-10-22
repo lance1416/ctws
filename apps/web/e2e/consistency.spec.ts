@@ -174,6 +174,7 @@ test('the delete question: Cancel on the left, the confirm on the right', async 
   await page.goto(`/projects/${w.pid}`)
   await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
+  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Delete task' }).click()
   // The question is a small dialog of its own, over the pane (FR-035, handoff §7).
   const ask = page.getByRole('alertdialog')

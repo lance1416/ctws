@@ -287,9 +287,10 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const makeNew = async () => {
     if (newKind === 'task') {
       if (!inbox.target) return
-      await inbox.target.submit(typing, { projectId: null, date: null })
+      const made = await inbox.target.submit(typing, { projectId: null, date: null })
       onClose()
-      navigate(inbox.target.to)
+      // Made from a search, which is no page's: it opens (FR-026), a task in the inspector.
+      navigate(made)
     } else if (creator) {
       onClose()
       // Made from a search, which is no page's: it opens, as the task made here does.

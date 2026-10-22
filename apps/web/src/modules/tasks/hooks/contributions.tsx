@@ -4,7 +4,7 @@ import { useRefresh } from '../../../shell/registry'
 import { inboxOf, useProjects } from '../../../shell/projects'
 import { createTask, taskCalendarQuery, taskKeys, taskSearchQuery } from '../api'
 import { TaskFact, TaskMark } from '../components/TaskFacts'
-import { revealHref } from '../logic/crumb'
+import { openHref, revealHref } from '../logic/crumb'
 
 /** This module's dated things: a plan day and a deadline day, both decided by the server. */
 export function useTaskEntries(range: { from: string; to: string }) {
@@ -29,10 +29,16 @@ export function useInboxCapture(): CaptureTargetState {
           to: `/projects/${inbox.id}`,
           submit: async (title: string, { projectId, date }) => {
             const into = projectId ?? inbox.id
-            await createTask({ projectId: into, title, ...(date ? { scheduledOn: date } : {}) })
+            const made = await createTask({
+              projectId: into,
+              title,
+              ...(date ? { scheduledOn: date } : {}),
+            })
             // Not awaited: the box is free for the next line once the server has this one, and
             // what is typed while the list is read again is that next line.
             void refresh(['task'], [taskKeys.list(into)])
+            // No page of its own: its project's, with it in the inspector.
+            return openHref(into, made.id)
           },
         }
       : null,

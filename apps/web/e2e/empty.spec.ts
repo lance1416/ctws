@@ -28,17 +28,16 @@ test('an empty Today says Nothing yet, and stops saying it when something is pla
   await expect(planned).not.toContainText('Nothing yet')
 })
 
-test('an empty project says what the tree is for and puts the cursor in the input', async ({
-  page,
-}) => {
+test('an empty project is its column names and New task, one way to add', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '新开的项目')
   await page.goto(`/projects/${pid}`)
 
-  await expect(page.getByText('No tasks in this project yet')).toBeVisible()
-  // The action hands the cursor to the input already on the page.
-  await page.getByRole('button', { name: 'Add the first task' }).click()
-  await expect(page.getByRole('textbox', { name: 'New task' })).toBeFocused()
+  // P-06: the empty table says it; no sentence and no second button over it.
+  await expect(page.locator('[data-tree-head]')).toBeVisible()
+  await expect(page.getByText('No tasks in this project yet')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Add the first task' })).toHaveCount(0)
+  await page.getByRole('textbox', { name: 'New task' }).click()
 
   // Typing one task really does take the state away -- not a reload, the live list.
   const created = page.waitForResponse(
@@ -48,8 +47,6 @@ test('an empty project says what the tree is for and puts the cursor in the inpu
   await page.keyboard.press('Enter')
   await created
   await expect(page.getByRole('listitem').filter({ hasText: '第一条' })).toBeVisible()
-  await expect(page.getByText('No tasks in this project yet')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Add the first task' })).toHaveCount(0)
 })
 
 test('an empty Done says so, and the line goes when something is finished', async ({ page }) => {
@@ -83,7 +80,7 @@ test('a search with no match says so, and offers to make it a task (FR-024)', as
   await expect(page.getByText('No results match “绝不存在的词”.')).toBeVisible()
   await expect(page.locator('[data-search-result]')).toHaveCount(0)
 
-  // The next move: Enter makes it a task, in the inbox, and goes where it went.
+  // The next move: Enter makes it a task, in the inbox, and opens it there (FR-026).
   const made = page.waitForResponse(
     (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/tasks',
   )
@@ -91,5 +88,8 @@ test('a search with no match says so, and offers to make it a task (FR-024)', as
   await box.press('Enter')
   expect((await made).ok()).toBe(true)
   await expect(box).toHaveCount(0)
-  await expect(page.getByText('绝不存在的词')).toBeVisible()
+  await expect(page).toHaveURL(/\/projects\/[0-9a-f-]{36}\?.*task=[0-9a-f-]{36}/)
+  await expect(
+    page.getByRole('dialog', { name: 'Task details' }).locator('[data-detail-title]'),
+  ).toHaveText('绝不存在的词')
 })

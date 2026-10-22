@@ -67,30 +67,22 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
         className="flex flex-1 flex-col focus:outline-none"
       >
         {editing ? (
-          <TaskEditForm
-            task={task}
-            edit={edit}
-            guard={guard}
-            onCancel={() => guard.leave(stopEditing)}
-            onClose={requestClose}
-            onSaved={() => {
-              setEditing(false)
-              // The pressed control is gone: back to the panel, which listens for Escape.
-              backToPanel()
-              onSaved?.()
-            }}
-          />
-        ) : (
           <>
-            <TaskReading
+            <TaskEditForm
               task={task}
-              onEdit={() => {
-                edit.start()
-                setEditing(true)
-              }}
+              edit={edit}
+              guard={guard}
+              onCancel={() => guard.leave(stopEditing)}
               onClose={requestClose}
+              onSaved={() => {
+                setEditing(false)
+                // The pressed control is gone: back to the panel, which listens for Escape.
+                backToPanel()
+                onSaved?.()
+              }}
             />
-            {/* Last, under a rule: destroying the task is not a peer of saving it. */}
+            {/* The edit's last thing, under a rule (FR-035): destroying it is not a peer of
+                saving it, and reading it offers neither. */}
             <DangerZone>
               <DangerAction
                 label="Delete task"
@@ -102,6 +94,15 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
               />
             </DangerZone>
           </>
+        ) : (
+          <TaskReading
+            task={task}
+            onEdit={() => {
+              edit.start()
+              setEditing(true)
+            }}
+            onClose={requestClose}
+          />
         )}
         {doomed.remove.isError && (
           <p role="alert" className="text-ui text-stop-t">

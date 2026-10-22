@@ -137,6 +137,7 @@ test('deleting a task from Done leaves focus on the list, not the page', async (
   await makeTask(page, projectId, 'Second done', { status: 'done' })
   await page.goto('/review?view=done')
   await page.getByText('First done').click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Delete task' }).click()
   await page
     .getByRole('alertdialog', { name: 'Confirm deleting this task' })
@@ -171,6 +172,8 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
   await openPanel(page, '大块')
+  // Delete is the edit's last thing (FR-035).
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Delete task' }).click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this task' })
   // Two children and one grandchild: three, not two (direct children only) and not four.
@@ -204,8 +207,8 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   expect((await serverTasks(page, pid)).map((t) => t.title)).toEqual(['旁观者'])
   await page.reload()
   await expect(page.getByRole('listitem')).toHaveCount(1)
-  await expect(page.getByText('旁观者')).toBeVisible()
-  await expect(page.getByText('大块')).toHaveCount(0)
+  await expect(page.getByRole('main').getByText('旁观者')).toBeVisible()
+  await expect(page.getByRole('main').getByText('大块')).toHaveCount(0)
 })
 
 test('deleting a leaf does not claim descendants, and works from the Today panel', async ({
@@ -219,6 +222,7 @@ test('deleting a leaf does not claim descendants, and works from the Today panel
   await expect(page.locator('[data-today-row]')).toHaveCount(2)
 
   await page.locator('[data-today-row]').filter({ hasText: '在做的' }).click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Delete task' }).click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this task' })
   await expect(ask).toContainText('Delete “在做的”. This cannot be undone.')
@@ -359,8 +363,8 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   expect((await serverTasks(page, pid))[0]!.title).toBe('写方案 v2')
 })
 
-/** Delete is at the bottom of reading mode, where it is for a person or a meeting too. */
-test('Delete is there in reading mode, and it is the last thing in the panel', async ({ page }) => {
+/** Delete is the edit's last thing, under its rule (FR-035, DES-001 section 4); reading has none. */
+test('Delete is the last thing in the edit, and not in reading', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写迁移')
@@ -369,15 +373,17 @@ test('Delete is there in reading mode, and it is the last thing in the panel', a
   const pane = page.getByRole('dialog')
   await expect(pane).toBeVisible()
 
-  // Without pressing Edit, Delete is already there.
+  // Reading, there is none.
   const remove = pane.getByRole('button', { name: 'Delete task' })
+  await expect(remove).toHaveCount(0)
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await expect(remove).toBeVisible()
-  await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'Save' })).toBeVisible()
 
   // And it is last: no other control below it to hit by accident.
   const [box, notes] = await Promise.all([
     remove.boundingBox(),
-    pane.getByText('Notes', { exact: true }).boundingBox(),
+    pane.getByText('Notes', { exact: true }).first().boundingBox(),
   ])
   expect(box!.y).toBeGreaterThan(notes!.y)
 })

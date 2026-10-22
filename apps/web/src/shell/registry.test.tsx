@@ -11,6 +11,7 @@ const NotesOnProject = () => null
 const NotesFacts = () => null
 const NotesTileFacts = () => null
 const FilesLead = () => null
+const FilesOutline = () => null
 
 const notes: WorkspaceModule = {
   id: 'notes',
@@ -50,6 +51,7 @@ const files: WorkspaceModule = {
   project: {
     Main: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
     Lead: FilesLead,
+    Outline: FilesOutline,
     count: () => 4,
     counts: ['task'],
     contents: async () => null,
@@ -210,6 +212,11 @@ describe('what a module hangs on a project page', () => {
   it('takes the row lead from the first module that gives one', () => {
     expect(build([notes, files]).projectLead).toBe(FilesLead)
     expect(build([notes]).projectLead).toBeNull()
+  })
+
+  it('takes the sidebar outline from the first module that gives one, and none without', () => {
+    expect(build([notes, files]).projectOutline).toBe(FilesOutline)
+    expect(build([notes]).projectOutline).toBeNull()
   })
 
   it("takes the rail's count from the first module that gives one", () => {

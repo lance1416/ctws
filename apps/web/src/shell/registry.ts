@@ -181,6 +181,7 @@ export type Registry = {
   projectRowFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectLead: ComponentType<{ projectId: ProjectId }> | null
+  projectOutline: ComponentType<{ projectId: ProjectId }> | null
   projectCount: ((project: ProjectResponse) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
   /** The page-wide keys: capture, search, this help, the jumps. */
@@ -281,6 +282,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       m.project?.TileFacts ? [{ moduleId: m.id, Facts: m.project.TileFacts }] : [],
     ),
     projectLead: modules.find((m) => m.project?.Lead)?.project?.Lead ?? null,
+    projectOutline: modules.find((m) => m.project?.Outline)?.project?.Outline ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
     anywhere: anywhereKeys(chords, creates),

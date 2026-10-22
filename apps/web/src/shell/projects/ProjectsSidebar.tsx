@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { NavLink, useMatch, useNavigate } from 'react-router-dom'
 import { archivedProjectsQuery, createProject, projectKeys, useProjects } from './api'
 import { useRegistry } from '../registry'
 import { SidebarHead } from '../layout/Sidebar'
@@ -11,13 +11,15 @@ import { useLineEntry } from '../../platform/ui/useLineEntry'
 
 /**
  * The Projects sidebar (FR-020): the inbox, then every live project with how much waits in it,
- * then the archived ones behind their count. The open project's outline comes with STORY-011.
+ * then the archived ones behind their count. Under the open project, its outline (FR-021).
  */
 export function ProjectsSidebar() {
   const projects = useProjects()
   const archived = useQuery(archivedProjectsQuery())
   const registry = useRegistry()
+  const Outline = registry.projectOutline
   const navigate = useNavigate()
+  const open = useMatch('/projects/:id')?.params.id
   const [naming, setNaming] = useState(false)
   const name = useLineEntry()
   const field = useRef<HTMLInputElement>(null)
@@ -94,11 +96,14 @@ export function ProjectsSidebar() {
           </NavLink>
         )}
         {others.map((p) => (
-          <NavLink key={p.id} to={`/projects/${p.id}`} className={row}>
-            <ProjectSquare project={p} />
-            <span className="flex-1 truncate">{p.name}</span>
-            <Waiting n={registry.projectCount?.(p) ?? 0} />
-          </NavLink>
+          <Fragment key={p.id}>
+            <NavLink to={`/projects/${p.id}`} className={row}>
+              <ProjectSquare project={p} />
+              <span className="flex-1 truncate">{p.name}</span>
+              <Waiting n={registry.projectCount?.(p) ?? 0} />
+            </NavLink>
+            {Outline && p.id === open && <Outline projectId={p.id} />}
+          </Fragment>
         ))}
         {archived.data && archived.data.length > 0 && (
           <NavLink to="/projects" end className={`${row({ isActive: false })} mt-2 text-subtle`}>

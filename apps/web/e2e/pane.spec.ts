@@ -243,14 +243,11 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
     .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   expect(titleSize, 'the title is the biggest text in the pane').toBeGreaterThan(notesSize)
 
-  // Delete never shares a form with Save: it is at the bottom of reading mode, and this is editing.
-  await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
-  await dialog.getByRole('button', { name: 'Cancel' }).click()
-
+  // Delete is the edit's last thing, under its rule and apart from Save (FR-035).
   const save = dialog.getByRole('button', { name: 'Save' })
   const del = dialog.getByRole('button', { name: 'Delete task' })
   await expect(del).toBeVisible()
-  await expect(save).toHaveCount(0)
+  await expect(save).toBeVisible()
   // It is the last thing in the pane, set apart by a colour used nowhere else, not by a fill.
   const paint = (l: typeof del) =>
     l.evaluate((el) => {
@@ -262,6 +259,10 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
     ['rgba(0, 0, 0, 0)', 'transparent'],
     'the delete control is not a painted block',
   ).toContain(delPaint.fill)
+  // Reading offers neither.
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(del).toHaveCount(0)
+  await expect(save).toHaveCount(0)
 })
 
 test('the pane opens in reading mode with no field, and Edit reveals them', async ({ page }) => {
@@ -288,9 +289,8 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   expect(controls, 'editable controls in reading mode').toBe(0)
   for (const role of ['textbox', 'radio', 'checkbox', 'combobox', 'spinbutton', 'slider'] as const)
     await expect(dialog.getByRole(role), role).toHaveCount(0)
-  // Delete is at the bottom of reading mode, guarded by distance and a confirmation, not hidden
-  // behind Edit.
-  await expect(dialog.getByRole('button', { name: 'Delete task' })).toBeVisible()
+  // Reading offers no Delete: it is the edit's last thing (FR-035).
+  await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
   // And the information is all there, which is the other half: nothing is behind a second menu.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('读一下这条任务')
   await expect(dialog).toContainText('In progress')
@@ -309,8 +309,8 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
     '第一行\n第二行',
   )
   await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
-  // The form being edited has no Delete: its two ways out are Save and Cancel.
-  await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
+  // And Delete, last, under its rule.
+  await expect(dialog.getByRole('button', { name: 'Delete task' })).toBeVisible()
 
   // Reading and then choosing to edit wrote nothing on its own: this is not autosave with a
   // read-only skin on it. Save then writes once, so the one write is Save's.
@@ -491,4 +491,20 @@ test('the task in the inspector: where it sits, its fields a line each, its reso
   await expect(dialog.getByRole('button', { name: /^Status:/ })).toHaveCount(0)
   // In progress, because the task under it was started above: said, not offered to change.
   await expect(dialog.locator('dd').first()).toHaveText('In progress')
+})
+
+test('away from its project, the inspector opens a task’s full page: its project, with it open', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '外面')
+  await makeTask(page, pid, '在别处打开', { status: 'in_progress' })
+  await page.goto('/today')
+  await page.locator('[data-today-row]').filter({ hasText: '在别处打开' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
+  await dialog.getByRole('link', { name: 'Open full page' }).click()
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}\?.*task=`))
+  await expect(dialog.locator('[data-detail-title]')).toHaveText('在别处打开')
+  // On its own project's page it already is where its full page is: no such button there.
+  await expect(dialog.getByRole('link', { name: 'Open full page' })).toHaveCount(0)
 })

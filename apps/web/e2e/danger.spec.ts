@@ -59,10 +59,11 @@ test('in a short panel, Cancel meeting sits at the bottom on the same background
   expect(m.rule).toBeGreaterThan(0)
 })
 
-test('with long notes, Delete follows the last line instead of floating over the text', async ({
+test('in a long edit, Delete follows the last field instead of floating over it', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 900 })
+  // Short enough that the edit's fields run past the pane's floor.
+  await page.setViewportSize({ width: 1440, height: 600 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Reading list')
   const paragraph =
@@ -74,6 +75,8 @@ test('with long notes, Delete follows the last line instead of floating over the
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').filter({ hasText: 'Read the C book' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Task details' })
+  // Delete is the edit's last thing (FR-035), after the notes being edited.
+  await dialog.getByRole('button', { name: 'Edit', exact: true }).click()
   const zone = dialog.locator('[data-stop-zone]')
   await expect(zone.getByRole('button', { name: 'Delete task' })).toBeAttached()
 

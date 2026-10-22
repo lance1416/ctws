@@ -376,3 +376,36 @@ test('a node linked to an organisation carries its mark after the name', async (
   await expect(row.locator('[data-row-organisation]')).toHaveAttribute('title', 'Stripe')
   await expect(page.locator('[data-row-organisation]')).toHaveCount(1)
 })
+
+test('the open project’s outline in the sidebar lists its parents and its own leaves', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  const amazon = await makeTask(page, pid, 'Amazon')
+  const role = await makeTask(page, pid, 'SDE II, AWS Payments', {}, amazon)
+  await makeTask(page, pid, 'System design round', {}, role)
+  await makeTask(page, pid, 'Update the LinkedIn headline')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto(`/projects/${pid}`)
+
+  // P-01, artboard 8: parents at every depth and the project's own leaves, in the tree's order;
+  // a leaf under a parent is the page's to show.
+  const outline = page
+    .getByRole('complementary', { name: 'Projects' })
+    .locator('[data-project-outline]')
+  await expect(outline.locator('[data-outline-title]')).toHaveText([
+    'Amazon',
+    'SDE II, AWS Payments',
+    'Update the LinkedIn headline',
+  ])
+  // A click opens it on the page, in the inspector.
+  await outline.getByRole('button', { name: 'SDE II, AWS Payments' }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'Task details' }).locator('[data-detail-title]'),
+  ).toHaveText('SDE II, AWS Payments')
+  await expect(outline.getByRole('button', { name: 'SDE II, AWS Payments' })).toHaveAttribute(
+    'aria-current',
+    'true',
+  )
+})

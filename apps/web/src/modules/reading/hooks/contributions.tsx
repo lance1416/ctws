@@ -28,6 +28,7 @@ export function useReadingCapture(): CaptureTargetState {
           })
         // Not awaited: the capture box is free for the next line once the server has this one.
         void refresh(['reading'], [readingKeys.all])
+        return `/${READING_ID}/${made.id}`
       },
     },
   }

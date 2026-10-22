@@ -148,7 +148,7 @@ test('a project page carries both modules, each with its own block and numbers',
   await page.goto(`/projects/${projectId}`)
 
   // The task module's tree and the reading module's block, on one shell project (FR-055).
-  await expect(page.getByText('配色重做')).toBeVisible()
+  await expect(page.getByRole('main').getByText('配色重做')).toBeVisible()
   await expect(page.getByText('一篇相关的文章')).toBeVisible()
   // And the reading module's number is its block's count, beside the tasks.
   await expect(page.getByRole('region', { name: 'Reading' }).locator('[data-count]')).toHaveText(

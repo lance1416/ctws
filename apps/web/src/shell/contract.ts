@@ -90,6 +90,11 @@ export type ProjectContribution = {
   /** The day in the margin of a project's row in the list. At most one module gives one. */
   Lead?: ComponentType<{ projectId: ProjectId }>
   /**
+   * The open project's outline under its row in the sidebar (FR-021, artboard 8): what to jump
+   * to on its page. At most one module gives one.
+   */
+  Outline?: ComponentType<{ projectId: ProjectId }>
+  /**
    * How many of this module's things wait in a project, beside its name in the rail. At most one
    * module gives one; zero is shown as nothing.
    */
@@ -283,9 +288,10 @@ export type CaptureTarget = {
   to: string
   /**
    * Writes the line into the project picked, or the default place, on the day picked if any; and
-   * starts refreshing the lists that now contain it without waiting.
+   * starts refreshing the lists that now contain it without waiting. Answers where the made thing
+   * opens, for a New made from search, which opens it (FR-026); the capture box stays put.
    */
-  submit: (title: string, where: CaptureWhere) => Promise<unknown>
+  submit: (title: string, where: CaptureWhere) => Promise<string>
 }
 
 /** What the box lets the person choose beside the line (FR-025). */

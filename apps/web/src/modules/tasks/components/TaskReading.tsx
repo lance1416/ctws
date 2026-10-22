@@ -1,18 +1,20 @@
 import type { TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
+import { Link, useLocation } from 'react-router-dom'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { DetailHead } from '../../../platform/ui/DetailPane'
 import { label } from '../../../platform/ui/formStyles'
-import { EditIcon, FlagIcon, PLACE_ICON } from '../../../platform/ui/icons'
+import { EditIcon, FlagIcon, OpenFullIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
 import { LinkedChips } from '../../../shell/links'
 import { ProjectSquare } from '../../../shell/projects'
 import { Resources } from '../../../shell/resources'
 import { Timeline } from '../../../shell/timeline'
 import { patchTask } from '../api'
+import { openHref } from '../logic/crumb'
 import { instantPhrase, lateNote } from '../logic/dueDates'
 import { STATUS_LABEL } from '../logic/status'
 import { treeDue } from '../logic/tree/treeDue'
@@ -49,6 +51,7 @@ export function TaskReading({
   const now = useNow()
   const today = ymd(now, timeZone)
   const { project, path, counts } = useTaskPlace(task)
+  const { pathname } = useLocation()
 
   /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
   const setStatus = useMutation({
@@ -81,15 +84,29 @@ export function TaskReading({
           // “Edit”, not “Edit task”: accessible names are matched by substring in one flat
           // namespace, and the guard's “Keep editing” already contains it.
           trailing={
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label="Edit"
-              title="Edit"
-              className={ICON_BUTTON}
-            >
-              <EditIcon size={16} aria-hidden="true" />
-            </button>
+            <>
+              {/* No page of its own: its full page is its project's, with it open there. Not
+                  offered on that page, where it already is. */}
+              {pathname !== `/projects/${task.projectId}` && (
+                <Link
+                  to={openHref(task.projectId, task.id)}
+                  aria-label="Open full page"
+                  title="Open full page"
+                  className={ICON_BUTTON}
+                >
+                  <OpenFullIcon size={16} aria-hidden="true" />
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="Edit"
+                title="Edit"
+                className={ICON_BUTTON}
+              >
+                <EditIcon size={16} aria-hidden="true" />
+              </button>
+            </>
           }
           onClose={onClose}
         />
