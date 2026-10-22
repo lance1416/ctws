@@ -6,7 +6,9 @@ import { useRowPane, useRowRefs } from '../../components/useRowPane'
 import { useTaskActions } from '../../hooks/useTaskActions'
 import { TASKS_ID } from '../../logic/id'
 import { statusActions, TODAY_KEYS } from '../../logic/keys'
-import type { TriagePatch } from '../../logic/triage'
+
+/** A Today row's change of dates: both in one request, so the row never sits half moved. */
+type DatesPatch = { dueAt?: string | null; scheduledOn?: string | null }
 
 /** Other modules' dated things for `day`: one hook per provider, over the registry's fixed list. */
 export function useOthersToday(day: string) {
@@ -52,7 +54,7 @@ export function useTodayRows({
     focus.expect(id)
     actions.setStatus(id, status, () => focus.drop(id))
   }
-  const patch = (id: TaskId, body: TriagePatch) => {
+  const patch = (id: TaskId, body: DatesPatch) => {
     setError(null)
     focus.expect(id)
     actions.patch(id, body, () => focus.drop(id))
@@ -62,9 +64,6 @@ export function useTodayRows({
     pane,
     setStatus,
     patch,
-    // A triage menu unmounts after its action, so focus goes back to the row; if the row then
-    // leaves the page, `focus` moves it on again.
-    focusRow: (id: TaskId) => queueMicrotask(() => titles.get(id)?.focus()),
     onRowKeyDown: (e: KeyboardEvent, t: TodayTaskResponse) =>
       keys(
         e,

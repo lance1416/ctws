@@ -20,6 +20,7 @@ import type {
   Reads,
   RelationContribution,
   ShownEntry,
+  TodayBlock,
   Widget,
   WorkspaceModule,
 } from './contract'
@@ -164,6 +165,8 @@ export type Registry = {
   search: SearchProvider[]
   calendar: CalendarProvider[]
   widgets: RegisteredWidget[]
+  /** Today's right column, every module's, in order. */
+  todayBlocks: (TodayBlock & { moduleId: string })[]
   relations: RegisteredRelation[]
   relationFor: (type: ObjectType) => RegisteredRelation
   projectBlocks: RegisteredProjectBlock[]
@@ -246,6 +249,9 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     widgets: modules
       .flatMap((m) => (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id })))
       .sort(byOrder),
+    todayBlocks: modules
+      .flatMap((m) => (m.today ?? []).map((b) => ({ ...b, moduleId: m.id })))
+      .sort((a, b) => a.order - b.order),
     relations,
     relationFor: (type) => {
       const found = relations.find((r) => r.type === type)

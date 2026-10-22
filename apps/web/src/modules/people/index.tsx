@@ -3,6 +3,7 @@ import type { WorkspaceModule } from '../../shell/contract'
 import { peopleKeys } from './api'
 import { BirthdayCard } from './components/BirthdayCard'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
+import { BirthdaysToday } from './components/BirthdaysToday'
 import { NewPerson } from './components/NewPerson'
 import { PersonFact, PersonMark } from './components/PersonFacts'
 import { useBirthdayEntries, usePeopleHits } from './hooks/contributions'
@@ -71,6 +72,7 @@ export const peopleModule: WorkspaceModule = {
       was: 'g n',
     },
   ],
+  today: [{ id: 'birthdays', order: 40, Block: BirthdaysToday }],
   relations: [
     {
       type: 'person',

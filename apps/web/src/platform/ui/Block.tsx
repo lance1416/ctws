@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { useDelayed } from '../time/useDelayed'
 import { BUTTON } from './buttonStyles'
 import { AlertIcon, KIND_ICON, RetryIcon, type Kind } from './icons'
@@ -12,6 +12,7 @@ import { KIND_TEXT, KIND_TINT } from './kinds'
  */
 export function Block({
   kind,
+  badge,
   title,
   count,
   actions,
@@ -21,6 +22,8 @@ export function Block({
 }: {
   /** The kind the block holds, for its badge; none for a block of its own (a timeline). */
   kind?: Kind
+  /** A badge of its own where the block holds a state, not a kind (Today's Overdue). */
+  badge?: { icon: ComponentType<{ size?: number; className?: string }>; tint: string }
   title: string
   /** How many, in the block's words: "9 open", "3 this week", or just the number. */
   count?: ReactNode
@@ -31,7 +34,8 @@ export function Block({
   children?: ReactNode
   className?: string
 }) {
-  const Icon = kind ? KIND_ICON[kind] : null
+  const Icon = badge?.icon ?? (kind ? KIND_ICON[kind] : null)
+  const tint = badge?.tint ?? (kind ? `${KIND_TINT[kind]} ${KIND_TEXT[kind]}` : '')
   return (
     <section
       aria-label={title}
@@ -40,11 +44,12 @@ export function Block({
       <div
         className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 ${empty ? '' : 'border-b border-line'}`}
       >
-        {Icon && kind && (
+        {Icon && (
           <span
-            className={`inline-grid size-6 shrink-0 place-items-center rounded-control ${KIND_TINT[kind]}`}
+            aria-hidden="true"
+            className={`inline-grid size-6 shrink-0 place-items-center rounded-control ${tint}`}
           >
-            <Icon size={14} aria-hidden="true" className={KIND_TEXT[kind]} />
+            <Icon size={14} />
           </span>
         )}
         <h2 className="text-ui font-medium text-ink">{title}</h2>

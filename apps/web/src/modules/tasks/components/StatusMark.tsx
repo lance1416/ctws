@@ -5,7 +5,7 @@ import { isFinished, STATUS_LABEL } from '../logic/status'
  * A task's status by shape, never by hue alone. Every part is always drawn and fades or scales in,
  * so a change is a transition, not a remount.
  */
-export function StatusMark({ status }: { status: TaskStatus }) {
+export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 16 | 20 }) {
   const half = status === 'in_progress'
   const solid = status === 'done'
   // Only a settled task recedes; backlog is still open.
@@ -15,8 +15,8 @@ export function StatusMark({ status }: { status: TaskStatus }) {
       role="img"
       aria-label={STATUS_LABEL[status]}
       viewBox="0 0 20 20"
-      width="20"
-      height="20"
+      width={size}
+      height={size}
       fill="none"
       strokeWidth="2"
       strokeLinecap="round"

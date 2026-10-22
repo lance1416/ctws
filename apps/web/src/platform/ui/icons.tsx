@@ -25,6 +25,7 @@ import type { ComponentProps, ComponentType } from 'react'
 import {
   BookOpen,
   BuildingComplex,
+  Cake,
   CalendarClock,
   CalendarDays,
   CircleAlert,
@@ -35,7 +36,10 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Check,
   Circle,
+  CornerDownRight,
+  Flag,
   Folder,
   Inbox,
   Keyboard,
@@ -53,6 +57,7 @@ import {
   Sun,
   Trash,
   UserRound,
+  Video,
   X,
 } from 'lucide-react'
 
@@ -107,3 +112,38 @@ export const RemoveIcon = Trash
 /** The theme switch shows the scheme it would switch TO. */
 export const LightIcon = Sun
 export const DarkIcon = Moon
+
+/** Time on Today (FR-079): a deadline's flag, a birthday's cake, a call's camera. */
+export const FlagIcon = Flag
+export const CakeIcon = Cake
+export const JoinIcon = Video
+/** Finishing a row, and a plan carried over from a day already gone. */
+export const DoneIcon = Check
+export const CarriedIcon = CornerDownRight
+/** A task to do, not yet started. */
+export const ToDoIcon = Circle
+
+/** In progress: a ring with its right half filled, at an icon's size (not in Lucide). */
+export function InProgressIcon({
+  size = 16,
+  className = '',
+}: {
+  size?: number
+  className?: string
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+      className={className}
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}

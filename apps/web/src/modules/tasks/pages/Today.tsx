@@ -1,31 +1,44 @@
-import { problemText } from '../../../platform/http/api'
-import type { TodayTaskResponse } from '@ctws/contracts'
+import type { TaskId, TodayTaskResponse } from '@ctws/contracts'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { addDays } from '@ctws/core/day'
+import { clockTime } from '@ctws/core/clock'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { clockTime } from '@ctws/core/clock'
-import { ymd } from '../../../platform/time/dates'
+import { longDay, nextMonday, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { HANG } from '../../../platform/ui/hang'
+import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
+import { BUTTON } from '../../../platform/ui/buttonStyles'
+import {
+  CarriedIcon,
+  ExpandIcon,
+  FlagIcon,
+  InProgressIcon,
+  PLACE_ICON,
+} from '../../../platform/ui/icons'
+import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { useTimeZone } from '../../../shell/auth'
-import { DayEmpty, DaySection, dueTodayAt, leadFor, ROW_LIST } from '../../../shell/rows'
-import { completedQuery, movementQuery, todayQuery } from '../api'
-import { DayLine, type DayItem } from '../components/DayLine'
-import { DoneTodayPanel } from '../components/DoneTodayPanel'
-import { MovementPanel } from '../components/MovementPanel'
+import { useLunarName } from '../../../shell/calendar'
+import { DayPickButton } from '../../../shell/dates'
+import { useRegistry } from '../../../shell/registry'
+import { dueTodayAt } from '../../../shell/rows'
+import { readyQuery, todayQuery } from '../api'
 import { TaskDetail } from '../components/TaskDetail'
 import { useTaskParam } from '../components/tree/useTreeParams'
 import { useSavedFlash } from '../components/useSavedFlash'
-import { hasMovement } from '../logic/movement'
+import { carriedFrom } from '../logic/todayMarks'
 import { todaySegments } from '../logic/today'
-import { DayHeading } from './today/DayHeading'
-import { EntryRow } from './today/EntryRow'
-import { InProgressSection } from './today/InProgressSection'
-import { TodayRow } from './today/TodayRow'
+import { DoneButton, LINE, TaskLine, TaskPath } from './today/TaskLine'
+import { Timeline } from './today/Timeline'
+import { minutesOf, type TimedItem } from './today/dayLine'
 import { useOthersToday, useTodayRows } from './today/useTodayRows'
 
+/** Overdue shows this many before its "All 12" (FR-079). */
+const OVERDUE_SHOWN = 5
+
 /**
- * The day as one sheet: in progress, the day's line in time order, overdue, done today, and the
- * week beside them. The line holds every module's dated things; the server files each task.
+ * TODAY (FR-079, artboard 12): what to move next. The day on one timeline across the top; then, on
+ * the left, what is in progress, what is planned and what is late, all in one set of columns; on
+ * the right, the blocks the modules add: follow up, ready to start, this week, birthdays.
  */
 export function Today() {
   const timeZone = useTimeZone()
@@ -34,9 +47,9 @@ export function Today() {
   const now = useNow()
   const day = ymd(now, timeZone)
   const today = useQuery(todayQuery(day))
-  const completed = useQuery(completedQuery(day))
-  const movement = useQuery(movementQuery(day))
   const entries = useOthersToday(day)
+  const registry = useRegistry()
+  const lunar = useLunarName(day)
   // In the address, as on a project page: opening another row is a navigation, which the open
   // pane's unsaved-edit guard sees.
   const { openId, setOpenId } = useTaskParam()
@@ -44,7 +57,7 @@ export function Today() {
 
   const [error, setError] = useState<string | null>(null)
   const [savedId, setSavedId] = useSavedFlash()
-  const { titles, pane, setStatus, patch, focusRow, onRowKeyDown } = useTodayRows({
+  const { titles, pane, setStatus, patch, onRowKeyDown } = useTodayRows({
     rows,
     settled: today.isSuccess,
     openId,
@@ -52,94 +65,136 @@ export function Today() {
     setError,
   })
   const { openTask } = pane
+  const { inProgress, planned, overdue } = todaySegments(rows)
 
-  const taskRow = (t: TodayTaskResponse, anyTime = false) => (
-    <TodayRow
+  // The timed things: meetings from their module, and deadlines today at a time.
+  const nowClock = clockTime(now, timeZone)
+  const timed: TimedItem[] = [
+    ...entries.flatMap((e): TimedItem[] =>
+      e.type === 'meeting' && e.time
+        ? [
+            {
+              key: e.key,
+              kind: 'meeting',
+              title: e.title,
+              start: minutesOf(e.time),
+              end: e.endTime ? minutesOf(e.endTime) : undefined,
+              joinUrl: e.joinUrl,
+              to: e.to,
+            },
+          ]
+        : [],
+    ),
+    ...[...inProgress, ...planned].flatMap((t): TimedItem[] => {
+      const at = dueTodayAt(t.dueAt, day, timeZone)
+      return at ? [{ key: `task:${t.id}`, kind: 'due', title: t.title, start: minutesOf(at) }] : []
+    }),
+  ]
+
+  const line = (t: TodayTaskResponse, action: React.ReactNode) => (
+    <TaskLine
       key={t.id}
       task={t}
-      anyTime={anyTime}
       today={day}
-      now={now}
+      timeZone={timeZone}
       saved={savedId === t.id}
       rowRef={titles.ref(t.id)}
       onOpen={() => setOpenId(t.id)}
       onKeyDown={(e) => onRowKeyDown(e, t)}
       onStatus={(status) => setStatus(t.id, status)}
-      onPatch={patch}
-      onRan={() => focusRow(t.id)}
+      action={action}
     />
   )
 
-  const { inProgress, planned, overdue } = todaySegments(rows)
-  const doneToday = (completed.data?.tasks ?? []).filter((t) => t.completedOn === day)
-  const movementRows = (movement.data ?? []).filter(hasMovement)
-
-  // The day's line: the planned tasks and the other modules' entries, each with its time if any.
-  const items: DayItem[] = [
-    ...planned.map((t): DayItem => {
-      // A task is on the line when it is due today at a time; the end of the day is not a time.
-      const lead = leadFor({ dueAt: t.dueAt, scheduledOn: null }, day, timeZone)
-      return {
-        key: `task:${t.id}`,
-        at: dueTodayAt(t.dueAt, day, timeZone),
-        hasLead: lead !== null,
-        row: ({ anyTime }) => taskRow(t, anyTime),
-      }
-    }),
-    ...entries.map((e): DayItem => ({
-      key: `${e.moduleId}:${e.key}`,
-      at: e.time,
-      until: e.endTime,
-      hasLead: e.time !== null,
-      row: ({ past, anyTime }) => <EntryRow entry={e} past={past} anyTime={anyTime} />,
-    })),
-  ]
-
   return (
-    <div className="mx-auto w-full max-w-[67.5rem] pt-4 sm:pt-6">
-      <DayHeading today={day} />
+    <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-3.5">
+      <header className="flex items-center gap-3.5">
+        <h1
+          id="today-heading"
+          tabIndex={-1}
+          className="text-title tracking-[-0.01em] text-ink focus:outline-none"
+        >
+          {longDay(day)}
+        </h1>
+        {lunar && (
+          <span
+            data-lunar-day
+            className="inline-flex h-5.5 items-center rounded-control bg-hover px-2 text-meta text-muted"
+          >
+            {lunar}
+          </span>
+        )}
+        <span aria-hidden="true" className="flex-1" />
+        <span data-now-clock className="font-mono text-ui text-muted">
+          {nowClock}
+        </span>
+      </header>
 
-      {today.isPending && <p className={`${HANG} text-muted`}>Loading…</p>}
-      {today.isError && (
-        <p role="alert" className={`${HANG} text-stop-t`}>
-          {problemText(today.error) ?? "Couldn't load. Check that the server is running."}
-        </p>
-      )}
+      <Timeline items={timed} nowMinutes={minutesOf(nowClock)} />
+
       {error && (
-        <p role="alert" className={`mb-3 ${HANG} text-ui text-stop-t`}>
+        <p role="alert" className="text-ui text-stop-t">
           {error}
         </p>
       )}
 
-      {/* The sections, and This week beside them where there is room for both. */}
-      <div className="flex min-w-0 flex-col gap-12 lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-start lg:gap-14">
-        <div className="flex min-w-0 flex-col gap-9">
-          <InProgressSection
-            tasks={inProgress}
-            today={day}
-            savedId={savedId}
-            rowRef={titles.ref}
-            onOpen={setOpenId}
-            onKeyDown={onRowKeyDown}
-            onStatus={setStatus}
-          />
+      <div className="grid min-w-0 grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_26.25rem]">
+        <div className="flex min-w-0 flex-col gap-3">
+          {today.isError ? (
+            <Block title="Today">
+              <BlockFailed what="tasks for today" onRetry={() => void today.refetch()} />
+            </Block>
+          ) : today.isPending ? (
+            <Block title="In progress">
+              <SkeletonRows rows={3} />
+            </Block>
+          ) : (
+            <>
+              <Block
+                badge={{ icon: InProgressIcon, tint: 'bg-go-bg text-go' }}
+                title="In progress"
+                count={inProgress.length}
+                empty={inProgress.length === 0 ? 'None' : null}
+              >
+                <ul className="p-1.5">
+                  {inProgress.map((t) =>
+                    line(
+                      t,
+                      <DoneButton
+                        id={t.id}
+                        title={t.title}
+                        onDone={() => setStatus(t.id, 'done')}
+                      />,
+                    ),
+                  )}
+                </ul>
+              </Block>
 
-          <DaySection label="Today" count={planned.length + entries.length}>
-            {today.isSuccess && items.length === 0 && <DayEmpty>Nothing for today</DayEmpty>}
-            <DayLine items={items} now={clockTime(now, timeZone)} />
-          </DaySection>
+              <PlannedBlock
+                planned={planned}
+                listed={rows}
+                day={day}
+                line={line}
+                onPlan={(id) => patch(id, { scheduledOn: day })}
+              />
 
-          {/* Only when something is overdue: a section reading "0" every day is noise. */}
-          {overdue.length > 0 && (
-            <DaySection label="Overdue" count={overdue.length}>
-              <ul className={ROW_LIST}>{overdue.map((t) => taskRow(t))}</ul>
-            </DaySection>
+              {overdue.length > 0 && (
+                <OverdueBlock
+                  overdue={overdue}
+                  day={day}
+                  line={line}
+                  onMove={(id, to) => patch(id, { dueAt: null, scheduledOn: to })}
+                />
+              )}
+            </>
           )}
-
-          {doneToday.length > 0 && <DoneTodayPanel tasks={doneToday} />}
         </div>
 
-        {movementRows.length > 0 && <MovementPanel rows={movementRows} today={day} />}
+        <div className="flex min-w-0 flex-col gap-3">
+          {registry.todayBlocks.map(({ moduleId, id, Block: Part }) => (
+            <Part key={`${moduleId}:${id}`} today={day} />
+          ))}
+        </div>
       </div>
 
       {openTask && (
@@ -153,5 +208,166 @@ export function Today() {
         />
       )}
     </div>
+  )
+}
+
+type Line = (t: TodayTaskResponse, action: React.ReactNode) => React.ReactNode
+
+/**
+ * PLANNED FOR TODAY: planned for today with no time of its own, and plans carried over from a day
+ * already gone, said on the right. With nothing planned, the tasks ready to start, each with Plan
+ * (FR-030).
+ */
+function PlannedBlock({
+  planned,
+  listed,
+  day,
+  line,
+  onPlan,
+}: {
+  planned: TodayTaskResponse[]
+  /** Everything on Today's lists, which is not offered again. */
+  listed: readonly TodayTaskResponse[]
+  day: string
+  line: Line
+  onPlan: (id: TaskId) => void
+}) {
+  const ready = useQuery({ ...readyQuery(day), enabled: planned.length === 0 })
+  const badge = { icon: PLACE_ICON.calendar, tint: 'bg-hover text-muted' }
+  if (planned.length === 0)
+    return (
+      <Block badge={badge} title="Planned for today" count="Nothing yet">
+        <ul className="p-1.5">
+          {(ready.data ?? [])
+            .filter((t) => !listed.some((l) => l.id === t.id))
+            .slice(0, OVERDUE_SHOWN)
+            .map((t) => (
+              <li key={t.id} data-plan-row={t.id} className={LINE}>
+                <PLACE_ICON.calendar size={16} aria-hidden="true" className="text-subtle" />
+                <span className="truncate text-ui text-ink">{t.title}</span>
+                <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
+                <span className="max-lg:hidden" />
+                <button
+                  type="button"
+                  onClick={() => onPlan(t.id)}
+                  aria-label={`Plan “${t.title}” for today`}
+                  className={`${BUTTON.secondary} h-6.5 justify-self-end px-2.5 text-meta`}
+                >
+                  Plan
+                </button>
+              </li>
+            ))}
+        </ul>
+      </Block>
+    )
+  return (
+    <Block badge={badge} title="Planned for today" count={planned.length}>
+      <ul className="p-1.5">
+        {planned.map((t) =>
+          line(
+            t,
+            t.scheduledOn !== null && t.scheduledOn < day ? (
+              <span
+                data-date-hint="carried"
+                className="inline-flex items-center gap-1 text-meta whitespace-nowrap text-subtle"
+              >
+                <CarriedIcon size={12} aria-hidden="true" />
+                {carriedFrom(t.scheduledOn, day)}
+              </span>
+            ) : null,
+          ),
+        )}
+      </ul>
+    </Block>
+  )
+}
+
+/**
+ * OVERDUE: what is late, how late, and the days it can move to, which make it a plan (FR-079):
+ * Today, Tomorrow, next Monday, or a day picked. Past five, the head moves them all at once.
+ */
+function OverdueBlock({
+  overdue,
+  day,
+  line,
+  onMove,
+}: {
+  overdue: TodayTaskResponse[]
+  day: string
+  line: Line
+  onMove: (id: TaskId, to: string) => void
+}) {
+  const [all, setAll] = useState(false)
+  const monday = nextMonday(day)
+  const days = [
+    { label: 'Today', to: day },
+    { label: 'Tomorrow', to: addDays(day, 1) },
+    { label: 'Mon', to: monday },
+  ]
+  const shown = all ? overdue : overdue.slice(0, OVERDUE_SHOWN)
+  return (
+    <Block
+      badge={{ icon: FlagIcon, tint: 'bg-stop-bg text-stop' }}
+      title="Overdue"
+      count={overdue.length}
+      actions={
+        overdue.length > OVERDUE_SHOWN && (
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger className={`${BUTTON.quiet} h-7 px-2.5 text-meta`}>
+              Move all to…
+              <ExpandIcon size={12} aria-hidden="true" />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
+                {days.map((d) => (
+                  <DropdownMenu.Item
+                    key={d.label}
+                    onSelect={() => overdue.forEach((t) => onMove(t.id, d.to))}
+                    className={MENU_ITEM}
+                  >
+                    {d.label === 'Mon' ? 'Next Monday' : d.label}
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+        )
+      }
+    >
+      <ul className="p-1.5">
+        {shown.map((t) =>
+          line(
+            t,
+            <span className="inline-flex items-center gap-1">
+              {days.map((d) => (
+                <button
+                  key={d.label}
+                  type="button"
+                  onClick={() => onMove(t.id, d.to)}
+                  aria-label={`Plan “${t.title}” for ${d.label === 'Mon' ? 'next Monday' : d.label.toLocaleLowerCase()}`}
+                  className="inline-flex h-6.5 items-center rounded-control border border-line bg-panel px-2 text-meta font-medium text-ink hover:bg-hover"
+                >
+                  {d.label}
+                </button>
+              ))}
+              <DayPickButton
+                label={`Plan “${t.title}” for another day`}
+                today={day}
+                onPick={(to) => onMove(t.id, to)}
+              />
+            </span>,
+          ),
+        )}
+      </ul>
+      {overdue.length > OVERDUE_SHOWN && (
+        <button
+          type="button"
+          onClick={() => setAll(!all)}
+          className="flex h-9 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink"
+        >
+          {all ? 'Fewer' : `All ${overdue.length}`}
+        </button>
+      )}
+    </Block>
   )
 }

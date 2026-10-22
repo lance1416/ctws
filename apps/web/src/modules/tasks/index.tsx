@@ -14,6 +14,8 @@ import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributi
 import { TASKS_ID, taskPage } from './logic/id'
 import { TASK_KEYS } from './logic/keys'
 import { TaskFact, TaskMark } from './components/TaskFacts'
+import { ReadyBlock } from './pages/today/ReadyBlock'
+import { WeekBlock } from './pages/today/WeekBlock'
 import { openTasksOf } from './logic/openTasks'
 import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
@@ -107,6 +109,10 @@ export const taskModule: WorkspaceModule = {
   },
   keys: TASK_KEYS,
   // No page of its own: a task's address opens its tree, where its parent and siblings are.
+  today: [
+    { id: 'ready', order: 20, Block: ReadyBlock },
+    { id: 'week', order: 30, Block: WeekBlock },
+  ],
   relations: [
     { type: 'task', kind: 'Task', plural: 'Tasks', to: taskPage, Mark: TaskMark, Fact: TaskFact },
   ],

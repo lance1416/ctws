@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { PanelEmpty } from '../../platform/ui/Panel'
 import { HANG } from '../../platform/ui/hang'
 
 /** A heading, then its rows, and no box. The heading hangs on the titles' edge. */
@@ -32,8 +31,4 @@ export function DaySection({
       {children}
     </section>
   )
-}
-
-export function DayEmpty({ children }: { children: ReactNode }) {
-  return <PanelEmpty hang>{children}</PanelEmpty>
 }

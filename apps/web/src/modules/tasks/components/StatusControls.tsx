@@ -10,10 +10,13 @@ export function StatusButton({
   status,
   title,
   onClick,
+  size = 20,
 }: {
   status: TaskStatus
   title: string
   onClick: () => void
+  /** 16 in a row whose first column is 16 wide (Today, DES-001 section 4). */
+  size?: 16 | 20
 }) {
   const inactive = isFinished(status)
   return (
@@ -25,7 +28,7 @@ export function StatusButton({
       onClick={onClick}
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-control hover:bg-hover`}
     >
-      <StatusMark status={status} />
+      <StatusMark status={status} size={size} />
     </button>
   )
 }

@@ -32,6 +32,7 @@ export const taskKeys = {
   today: (day: string) => [...taskKeys.todays, day] as const,
   completed: (day: string) => ['tasks', 'completed', day] as const,
   movement: (day: string) => ['tasks', 'movement', day] as const,
+  ready: (day: string) => ['tasks', 'ready', day] as const,
   search: (q: string) => ['tasks', 'search', q] as const,
   calendar: (range: Range) => ['tasks', 'calendar', range.from, range.to] as const,
   review: (range: Range | null) =>
@@ -86,6 +87,14 @@ export const movementQuery = (day: string) =>
     queryKey: taskKeys.movement(day),
     queryFn: async ({ signal }) =>
       (await call(api.tasks.movement, { query: { view: 'movement' } }, { signal })).projects,
+  })
+
+/** Leaves that could be started now (FR-041), the server's order. */
+export const readyQuery = (day: string) =>
+  queryOptions({
+    queryKey: taskKeys.ready(day),
+    queryFn: async ({ signal }) =>
+      (await call(api.tasks.ready, { query: { view: 'ready' } }, { signal })).tasks,
   })
 
 // The server owns the matching and the order; nothing here re-ranks or re-filters.

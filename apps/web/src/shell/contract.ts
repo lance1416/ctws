@@ -45,6 +45,11 @@ export type WorkspaceModule = {
   calendar?: CalendarContribution
   /** Cards on the workbench. A card must not show rows that already live on a project page. */
   widgets?: readonly Widget[]
+  /**
+   * Blocks in Today's right column (FR-079): what to answer, start or remember today. Ordered
+   * across modules by `order`: Follow up, Ready to start, This week, Birthdays.
+   */
+  today?: readonly TodayBlock[]
   /** Where this module's things live, for the shell's edge table and backlinks. */
   relations?: readonly RelationContribution[]
   /**
@@ -126,6 +131,9 @@ export type ShownEntry = SaidEntry & {
   /** What the date is, in words: "planned", "Birthday". */
   label: string
 }
+
+/** One block in Today's right column, given the account's today. */
+export type TodayBlock = { id: string; order: number; Block: ComponentType<{ today: string }> }
 
 /** A module's half of the calendar; the shell merges them. */
 export type CalendarContribution = {

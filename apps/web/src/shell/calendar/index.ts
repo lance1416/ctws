@@ -1,3 +1,3 @@
 /** What modules and the app may use of the calendar. */
-export { calendarDaysQuery } from './api'
+export { useLunarName } from './lunarName'
 export { Calendar } from './Calendar'
