@@ -5,7 +5,8 @@ import type { Queryable } from '../../../platform/db/client'
 import { rowsOf } from '../../../platform/db/raw'
 import { dayStart, localDay, weekStart } from '../../../platform/db/time'
 import { unarchivedProjects } from '../../../shell/projects'
-import { openTaskCountSql, taskOpenSql } from './scope'
+import { isLeafSql } from './rows'
+import { taskOpenSql } from './scope'
 
 const movementRow = z.object({
   projectId: z.string(),
@@ -19,8 +20,10 @@ const movementRow = z.object({
 
 /**
  * How each unarchived project moved: finished this week, still open, overdue, and how long since
- * its last logged change (the event log, so a reorder does not count). Weeks and days are the
- * account's. The projects are the shell's; the counts are this module's, one row per project.
+ * its last logged change (the event log, so a reorder does not count). Finished and open count
+ * leaves only: a parent closes with its last child, and is not one more thing done (FR-043). Weeks
+ * and days are the account's. The projects are the shell's; the counts are this module's, one row
+ * per project.
  */
 export async function listProjectMovement(
   q: Queryable,
@@ -45,8 +48,15 @@ export async function listProjectMovement(
           and done_t.status = 'done'
           and done_t.completed_at is not null
           and done_t.completed_at >= ${thisWeek}
+          and ${isLeafSql('done_t')}
       ) as "doneThisWeek",
-      ${openTaskCountSql(project)} as remaining,
+      (
+        select count(*) from tasks open_t
+        where open_t.project_id = ${project}
+          and open_t.deleted_at is null
+          and ${taskOpenSql('open_t')}
+          and ${isLeafSql('open_t')}
+      ) as remaining,
       (
         select count(*) from tasks late_t
         where late_t.project_id = ${project}

@@ -184,6 +184,27 @@ describe('GET /tasks/movement', () => {
     expect(rowFor(utc as Row[], pid).doneThisWeek).toBe(0)
   })
 
+  it('counts leaves only: a parent closed by its last child is not one more done', async () => {
+    const pid = await createProject(ctx, 'leaves')
+    const parent = await createTask(ctx, pid, 'Parent')
+    const one = await createTask(ctx, pid, 'Child one', parent)
+    const two = await createTask(ctx, pid, 'Child two', parent)
+    // Wednesday of the week the children are finished in.
+    const now = new Date('2026-10-07T04:00:00Z')
+    const row = async () => rowFor(await listProjectMovement(ctx.db, workspaceId, 'UTC', now), pid)
+
+    // Open: the two children, not the parent above them (FR-043).
+    expect((await row()).remaining).toBe(2)
+    await finishAt(one, '2026-10-06T09:00:00Z')
+    await finishAt(two, '2026-10-06T10:00:00Z')
+    // The parent closed with its last child, in the same week.
+    const closed = await ctx.db.execute(
+      sql`update tasks set completed_at = '2026-10-06T10:00:00Z' where id = ${parent} and status = 'done' returning id`,
+    )
+    expect(closed.rows).toHaveLength(1)
+    expect(await row()).toMatchObject({ doneThisWeek: 2, remaining: 0 })
+  })
+
   it('reads last activity from the event log, so a pure reorder does not revive a project', async () => {
     const pid = await createProject(ctx, 'quiet')
     const first = await createTask(ctx, pid, 'a')
