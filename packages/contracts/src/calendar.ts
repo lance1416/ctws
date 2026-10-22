@@ -74,6 +74,8 @@ const calendarEntry = z.object({
   timeZone: z.string().nullable(),
   /** The age a birthday turns, when the year of birth is known. */
   turns: z.number().int().nullable(),
+  /** Where to join, for a meeting held on a call (Today's "Join"). */
+  joinUrl: z.string().nullable(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
 })

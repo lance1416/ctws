@@ -274,6 +274,7 @@ export async function meetingEntries(
     endsAt: m.endsAt.toISOString(),
     timeZone: m.timeZone,
     turns: null,
+    joinUrl: m.joinUrl,
     projectId: m.projectId,
     projectName: m.projectName,
   }))
