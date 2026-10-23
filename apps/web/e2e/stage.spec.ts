@@ -48,7 +48,12 @@ test('a stage is set in the inspector, offered again, and logged', async ({ page
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   const box = pane.getByRole('combobox', { name: 'Stage' })
   await box.fill('Phone screen')
+  // A new name is added to the project's stages first; Save waits for it.
+  const added = page.waitForResponse(
+    (r) => r.request().method() === 'PUT' && r.url().endsWith('/stages') && r.ok(),
+  )
   await box.press('Enter')
+  await added
   const patched = taskPatched(page)
   await pane.getByRole('button', { name: 'Save' }).click()
   const body = (await patched).request().postDataJSON() as { stageId: string }
@@ -162,4 +167,82 @@ test('a card dragged to another stage takes it, and keeps its status', async ({ 
   const listed = await page.request.get(`/api/v1/tasks?projectId=${pid}`)
   const stripe = ((await listed.json()) as { tasks: Record<string, unknown>[] }).tasks[0]!
   expect(stripe.status).toBe('in_progress')
+})
+
+test('Edit stages renames, merges, folds, removes, adds and reorders, as the whole list', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  const [applied, , onsite, offer, rejected] = await stagesOf(page, pid, [
+    'Applied',
+    'Phone screen',
+    'Onsite',
+    'Offer',
+    'Rejected',
+  ])
+  await node(page, pid, 'Spotify', { stageId: applied!.id })
+  await node(page, pid, 'Stripe', { stageId: onsite!.id })
+  await node(page, pid, 'Monzo', { stageId: onsite!.id })
+  await openStageBoard(page, pid)
+
+  await page.getByRole('button', { name: 'Edit stages' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Stages in Job hunt' })
+  const rows = sheet.locator('[data-stage-row]')
+  await expect(rows).toHaveCount(5)
+  await expect(rows.first()).toContainText('1 task')
+
+  // A rename reaches every task at the stage; the board's column says it.
+  await sheet.getByRole('button', { name: 'Rename Applied' }).click()
+  const name = sheet.getByRole('textbox', { name: 'Name of Applied' })
+  await name.fill('Applied online')
+  await expect(sheet).toContainText('Renames it on 1 task. Enter to keep, Esc to undo.')
+  await name.press('Enter')
+  await expect(column(page, applied!)).toContainText('Applied online')
+
+  // Esc undoes a rename before it is kept.
+  await sheet.getByRole('button', { name: 'Rename Offer' }).click()
+  await sheet.getByRole('textbox', { name: 'Name of Offer' }).fill('Offered')
+  await sheet.getByRole('textbox', { name: 'Name of Offer' }).press('Escape')
+  await expect(sheet.getByRole('button', { name: 'Rename Offer' })).toBeVisible()
+
+  // A name that is there already, in any case, asks; Merge moves its tasks and drops it.
+  await sheet.getByRole('button', { name: 'Rename Onsite' }).click()
+  await sheet.getByRole('textbox', { name: 'Name of Onsite' }).fill('PHONE SCREEN')
+  await sheet.getByRole('textbox', { name: 'Name of Onsite' }).press('Enter')
+  const ask = sheet.getByRole('alert')
+  await expect(ask).toContainText(
+    'Phone screen already exists. Merge them? The 2 tasks at Onsite move to Phone screen.',
+  )
+  await ask.getByRole('button', { name: 'Merge' }).click()
+  await expect(rows).toHaveCount(4)
+  await expect(sheet.locator('[data-stage-row]').filter({ hasText: 'Phone screen' })).toContainText(
+    '2 tasks',
+  )
+
+  // Folded on the board: a strip at the edge.
+  await sheet.getByRole('button', { name: 'Fold Rejected on the board' }).click()
+  await expect(sheet.getByRole('button', { name: 'Fold Rejected on the board' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.locator(`[data-stage-strip="${rejected!.id}"]`)).toBeVisible()
+
+  // Unused, it can go; a new one comes in at the end.
+  await sheet.locator(`[data-stage-row="${offer!.id}"]`).hover()
+  await sheet
+    .locator(`[data-stage-row="${offer!.id}"]`)
+    .getByRole('button', { name: 'Remove' })
+    .click()
+  await expect(sheet.locator(`[data-stage-row="${offer!.id}"]`)).toHaveCount(0)
+  await sheet.getByRole('button', { name: 'New stage' }).click()
+  await sheet.getByRole('textbox', { name: 'New stage' }).fill('Withdrawn')
+  await sheet.getByRole('textbox', { name: 'New stage' }).press('Enter')
+  await expect(rows.last()).toContainText('Withdrawn')
+
+  // Alt and an arrow moves a stage a place: the board's columns follow.
+  await sheet.getByRole('button', { name: 'Move Withdrawn' }).focus()
+  await page.keyboard.press('Alt+ArrowUp')
+  await expect(rows.nth(2)).toContainText('Withdrawn')
+  await expect(rows.nth(3)).toContainText('Rejected')
 })

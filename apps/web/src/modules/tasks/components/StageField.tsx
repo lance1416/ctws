@@ -24,18 +24,24 @@ export function StagePicker({
   stages,
   value,
   onChange,
+  onBusy,
 }: {
   projectId: ProjectId
   stages: readonly StageResponse[]
   value: StageId | null
   onChange: (stage: StageId | null) => void
+  /** A new stage is being added: the edit's Save waits for it, or it would save without it. */
+  onBusy: (busy: boolean) => void
 }) {
   const list = useId()
   const [text, setText] = useState(stages.find((s) => s.id === value)?.name ?? '')
   const add = useMutation({
     mutationFn: (name: string) =>
       putStages(projectId, {
-        stages: [...stages.map((s) => ({ id: s.id, name: s.name })), { name }],
+        stages: [
+          ...stages.map((s) => ({ id: s.id, name: s.name, collapsed: s.collapsed })),
+          { name },
+        ],
       }),
     meta: {
       changes: ['task'],
@@ -52,9 +58,16 @@ export function StagePicker({
       setText(found.name)
       return onChange(found.id)
     }
-    const made = await add.mutateAsync(name)
-    const stage = made.stages.find((s) => s.name.toLocaleLowerCase() === name.toLocaleLowerCase())
-    if (stage) onChange(stage.id)
+    onBusy(true)
+    try {
+      const made = await add.mutateAsync(name)
+      const stage = made.stages.find((s) => s.name.toLocaleLowerCase() === name.toLocaleLowerCase())
+      if (stage) onChange(stage.id)
+    } catch {
+      // Said under the box (`add.isError`); the name stays there to try again.
+    } finally {
+      onBusy(false)
+    }
   }
   return (
     <span className="flex min-w-0 flex-1 flex-col gap-1 py-1">

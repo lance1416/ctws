@@ -23,9 +23,11 @@ import { useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ymd } from '../../../../platform/time/dates'
 import { useNow } from '../../../../platform/time/useNow'
 import { ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
-import { BarExpandIcon, InStageIcon, NewIcon } from '../../../../platform/ui/icons'
+import { BarExpandIcon, EditIcon, InStageIcon, NewIcon } from '../../../../platform/ui/icons'
 import { useLineEntry } from '../../../../platform/ui/useLineEntry'
+import { Button } from '../../../../platform/ui/Button'
 import { useTimeZone } from '../../../../shell/auth'
+import { useEveryProject } from '../../../../shell/projects'
 import { createTask, projectTasksQuery, type ProjectTasks } from '../../api'
 import { useTaskActions } from '../../hooks/useTaskActions'
 import { cardBeside } from '../../logic/board/boardKeys'
@@ -38,6 +40,7 @@ import { OrganisationMark } from '../TaskRowParts'
 import { useTaskParam } from '../tree/useTreeParams'
 import { useRowPane, useRowRefs } from '../useRowPane'
 import { DateChip } from './BoardCard'
+import { EditStages } from './EditStages'
 
 const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const
 /** A column the dragged card is over: its grey goes to `select`, laid over it. */
@@ -126,10 +129,26 @@ export function StageBoard({
     return id && data.stages.some((s) => s.id === id) ? idFrom(stageIdSchema, id) : null
   }
   const card = lifted ? columns.flatMap((c) => c.cards).find((c) => c.task.id === lifted) : null
+  const project = useEveryProject().data?.find((p) => p.id === projectId)
+  const [editing, setEditing] = useState(false)
 
   return (
     <div className="flex flex-col gap-3.5">
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">{columnsSwitch}</div>
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
+        {columnsSwitch}
+        <span aria-hidden="true" className="flex-1" />
+        <Button
+          look="secondary"
+          onClick={() => {
+            // One sheet at a time on the right: the stages, or a task.
+            setOpenId(null)
+            setEditing(true)
+          }}
+        >
+          <EditIcon size={14} aria-hidden="true" />
+          Edit stages
+        </Button>
+      </div>
       {error && (
         <p role="alert" className="text-ui text-stop-t">
           {error}
@@ -211,8 +230,12 @@ export function StageBoard({
           )}
         </DragOverlay>
       </DndContext>
-      {pane.openTask && (
-        <TaskDetail key={pane.openTask.id} task={pane.openTask} onClose={pane.close} />
+      {editing && project ? (
+        <EditStages project={project} stages={data.stages} onClose={() => setEditing(false)} />
+      ) : (
+        pane.openTask && (
+          <TaskDetail key={pane.openTask.id} task={pane.openTask} onClose={pane.close} />
+        )
       )}
     </div>
   )

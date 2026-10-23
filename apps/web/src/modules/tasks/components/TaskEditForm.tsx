@@ -63,6 +63,7 @@ export function TaskEditForm({
   const today = ymd(useNow(), timeZone)
   const projects = useEveryProject()
   const { counts, stages } = useTaskPlace(task)
+  const [stageBusy, setStageBusy] = useState(false)
 
   const title = watch('title')
   const status = watch('status') ?? task.status
@@ -111,7 +112,11 @@ export function TaskEditForm({
               <Button look="secondary" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button look="primary" type="submit" disabled={save.isPending || !title?.trim()}>
+              <Button
+                look="primary"
+                type="submit"
+                disabled={save.isPending || stageBusy || !title?.trim()}
+              >
                 Save
               </Button>
             </span>
@@ -237,6 +242,7 @@ export function TaskEditForm({
               stages={stages}
               value={watch('stageId') ?? null}
               onChange={(stage) => setValue('stageId', stage, dirty)}
+              onBusy={setStageBusy}
             />
           </Field>
         )}
