@@ -7,13 +7,6 @@ export const CIRCLE_LABELS: Record<Circle, string> = {
   work: 'Work',
 }
 
-/** One person's circle, said of them: "Friend", not "Friends". */
-export const CIRCLE_OF_ONE: Record<Circle, string> = {
-  family: 'Family',
-  friend: 'Friend',
-  work: 'Work',
-}
-
 export const CIRCLE_CHOICES: Choice<Circle | null>[] = [
   { value: null, label: 'Not set' },
   ...CIRCLES.map((c) => ({ value: c, label: CIRCLE_LABELS[c] })),
@@ -43,19 +36,3 @@ export const LEAD_LABELS: Record<RemindLead, string> = {
 }
 
 export const LEAD_CHOICES = REMIND_LEADS.map((n) => ({ value: String(n), label: LEAD_LABELS[n] }))
-
-/** Months spelled out, for lists read down; a date beside a name takes the short `MONTHS`. */
-export const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-] as const

@@ -18,7 +18,9 @@ export function Sidebar({ place }: { place: Place }) {
   const registry = useRegistry()
   const openNew = useContext(NewContext)
   if (place.id === 'projects') return <ProjectsSidebar />
-  const Count = registry.kinds.find((k) => k.label === place.label)?.Count
+  const kind = registry.kinds.find((k) => k.label === place.label)
+  const Count = kind?.Count
+  const List = kind?.List
   const creator = registry.creates.find((c) => c.kind === place.kind)
   return (
     <aside
@@ -43,6 +45,7 @@ export function Sidebar({ place }: { place: Place }) {
       >
         {Count && <Count />}
       </SidebarHead>
+      {List && <List />}
     </aside>
   )
 }

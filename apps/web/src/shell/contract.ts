@@ -257,6 +257,8 @@ export type KindEntry = {
   to: string
   /** How many there are, a bare number for the sidebar's head (FR-021), zero included. */
   Count?: ComponentType
+  /** The module's list in its sidebar, under the head (FR-020). */
+  List?: ComponentType
   /** One line of what is current ("Next birthday: …"); renders nothing when there is nothing. */
   Status?: ComponentType
   /** The id of the chord that goes here, so Things can show its key. */

@@ -105,7 +105,7 @@ test('the cards are Today, Meetings, Reading, Birthdays and Projects, each headi
     ['Today', '/today'],
     ['Meetings', '/meetings'],
     ['Reading', '/reading'],
-    ['Birthdays', '/people/birthdays'],
+    ['Birthdays', '/people?list=birthdays'],
     ['Projects', '/projects'],
   ] as const)
     await expect(card(page, name).getByRole('heading').getByRole('link')).toHaveAttribute(

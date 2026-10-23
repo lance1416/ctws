@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { dayOffset, MONTHS } from './days'
-import { lunarYear, pickLunarDay, pickSolarDay, registerFreshUser, WEB, apiPost } from './helpers'
+import { dayOffset } from './days'
+import { lunarYear, pickLunarDay, registerFreshUser, WEB, apiPost } from './helpers'
 
 /**
  * Birthdays: the lens over the people who have one.
@@ -26,152 +26,10 @@ function monthDay(offset: number): { month: number; day: number } {
   return { month: m, day: d }
 }
 
-const rows = (page: Page) => page.locator('[data-birthday-row]')
-
 /**
  * A birthday's row is a person's row: the day in the margin with the cake, the thread, then who,
  * how old, and how far off at the far end. The heading above hangs where the threads do.
  */
-
-test('a birthday row hangs on the margin: the day and its cake, then who, then how far off', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await person(page, '王颖', { calendar: 'solar', year: 1993, ...monthDay(0) }, 'friend')
-  await person(page, '林哲', { calendar: 'solar', year: 1985, ...monthDay(3) }, 'work')
-  const view = (await (
-    await page.request.get('/api/v1/people?view=birthdays', { headers: WEB })
-  ).json()) as { coming: { name: string; day: string }[] }
-  await page.goto('/people/birthdays')
-
-  // The margin says the server's day, as a month and a day, beside the cake.
-  const said = (name: string) => {
-    const [, m, d] = view.coming
-      .find((r) => r.name === name)!
-      .day.split('-')
-      .map(Number)
-    return `${MONTHS[m! - 1]} ${d}`
-  }
-  const lin = rows(page).filter({ hasText: '林哲' })
-  const wang = rows(page).filter({ hasText: '王颖' })
-  await expect(lin.locator('[data-birthday-lead] time')).toHaveText(said('林哲'))
-  await expect(wang.locator('[data-birthday-lead] time')).toHaveText(said('王颖'))
-  await expect(lin.locator('[data-birthday-lead] [data-cake]')).toHaveCount(1)
-  // Today's is in a colour of its own; the far end already says "today" in words.
-  const colour = (row: typeof lin) =>
-    row.locator('[data-birthday-lead]').evaluate((el) => getComputedStyle(el).color)
-  expect(await colour(wang)).not.toBe(await colour(lin))
-
-  // How far off is at the far end, after who.
-  const end = (await lin.getByRole('link').boundingBox())!
-  const off = (await lin.getByText('in 3 days').boundingBox())!
-  expect(end.x + end.width - (off.x + off.width)).toBeLessThan(12)
-
-  // One x for the threads, and the page's heading hangs on it.
-  const threads = await page
-    .locator('[data-birthday-row] [data-thread]')
-    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
-  expect(threads).toHaveLength(2)
-  expect(new Set(threads).size).toBe(1)
-  const h1 = (await page.getByRole('heading', { level: 1, name: 'People' }).boundingBox())!
-  expect(Math.round(h1.x)).toBe(threads[0])
-
-  // The whole body is the way to the person.
-  await lin.getByText('in 3 days').click()
-  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('林哲')
-})
-
-test('Coming up holds the next seven days, Later the rest, nobody twice', async ({ page }) => {
-  await registerFreshUser(page)
-  await person(page, '王颖', { calendar: 'solar', year: 1993, ...monthDay(0) }, 'friend')
-  await person(page, '林哲', { calendar: 'solar', year: 1985, ...monthDay(3) }, 'work')
-  await person(page, '李雷', { calendar: 'solar', year: 1996, ...monthDay(40) })
-
-  await page.goto('/people/birthdays')
-  const coming = page.getByRole('region', { name: 'Coming up' })
-  const later = page.getByRole('region', { name: 'Later' })
-  await expect(coming.locator('[data-birthday-row]')).toHaveCount(2)
-  await expect(later.locator('[data-birthday-row]')).toHaveCount(1)
-  await expect(coming).toContainText('today')
-  await expect(coming).toContainText('in 3 days')
-  // Nobody is in two segments: that is why there is no "earlier this year" section.
-  await expect(rows(page)).toHaveCount(3)
-})
-
-test('a lunar birthday lands on its own day and is shown as a lunar date', async ({ page }) => {
-  await registerFreshUser(page)
-  // Lunar 9/3 of 1991 was solar 1991-10-10, but it recurs by the lunar calendar.
-  await person(page, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
-  await page.goto('/people/birthdays')
-  const row = rows(page).filter({ hasText: '周楠' })
-  await expect(row).toContainText('农历九月初三')
-  await expect(row).toContainText('turns')
-})
-
-test('the month index is the date search: a month shows only its people', async ({ page }) => {
-  await registerFreshUser(page)
-  await person(page, '四月的人', { calendar: 'solar', year: 1996, month: 4, day: 15 })
-  await person(page, '十月的人', { calendar: 'solar', year: 1996, month: 10, day: 20 })
-  await page.goto('/people/birthdays')
-  const byMonth = page.getByRole('region', { name: 'By month' })
-  const april = byMonth.getByRole('button', { name: /^April/ })
-  await expect(april).toContainText('1')
-  await april.click()
-  await expect(rows(page)).toHaveCount(1)
-  await expect(rows(page)).toContainText('四月的人')
-})
-
-/** The head's counts are of the people on screen, not of everyone stored. */
-test("the head's count follows the filter", async ({ page }) => {
-  await registerFreshUser(page)
-  // Two and five months from today, in different months, so neither is ever in the next week.
-  const far = monthDay(150)
-  const near = monthDay(60)
-  await person(page, '远的人', { calendar: 'solar', year: 1996, ...far })
-  await person(page, '近些的人', { calendar: 'solar', year: 1996, ...near })
-  await page.goto('/people/birthdays')
-  const count = page.locator('[data-birthday-count]')
-  await expect(count).toHaveText('2 people · 0 in the next week')
-
-  const month = page
-    .getByRole('region', { name: 'By month' })
-    .getByRole('button', { name: new RegExp(`^${MONTH_NAMES[far.month - 1]}`) })
-  await month.click()
-  await expect(rows(page)).toHaveCount(1)
-  await expect(count).toHaveText('1 person · 0 in the next week')
-
-  // The search box is the same filter, so the count follows it too.
-  await month.click()
-  await page.getByRole('searchbox', { name: 'Find a person' }).fill('近些')
-  await expect(rows(page)).toHaveCount(1)
-  await expect(count).toHaveText('1 person · 0 in the next week')
-})
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
-
-test('the name search filters as you type', async ({ page }) => {
-  await registerFreshUser(page)
-  await person(page, '周楠', { calendar: 'solar', year: 1991, ...monthDay(1) })
-  await person(page, 'Priya Raman', { calendar: 'solar', year: 1988, ...monthDay(2) })
-  await page.goto('/people/birthdays')
-  await page.getByRole('searchbox', { name: 'Find a person' }).fill('priya')
-  await expect(rows(page)).toHaveCount(1)
-  await expect(rows(page)).toContainText('Priya Raman')
-})
 
 test("a person written down here uses People's own dialog", async ({ page }) => {
   await registerFreshUser(page)
@@ -188,75 +46,6 @@ test("a person written down here uses People's own dialog", async ({ page }) => 
   // It lands on the person's own page -- the shell's, the same one every kind of thing gets.
   await expect(page).toHaveURL(new RegExp('/people/[0-9a-f-]{36}$'))
   await expect(page.getByRole('dialog', { name: 'People' })).toContainText('新来的')
-})
-
-test('the page has no horizontal scroll at 375px', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 })
-  await registerFreshUser(page)
-  await person(page, '名字很长的一个人物名字', {
-    calendar: 'lunar',
-    year: 1944,
-    month: 12,
-    day: 30,
-  })
-  await page.goto('/people/birthdays')
-  await expect(rows(page)).toHaveCount(1)
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-  )
-  expect(overflow).toBeLessThanOrEqual(0)
-})
-
-test('at 1440px the list spans two columns and the index takes the third', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await registerFreshUser(page)
-  await person(page, '王颖', { calendar: 'solar', year: 1993, ...monthDay(0) })
-  await page.goto('/people/birthdays')
-  const coming = page.getByRole('region', { name: 'Coming up' })
-  const byMonth = page.getByRole('region', { name: 'By month' })
-  const [list, index] = await Promise.all([coming.boundingBox(), byMonth.boundingBox()])
-  expect(list).not.toBeNull()
-  expect(index).not.toBeNull()
-  // The index is beside the list, not under it, and the list is the wider of the two.
-  expect(index!.x).toBeGreaterThan(list!.x + list!.width - 4)
-  expect(list!.width).toBeGreaterThan(index!.width * 1.5)
-})
-
-test('the Birthdays tab on People counts the coming week', async ({ page }) => {
-  // Birthdays is a view of people, so it is a tab on their page and not a row in the rail.
-  await registerFreshUser(page)
-  await person(page, '今天的', { calendar: 'solar', year: 1990, ...monthDay(0) })
-  await person(page, '很久以后的', { calendar: 'solar', year: 1990, ...monthDay(60) })
-  await page.goto('/people')
-  const views = page.getByRole('navigation', { name: 'People views' })
-  await expect(views.getByRole('link', { name: 'All people' })).toHaveAttribute(
-    'aria-current',
-    'page',
-  )
-  const tab = views.getByRole('link', { name: /Birthdays/ })
-  await expect(tab.locator('[data-count]')).toHaveText('1')
-  await tab.click()
-  await expect(page).toHaveURL(/\/people\/birthdays$/)
-  await expect(tab).toHaveAttribute('aria-current', 'page')
-  await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
-})
-
-test('the Birthdays tab count follows a birthday set in the pane', async ({ page }) => {
-  await registerFreshUser(page)
-  await person(page, 'Already counted', { calendar: 'solar', year: 1990, ...monthDay(1) })
-  const id = await person(page, 'Born Soon')
-  await page.goto(`/people/${id}`)
-  const tab = page
-    .getByRole('navigation', { name: 'People views' })
-    .getByRole('link', { name: /Birthdays/ })
-  await expect(tab.locator('[data-count]')).toHaveText('1')
-
-  await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  await page.getByRole('button', { name: 'Birthday, not set' }).click()
-  // No year: the grid is this year's, and the day is pointed at.
-  await pickSolarDay(page, dayOffset(2))
-  await page.getByRole('button', { name: 'Save' }).click()
-  await expect(tab.locator('[data-count]')).toHaveText('2')
 })
 
 test('derived birthday details sit one level down from the date', async ({ page }) => {
@@ -320,20 +109,6 @@ test('a day that year does not have makes the preview say which part fails', asy
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
   await page.getByRole('textbox', { name: 'Year' }).fill('1944')
   await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
-})
-
-test('the people list filters by circle, and hides nobody by default', async ({ page }) => {
-  await registerFreshUser(page)
-  await person(page, '妈妈', undefined, 'family')
-  await person(page, '同事老张', undefined, 'work')
-  await page.goto('/people')
-  const list = page.getByRole('listitem')
-  await expect(list).toHaveCount(2)
-  await page.getByRole('button', { name: 'Family' }).click()
-  await expect(list).toHaveCount(1)
-  await expect(list).toContainText('妈妈')
-  await page.getByRole('button', { name: 'Everyone' }).click()
-  await expect(list).toHaveCount(2)
 })
 
 test('a lunar birthday without a year draws no chips', async ({ page }) => {
@@ -422,9 +197,10 @@ test('the workbench card says who is next when nobody needs greeting', async ({ 
   await page.reload()
   await expect(card.locator('[data-birthday-row]')).toHaveCount(1)
   await expect(card).toContainText('today')
+  // Its heading opens everyone's birthdays, in the People sidebar (FR-060).
   await card.getByRole('heading').getByRole('link').click()
-  await expect(page).toHaveURL(/\/people\/birthdays$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible()
+  await expect(page).toHaveURL(/\/people\?list=birthdays$/)
+  await expect(page.getByRole('navigation', { name: 'Birthdays' })).toBeVisible()
 })
 
 test('an empty card says nobody to greet, not that nobody is in the week', async ({ page }) => {
@@ -462,38 +238,65 @@ test('a same-day reminder keeps a birthday five days out off the card', async ({
   const card = page.getByRole('region', { name: 'Birthdays' })
   await expect(card).toContainText('要一周的')
   await expect(card).not.toContainText('只要当天的')
-  // Both are on the Birthdays page: the card is what comes to you, not everyone.
-  await page.goto('/people/birthdays')
-  await expect(page.locator('[data-birthday-row]')).toHaveCount(2)
+  // Both are in the birthdays list: the card is what comes to you, not everyone.
+  await page.goto('/people?list=birthdays')
+  await expect(
+    page.getByRole('navigation', { name: 'Birthdays' }).locator('[data-birthday-row]'),
+  ).toHaveCount(2)
 })
 
-test('People and Birthdays share one page head', async ({ page }) => {
+/**
+ * THE PEOPLE OVERVIEW'S BIRTHDAYS (FR-060): the next 30 days by date, and All N, which lists
+ * everyone's in the sidebar, the nearest first. An old address to the Birthdays page lands there.
+ */
+test('the overview lists the next 30 days of birthdays, and All N the rest in the sidebar', async ({
+  page,
+}) => {
   await registerFreshUser(page)
-  // Someone there: an empty People page is only its New person (FR-030).
-  await apiPost(page, '/people', { name: '韩梅梅' })
+  await person(page, '二十天后', { calendar: 'solar', year: 1990, ...monthDay(20) })
+  await person(page, '三天后', { calendar: 'solar', year: 1990, ...monthDay(3) })
+  await person(page, '两个月后', { calendar: 'solar', year: 1990, ...monthDay(60) })
+  await person(page, '没生日的')
   await page.goto('/people')
-  const head = async () => {
-    const make = page
-      .getByRole('main')
-      .getByRole('button', { name: /^New person/ })
-      .first()
-    await expect(make).toBeVisible()
-    return {
-      box: await make.boundingBox(),
-      fill: await make.evaluate((el) => getComputedStyle(el).backgroundColor),
-    }
-  }
-  const onPeople = await head()
-  await page
-    .getByRole('navigation', { name: 'People views' })
-    .getByRole('link', { name: /Birthdays/ })
-    .click()
-  await expect(page).toHaveURL(/\/people\/birthdays$/)
-  // The view has drawn, so the head being measured is this view's and not the one leaving.
-  await expect(page.getByRole('searchbox', { name: 'Find a person' })).toBeVisible()
-  expect(await head()).toEqual(onPeople)
-  // What only this view has sits in the view, under its tabs, not in the head they share.
-  const views = (await page.getByRole('navigation', { name: 'People views' }).boundingBox())!
-  const find = (await page.getByRole('searchbox', { name: 'Find a person' }).boundingBox())!
-  expect(find.y).toBeGreaterThanOrEqual(views.y + views.height)
+
+  const block = page.getByRole('region', { name: 'Birthdays in the next 30 days' })
+  await expect(block.getByRole('listitem')).toHaveText([/三天后.*3 d/, /二十天后.*20 d/])
+  await block.getByRole('link', { name: 'All 3' }).click()
+  await expect(page).toHaveURL(/\/people\?list=birthdays$/)
+  const list = page.getByRole('navigation', { name: 'Birthdays' })
+  await expect(list.locator('[data-birthday-row]')).toHaveText([/三天后/, /二十天后/, /两个月后/])
+  // Back to everyone.
+  await list.getByRole('link', { name: 'Show everyone' }).click()
+  await expect(
+    page.getByRole('navigation', { name: 'People' }).locator('[data-person-row]'),
+  ).toHaveCount(4)
+
+  await page.goto('/people/birthdays')
+  await expect(page).toHaveURL(/\/people\?list=birthdays$/)
+})
+
+test('a circle on the overview narrows the sidebar to its people', async ({ page }) => {
+  await registerFreshUser(page)
+  const res = await page.request.put('/api/v1/people/circles', {
+    headers: WEB,
+    data: { circles: [{ name: 'Family' }, { name: 'Work' }] },
+  })
+  expect(res.ok(), await res.text()).toBe(true)
+  const { circles } = (await res.json()) as { circles: { id: string; name: string }[] }
+  const family = circles.find((c) => c.name === 'Family')!.id
+  await apiPost(page, '/people', { name: '妈妈', circleIds: [family] })
+  await apiPost(page, '/people', { name: '同事老张' })
+  await page.goto('/people')
+
+  const block = page.getByRole('region', { name: 'Circles' })
+  await expect(block.getByRole('link')).toHaveText([/Family\s*1/, /Work\s*0/])
+  await block.getByRole('link', { name: /Family/ }).click()
+  const sidebar = page.getByRole('navigation', { name: 'People' })
+  await expect(sidebar).toContainText('In Family')
+  await expect(sidebar.locator('[data-person-row]')).toHaveText([/妈妈/])
+  // A person opened from the narrowed list keeps it.
+  await sidebar.getByRole('link', { name: /妈妈/ }).click()
+  await expect(sidebar.locator('[data-person-row]')).toHaveText([/妈妈/])
+  await sidebar.getByRole('link', { name: 'Show everyone' }).click()
+  await expect(sidebar.locator('[data-person-row]')).toHaveCount(2)
 })

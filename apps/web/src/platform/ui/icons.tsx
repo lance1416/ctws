@@ -46,6 +46,7 @@ import {
   Flag,
   Folder,
   FolderOpen,
+  History,
   GitPullRequest,
   Inbox,
   Keyboard,
@@ -53,6 +54,7 @@ import {
   Link,
   ListTree,
   Lock,
+  Mailbox,
   MessagesSquare,
   Moon,
   PanelRight,
@@ -68,9 +70,11 @@ import {
   Sun,
   Trash,
   UserRound,
+  UsersRound,
   Video,
   X,
   CircleDashed,
+  Clock,
   Hourglass,
 } from 'lucide-react'
 
@@ -160,6 +164,13 @@ export const DarkIcon = Moon
 /** Time on Today (FR-079): a deadline's flag, a birthday's cake, a call's camera. */
 export const FlagIcon = Flag
 export const CakeIcon = Cake
+/** The people overview's blocks (FR-060): in touch lately, not for a while, the circles. */
+export const InTouchIcon = History
+export const OutOfTouchIcon = Clock
+export const CirclesIcon = UsersRound
+/** How the last exchange with someone went (FR-060): a message sent, one received. */
+export const SentIcon = Send
+export const ReceivedIcon = Mailbox
 /** Waiting on another task that is not finished (FR-054). */
 export const LockIcon = Lock
 export const JoinIcon = Video

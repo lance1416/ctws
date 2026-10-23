@@ -241,7 +241,6 @@ const birthdayListRow = z.object({
   /** Whose day it is counted in: the person's own zone, or the account's when they have none. */
   timeZone: z.string(),
 })
-export type BirthdayListRow = z.infer<typeof birthdayListRow>
 
 /** The latest exchange with someone (FR-060): a message sent or received, or a meeting together. */
 const lastExchange = z.object({

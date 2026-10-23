@@ -686,16 +686,6 @@ export async function surfaceLuminance(target: Locator): Promise<number> {
   return (await paint(target)).behind
 }
 
-/** Points at a solar day in the shared picker's grid (FR-034), paging on to its month. */
-export async function pickSolarDay(page: Page, iso: string) {
-  for (let i = 0; i < 14; i++) {
-    const cell = page.getByRole('button', { name: iso, exact: true })
-    if (await cell.isVisible()) return cell.click()
-    await page.getByRole('button', { name: 'Next month' }).click()
-  }
-  throw new Error(`no ${iso} within a year of the grid`)
-}
-
 /** Points at a lunar day in the grid, paging on by lunar month: `十二月` and `三十`. */
 export async function pickLunarDay(page: Page, month: string, day: string) {
   for (let i = 0; i < 16; i++) {

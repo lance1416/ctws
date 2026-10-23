@@ -15,16 +15,6 @@ type Block = {
   className?: string
 }
 
-/** A block of a page, with its heading and no box at all. */
-export function Panel(props: Block) {
-  return <Frame {...props} box="" head="px-2 pt-1" body="px-1 sm:px-2" />
-}
-
-/** A section of rows: the heading hangs on the rows' thread and the body is flush. */
-export function RowsPanel(props: Block) {
-  return <Frame {...props} box="" head={`${HANG} pt-1 pr-2`} body="" />
-}
-
 /** A card on the Workbench's desk, whose step from desk to sheet is its only edge. */
 export function Tile(props: Block) {
   return <Frame {...props} box="rounded-block bg-panel" head="px-4 pt-3.5" body="px-1 sm:px-2" />

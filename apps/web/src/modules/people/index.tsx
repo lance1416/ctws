@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom'
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useProjectPeople } from './hooks/projectThings'
@@ -9,7 +10,7 @@ import { NewPerson } from './components/NewPerson'
 import { PersonFact, PersonMark } from './components/PersonFacts'
 import { useBirthdayEntries, usePeopleHits } from './hooks/contributions'
 import { PEOPLE_ID } from './logic/id'
-import { Birthdays } from './pages/Birthdays'
+import { PeopleSidebar } from './components/PeopleSidebar'
 import { People } from './pages/People'
 
 // For other modules: a meeting picks its attendees from this list.
@@ -31,13 +32,14 @@ export const peopleModule: WorkspaceModule = {
     to: `/${PEOPLE_ID}`,
     Count: PeopleCount,
     Status: NextBirthdayLine,
+    List: PeopleSidebar,
     chord: 'people',
     order: 20,
   },
   routes: [
     { index: true, element: <People />, handle: PAGE },
-    // Before `:id`, so a reader need not know that react-router ranks a static segment higher.
-    { path: 'birthdays', element: <Birthdays />, handle: PAGE },
+    // Birthdays is the sidebar's list now (FR-060), not a page: an old address lands there.
+    { path: 'birthdays', element: <Navigate to="/people?list=birthdays" replace /> },
     // A person has no page of their own: this is the list with their pane open.
     { path: ':id', element: <People />, handle: PAGE },
   ],
@@ -56,7 +58,7 @@ export const peopleModule: WorkspaceModule = {
     {
       id: 'birthdays',
       label: 'Birthdays',
-      to: `/${PEOPLE_ID}/birthdays`,
+      to: `/${PEOPLE_ID}?list=birthdays`,
       Component: BirthdayCard,
       order: 40,
       span: 4,

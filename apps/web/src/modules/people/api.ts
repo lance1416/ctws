@@ -55,6 +55,8 @@ export const peopleKeys = {
   all: ['people'] as const,
   list: ['people', 'list'] as const,
   birthdays: ['people', 'birthdays'] as const,
+  touch: ['people', 'touch'] as const,
+  circles: ['people', 'circles'] as const,
   calendar: (range: { from: string; to: string }) =>
     ['people', 'calendar', range.from, range.to] as const,
   search: (q: string) => ['people', 'search', q] as const,
@@ -80,6 +82,20 @@ export const birthdaysQuery = () =>
     queryKey: peopleKeys.birthdays,
     queryFn: ({ signal }) =>
       call(api.people.birthdays, { query: { view: 'birthdays' } }, { signal }),
+  })
+
+/** Who you were in touch with lately, and with whom it has been a while (FR-060). */
+export const touchQuery = () =>
+  queryOptions({
+    queryKey: peopleKeys.touch,
+    queryFn: ({ signal }) => call(api.people.touch, { query: { view: 'touch' } }, { signal }),
+  })
+
+/** The circles, in your order, with how many people are in each. */
+export const circlesQuery = () =>
+  queryOptions({
+    queryKey: peopleKeys.circles,
+    queryFn: async ({ signal }) => (await call(api.people.circles, {}, { signal })).circles,
   })
 
 export const birthdayCalendarQuery = (range: { from: string; to: string }) =>

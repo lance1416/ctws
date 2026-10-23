@@ -1,16 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   apiPost,
-  holdFirstRead,
   makeProject,
   patchAnswered,
   pickOne,
   registerFreshUser,
-  slowReads,
   lunarYear,
   pickLunarDay,
 } from './helpers'
-import { MONTHS } from './days'
 
 /** People: a person has several ways to be reached, and each one is a link, not text to copy. */
 
@@ -55,48 +52,6 @@ test('a person keeps several addresses, and each one is a link', async ({ page }
     'https://github.com/ying',
   )
   await expect(person).toContainText('工作')
-})
-
-/** The refetch after the write must not reuse the first read, which left before the write. */
-test('a person made while the list is still loading opens as themselves', async ({ page }) => {
-  await registerFreshUser(page, '/')
-  const release = await holdFirstRead(page, '**/api/v1/people')
-  await page.goto('/people')
-  const made = page.waitForResponse(
-    (r) => r.request().method() === 'POST' && /\/api\/v1\/people$/.test(r.url()),
-  )
-  await page.getByLabel('Add a name').fill('李雷')
-  await page.getByLabel('Add a name').press('Enter')
-  await made
-  release()
-  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('李雷')
-  await expect(page.getByText(/^This person was deleted/)).toHaveCount(0)
-})
-
-test('a person is made by typing a name, and finished in the pane', async ({ page }) => {
-  // One line into a box, like every other thing this app makes.
-  await registerFreshUser(page)
-  // Someone already there: an empty People page is only its New person (FR-030).
-  await add(page, { name: '韩梅梅' })
-  await page.goto('/people')
-  await page.getByLabel('Add a name').fill('李雷')
-  await page.getByLabel('Add a name').press('Enter')
-
-  // The pane opens on them: a name alone is never all you know about somebody, and this is the
-  // moment you have the rest of it to hand.
-  const pane = page.getByRole('dialog', { name: 'People' })
-  await expect(pane).toContainText('李雷')
-
-  // While reading, Edit is the one visible way into the form.
-  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
-  await pane.getByRole('button', { name: 'Add one' }).click()
-  await pane.getByRole('textbox', { name: 'Item 1' }).fill('lilei@acme.test')
-  await pane.getByRole('button', { name: 'Save' }).click()
-
-  await expect(pane).toContainText('lilei@acme.test')
-  // Saving returns to reading, with what was just written in view.
-  await expect(pane.getByRole('button', { name: 'Save' })).toHaveCount(0)
-  await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 })
 
 test('an edit the server refuses stays open and says why', async ({ page }) => {
@@ -209,82 +164,26 @@ test('an address removed in the pane is really gone', async ({ page }) => {
  * The margin holds the next birthday with a cake, the thread is the first project, and the body
  * says who, with the city at the far end. The threads share one x with the page's heading.
  */
-test('a person row hangs on the margin: next birthday, first project, then who they are', async ({
+test('the sidebar lists everyone under the letter they are filed under, in pinyin order', async ({
   page,
 }) => {
-  await registerFreshUser(page, '/')
-  await page.setViewportSize({ width: 1440, height: 900 })
-  const hunt = await makeProject(page, '找工作')
-  const ying = await apiPost<{
-    id: string
-    projects: { id: string }[]
-    birthday: { next: { day: string } }
-  }>(page, '/people', {
-    name: '陈颖',
-    title: 'Engineering manager',
-    org: 'Acme',
-    city: 'Toronto',
-    projectIds: [hunt],
-    birthday: { calendar: 'solar', month: 3, day: 9 },
-  })
-  await add(page, { name: 'Lena Fischer', circle: 'friend' })
-  await page.goto('/people')
-
-  const yRow = page.locator(`[data-person-row="${ying.id}"]`)
-  // The margin: the server's next birthday, month and day, beside the cake.
-  const [, m, d] = ying.birthday.next.day.split('-').map(Number)
-  await expect(yRow.locator('[data-birthday-lead] time')).toHaveText(`${MONTHS[m! - 1]} ${d}`)
-  await expect(yRow.locator('[data-birthday-lead] [data-cake]')).toHaveCount(1)
-  // The thread: their first line of work's.
-  await expect(yRow.locator('[data-project-rail]')).toHaveAttribute(
-    'data-project-rail',
-    ying.projects[0]!.id,
-  )
-  // The body: one link to them, the initial, the name, what they do, and the city.
-  const body = yRow.getByRole('link')
-  await expect(body).toHaveAttribute('href', `/people/${ying.id}`)
-  await expect(body.locator('[data-person-initial]')).toHaveText('陈')
-  await expect(body.locator('[data-person-name]')).toHaveText('陈颖')
-  // ...and the line of work the thread's colour stands for, by name: a colour is never alone.
-  await expect(body.locator('[data-person-meta]')).toHaveText('Engineering manager, Acme · 找工作')
-  const end = (await body.boundingBox())!
-  const city = (await body.getByText('Toronto').boundingBox())!
-  expect(end.x + end.width - (city.x + city.width), 'the city is at the far end').toBeLessThan(12)
-
-  // Nothing to say is said with nothing: no birthday, no project, no job -- their circle instead.
-  const lRow = page.locator('[data-person-row]').filter({ hasText: 'Lena Fischer' })
-  await expect(lRow.locator('[data-birthday-lead] time')).toHaveCount(0)
-  await expect(lRow.locator('[data-project-rail]')).toHaveCount(0)
-  await expect(lRow.locator('[data-person-meta]')).toHaveText('Friend')
-
-  // One x for the threads, and the page's heading hangs there too.
-  const threads = await page
-    .locator('[data-person-row] [data-thread]')
-    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
-  expect(threads).toHaveLength(2)
-  expect(new Set(threads).size).toBe(1)
-  const h1 = (await page.getByRole('heading', { level: 1, name: 'People' }).boundingBox())!
-  expect(Math.round(h1.x)).toBe(threads[0])
-
-  // The open person's row says so.
-  await body.click()
-  await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
-  await expect(body).toHaveAttribute('aria-current', 'page')
-})
-
-test('the list is in pinyin order, not byte order', async ({ page }) => {
   await registerFreshUser(page, '/people')
-  for (const name of ['王五', '李四', '张三']) await add(page, { name })
+  for (const name of ['王五', '李四', '张三', 'Lena Fischer', 'Ada Lovelace'])
+    await add(page, { name })
   await page.reload()
 
-  // Li is l, Wang is w, Zhang is zh. By code point the three sort 张(24352) 李(26446) 王(29579).
-  // `toHaveText` with an array, not `allTextContents`: the latter does not wait, so it reads an
-  // empty list while the first fetch is still in flight.
-  await expect(page.getByRole('main').locator('li [data-person-name]')).toHaveText([
-    '李四',
-    '王五',
-    '张三',
+  const sidebar = page.getByRole('navigation', { name: 'People' })
+  // Li is l, Wang is w, Zhang is z; Fischer is filed under F, Lovelace under L.
+  await expect(sidebar.getByRole('heading', { level: 3 })).toHaveText(['F', 'L', 'W', 'Z'])
+  await expect(sidebar.getByRole('region', { name: 'L' }).locator('[data-person-row]')).toHaveText([
+    /李四/,
+    /Ada Lovelace/,
   ])
+  // A row is the way to the person, and says so while they are open.
+  const li = sidebar.getByRole('link', { name: /李四/ })
+  await li.click()
+  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('李四')
+  await expect(li).toHaveAttribute('aria-current', 'page')
 })
 
 test('a project page carries its people, in its People block (FR-055)', async ({ page }) => {
@@ -443,19 +342,8 @@ test('a person is written down properly in one form, not created then edited', a
     projectIds: [projectId],
     channels: [{ kind: 'email', value: 'ying@acme.test', label: null }],
   })
-  await expect(row(page, 'Ying Chen')).toContainText('Acme recruiting')
+  await expect(row(page, 'Ying Chen')).toBeVisible()
   await expect(page.getByRole('dialog', { name: 'People' })).toContainText('ying@acme.test')
-})
-
-test('the whole row opens the person', async ({ page }) => {
-  // The whole row is the target, not just the four characters of a name.
-  await registerFreshUser(page, '/people')
-  await add(page, { name: 'Ying Chen', org: 'Acme recruiting' })
-  await page.reload()
-
-  // Not the name: the organisation, which is as far from the name as the row gets.
-  await row(page, 'Ying Chen').getByText('Acme recruiting').click()
-  await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
 })
 
 /**
@@ -975,37 +863,6 @@ test('an old stored number gains its country code when the form opens', async ({
 
   await expect(pane.getByRole('textbox', { name: 'Item 1' })).toHaveValue('+1 730 197 4443')
   await expect(pane.getByRole('button', { name: 'Save' })).toBeEnabled()
-})
-
-/** On a phone the margin is 60px: a birthday's date stays inside it, and so the page's edge. */
-test('a birthday fits the phone margin', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 })
-  await registerFreshUser(page, '/')
-  // May 28: the widest month-and-day the margin has to hold, on any day the suite runs.
-  await add(page, { name: '陈颖', birthday: { calendar: 'solar', month: 5, day: 28 } })
-  await page.goto('/people')
-  const lead = page.locator('[data-person-row] [data-birthday-lead]')
-  await expect(lead.locator('time')).toHaveText('May 28')
-  expect(await lead.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0)
-})
-
-test('the add box is empty for the next name once the server has the last', async ({ page }) => {
-  await registerFreshUser(page)
-  // Someone already there: an empty People page is only its New person (FR-030).
-  await add(page, { name: '韩梅梅' })
-  await page.goto('/people')
-  const box = page.getByLabel('Add a name')
-  await box.waitFor()
-  // The list read after the save is slow; the box must not wait for it.
-  await slowReads(page, '**/api/v1/people*')
-  const posted = page.waitForResponse(
-    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/people',
-  )
-  await box.fill('李雷')
-  await box.press('Enter')
-  await posted
-  await box.pressSequentially('韩梅梅', { delay: 20 })
-  await expect(box).toHaveValue('韩梅梅')
 })
 
 test('opening the birthday picker and saving untouched writes no birthday', async ({ page }) => {
