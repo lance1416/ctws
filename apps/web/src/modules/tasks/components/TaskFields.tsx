@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { UseFormRegisterReturn } from 'react-hook-form'
 import { addDays } from '@ctws/core/day'
 import { nextMonday } from '../../../platform/time/dates'
-import { decision, label, STATUS_CHIP } from '../../../platform/ui/formStyles'
+import { decision, label, STATUS_CHIP, decisionTight } from '../../../platform/ui/formStyles'
 import { STATUS_LABEL } from '../logic/status'
 import { StatusMark } from './StatusMark'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
@@ -121,7 +121,8 @@ export function DateDecisions({
       ) : (
         <span className={headingClass}>{heading}</span>
       )}
-      <div className={`flex flex-wrap gap-1 ${bare ? '' : 'mt-1.5'}`}>
+      {/* In a field row, one line: the four never wrap Clear onto a line of its own (I-10). */}
+      <div className={`flex gap-1 ${bare ? '' : 'mt-1.5 flex-wrap'}`}>
         {/* Shown short, as Today's overdue row says them (DES-001 v1.20); named in full, so a
             form with two dates has two different Todays. */}
         {namedDays(today).map(([shown, said, day]) => (
@@ -131,12 +132,17 @@ export function DateDecisions({
             aria-label={`${d.verb} ${said}`}
             aria-pressed={pressed?.(day)}
             onClick={() => onDay(day)}
-            className={decision}
+            className={bare ? decisionTight : decision}
           >
             {shown}
           </button>
         ))}
-        <button type="button" aria-label={d.clear} onClick={onClear} className={decision}>
+        <button
+          type="button"
+          aria-label={d.clear}
+          onClick={onClear}
+          className={bare ? decisionTight : decision}
+        >
           Clear
         </button>
       </div>

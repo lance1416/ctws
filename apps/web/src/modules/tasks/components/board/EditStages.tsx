@@ -12,7 +12,7 @@ import { problemText } from '../../../../platform/http/api'
 import { Button } from '../../../../platform/ui/Button'
 import { DetailHead, DetailPane } from '../../../../platform/ui/DetailPane'
 import { boxed } from '../../../../platform/ui/formStyles'
-import { EditIcon, NewIcon } from '../../../../platform/ui/icons'
+import { EditIcon, FoldStageIcon, NewIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, putStages } from '../../../../shell/projects'
 import { projectTasksQuery } from '../../api'
 import { Grip } from '../TaskRowParts'
@@ -256,12 +256,13 @@ function StageRow({
           aria-pressed={stage.collapsed}
           aria-label={`Fold ${stage.name} on the board`}
           onClick={onFold}
-          className={`h-7 shrink-0 rounded-control px-2 text-meta ${
+          className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta ${
             stage.collapsed
               ? 'bg-hover font-medium text-ink'
               : 'text-muted hover:bg-hover hover:text-ink'
           }`}
         >
+          <FoldStageIcon size={14} aria-hidden="true" />
           {stage.collapsed ? 'Folded' : 'Shown'}
         </button>
       </div>

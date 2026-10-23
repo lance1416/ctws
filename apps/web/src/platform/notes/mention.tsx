@@ -19,3 +19,28 @@ export function mentionOf(href: string | undefined): Omit<Mention, 'words'> | nu
   const type = OBJECT_TYPES.find((t) => t === m[1]!.toLowerCase())
   return type ? { type, id: m[2]!.toLowerCase() } : null
 }
+
+/** A mention as notes store it: `[@words](ctws://kind/id)`. */
+const STORED = /\[(@[^\]\n]+)\]\((ctws:\/\/[a-z]+\/[0-9a-f-]{36})\)/gi
+
+/**
+ * Notes as they are typed (I-09): each mention is its words, `@Mira Chen`, never its address, which
+ * nobody can read and a slip of the cursor breaks. `links` remembers where each set of words goes.
+ */
+export function mentionsAsWords(source: string): { text: string; links: Map<string, string> } {
+  const links = new Map<string, string>()
+  const text = source.replace(STORED, (_, words: string, href: string) => {
+    if (!links.has(words)) links.set(words, href)
+    return words
+  })
+  return { text, links }
+}
+
+/** Back to how notes store them: each remembered `@words` its link again, the longest first. */
+export function mentionsAsLinks(text: string, links: ReadonlyMap<string, string>): string {
+  if (links.size === 0) return text
+  const words = [...links.keys()].sort((a, b) => b.length - a.length)
+  const literal = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const any = new RegExp(words.map(literal).join('|'), 'g')
+  return text.replace(any, (w) => `[${w}](${links.get(w)!})`)
+}

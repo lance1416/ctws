@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
+  apiPost,
   editDetail,
   makeProject,
   makeTask,
@@ -527,4 +528,26 @@ test('Ctrl Enter saves the edit from any field (FR-029)', async ({ page }) => {
   // Back to reading, with what was typed.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('按键保存了')
   await expect(dialog.getByRole('button', { name: 'Save' })).toHaveCount(0)
+})
+
+/**
+ * A MENTION WHILE THE NOTES ARE EDITED (I-09): typed as its words, never its address, which
+ * nobody can read and a slip of the cursor breaks; saved as the link it was.
+ */
+test('a mention in the notes is edited as its name, and saved as its link', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
+  const link = `[@Mira Chen](ctws://person/${mira.id})`
+  await makeTask(page, pid, 'Prepare the round', { notes: `Ask ${link} what came up.` })
+  await openTaskPane(page, pid, 'Prepare the round')
+
+  const notes = page.getByRole('textbox', { name: 'Notes' })
+  await expect(notes).toHaveValue('Ask @Mira Chen what came up.')
+  await notes.fill('Ask @Mira Chen what came up, and @Mira Chen again.')
+  const saved = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok())
+  await page.getByRole('button', { name: /^Save/ }).click()
+  expect((await saved).request().postDataJSON().notes).toBe(
+    `Ask ${link} what came up, and ${link} again.`,
+  )
 })

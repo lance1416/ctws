@@ -1,7 +1,9 @@
 import type { TaskResponse, UpdateTaskBody } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
+import { mentionsAsLinks, mentionsAsWords } from '../../../platform/notes/mention'
 import { fromDayTimeInput, toDayTimeInput } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
 import { patchTask, taskKeys } from '../api'
@@ -22,15 +24,21 @@ export const WRITE_AWAITS = [taskKeys.all]
  */
 export function useTaskDetailForm(task: TaskResponse) {
   const timeZone = useTimeZone()
-  const defaults = (): DetailTaskForm => ({
-    projectId: task.projectId,
-    title: task.title,
-    notes: task.notes,
-    status: task.status,
-    scheduledOn: task.scheduledOn,
-    dueAt: fromDayTimeInput(toDayTimeInput(task.dueAt, timeZone), timeZone),
-    stageId: task.stageId,
-  })
+  // The notes' mentions are typed as their words (I-09); where each goes is kept for the save.
+  const mentions = useRef(new Map<string, string>())
+  const defaults = (): DetailTaskForm => {
+    const notes = task.notes === null ? null : mentionsAsWords(task.notes)
+    mentions.current = notes?.links ?? new Map()
+    return {
+      projectId: task.projectId,
+      title: task.title,
+      notes: notes?.text ?? null,
+      status: task.status,
+      scheduledOn: task.scheduledOn,
+      dueAt: fromDayTimeInput(toDayTimeInput(task.dueAt, timeZone), timeZone),
+      stageId: task.stageId,
+    }
+  }
   const form = useForm<DetailTaskForm, unknown, DetailTaskValues>({
     resolver: zodResolver(detailTaskForm),
     defaultValues: defaults(),
@@ -49,6 +57,7 @@ export function useTaskDetailForm(task: TaskResponse) {
       // Crossing projects is a move, which carries the subtree along; the old parent is not in
       // the new project. It goes in the same PATCH, so a refused move changes nothing else.
       // A stage is its project's, so it does not come along.
+      if (patch.notes) patch.notes = mentionsAsLinks(patch.notes, mentions.current)
       if (changed.has('projectId'))
         Object.assign(patch, { projectId: values.projectId, parentId: null, stageId: null })
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)

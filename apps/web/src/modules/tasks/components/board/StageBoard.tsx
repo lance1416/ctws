@@ -20,7 +20,7 @@ import {
 } from '@dnd-kit/core'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { nearDay, shortDay, ymd } from '../../../../platform/time/dates'
+import { shortDay, ymd } from '../../../../platform/time/dates'
 import { meetingWhen } from '../../../../platform/time/meetingWhen'
 import { useNow } from '../../../../platform/time/useNow'
 import { ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
@@ -39,6 +39,7 @@ import { useEveryProject } from '../../../../shell/projects'
 import { createTask, projectTasksQuery, type ProjectTasks } from '../../api'
 import { useTaskActions } from '../../hooks/useTaskActions'
 import { cardBeside } from '../../logic/board/boardKeys'
+import { followUpWords } from '../../logic/board/followUp'
 import { STALE_DAYS, stageColumns, type StageCard } from '../../logic/board/stageColumns'
 import { leafCounts } from '../../logic/tree/leafCounts'
 import { ProgressSquare } from '../ProgressSquare'
@@ -306,7 +307,11 @@ function StageColumnView({
       } ${isOver ? OVER : ''}`}
     >
       <h3 className="flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 text-ui">
-        <i aria-hidden="true" className="size-2 shrink-0 rounded-full bg-muted" />
+        {/* A stage folded by default stays quiet when it is opened (S-07). */}
+        <i
+          aria-hidden="true"
+          className={`size-2 shrink-0 rounded-full ${stage.collapsed ? 'bg-subtle' : 'bg-muted'}`}
+        />
         <span id={`stage-${stage.id}`} className="min-w-0 truncate font-medium text-ink">
           {stage.name}
         </span>
@@ -505,17 +510,7 @@ function CardFace({ card, counts, organisations, now, today, timeZone }: CardPro
     )
   const due = <DateChip task={task} today={today} timeZone={timeZone} />
   const hasDue = task.dueAt !== null && card.dueDay !== null
-  const awaited = followUp && (
-    <span
-      data-stage-follow-up
-      title={`Awaiting a reply, follow up ${shortDay(followUp.on, today)}`}
-      className={`${CHIP} bg-communication-bg text-communication-t`}
-    >
-      <span className="sr-only">Follow up </span>
-      <FollowUpIcon size={12} aria-hidden="true" className="shrink-0" />
-      {nearDay(followUp.on, today) ?? shortDay(followUp.on, today)}
-    </span>
-  )
+  const awaited = followUp && <FollowUpChip on={followUp.on} today={today} />
   const own = orgOf(task.id)
   const nameRow = (
     <span className="flex min-w-0 items-center gap-2">
@@ -564,5 +559,23 @@ function CardFace({ card, counts, organisations, now, today, timeZone }: CardPro
         </span>
       )}
     </>
+  )
+}
+
+/** The day a reply is awaited by (DES-001 v1.22): the communication tint, warn once it has passed. */
+function FollowUpChip({ on, today }: { on: string; today: string }) {
+  const said = followUpWords(on, today)
+  return (
+    <span
+      data-stage-follow-up={said.late ? 'late' : 'soon'}
+      title={`Awaiting a reply, follow up ${shortDay(on, today)}`}
+      className={`${CHIP} ${
+        said.late ? 'bg-warn-bg text-warn-t' : 'bg-communication-bg text-communication-t'
+      }`}
+    >
+      <span className="sr-only">Follow up </span>
+      <FollowUpIcon size={12} aria-hidden="true" className="shrink-0" />
+      {said.text}
+    </span>
   )
 }

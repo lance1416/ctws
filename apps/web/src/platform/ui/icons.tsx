@@ -60,6 +60,7 @@ import {
   Mailbox,
   MessagesSquare,
   Moon,
+  PanelLeftOpen,
   PanelRight,
   Pencil,
   Plus,
@@ -122,6 +123,8 @@ export const ByStatusIcon = CircleDashed
 export const ByStageIcon = Flag
 /** How long a node has been at its stage, on the board by stage (FR-058): "5d". */
 export const InStageIcon = Hourglass
+/** A stage folded to a strip at the board's right edge, or shown as a column (artboard 29). */
+export const FoldStageIcon = PanelLeftOpen
 /** A sent message awaiting a reply by a day (FR-048), on a card on the board by stage. */
 export const FollowUpIcon = Send
 export const MoreIcon = Ellipsis

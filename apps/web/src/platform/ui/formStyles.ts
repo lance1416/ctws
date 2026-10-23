@@ -30,3 +30,7 @@ export const STATUS_CHIP =
 /** A named decision, shaped like the row's triage buttons. */
 export const decision =
   'flex h-8 items-center rounded-control border border-line px-2.5 text-ui text-ink hover:border-line-strong hover:bg-hover'
+
+/** `decision` closer in, so a row of four fits a field row of the inspector on one line (I-10). */
+export const decisionTight =
+  'flex h-8 shrink-0 items-center rounded-control border border-line px-2 text-ui whitespace-nowrap text-ink hover:border-line-strong hover:bg-hover'
