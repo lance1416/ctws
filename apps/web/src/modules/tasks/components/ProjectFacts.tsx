@@ -1,13 +1,14 @@
 import { type ProjectResponse, type ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { movementQuery } from '../api'
-import { movedLine } from '../logic/movement'
+import { byRecency, isQuiet, movedLine, movedOn } from '../logic/movement'
 import { openTasksOf } from '../logic/openTasks'
-import { shortDay, ymd } from '../../../platform/time/dates'
+import { nearDay, shortDay, ymd } from '../../../platform/time/dates'
+import { FlagIcon } from '../../../platform/ui/icons'
 import { useNow } from '../../../platform/time/useNow'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
-import { deadlineDayLead, RowLead } from '../../../shell/rows'
+import { StatusMark } from './StatusMark'
 
 /** One project's movement: what is late, what is next, when it last moved. */
 function useMoved(projectId: ProjectId) {
@@ -32,34 +33,94 @@ export function ProjectTileFacts({ project: p }: { project: ProjectResponse }) {
   )
 }
 
-/** A project's tasks in numbers on its row in the list, as one line. */
-export function ProjectRowFacts({ project: p }: { project: ProjectResponse }) {
+/**
+ * When a project last moved, beside its name on the overview's card (FR-051): "Moved Oct 20", or,
+ * with open work and a week unchanged, an amber "Quiet for 9 days".
+ */
+export function ProjectMoved({ project: p }: { project: ProjectResponse }) {
   const m = useMoved(p.id)
   const today = ymd(useNow(), useTimeZone())
-  const said: ReactNode[] = [
-    <span key="open" data-count>
-      {openTasksOf(p)} open
-    </span>,
-  ]
-  // "0 overdue" is not news.
-  if (m && m.overdue > 0)
-    said.push(
-      <span key="late" className="text-stop-t">
-        {m.overdue} overdue
-      </span>,
+  if (!m) return null
+  if (isQuiet(m))
+    return (
+      <span
+        data-project-quiet
+        className="inline-flex h-5.5 shrink-0 items-center rounded-control bg-warn-bg px-2 text-meta font-medium text-warn-t"
+      >
+        Quiet for {m.quietDays} days
+      </span>
     )
-  if (m) said.push(<span key="moved">{movedLine(m, today)}</span>)
-  return said.map((part, i) => (
-    <Fragment key={i}>
-      {i > 0 && <span aria-hidden="true"> · </span>}
-      {part}
-    </Fragment>
-  ))
+  return (
+    <span data-project-moved className="shrink-0 text-meta text-subtle">
+      {movedOn(m, today)}
+    </span>
+  )
 }
 
-/** The project's next standing deadline, in the margin of its row. */
-export function ProjectLead({ projectId }: { projectId: ProjectId }) {
-  const m = useMoved(projectId)
+/**
+ * A project's tasks on its card (FR-051, artboard 18): its progress, "19 of 31", then what is under
+ * way, what is late and the next deadline, each in its own row.
+ */
+export function ProjectCardFacts({ project: p }: { project: ProjectResponse }) {
+  const m = useMoved(p.id)
   const today = ymd(useNow(), useTimeZone())
-  return <RowLead lead={m?.nextDueOn ? deadlineDayLead(m.nextDueOn, today) : null} />
+  const done = m?.done ?? 0
+  const counted = m?.counted ?? 0
+  return (
+    <>
+      <div className="flex items-center gap-2.5">
+        <span aria-hidden="true" className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-line">
+          <span
+            className="bg-go"
+            style={{ width: `${counted === 0 ? 0 : Math.round((done / counted) * 100)}%` }}
+          />
+        </span>
+        <span data-project-progress className="shrink-0 text-meta text-subtle tabular-nums">
+          {done} of {counted}
+        </span>
+      </div>
+      <dl className="grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 text-ui">
+        <Fact name="In progress" icon={<StatusMark status="in_progress" size={16} />}>
+          <Count n={m?.inProgress ?? 0} />
+        </Fact>
+        <Fact name="Late" icon={<FlagIcon size={16} className="text-muted" />}>
+          <Count n={m?.overdue ?? 0} tone="text-stop-t" />
+        </Fact>
+        <Fact name="Next due" icon={<FlagIcon size={16} className="text-muted" />}>
+          {m?.nextDueOn ? (
+            <span
+              className={`font-mono text-meta ${m.nextDueOn === today ? 'text-warn-t' : 'text-ink'}`}
+            >
+              {nearDay(m.nextDueOn, today) ?? shortDay(m.nextDueOn, today)}
+            </span>
+          ) : (
+            <span className="text-meta text-subtle">None</span>
+          )}
+        </Fact>
+      </dl>
+    </>
+  )
+}
+
+function Fact({ name, icon, children }: { name: string; icon: ReactNode; children: ReactNode }) {
+  return (
+    <div data-project-fact={name} className="contents">
+      <span aria-hidden="true" className="flex min-h-5.5 items-center">
+        {icon}
+      </span>
+      <dt className="text-muted">{name}</dt>
+      <dd className="text-right">{children}</dd>
+    </div>
+  )
+}
+
+/** A count, grey when it is nothing; `tone` when it is something to act on. */
+function Count({ n, tone = 'text-ink' }: { n: number; tone?: string }) {
+  return <span className={`tabular-nums ${n === 0 ? 'text-subtle' : tone}`}>{n}</span>
+}
+
+/** The overview's order, the latest moved first and the quiet last (FR-051); a hook, once a page. */
+export function useProjectOrder(): (a: ProjectResponse, b: ProjectResponse) => number {
+  const movement = useQuery(movementQuery(useAccountToday()))
+  return byRecency(movement.data ?? [])
 }

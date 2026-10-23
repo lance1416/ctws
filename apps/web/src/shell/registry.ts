@@ -178,9 +178,8 @@ export type Registry = {
   projectMain: RegisteredProjectMain | null
   /** Each module's own things in a project, by the kind they are. */
   projectThings: (NonNullable<ProjectContribution['Things']> & { moduleId: string })[]
-  projectRowFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
-  projectLead: ComponentType<{ projectId: ProjectId }> | null
+  projectCard: NonNullable<ProjectContribution['Card']> | null
   projectOutline: ComponentType<{ projectId: ProjectId }> | null
   projectCount: ((project: ProjectResponse) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
@@ -275,13 +274,10 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       const m = modules.find((x) => x.project?.Main)
       return m?.project?.Main ? { moduleId: m.id, moduleLabel: m.label, ...m.project.Main } : null
     })(),
-    projectRowFacts: modules.flatMap((m) =>
-      m.project?.RowFacts ? [{ moduleId: m.id, Facts: m.project.RowFacts }] : [],
-    ),
     projectTileFacts: modules.flatMap((m) =>
       m.project?.TileFacts ? [{ moduleId: m.id, Facts: m.project.TileFacts }] : [],
     ),
-    projectLead: modules.find((m) => m.project?.Lead)?.project?.Lead ?? null,
+    projectCard: modules.find((m) => m.project?.Card)?.project?.Card ?? null,
     projectOutline: modules.find((m) => m.project?.Outline)?.project?.Outline ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),

@@ -3,7 +3,12 @@ import { topPage } from '../../shell/layout'
 import { projectTasksQuery, taskKeys } from './api'
 import { PROJECT_VIEWS, ProjectTasks } from './components/ProjectBlock'
 import { ProjectOutline } from './components/ProjectOutline'
-import { ProjectLead, ProjectRowFacts, ProjectTileFacts } from './components/ProjectFacts'
+import {
+  ProjectCardFacts,
+  ProjectMoved,
+  ProjectTileFacts,
+  useProjectOrder,
+} from './components/ProjectFacts'
 import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind'
 import { TodayDate, TodayGlance } from './components/TodayGlance'
 import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
@@ -93,9 +98,8 @@ export const taskModule: WorkspaceModule = {
   ],
   project: {
     Main: { Component: ProjectTasks, views: PROJECT_VIEWS },
-    RowFacts: ProjectRowFacts,
+    Card: { Moved: ProjectMoved, Facts: ProjectCardFacts, useOrder: useProjectOrder },
     TileFacts: ProjectTileFacts,
-    Lead: ProjectLead,
     Outline: ProjectOutline,
     count: openTasksOf,
     counts: ['task'],

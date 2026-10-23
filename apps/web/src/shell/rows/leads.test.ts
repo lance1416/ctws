@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deadlineDayLead, dueTodayAt, leadFor, weekDayWord } from './leads'
+import { dueTodayAt, leadFor, weekDayWord } from './leads'
 
 const TODAY = '2026-10-12' // a Monday
 const TZ = 'America/Toronto' // EDT, UTC-4, all of this month
@@ -63,23 +63,6 @@ describe('the margin', () => {
     expect(leadFor(row({ dueAt: '2027-01-05T14:30:00.000Z' }), TODAY, TZ)?.exact).toBe(
       'Due Jan 5, 2027, 09:30',
     )
-  })
-})
-
-describe('a deadline day', () => {
-  it('says today as Today', () => {
-    expect(deadlineDayLead(TODAY, TODAY)).toMatchObject({
-      text: 'Today',
-      tone: 'deadline',
-      flag: true,
-    })
-  })
-  it('names a day in the week ahead by its weekday, and one beyond it by its date', () => {
-    expect(deadlineDayLead('2026-10-15', TODAY).text).toBe('Thu')
-    expect(deadlineDayLead('2026-10-20', TODAY).text).toBe('Oct 20')
-  })
-  it('carries the whole date, year included, for the title', () => {
-    expect(deadlineDayLead('2026-10-15', TODAY).exact).toBe('Next due Oct 15, 2026')
   })
 })
 

@@ -299,6 +299,11 @@ export const projectMovementResponse = z.object({
   projectName: z.string(),
   doneThisWeek: z.number().int().nonnegative(),
   remaining: z.number().int().nonnegative(),
+  /** Leaves under way, for the overview's card (FR-051). */
+  inProgress: z.number().int().nonnegative(),
+  /** Its progress, "19 of 31": the leaves done, of those neither in the backlog nor cancelled. */
+  done: z.number().int().nonnegative(),
+  counted: z.number().int().nonnegative(),
   /** Open and due before today: deadlines missed, given another day or not (FR-079). */
   overdue: z.number().int().nonnegative(),
   lastActivityOn: calendarDate.nullable(),

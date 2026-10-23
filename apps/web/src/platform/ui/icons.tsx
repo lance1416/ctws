@@ -23,6 +23,7 @@
  */
 import type { ComponentProps, ComponentType } from 'react'
 import {
+  Archive,
   BookOpen,
   BuildingComplex,
   Cake,
@@ -92,6 +93,8 @@ export type Kind = keyof typeof KIND_ICON
 export const LinkIcon = Link
 /** The project that is the inbox wears this instead of initials (FR-004). */
 export const InboxIcon = Inbox
+/** The projects set aside (FR-051): their count under the overview, their list in the sidebar. */
+export const ArchiveIcon = Archive
 
 /** Places, always grey. */
 export const PLACE_ICON = {

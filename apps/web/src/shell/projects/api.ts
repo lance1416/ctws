@@ -57,7 +57,11 @@ export function useEveryProject(): { data: ProjectResponse[] | undefined; isSucc
   }
 }
 
-export function createProject(body: { name: string }): Promise<ProjectResponse> {
+export function createProject(body: {
+  name: string
+  color?: ProjectColor
+  initials?: string
+}): Promise<ProjectResponse> {
   return call(api.projects.create, { body })
 }
 
@@ -70,10 +74,10 @@ export function inboxOf(projects: ProjectResponse[]): ProjectResponse | undefine
   return projects.find((p) => p.isInbox)
 }
 
-/** Renames, recolours, archives or unarchives a project; the inbox cannot be archived. */
+/** Renames, recolours, re-initials, archives or unarchives a project; not the inbox's archiving. */
 export function updateProject(
   id: ProjectId,
-  body: { name?: string; color?: ProjectColor; archived?: boolean },
+  body: { name?: string; color?: ProjectColor; initials?: string; archived?: boolean },
 ): Promise<ProjectResponse> {
   return call(api.projects.update, { params: { id }, body })
 }

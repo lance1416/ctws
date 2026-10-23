@@ -1,6 +1,5 @@
 import {
   type CreateProjectBody,
-  type ProjectColor,
   projectColors,
   type UpdateProjectBody,
   type ProjectId,
@@ -8,7 +7,7 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { newId } from '../../platform/db/ids'
-import { initialsOf, rankBetween } from '@ctws/core'
+import { initialsOf, leastUsedColor, rankBetween } from '@ctws/core'
 import { desc, eq, sql } from 'drizzle-orm'
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core'
 import { eventLog } from '../events'
@@ -22,14 +21,6 @@ import { projects, type Project } from './tables'
 
 /** The quick-capture destination, one per workspace. */
 const INBOX_NAME = 'Inbox'
-
-/** First free slot, so the first six projects get six colours; archived projects keep theirs. */
-/** A colour not yet used; once all eight are, the least used, earliest in the list (FR-052). */
-function leastUsedColor(taken: readonly ProjectColor[]): ProjectColor {
-  const count = new Map<ProjectColor, number>(projectColors.map((c) => [c, 0]))
-  for (const c of taken) count.set(c, (count.get(c) ?? 0) + 1)
-  return [...projectColors].sort((a, b) => count.get(a)! - count.get(b)!)[0]!
-}
 
 /** Created with the workspace, so capture never has to create it on the fly. */
 export async function createInbox(tx: Queryable, { workspaceId, now }: Actor): Promise<void> {

@@ -1,6 +1,7 @@
 import type { ProjectId } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { MoreIcon, type IconComponent } from '../../platform/ui/icons'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
@@ -62,10 +63,12 @@ export function ProjectHead({
 }
 
 /**
- * What else can be done to the project (FR-052): archive, which hides it from the rail and the
- * live lists but keeps everything, and is undone from the same menu.
+ * What else can be done to the project (FR-052): edit its name, colour and initials, where delete
+ * is too; archive, which hides it from the rail and the live lists but keeps everything, and is
+ * undone from the same menu.
  */
 function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean }) {
+  const navigate = useNavigate()
   const toggle = useMutation({
     mutationFn: () => updateProject(id, { archived: !archived }),
     meta: { changes: ['project'], awaits: [projectKeys.all], ownsError: true },
@@ -78,6 +81,12 @@ function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean }) {
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
+            <DropdownMenu.Item
+              onSelect={() => navigate(`/projects/${id}/edit`)}
+              className={MENU_ITEM}
+            >
+              Edit project
+            </DropdownMenu.Item>
             <DropdownMenu.Item
               onSelect={() => toggle.mutate()}
               disabled={toggle.isPending}

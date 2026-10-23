@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test'
 import {
+  makeProject,
+  newProject,
   registerFreshUser,
   serverTasks,
   slowReads,
   submitCreate,
   captureBox,
-  navLink,
   openCapture,
 } from './helpers'
 
@@ -24,26 +25,31 @@ test('capture from any page lands in the inbox', async ({ page }) => {
   expect(tasks.map((t: { title: string }) => t.title)).toContain('问问房东空调')
 })
 
-test('the inbox sorts first, and is the one project with nothing to delete it with', async ({
+test('the inbox is the overview’s last card, and the one project with no delete', async ({
   page,
 }) => {
   await registerFreshUser(page)
-  await navLink(page, 'Projects').click()
-  await submitCreate(page, 'New project', 'aaa')
+  const { projects } = await (await page.request.get('/api/v1/projects')).json()
+  const inbox = projects.find((p: { isInbox: boolean }) => p.isInbox).id as string
+  const aaa = await makeProject(page, 'aaa')
+  await page.goto('/projects')
 
-  const items = page.getByRole('listitem')
-  await expect(items.first()).toHaveText(/Inbox/)
-  // No row carries it: the list is a place you aim at names.
-  await expect(items.getByRole('button', { name: 'Delete' })).toHaveCount(0)
+  // A card of its own after the projects (FR-051); the sidebar still lists it first.
+  const cards = page.getByRole('list', { name: 'Projects' }).getByRole('listitem')
+  await expect(cards).toHaveCount(2)
+  await expect(cards.last()).toHaveText(/Inbox is empty/)
+  await expect(
+    page.getByRole('navigation', { name: 'Projects' }).getByRole('link').first(),
+  ).toHaveText(/Inbox/)
+  // No card carries it: the overview is a place you aim at names.
+  await expect(cards.getByRole('button', { name: /^Delete/ })).toHaveCount(0)
 
-  // It is at the foot of the project's own page -- for an ordinary project. The inbox has none,
-  // because capture has to land somewhere. The UI hides it; the server refuses it too (Task 2).
-  // Both, because a UI is not a constraint.
-  await items.filter({ hasText: 'aaa' }).getByRole('link').click()
+  // It is at the foot of an ordinary project's edit page. The inbox has none, because capture has
+  // to land somewhere; the server refuses it too.
+  await page.goto(`/projects/${aaa}/edit`)
   await expect(page.getByRole('button', { name: /^Delete / })).toHaveCount(1)
-  await page.goBack()
-  await items.first().getByRole('link').click()
-  await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
+  await page.goto(`/projects/${inbox}/edit`)
+  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Inbox')
   await expect(page.getByRole('button', { name: /^Delete / })).toHaveCount(0)
 })
 
@@ -112,21 +118,18 @@ test('a failed project fetch tells the capture box user why it is disabled', asy
   await expect(page.getByRole('status')).toContainText('Inbox unavailable')
 })
 
-test('a project is deleted from its own page, and the list loses it', async ({ page }) => {
+test('a project is deleted from its edit page, and the overview loses it', async ({ page }) => {
   await registerFreshUser(page)
-  await navLink(page, 'Projects').click()
-  await submitCreate(page, 'New project', '待删除')
-  const doomed = page.getByRole('listitem').filter({ hasText: '待删除' })
-  await expect(doomed).toHaveCount(1)
-
-  await doomed.getByRole('link').click()
+  await newProject(page, '待删除')
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('menuitem', { name: 'Edit project' }).click()
   await page.getByRole('button', { name: /^Delete / }).click()
   // The first press only asks; the confirmation is the step that actually deletes.
   await page.getByRole('button', { name: /^Delete/ }).click()
 
-  // The page it was on is gone, so it ends on the list, which no longer has it.
+  // The page it was on is gone, so it ends on the overview, which no longer has it.
   await expect(page).toHaveURL(/\/projects$/)
-  await expect(doomed).toHaveCount(0)
+  await expect(page.getByRole('list', { name: 'Projects' })).not.toContainText('待删除')
   // Gone on the server too, not just hidden by the client cache.
   const list = await (await page.request.get('/api/v1/projects')).json()
   expect(list.projects.map((p: { name: string }) => p.name)).not.toContain('待删除')

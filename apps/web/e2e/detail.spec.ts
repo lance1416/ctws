@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import {
   editDetail,
   makeProject,
+  newProject,
   makeTask,
   openProject,
   patchAnswered,
@@ -70,8 +71,8 @@ async function reopen(page: Page, title: string, edit = true) {
 
 async function seedOneTask(page: Page, edit = true) {
   await navLink(page, 'Projects').click()
-  await submitCreate(page, 'New project', 'P')
-  await openProject(page, 'P', true)
+  await newProject(page, 'P')
+  await openProject(page, 'P')
   await submitCreate(page, 'New task', '写方案')
   await reopen(page, '写方案', edit)
 }

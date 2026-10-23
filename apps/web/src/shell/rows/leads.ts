@@ -56,16 +56,6 @@ export function leadFor(
   return null
 }
 
-/** A deadline known only by its day, like a project's next one: with no time, today is "Today". */
-export function deadlineDayLead(day: string, today: string): Lead {
-  return {
-    text: day === today ? 'Today' : weekdayOrDate(day, today),
-    tone: 'deadline',
-    flag: true,
-    exact: `Next due ${fullDay(day)}`,
-  }
-}
-
 /**
  * A day in a week under review: its weekday from the window's first day on, so last week reads
  * Mon to Sun, and its date before the window.

@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   makeProject,
+  newProject,
   openProject,
   registerFreshUser,
   seedTasks,
   serverParents,
   slowReads,
-  submitCreate,
   captureBox,
   navLink,
   captureLine,
@@ -49,8 +49,8 @@ async function shape(page: Page) {
 async function seed(page: Page): Promise<string> {
   await registerFreshUser(page)
   await navLink(page, 'Projects').click()
-  await submitCreate(page, 'New project', 'P')
-  await openProject(page, 'P', true)
+  await newProject(page, 'P')
+  await openProject(page, 'P')
   const projectId = page.url().split('/').pop()!
   await seedTasks(page, page.url(), [
     ['A', null],

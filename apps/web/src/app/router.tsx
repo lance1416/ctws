@@ -2,7 +2,15 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Login } from '../shell/auth'
 import { Calendar } from '../shell/calendar'
 import { Layout, Placeholder, PLACES, RouteError, topPage, type PageHandle } from '../shell/layout'
-import { ProjectPage, Projects, useProjectCrumbs } from '../shell/projects'
+import {
+  EditProject,
+  NewProject,
+  ProjectPage,
+  Projects,
+  useEditProjectCrumbs,
+  useNewProjectCrumbs,
+  useProjectCrumbs,
+} from '../shell/projects'
 import { WORKBENCH_PATH } from '../shell/registry'
 import { Workbench } from '../shell/workbench'
 import { registry } from './registry'
@@ -27,6 +35,16 @@ export const router = createBrowserRouter([
               { index: true, element: <Workbench />, handle: topPage('Workbench') },
               { path: '/calendar', element: <Calendar />, handle: topPage('Calendar') },
               { path: '/projects', element: <Projects />, handle: topPage('Projects') },
+              {
+                path: '/projects/new',
+                element: <NewProject />,
+                handle: { useCrumbs: useNewProjectCrumbs } satisfies PageHandle,
+              },
+              {
+                path: '/projects/:id/edit',
+                element: <EditProject />,
+                handle: { useCrumbs: useEditProjectCrumbs } satisfies PageHandle,
+              },
               {
                 path: '/projects/:id',
                 element: <ProjectPage />,

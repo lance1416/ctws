@@ -32,12 +32,12 @@ const said = (page: Page) => page.getByRole('alert').filter({ hasText: SAID })
 test('a project delete the server refuses says so, and the page stays', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '删不掉')
-  await page.goto(`/projects/${pid}`)
+  await page.goto(`/projects/${pid}/edit`)
   await refuse(page, `**/api/v1/projects/${pid}`, 'DELETE')
   await page.getByRole('button', { name: /^Delete / }).click()
   await page.getByRole('button', { name: /^Delete/ }).click()
   await expect(said(page)).toBeVisible()
-  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}/edit$`))
 })
 
 test('a meeting cancel the server refuses says so', async ({ page }) => {
@@ -146,8 +146,10 @@ test("a project the sidebar's + makes, refused, says so", async ({ page }) => {
   await registerFreshUser(page, '/projects')
   await refuse(page, '**/api/v1/projects', 'POST')
   const sidebar = page.getByRole('complementary', { name: 'Projects' })
-  await sidebar.getByRole('button', { name: 'New project' }).click()
-  await sidebar.getByRole('textbox', { name: 'New project' }).fill('Refused')
+  await sidebar.getByRole('link', { name: 'New project' }).click()
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Refused')
   await page.keyboard.press('Enter')
   await expect(said(page)).toBeVisible()
+  // The form stays, with what was typed.
+  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Refused')
 })

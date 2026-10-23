@@ -216,7 +216,6 @@ test('nothing scrolls sideways on a phone, whatever the page', async ({ page }) 
 test('the tab bar never covers the end of the page', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/')
-  // Not the inbox: it cannot be deleted, so its page has no delete button to end on.
   const id = await makeProject(page, '长清单')
   for (let i = 0; i < 14; i++) await makeTask(page, id, `第 ${i + 1} 件`)
   await page.goto(`/projects/${id}`)
@@ -224,7 +223,8 @@ test('the tab bar never covers the end of the page', async ({ page }) => {
   // The main area is what scrolls, inside the frame.
   await page.getByRole('main').evaluate((el) => (el.scrollTop = el.scrollHeight))
   const bar = await page.getByRole('navigation', { name: 'Main navigation' }).boundingBox()
-  const last = await page.getByRole('button', { name: /^Delete / }).boundingBox()
+  // The tree's last row, where a new task is typed, is the end of the page.
+  const last = await page.getByRole('main').locator('[data-task-tree] li').last().boundingBox()
   expect(last!.y + last!.height).toBeLessThanOrEqual(bar!.y)
 })
 

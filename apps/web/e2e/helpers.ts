@@ -141,7 +141,7 @@ export async function submitCreate(page: Page, placeholder: string, text: string
 // Opens a project from the list and waits for its task list to arrive. Creating a task while the
 // first list fetch is still in flight is a race: the page's own refetch can be satisfied by that
 // stale in-flight request, and the new task never shows up.
-export async function openProject(page: Page, name: string, exact = false): Promise<void> {
+export async function openProject(page: Page, name: string): Promise<void> {
   const loaded = page.waitForResponse((r) => {
     // The task module lists a project's tasks at `GET /api/v1/tasks?projectId=<id>`: the project
     // is the shell's, so it is a filter rather than a path segment of the module's route.
@@ -152,11 +152,11 @@ export async function openProject(page: Page, name: string, exact = false): Prom
       url.searchParams.has('projectId')
     )
   })
-  // From the project list: other pages (Today) name projects too. Scoped to <main>: the sidebar
-  // also lists every project by name.
+  // From the overview: other pages (Today) name projects too. Scoped to <main>: the sidebar also
+  // lists every project by name. By the card's link, as its square shows the initials as text.
   if (new URL(page.url()).pathname !== '/projects') await page.goto('/projects')
   await page.getByRole('heading', { level: 1, name: 'Projects' }).waitFor()
-  await page.getByRole('main').getByText(name, { exact }).click()
+  await page.getByRole('main').getByRole('link', { name, exact: true }).click()
   await loaded
 }
 
@@ -334,6 +334,24 @@ export async function slowReads(page: Page, url: string, ms = 400): Promise<void
 }
 
 /** A project made over the API, for tests whose subject is what comes next. */
+/**
+ * Makes a project as a person does (FR-052): New project on the overview, a name, Enter. Ends on
+ * the new project's page.
+ */
+export async function newProject(page: Page, name: string): Promise<void> {
+  if (new URL(page.url()).pathname !== '/projects') await page.goto('/projects')
+  await page.getByRole('main').getByRole('link', { name: 'New project' }).click()
+  const created = page.waitForResponse(
+    (r) =>
+      r.request().method() === 'POST' && r.ok() && new URL(r.url()).pathname === '/api/v1/projects',
+  )
+  const field = page.getByRole('textbox', { name: 'Name', exact: true })
+  await field.fill(name)
+  await field.press('Enter')
+  await created
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+}
+
 export async function makeProject(page: Page, name: string): Promise<string> {
   const res = await page.request.post('/api/v1/projects', { headers: WEB, data: { name } })
   expect(res.ok(), `makeProject: ${res.status()}`).toBe(true)
@@ -415,8 +433,8 @@ export async function startProject(page: Page, name = 'P'): Promise<string> {
     .getByRole('navigation', { name: 'Modules' })
     .getByRole('link', { name: 'Projects' })
     .click()
-  await submitCreate(page, 'New project', name)
-  await openProject(page, name, true)
+  await newProject(page, name)
+  await openProject(page, name)
   return page.url()
 }
 

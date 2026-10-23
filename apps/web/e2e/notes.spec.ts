@@ -430,7 +430,7 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
    */
   await page.keyboard.press('Escape')
   await navLink(page, 'Projects').click()
-  await openProject(page, 'P', true)
+  await openProject(page, 'P')
   await page.getByRole('listitem').filter({ hasText: '读一下' }).first().click()
   await editDetail(page)
   await page.getByRole('button', { name: 'Full screen' }).click()

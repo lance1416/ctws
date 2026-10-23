@@ -83,12 +83,17 @@ export type ProjectContribution = {
     /** A hook: called once per page, in registry order. */
     useThings: (projectId: ProjectId) => ProjectThings
   }
-  /** Numbers for a project's row in the list, said as one line. */
-  RowFacts?: ComponentType<{ project: ProjectResponse }>
+  /**
+   * A project's card on the overview (FR-051, artboard 18), at most one module's: `Moved` beside
+   * its name, `Facts` under it, and `useOrder`, a hook called once a page, the cards' order.
+   */
+  Card?: {
+    Moved: ComponentType<{ project: ProjectResponse }>
+    Facts: ComponentType<{ project: ProjectResponse }>
+    useOrder: () => (a: ProjectResponse, b: ProjectResponse) => number
+  }
   /** Numbers for a project's Workbench card, a line each. */
   TileFacts?: ComponentType<{ project: ProjectResponse }>
-  /** The day in the margin of a project's row in the list. At most one module gives one. */
-  Lead?: ComponentType<{ projectId: ProjectId }>
   /**
    * The open project's outline under its row in the sidebar (FR-021, artboard 8): what to jump
    * to on its page. At most one module gives one.

@@ -495,13 +495,13 @@ async function holdFirstListFetch(page: Page, glob: RouteUrl = TASK_LIST) {
 // The tree has no "New task" until it has loaded (BUG-039), so the task is made with N T.
 test('a task created while the project is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
+  await makeProject(page, 'P')
   await navLink(page, 'Projects').click()
-  await submitCreate(page, 'New project', 'P')
 
   const { release, heldStale } = await holdFirstListFetch(page)
   // Scoped to <main>: the left rail lists every project by name too. The centre column is the
   // list under test.
-  await page.getByRole('main').getByText('P', { exact: true }).click()
+  await page.getByRole('main').getByRole('link', { name: 'P', exact: true }).click()
   await heldStale
   await page.keyboard.press('n')
   await page.keyboard.press('t')
@@ -520,10 +520,11 @@ test('a task created while the project is still loading appears', async ({ page 
 test('a capture made while the inbox is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
   await navLink(page, 'Projects').click()
-  await expect(page.getByRole('main').getByText('Inbox')).toBeVisible()
+  const inbox = page.getByRole('main').getByRole('link', { name: 'Inbox', exact: true })
+  await expect(inbox).toBeVisible()
 
   const { release, heldStale } = await holdFirstListFetch(page)
-  await page.getByRole('main').getByText('Inbox').click()
+  await inbox.click()
   await heldStale
   await submitCreate(page, 'Capture…', 'captured early')
   release()
@@ -538,10 +539,19 @@ test('a project created while the project list is still loading appears', async 
   const { release, heldStale } = await holdFirstListFetch(page, '**/api/v1/projects')
   await page.goto('/projects')
   await heldStale
-  await submitCreate(page, 'New project', 'typed early')
+  await page.getByRole('main').getByRole('link', { name: 'New project' }).click()
+  const field = page.getByRole('textbox', { name: 'Name', exact: true })
+  await field.fill('typed early')
+  const created = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/projects',
+  )
+  await field.press('Enter')
+  await created
   release()
 
-  await expect(page.getByRole('main').getByRole('link', { name: 'typed early' })).toBeVisible()
+  const rail = page.getByRole('navigation', { name: 'Projects' })
+  await expect(rail.getByRole('link', { name: 'typed early' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'typed early' })).toBeVisible()
 })
 
 test('a refused move puts the fold it opened back', async ({ page }) => {

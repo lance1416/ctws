@@ -4,7 +4,6 @@ import { useRef, type CSSProperties } from 'react'
 import { useParams } from 'react-router-dom'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { splitColumns, useColumns } from '../../platform/ui/columns'
-import { DangerZone } from '../../platform/ui/DangerZone'
 import { useViewParam } from '../../platform/ui/ViewTabs'
 import { DeletedNotice } from '../detail/DeletedNotice'
 import type { Crumbs } from '../layout/page'
@@ -13,7 +12,6 @@ import { useRegistry } from '../registry'
 import { followable, pinnedOf, resourcesQuery } from '../resources/api'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
 import { useEveryProject } from './api'
-import { DeleteProject } from './DeleteProject'
 import { digitHandlers, PROJECT_KEYS } from './keys'
 import { ProjectHead } from './ProjectHead'
 import { ProjectLinked } from './ProjectLinked'
@@ -35,8 +33,8 @@ export function useProjectCrumbs(): Crumbs {
 }
 
 /**
- * A project's page (artboard 8): its head, the rows it is about in the view picked there,
- * everything linked to it, and delete at the foot. A project is worked in, so it has a page;
+ * A project's page (artboard 8): its head, the rows it is about in the view picked there, and
+ * everything linked to it; delete is on its edit page (FR-052). A project is worked in, so it has a page;
  * other records open as a pane over their list.
  */
 export function ProjectPage() {
@@ -114,10 +112,6 @@ function OpenProject({ id }: { id: ProjectId }) {
         )}
         <ProjectLinked projectId={id} columns={side} beside={mainColumns < columns} />
       </div>
-
-      <DangerZone>
-        <DeleteProject id={id} />
-      </DangerZone>
     </div>
   )
 }

@@ -284,8 +284,8 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   await registerFreshUser(page)
   const pid = await makeProject(page, '待删项目')
   for (const t of ['一', '二', '三']) await makeTask(page, pid, t)
-  // At the foot of the project's own page, which is the only place it is offered from.
-  await page.goto(`/projects/${pid}`)
+  // At the foot of the project's edit page, the only place it is offered from (FR-052).
+  await page.goto(`/projects/${pid}/edit`)
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 

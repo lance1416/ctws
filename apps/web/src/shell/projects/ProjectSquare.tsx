@@ -13,18 +13,22 @@ export function ProjectSquare({
   className = '',
 }: {
   project: Pick<ProjectResponse, 'name' | 'color' | 'initials' | 'isInbox'>
-  size?: 20 | 34
+  size?: 20 | 28 | 34
   className?: string
 }) {
   const box =
-    size === 34 ? 'size-8.5 rounded-card text-ui font-medium' : 'size-5 rounded-key text-initials'
+    size === 34
+      ? 'size-8.5 rounded-card text-ui font-medium'
+      : size === 28
+        ? 'size-7 rounded-control text-initials'
+        : 'size-5 rounded-key text-initials'
   if (project.isInbox)
     return (
       <span
         aria-hidden="true"
         className={`inline-grid shrink-0 place-items-center bg-project-bg text-project ${box} ${className}`}
       >
-        <InboxIcon size={size === 34 ? 18 : 12} />
+        <InboxIcon size={size === 34 ? 18 : size === 28 ? 16 : 12} />
       </span>
     )
   return (

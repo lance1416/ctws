@@ -1,4 +1,4 @@
-import type { ProjectId, WorkspaceId } from '@ctws/contracts'
+import type { ProjectId, TaskId, TaskStatus, WorkspaceId } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { listProjectMovement } from '../../../src/modules/tasks/queries/movement'
@@ -43,6 +43,9 @@ type Row = {
   projectName: string
   doneThisWeek: number
   remaining: number
+  inProgress: number
+  done: number
+  counted: number
   overdue: number
   lastActivityOn: string | null
   quietDays: number | null
@@ -203,6 +206,30 @@ describe('GET /tasks/movement', () => {
     )
     expect(closed.rows).toHaveLength(1)
     expect(await row()).toMatchObject({ doneThisWeek: 2, remaining: 0 })
+  })
+
+  it('says the leaves under way and the progress: done of those neither in the backlog nor cancelled', async () => {
+    const pid = await createProject(ctx, 'progress')
+    const parent = await createTask(ctx, pid, 'Parent')
+    const status = async (status: TaskStatus, title: string, under?: TaskId) => {
+      const id = await createTask(ctx, pid, title, under)
+      const res = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/tasks/${id}`,
+        headers: ctx.authed,
+        payload: { status },
+      })
+      expect(res.statusCode).toBe(200)
+    }
+    await status('done', 'Done under the parent', parent)
+    await status('in_progress', 'Under way under the parent', parent)
+    await status('in_progress', 'Under way at the top')
+    await status('todo', 'Waiting')
+    await status('done', 'Done at the top')
+    await status('backlog', 'Some day')
+    await status('cancelled', 'Not happening')
+    // Leaves only: the parent, now under way itself, is neither counted nor under way.
+    expect(rowFor(await movement(), pid)).toMatchObject({ inProgress: 2, done: 2, counted: 5 })
   })
 
   it('reads last activity from the event log, so a pure reorder does not revive a project', async () => {

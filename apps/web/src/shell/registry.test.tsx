@@ -8,9 +8,8 @@ import { buildRegistry, useRegistry, type ShellConfig } from './registry'
 
 /** Fake notes and files modules: one real module could not show that a second is picked up. */
 const NotesOnProject = () => null
-const NotesFacts = () => null
 const NotesTileFacts = () => null
-const FilesLead = () => null
+const FilesCard = { Moved: () => null, Facts: () => null, useOrder: () => () => 0 }
 const FilesOutline = () => null
 
 const notes: WorkspaceModule = {
@@ -30,7 +29,6 @@ const notes: WorkspaceModule = {
   ],
   project: {
     Main: { Component: NotesOnProject, views: [{ id: 'all', label: 'All' }] },
-    RowFacts: NotesFacts,
     TileFacts: NotesTileFacts,
     contents: async () => '3 notes',
   },
@@ -50,7 +48,7 @@ const files: WorkspaceModule = {
   widgets: [{ id: 'big', label: 'Bulky', Component: () => null, span: 8 }],
   project: {
     Main: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
-    Lead: FilesLead,
+    Card: FilesCard,
     Outline: FilesOutline,
     count: () => 4,
     counts: ['task'],
@@ -195,11 +193,8 @@ describe('what a module hangs on a project page', () => {
     expect(build([files, notes]).projectMain?.moduleId).toBe('files')
   })
 
-  it('collects the row and card facts and what a delete takes, in registration order', async () => {
+  it('collects the card facts and what a delete takes, in registration order', async () => {
     const registry = build([notes, files])
-    expect(registry.projectRowFacts.map((f) => [f.moduleId, f.Facts])).toEqual([
-      ['notes', NotesFacts],
-    ])
     expect(registry.projectTileFacts.map((f) => [f.moduleId, f.Facts])).toEqual([
       ['notes', NotesTileFacts],
     ])
@@ -209,9 +204,9 @@ describe('what a module hangs on a project page', () => {
     ).toEqual(['3 notes', null])
   })
 
-  it('takes the row lead from the first module that gives one', () => {
-    expect(build([notes, files]).projectLead).toBe(FilesLead)
-    expect(build([notes]).projectLead).toBeNull()
+  it("takes the overview's card from the first module that gives one", () => {
+    expect(build([notes, files]).projectCard).toBe(FilesCard)
+    expect(build([notes]).projectCard).toBeNull()
   })
 
   it('takes the sidebar outline from the first module that gives one, and none without', () => {
@@ -234,7 +229,6 @@ describe('what a module hangs on a project page', () => {
     }
     const registry = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
     expect(registry.projectMain).toBeNull()
-    expect(registry.projectRowFacts).toEqual([])
     expect(registry.projectTileFacts).toEqual([])
     expect(registry.projectContents).toEqual([])
   })

@@ -1,41 +1,26 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Fragment, useEffect, useRef, useState } from 'react'
-import { NavLink, useMatch, useNavigate } from 'react-router-dom'
-import { archivedProjectsQuery, createProject, projectKeys, useProjects } from './api'
+import { useQuery } from '@tanstack/react-query'
+import { Fragment } from 'react'
+import { Link, NavLink, useMatch } from 'react-router-dom'
+import { archivedProjectsQuery, useProjects } from './api'
 import { useRegistry } from '../registry'
 import { SidebarHead } from '../layout/Sidebar'
 import { ProjectSquare } from './ProjectSquare'
+import { showArchived, useArchivedShown } from './archivedShown'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { CollapseIcon, NewIcon } from '../../platform/ui/icons'
-import { useLineEntry } from '../../platform/ui/useLineEntry'
 
 /**
  * The Projects sidebar (FR-020): the inbox, then every live project with how much waits in it,
- * then the archived ones behind their count. Under the open project, its outline (FR-021).
+ * then the archived ones behind their count, listed when it is opened (FR-051). Under the open
+ * project, its outline (FR-021).
  */
 export function ProjectsSidebar() {
   const projects = useProjects()
   const archived = useQuery(archivedProjectsQuery())
+  const archivedShown = useArchivedShown()
   const registry = useRegistry()
   const Outline = registry.projectOutline
-  const navigate = useNavigate()
   const open = useMatch('/projects/:id')?.params.id
-  const [naming, setNaming] = useState(false)
-  const name = useLineEntry()
-  const field = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (naming) field.current?.focus()
-  }, [naming])
-  // Made before `useMutation`: inside its options the result's type would not reach `onSuccess`.
-  const send = name.sends((text) => createProject({ name: text }))
-  const create = useMutation({
-    mutationFn: send,
-    meta: { changes: ['project'], awaits: [projectKeys.all] },
-    onSuccess: (made) => {
-      setNaming(false)
-      navigate(`/projects/${made.id}`)
-    },
-  })
 
   const live = projects.data ?? []
   const inbox = live.find((p) => p.isInbox)
@@ -53,40 +38,18 @@ export function ProjectsSidebar() {
       <SidebarHead
         label="Projects"
         action={
-          <button
-            type="button"
-            onClick={() => setNaming(true)}
+          <Link
+            to="/projects/new"
             aria-label="New project"
             title="New project"
             className={ICON_BUTTON}
           >
             <NewIcon size={16} aria-hidden="true" />
-          </button>
+          </Link>
         }
       >
         {projects.data && others.length}
       </SidebarHead>
-      {naming && (
-        <input
-          ref={field}
-          {...name.field({
-            onSubmit: create.mutate,
-            busy: create.isPending,
-            onCancel: () => {
-              name.setValue('')
-              setNaming(false)
-            },
-          })}
-          onBlur={() => {
-            if (!name.value.trim()) setNaming(false)
-          }}
-          aria-label="New project"
-          aria-invalid={create.isError ? true : undefined}
-          className={`mx-1.5 mb-1 h-7.5 rounded-control border bg-panel px-2.5 text-ui text-ink ${
-            create.isError ? 'border-stop' : 'border-line-strong'
-          }`}
-        />
-      )}
       <nav aria-label="Projects" className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto">
         {inbox && (
           <NavLink to={`/projects/${inbox.id}`} className={row}>
@@ -106,11 +69,29 @@ export function ProjectsSidebar() {
           </Fragment>
         ))}
         {archived.data && archived.data.length > 0 && (
-          <NavLink to="/projects" end className={`${row({ isActive: false })} mt-2 text-subtle`}>
-            <CollapseIcon size={14} aria-hidden="true" className="mx-0.75" />
-            <span className="flex-1">Archived</span>
-            <Waiting n={archived.data.length} />
-          </NavLink>
+          <>
+            <button
+              type="button"
+              aria-expanded={archivedShown}
+              onClick={() => showArchived(!archivedShown)}
+              className={`${row({ isActive: false })} mt-2 text-subtle`}
+            >
+              <CollapseIcon
+                size={14}
+                aria-hidden="true"
+                className={`mx-0.75 transition-transform ${archivedShown ? 'rotate-90' : ''}`}
+              />
+              <span className="flex-1 text-left">Archived</span>
+              <Waiting n={archived.data.length} />
+            </button>
+            {archivedShown &&
+              archived.data.map((p) => (
+                <NavLink key={p.id} to={`/projects/${p.id}`} className={row}>
+                  <ProjectSquare project={p} />
+                  <span className="flex-1 truncate text-muted">{p.name}</span>
+                </NavLink>
+              ))}
+          </>
         )}
       </nav>
     </aside>

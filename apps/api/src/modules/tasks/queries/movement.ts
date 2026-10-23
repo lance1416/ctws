@@ -12,6 +12,9 @@ const movementRow = z.object({
   projectId: z.string(),
   doneThisWeek: z.coerce.number(),
   remaining: z.coerce.number(),
+  inProgress: z.coerce.number(),
+  done: z.coerce.number(),
+  counted: z.coerce.number(),
   overdue: z.coerce.number(),
   lastActivityOn: z.string().nullable(),
   quietDays: z.coerce.number().nullable(),
@@ -19,11 +22,11 @@ const movementRow = z.object({
 })
 
 /**
- * How each unarchived project moved: finished this week, still open, overdue, and how long since
- * its last logged change (the event log, so a reorder does not count). Finished and open count
- * leaves only: a parent closes with its last child, and is not one more thing done (FR-043). Weeks
- * and days are the account's. The projects are the shell's; the counts are this module's, one row
- * per project.
+ * How each unarchived project moved: finished this week, still open, under way, its progress,
+ * overdue, and how long since its last logged change (the event log, so a reorder does not count).
+ * Finished, open, under way and progress count leaves only: a parent closes with its last child,
+ * and is not one more thing done (FR-043). Weeks and days are the account's. The projects are the
+ * shell's; the counts are this module's, one row per project.
  */
 export async function listProjectMovement(
   q: Queryable,
@@ -51,6 +54,9 @@ export async function listProjectMovement(
           and ${isLeafSql('done_t')}
       ) as "doneThisWeek",
       ${openTaskCountSql(project)} as remaining,
+      leaves.in_progress as "inProgress",
+      leaves.done,
+      leaves.counted,
       (
         select count(*) from tasks late_t
         where late_t.project_id = ${project}
@@ -77,6 +83,14 @@ export async function listProjectMovement(
       join tasks ev_t on ev_t.id = ev.object_id and ev.object_type = 'task'
       where ev_t.project_id = ${project}
     ) last_activity
+    cross join lateral (
+      select
+        count(*) filter (where leaf_t.status = 'in_progress') as in_progress,
+        count(*) filter (where leaf_t.status = 'done') as done,
+        count(*) filter (where leaf_t.status not in ('backlog', 'cancelled')) as counted
+      from tasks leaf_t
+      where leaf_t.project_id = ${project} and leaf_t.deleted_at is null and ${isLeafSql('leaf_t')}
+    ) leaves
   `)
   const moved = new Map(rowsOf(result, movementRow).map((r) => [r.projectId, r]))
 
@@ -89,6 +103,9 @@ export async function listProjectMovement(
       projectName: p.name,
       doneThisWeek: r.doneThisWeek,
       remaining: r.remaining,
+      inProgress: r.inProgress,
+      done: r.done,
+      counted: r.counted,
       overdue: r.overdue,
       lastActivityOn: r.lastActivityOn,
       quietDays: r.quietDays,

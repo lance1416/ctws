@@ -1,6 +1,6 @@
 import type { ProjectMovementResponse } from '@ctws/contracts'
 import { addDays } from '@ctws/core/day'
-import { shortDay, weekdayOf } from '../../../platform/time/dates'
+import { nearDay, shortDay, weekdayOf } from '../../../platform/time/dates'
 
 /** How long a project with open work goes unchanged before the panel calls it quiet. */
 export const QUIET_DAYS = 7
@@ -32,4 +32,32 @@ export function movedLine(r: ProjectMovementResponse, today: string): string {
   if (done) return done
   if (when) return `Moved ${when}`
   return 'Not moved yet'
+}
+
+/** When a project last moved, as its card on the overview says it (FR-051): "Moved Oct 20". */
+export function movedOn(r: ProjectMovementResponse, today: string): string {
+  if (!r.lastActivityOn) return 'Not moved yet'
+  const near = nearDay(r.lastActivityOn, today)
+  return `Moved ${near ? near.toLowerCase() : shortDay(r.lastActivityOn, today)}`
+}
+
+/**
+ * The overview's order (FR-051): the projects that moved most lately first, the quiet ones after
+ * all the rest. Those it knows nothing of keep their place among the ones that never moved.
+ */
+export function byRecency(
+  rows: readonly ProjectMovementResponse[],
+): (a: { id: string }, b: { id: string }) => number {
+  const by = new Map<string, ProjectMovementResponse>(rows.map((r) => [r.projectId, r]))
+  const quiet = (id: string) => {
+    const r = by.get(id)
+    return r && isQuiet(r) ? 1 : 0
+  }
+  return (a, b) => {
+    const q = quiet(a.id) - quiet(b.id)
+    if (q !== 0) return q
+    const la = by.get(a.id)?.lastActivityOn ?? ''
+    const lb = by.get(b.id)?.lastActivityOn ?? ''
+    return la === lb ? 0 : la < lb ? 1 : -1
+  }
 }

@@ -296,17 +296,16 @@ test('a delete question asked on one project does not follow to the next', async
   await makeTask(page, a, 'Only in Alpha')
   const b = await makeProject(page, 'Beta')
   await page.goto(`/projects/${b}`)
-  await page
-    .getByRole('navigation', { name: 'Projects' })
-    .getByRole('link', { name: 'Alpha' })
-    .click()
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('menuitem', { name: 'Edit project' }).click()
+  await page.goto(`/projects/${a}/edit`)
   await page.getByRole('button', { name: /^Delete / }).click()
   await expect(page.getByRole('alertdialog')).toBeVisible()
 
   // The question is modal, so the page under it cannot be clicked; Back still leaves it.
   await page.goBack()
-  await expect(page).toHaveURL(`/projects/${b}`)
-  await expect(header(page)).toContainText('Beta')
+  await expect(page).toHaveURL(`/projects/${b}/edit`)
+  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Beta')
   await expect(page.getByRole('alertdialog')).toHaveCount(0)
 })
 
@@ -315,7 +314,7 @@ test('the delete question still asks when counting what goes with the project fa
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Alpha')
-  await page.goto(`/projects/${pid}`)
+  await page.goto(`/projects/${pid}/edit`)
   await page.route(`**/api/v1/tasks?projectId=${pid}`, (r) => r.fulfill({ status: 500 }))
   await page.getByRole('button', { name: /^Delete / }).click()
   const ask = page.getByRole('alertdialog')

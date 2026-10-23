@@ -97,7 +97,7 @@ test('on a short page, Delete project sits at the bottom of the screen', async (
   await page.setViewportSize({ width: 1280, height: 900 })
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Job hunt')
-  await page.goto(`/projects/${pid}`)
+  await page.goto(`/projects/${pid}/edit`)
   const zone = page.locator('main [data-stop-zone]')
   await expect(zone.getByRole('button', { name: /^Delete / })).toBeVisible()
 
