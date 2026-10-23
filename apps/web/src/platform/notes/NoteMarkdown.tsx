@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
-import Markdown, { type Components } from 'react-markdown'
+import { lazy, Suspense, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import Markdown, { defaultUrlTransform, type Components } from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import type { PluggableList } from 'unified'
 import { MERMAID_LANG, noteFeatures } from './features'
+import { MentionContext, mentionOf } from './mention'
 import { noteSchema } from './schema'
 import './notes.css'
 
@@ -18,6 +19,25 @@ const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
 /** `rehype-sanitize` always runs first, before KaTeX and highlight.js. */
 const BASE_REHYPE: PluggableList = [[rehypeSanitize, noteSchema]]
 const REMARK: PluggableList = [remarkGfm, remarkMath]
+
+/** The library's own URL check, letting a mention's address through to `NoteLink` (FR-042). */
+const keepMentions = (url: string) => (mentionOf(url) ? url : defaultUrlTransform(url))
+
+/** A link in a note: a mention drawn as the reader draws them, else a way out of the app. */
+function NoteLink({ href, children }: { href: string | undefined; children: ReactNode }) {
+  const draw = useContext(MentionContext)
+  const mention = mentionOf(href)
+  if (mention) {
+    const words = typeof children === 'string' ? children : String(children ?? '')
+    // Without a reader to draw it, the words alone: its address goes nowhere outside the app.
+    return draw ? draw({ ...mention, words }) : <span>{children}</span>
+  }
+  return (
+    <a href={href} target="_blank" rel="noreferrer noopener">
+      {children}
+    </a>
+  )
+}
 
 const components: Components = {
   /**
@@ -68,13 +88,12 @@ const components: Components = {
       </span>
     )
   },
-  /** A link in a note leaves the app, so it opens in a new tab with no referrer. */
+  /**
+   * A mention (FR-042) is drawn by whoever reads the note, a chip in the app; any other link
+   * leaves the app, so it opens in a new tab with no referrer.
+   */
   a({ href, children }) {
-    return (
-      <a href={href} target="_blank" rel="noreferrer noopener">
-        {children}
-      </a>
-    )
+    return <NoteLink href={href}>{children}</NoteLink>
   },
   /** A wide table scrolls itself, so the pane never scrolls sideways. */
   table({ children }) {
@@ -135,7 +154,12 @@ export default function NoteMarkdown({ source }: { source: string }): ReactNode 
 
   return (
     <div data-note-md className="max-w-full">
-      <Markdown remarkPlugins={REMARK} rehypePlugins={rehypePlugins} components={components}>
+      <Markdown
+        remarkPlugins={REMARK}
+        rehypePlugins={rehypePlugins}
+        components={components}
+        urlTransform={keepMentions}
+      >
         {source}
       </Markdown>
     </div>

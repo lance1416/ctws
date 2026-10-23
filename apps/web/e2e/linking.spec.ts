@@ -199,6 +199,11 @@ test('a task whose notes mention someone shows them by name, never the mentionâ€
   await expect(linked).not.toContainText('ctws://')
   // A mention goes with its sentence: no Ã— to unlink it here.
   await expect(linked.getByRole('button', { name: /^Unlink/ })).toHaveCount(0)
+  // In the notes, the mention is the person's chip, not a link (I-03); it opens them beside.
+  const chip = page.getByRole('dialog', { name: 'Task details' }).locator('[data-mention="person"]')
+  await expect(chip).toHaveText('Ying Chen')
+  await chip.click()
+  await expect(page).toHaveURL(new RegExp(`inspect=person(%3A|:)${person.id as string}`))
 
   // The person's side says the sentence as it reads.
   await page.goto(`/people/${person.id as string}`)

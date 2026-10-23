@@ -15,6 +15,8 @@ import { LeaveGuardContext, type LeaveGuard } from '../../platform/ui/leaveGuard
 import { placeOf } from './places'
 import { useRemembered } from './remembered'
 import { Shortcuts } from '../shortcuts/Shortcuts'
+import { MentionChip } from '../links/MentionChip'
+import { MentionContext, type Mention } from '../../platform/notes/mention'
 import { Sidebar } from './Sidebar'
 import { SubjectProvider, useSubject } from './subject'
 import { TopBar } from './TopBar'
@@ -110,54 +112,59 @@ function Frame({
 
   return (
     <NewContext.Provider value={openNew}>
-      <div className="flex h-dvh flex-col">
-        <div className="contents max-lg:hidden">
-          <TopBar
-            email={email}
-            onSearch={() => setSearching(true)}
-            onHelp={() => setHelp(true)}
-            onLogout={onLogout}
-          />
-        </div>
-        <div className="flex min-h-0 flex-1">
+      {/* Every note in the app draws its mentions as chips that open the thing (FR-042). */}
+      <MentionContext.Provider value={drawMention}>
+        <div className="flex h-dvh flex-col">
           <div className="contents max-lg:hidden">
-            <IconBar expanded={barExpanded} setExpanded={setBarExpanded} />
-            {hasSidebar && sidebarOpen && <Sidebar place={place} />}
+            <TopBar
+              email={email}
+              onSearch={() => setSearching(true)}
+              onHelp={() => setHelp(true)}
+              onLogout={onLogout}
+            />
           </div>
-          <div className="relative flex min-w-0 flex-1">
-            {/* An item open as a column (`DetailPane`, from 1280) takes its width from the main
+          <div className="flex min-h-0 flex-1">
+            <div className="contents max-lg:hidden">
+              <IconBar expanded={barExpanded} setExpanded={setBarExpanded} />
+              {hasSidebar && sidebarOpen && <Sidebar place={place} />}
+            </div>
+            <div className="relative flex min-w-0 flex-1">
+              {/* An item open as a column (`DetailPane`, from 1280) takes its width from the main
                 area's right, so it sits beside the page rather than over it: 22rem, its 12px
                 inset, and a 12px gap. */}
-            <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20 has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
-              <LeaveGuardContext.Provider value={leaveGuard}>
-                <Outlet />
-              </LeaveGuardContext.Provider>
-            </main>
-            <Inspector />
-            <BackOnline />
+              <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20 has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
+                <LeaveGuardContext.Provider value={leaveGuard}>
+                  <Outlet />
+                </LeaveGuardContext.Provider>
+              </main>
+              <Inspector />
+              <BackOnline />
+            </div>
           </div>
-        </div>
-        <Shortcuts
-          search={searching}
-          setSearch={setSearching}
-          help={help}
-          setHelp={setHelp}
-          onSidebar={() => setSidebarOpen(!sidebarOpen)}
-          onLink={() => {
-            if (subject) setLinking(true)
-          }}
-          onNew={openNew}
-        />
-        {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
-        {creating?.creator.Dialog && (
-          <creating.creator.Dialog
-            projectId={projectId}
-            opens={creating.opens}
-            onClose={() => setCreating(null)}
+          <Shortcuts
+            search={searching}
+            setSearch={setSearching}
+            help={help}
+            setHelp={setHelp}
+            onSidebar={() => setSidebarOpen(!sidebarOpen)}
+            onLink={() => {
+              if (subject) setLinking(true)
+            }}
+            onNew={openNew}
           />
-        )}
-        <BottomBar onSearch={() => setSearching(true)} />
-      </div>
+          {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
+          {creating?.creator.Dialog && (
+            <creating.creator.Dialog
+              projectId={projectId}
+              opens={creating.opens}
+              onClose={() => setCreating(null)}
+            />
+          )}
+          <BottomBar onSearch={() => setSearching(true)} />
+        </div>
+      </MentionContext.Provider>
     </NewContext.Provider>
   )
 }
+
+const drawMention = (mention: Mention) => <MentionChip {...mention} />

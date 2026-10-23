@@ -64,7 +64,13 @@ for (const name of ['Job hunt', 'CTWS', 'Moving flat']) {
   projects[name] = (await post('/projects', { name })).id
 }
 const { stages } = await put(`/projects/${projects['Job hunt']}/stages`, {
-  stages: [{ name: 'Applied' }, { name: 'Phone screen' }, { name: 'Onsite' }, { name: 'Rejected' }],
+  // Rejected folded by default, as the acceptance data has it: a strip at the board's edge.
+  stages: [
+    { name: 'Applied' },
+    { name: 'Phone screen' },
+    { name: 'Onsite' },
+    { name: 'Rejected', collapsed: true },
+  ],
 })
 const stage = Object.fromEntries(stages.map((s) => [s.name, s.id]))
 

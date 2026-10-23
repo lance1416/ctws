@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import rehypeSanitize from 'rehype-sanitize'
 import { describe, expect, it } from 'vitest'
+import { MentionContext } from './mention'
 import NoteMarkdown from './NoteMarkdown'
 import { noteSchema } from './schema'
 
@@ -87,6 +88,27 @@ describe("a note's own Markdown", () => {
     const html = render('[文档](https://example.com/a)')
     expect(html).toContain('href="https://example.com/a"')
     expect(html).toContain('rel="noreferrer noopener"')
+  })
+
+  // FR-042, I-03: a mention is the reader's to draw, and never a link that leaves.
+  const MIRA = '0199f1a2-0000-7000-8000-000000000001'
+  const mention = `Ask [@Mira Chen](ctws://person/${MIRA}) which questions came up.`
+
+  it('draws a mention as the reader draws it, with the thing it names', () => {
+    const html = renderToStaticMarkup(
+      <MentionContext.Provider value={(m) => <b data-chip={`${m.type}:${m.id}`}>{m.words}</b>}>
+        <NoteMarkdown source={mention} />
+      </MentionContext.Provider>,
+    )
+    expect(html).toContain(`<b data-chip="person:${MIRA}">@Mira Chen</b>`)
+    expect(html).not.toContain('<a')
+  })
+
+  it('leaves a mention as its words where nothing draws it, with no address to follow', () => {
+    const html = render(mention)
+    expect(html).toContain('@Mira Chen')
+    expect(html).not.toContain('ctws://')
+    expect(html).not.toContain('<a')
   })
 })
 
