@@ -60,9 +60,11 @@ test('the pane says the day back in the app’s own words, not the field’s for
   await page.getByRole('button', { name: 'Plan for tomorrow', exact: true }).click()
   // A native date input prints its format in the BROWSER'S UI language, which no page can set;
   // the echo is the app saying which day it understood, and it is right whatever the field prints.
-  await expect(dialog.getByText('Tomorrow', { exact: true })).toBeVisible()
+  // The echo is the line under the field; the named days are buttons that say "Tomorrow" too.
+  const echo = (said: string) => dialog.getByRole('paragraph').filter({ hasText: said })
+  await expect(echo('Tomorrow')).toBeVisible()
   await page.getByRole('button', { name: 'Plan for next week', exact: true }).click()
-  await expect(dialog.getByText('Oct 26', { exact: true })).toBeVisible()
+  await expect(echo('Oct 26')).toBeVisible()
   // The wire format never reaches the screen as a reading.
   await expect(dialog.getByText(/^\d{4}-\d{2}-\d{2}$/)).toHaveCount(0)
 })

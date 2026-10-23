@@ -58,17 +58,18 @@ test('the Workbench is the ground, and its cards are tiles on it', async ({ page
   })
 })
 
-test('the sheet floats 12px in from the window and under the header, with a 10px radius', async ({
+test('beside the page, the inspector is its right edge from under the header to the floor', async ({
   page,
 }) => {
+  // Artboard 8 (I-08): a column, not a card floating 12px in with rounded corners.
   const pane = await openTask(page, 'light')
   const box = (await pane.boundingBox())!
   const header = (await page.getByRole('banner').boundingBox())!
-  expect(Math.round(1440 - (box.x + box.width))).toBe(12)
-  expect(Math.round(box.y - (header.y + header.height))).toBe(12)
-  expect(Math.round(900 - (box.y + box.height))).toBe(12)
+  expect(Math.round(1440 - (box.x + box.width))).toBe(0)
+  expect(Math.round(box.y - (header.y + header.height))).toBe(0)
+  expect(Math.round(900 - (box.y + box.height))).toBe(0)
   const s = await style(pane)
-  expect(s.radius).toBe('10px')
+  expect(s.radius).toBe('0px')
   expect(s.border).toBe('0px')
 })
 
