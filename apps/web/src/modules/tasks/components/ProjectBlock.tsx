@@ -75,7 +75,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
         <div data-new-root className={`${TREE_ROW} pb-1`}>
           <div
             style={{ paddingLeft: markStart(1) }}
-            className="col-span-4 flex min-w-0 flex-col justify-center"
+            className="col-span-full flex min-w-0 flex-col justify-center"
           >
             <label className="flex min-h-9 items-center gap-1.5 text-muted">
               <NewIcon size={16} aria-hidden="true" className="shrink-0" />

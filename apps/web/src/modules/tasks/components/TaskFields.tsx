@@ -11,10 +11,12 @@ import { DeadlineMark, PlanMark } from './TaskRowParts'
 // Fields the pane's form and the New task dialog both draw; each form keeps its own values.
 
 /** The named days the date decisions offer, the same three the row's triage control offers. */
-const namedDays = (today: string): readonly (readonly [word: string, day: string])[] => [
-  ['Today', today],
-  ['Tomorrow', addDays(today, 1)],
-  ['Next week', nextMonday(today)],
+const namedDays = (
+  today: string,
+): readonly (readonly [shown: string, said: string, day: string])[] => [
+  ['Today', 'today', today],
+  ['Tomorrow', 'tomorrow', addDays(today, 1)],
+  ['Mon', 'next week', nextMonday(today)],
 ]
 
 /**
@@ -120,19 +122,22 @@ export function DateDecisions({
         <span className={headingClass}>{heading}</span>
       )}
       <div className={`flex flex-wrap gap-1 ${bare ? '' : 'mt-1.5'}`}>
-        {namedDays(today).map(([word, day]) => (
+        {/* Shown short, as Today's overdue row says them (DES-001 v1.20); named in full, so a
+            form with two dates has two different Todays. */}
+        {namedDays(today).map(([shown, said, day]) => (
           <button
-            key={word}
+            key={shown}
             type="button"
+            aria-label={`${d.verb} ${said}`}
             aria-pressed={pressed?.(day)}
             onClick={() => onDay(day)}
             className={decision}
           >
-            {d.verb} {word.toLowerCase()}
+            {shown}
           </button>
         ))}
-        <button type="button" onClick={onClear} className={decision}>
-          {d.clear}
+        <button type="button" aria-label={d.clear} onClick={onClear} className={decision}>
+          Clear
         </button>
       </div>
       {exact}

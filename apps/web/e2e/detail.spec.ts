@@ -11,6 +11,7 @@ import {
   setDetailStatus,
   submitCreate,
   navLink,
+  setDue,
 } from './helpers'
 import { addDaysYmd, dayOffset } from './days'
 
@@ -98,14 +99,14 @@ test('title and due time persist across a reload', async ({ page }) => {
   const url = page.url()
 
   await page.getByLabel('Title').fill('写方案 v2')
-  await page.getByLabel('Due', { exact: true }).fill(`${DUE}T14:30`)
+  await setDue(page, DUE, '14:30')
   await save(page)
 
   await page.goto(url)
   await reopen(page, '写方案 v2')
   await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
   // Local wall-clock in, local wall-clock out: the instant round trip must not shift it.
-  await expect(page.getByLabel('Due', { exact: true })).toHaveValue(`${DUE}T14:30`)
+  await expect(page.getByLabel('Due time')).toHaveValue('14:30')
 })
 
 test('moves a task to another project', async ({ page }) => {
@@ -156,7 +157,7 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
   await seedOneTask(page)
 
   // Give the task a deadline and a plan first, so there is something the save COULD wrongly resend.
-  await page.getByLabel('Due', { exact: true }).fill(`${DUE}T09:15`)
+  await setDue(page, DUE, '09:15')
   await page.getByLabel('Plan', { exact: true }).fill(PLAN)
   expect((await save(page)).request().postDataJSON()).toEqual({
     dueAt: new Date(`${DUE}T09:15`).toISOString(),
@@ -255,13 +256,13 @@ test.describe('due time in a non-UTC zone', () => {
   test('the due time is sent as the instant the local wall-clock time means', async ({ page }) => {
     await registerFreshUser(page)
     await seedOneTask(page)
-    await page.getByLabel('Due', { exact: true }).fill(`${DUE}T02:30`)
+    await setDue(page, DUE, '02:30')
     const res = await save(page)
     expect(res.request().postDataJSON()).toEqual({ dueAt: `${addDaysYmd(DUE, -1)}T21:00:00.000Z` })
 
     await page.reload()
     await reopen(page, '写方案')
-    await expect(page.getByLabel('Due', { exact: true })).toHaveValue(`${DUE}T02:30`)
+    await expect(page.getByLabel('Due time')).toHaveValue('02:30')
   })
 })
 

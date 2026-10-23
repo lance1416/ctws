@@ -601,7 +601,7 @@ export async function addDependency(
     await lockTaskTree(tx, ctx.workspaceId)
     // A foreign id reads as not found, never as a refusal that confirms it exists.
     await getTask(tx, ctx.workspaceId, blockedId)
-    await getTask(tx, ctx.workspaceId, blockerId)
+    const blocker = await getTask(tx, ctx.workspaceId, blockerId)
     if (await wouldCycle(tx, ctx.workspaceId, { blockedId, blockerId }))
       throw new DependencyCycleError()
 
@@ -611,7 +611,11 @@ export async function addDependency(
       .onConflictDoNothing()
       .returning({ blockerId: taskDependencies.blockerId })
     if (added.length === 0) return
-    await taskLog(tx, ctx).append(blockedId, 'dependency_added', { blockerId })
+    // Its title as it was, so the timeline names it (FR-045) without reading it again.
+    await taskLog(tx, ctx).append(blockedId, 'dependency_added', {
+      blockerId,
+      title: blocker.title,
+    })
   })
 }
 
@@ -637,6 +641,14 @@ export async function removeDependency(
       )
       .returning({ blockerId: taskDependencies.blockerId })
     if (removed.length === 0) return
-    await taskLog(tx, ctx).append(blockedId, 'dependency_removed', { blockerId })
+    // Named as it is now, if it is still there to be named.
+    const [blocker] = await tx
+      .select({ title: tasks.title })
+      .from(tasks)
+      .where(within(scoped(tasks, ctx.workspaceId), eq(tasks.id, blockerId)))
+    await taskLog(tx, ctx).append(blockedId, 'dependency_removed', {
+      blockerId,
+      ...(blocker ? { title: blocker.title } : {}),
+    })
   })
 }

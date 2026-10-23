@@ -185,7 +185,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
       return (
         // Not a row of the list: a way to show some. `none`, so it is not counted among them.
         <li key={`done:${group}`} role="none" data-done-group={group} className={TREE_ROW}>
-          <div className="col-span-4" style={{ paddingLeft: titleStart(depth) }}>
+          <div className="col-span-full" style={{ paddingLeft: titleStart(depth) }}>
             <button
               type="button"
               onClick={() => shown.toggle(group)}
@@ -249,7 +249,10 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
           {error}
         </p>
       )}
-      <div className="mt-2 rounded-block border border-line bg-panel">
+      <div
+        // The inbox's rows carry Move to… too: their controls' column is wider (FR-059).
+        className={`mt-2 rounded-block border border-line bg-panel ${inInbox ? '[--row-acts:148px]' : ''}`}
+      >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
             <div

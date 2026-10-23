@@ -26,7 +26,7 @@ export function NewTaskInput({ depth, onCommit, onCancel, error }: Props) {
       {/* A column, so the failure message sits under the box it is about. */}
       <div
         style={{ paddingLeft: titleStart(depth) }}
-        className="col-span-4 flex min-w-0 flex-col justify-center"
+        className="col-span-full flex min-w-0 flex-col justify-center"
       >
         <div className="flex min-h-9 items-center">
           <input

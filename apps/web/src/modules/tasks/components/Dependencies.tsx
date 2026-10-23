@@ -1,10 +1,16 @@
-import { type DependencyRef, type ProjectId, type TaskId } from '@ctws/contracts'
+import {
+  idFrom,
+  taskId as taskIdSchema,
+  type DependencyRef,
+  type ProjectId,
+  type TaskId,
+} from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ApiError } from '../../../platform/http/api'
-import { field } from '../../../platform/ui/formStyles'
 import { CloseIcon, LockIcon } from '../../../platform/ui/icons'
-import { addDependency, dependenciesQuery, removeDependency, taskSearchQuery } from '../api'
+import { PickThing } from '../../../shell/search'
+import { addDependency, dependenciesQuery, removeDependency } from '../api'
 import { Field } from './InspectorField'
 
 // Both directions, finished blockers too, the only place to remove such an edge. Adding goes
@@ -52,29 +58,26 @@ function Row({
  */
 export function DependencyRows({
   taskId,
+  title,
   projectId,
   editing,
 }: {
   taskId: TaskId
+  /** The task's own, for the picker's head. */
+  title: string
   projectId: ProjectId
   editing: boolean
 }) {
   const [adding, setAdding] = useState(false)
-  const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   const lists = useQuery(dependenciesQuery(taskId))
-  const hits = useQuery({
-    ...taskSearchQuery(query),
-    enabled: adding && query.trim().length > 0,
-  })
 
   const awaits = [dependenciesQuery(taskId).queryKey]
   const add = useMutation({
     mutationFn: (blockerId: TaskId) => addDependency(taskId, blockerId),
     meta: { changes: ['task'], awaits, ownsError: true },
     onSuccess: () => {
-      setQuery('')
       setAdding(false)
       setError(null)
     },
@@ -95,8 +98,6 @@ export function DependencyRows({
 
   const blockedBy = lists.data?.blockedBy ?? []
   const blocks = lists.data?.blocks ?? []
-  // Never offer this task itself: the server refuses that edge outright.
-  const candidates = (hits.data ?? []).filter((t) => t.id !== taskId).slice(0, 6)
   const lock = <LockIcon size={16} aria-hidden="true" />
 
   return (
@@ -116,50 +117,34 @@ export function DependencyRows({
                 ))}
               </ul>
             )}
-            {editing &&
-              (adding ? (
-                <div className="py-1">
-                  <input
-                    autoFocus
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        e.stopPropagation()
-                        setAdding(false)
-                      }
-                    }}
-                    placeholder="Search for a task to wait on"
-                    aria-label="Search for a task to wait on"
-                    className={`${field} text-ui`}
-                  />
-                  <ul data-dep-candidates className="mt-1 flex flex-col">
-                    {candidates.map((t) => (
-                      <li key={t.id}>
-                        <button
-                          type="button"
-                          onClick={() => add.mutate(t.id)}
-                          className="flex min-h-8 w-full items-center gap-2 rounded-control px-2 text-left text-ui hover:bg-hover"
-                        >
-                          <span className="truncate text-ink">{t.title}</span>
-                          <span className="ml-auto shrink-0 text-meta text-subtle">
-                            {t.projectName}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  className="-mx-1.5 h-8 self-start rounded-control px-1.5 text-ui text-muted hover:bg-hover hover:text-ink"
-                >
-                  Add
-                </button>
-              ))}
-            {error && (
+            {editing && (
+              <button
+                type="button"
+                onClick={() => {
+                  add.reset()
+                  setError(null)
+                  setAdding(true)
+                }}
+                className="-mx-1.5 h-8 self-start rounded-control px-1.5 text-ui text-muted hover:bg-hover hover:text-ink"
+              >
+                Add
+              </button>
+            )}
+            {/* The search box with its keys (FR-024), tasks only, never this one: the server
+                refuses a task waiting on itself outright, nor what it already waits on. */}
+            {adding && (
+              <PickThing
+                of={{ type: 'task', id: taskId }}
+                title={`“${title}” waits on`}
+                only="task"
+                leaveOut={[taskId, ...blockedBy.map((t) => t.id)]}
+                busy={add.isPending}
+                error={error}
+                onPick={(t) => add.mutate(idFrom(taskIdSchema, t.id))}
+                onClose={() => setAdding(false)}
+              />
+            )}
+            {error && !adding && (
               <p role="alert" className="text-ui text-stop-t">
                 {error}
               </p>

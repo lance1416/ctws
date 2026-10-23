@@ -2,6 +2,7 @@ import type { ProjectId, StageId, StageResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { boxed } from '../../../platform/ui/formStyles'
+import { ExpandIcon } from '../../../platform/ui/icons'
 import { putStages } from '../../../shell/projects'
 import { projectTasksQuery } from '../api'
 
@@ -71,22 +72,29 @@ export function StagePicker({
   }
   return (
     <span className="flex min-w-0 flex-1 flex-col gap-1 py-1">
-      <input
-        list={list}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => void commit()}
-        onKeyDown={(e) => {
-          // Enter takes the name here; Ctrl Enter is still the form's Save.
-          if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return
-          e.preventDefault()
-          void commit()
-        }}
-        aria-label="Stage"
-        aria-invalid={add.isError ? true : undefined}
-        placeholder="No stage"
-        className={`w-full max-w-60 ${boxed}`}
-      />
+      <span className="relative flex max-w-60">
+        <input
+          list={list}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={() => void commit()}
+          onKeyDown={(e) => {
+            // Enter takes the name here; Ctrl Enter is still the form's Save.
+            if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return
+            e.preventDefault()
+            void commit()
+          }}
+          aria-label="Stage"
+          aria-invalid={add.isError ? true : undefined}
+          placeholder="No stage"
+          className={`w-full pr-7 ${boxed}`}
+        />
+        <ExpandIcon
+          size={14}
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-muted"
+        />
+      </span>
       <datalist id={list}>
         {stages.map((s) => (
           <option key={s.id} value={s.name} />

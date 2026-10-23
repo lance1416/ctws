@@ -29,7 +29,15 @@ describe('describeTaskChange', () => {
   it('says a rename by what it was, a stage by its name, and skips what it does not know', () => {
     expect(say('created', { from: null, to: { title: 'x' } })).toBe('Created')
     expect(say('title_changed', { from: 'Old', to: 'New' })).toBe('Renamed from “Old”')
-    expect(say('stage_changed', { from: null, to: 'Onsite' })).toBe('Stage Onsite')
+    expect(say('stage_changed', { from: null, to: 'Onsite' })).toBe('Stage set to Onsite')
+    // What it waits on, by the title kept with the change; an older change says less.
+    expect(say('dependency_added', { blockerId: 'x', title: 'Update the CV' })).toBe(
+      'Waiting on Update the CV',
+    )
+    expect(say('dependency_added', { blockerId: 'x' })).toBe('Waiting on another task')
+    expect(say('dependency_removed', { blockerId: 'x', title: 'Update the CV' })).toBe(
+      'No longer waiting on Update the CV',
+    )
     expect(say('something_new', {})).toBeUndefined()
   })
 })

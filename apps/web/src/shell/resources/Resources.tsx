@@ -13,10 +13,15 @@ export function Resources({ owner }: { owner: ResourceOwner }) {
   const rows = all.data ?? []
   return (
     <section aria-labelledby="resources-head" className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
         <h3 id="resources-head" className="text-ui font-medium text-ink">
           Resources
         </h3>
+        {/* None, said after the head as a block says it (DES-001 "Empty values"). */}
+        {all.isSuccess && rows.length === 0 && (
+          <span className="text-meta text-subtle">None yet</span>
+        )}
+        <span aria-hidden="true" className="flex-1" />
         <ResourceAdd
           owner={owner}
           verb="Add"

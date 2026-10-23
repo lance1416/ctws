@@ -141,30 +141,40 @@ export function TaskReading({
             />
           )}
         </Field>
-        {!counts && (
+        {/* A field without a value is not a line (DES-001 "Empty values", I-02). */}
+        {!counts && task.scheduledOn && (
           <Field icon={<PLACE_ICON.calendar size={16} aria-hidden="true" />} name="Planned">
             <span className="text-ui text-ink tabular-nums">
-              {task.scheduledOn ? dayPhrase(task.scheduledOn, today) : 'Not set'}
+              {dayPhrase(task.scheduledOn, today)}
             </span>
           </Field>
         )}
-        <Field icon={<FlagIcon size={16} aria-hidden="true" />} name="Due">
-          <span
-            data-detail-due={due?.tone ?? 'none'}
-            className={`justify-self-start text-ui tabular-nums ${
-              due && (due.tone === 'soon' || due.tone === 'late') ? DUE_CHIP[due.tone] : 'text-ink'
-            }`}
-          >
-            {dueReading ?? 'Not set'}
-          </span>
-        </Field>
+        {dueReading && (
+          <Field icon={<FlagIcon size={16} aria-hidden="true" />} name="Due">
+            <span
+              data-detail-due={due?.tone ?? 'none'}
+              className={`justify-self-start text-ui tabular-nums ${
+                due && (due.tone === 'soon' || due.tone === 'late')
+                  ? DUE_CHIP[due.tone]
+                  : 'text-ink'
+              }`}
+            >
+              {dueReading}
+            </span>
+          </Field>
+        )}
         {stage && (
           <Field icon={<StageDot />} name="Stage">
             <StageLabel name={stage.name} quiet={stage.collapsed} />
           </Field>
         )}
         {/* Beside the fields, each only when there is one (P-07); changed in the edit. */}
-        <DependencyRows taskId={task.id} projectId={task.projectId} editing={false} />
+        <DependencyRows
+          taskId={task.id}
+          title={task.title}
+          projectId={task.projectId}
+          editing={false}
+        />
       </dl>
       {setStatus.isError && (
         <p role="alert" className="text-ui text-stop-t">
@@ -172,17 +182,16 @@ export function TaskReading({
         </p>
       )}
 
-      <div>
-        <span className={label}>Notes</span>
-        {/* At the 68ch reading measure; `NoteBody` shows the plain text until Markdown loads. */}
-        {task.notes ? (
+      {/* Notes only when there are some: an empty section is no news (I-02). */}
+      {task.notes && (
+        <div>
+          <span className={label}>Notes</span>
+          {/* At the 68ch reading measure; `NoteBody` shows the plain text until Markdown loads. */}
           <div data-detail-notes className="mt-1 max-w-reading text-ink">
             <NoteBody source={task.notes} />
           </div>
-        ) : (
-          <p className="mt-1 text-ui text-subtle">No notes yet</p>
-        )}
-      </div>
+        </div>
+      )}
 
       <Resources owner={{ type: 'task', id: task.id }} />
 

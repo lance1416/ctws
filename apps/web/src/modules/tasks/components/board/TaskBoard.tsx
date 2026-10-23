@@ -33,6 +33,7 @@ import {
   boardColumns,
   GROUP_LIMIT,
   shownColumn,
+  type BoardColumn as BoardColumnData,
   SIDE_STATUSES,
 } from '../../logic/board/boardColumns'
 import { cardBeside, statusBeside, type ShownColumn } from '../../logic/board/boardKeys'
@@ -49,6 +50,17 @@ import { useBoardFolds } from './useBoardFolds'
 const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const
 const isStatus = (id: UniqueIdentifier | undefined): id is TaskStatus =>
   BOARD_ORDER.some((s) => s === id)
+
+/** The cards made during this visit first among the project's own, newest first (BUG-040). */
+function freshFirst(column: BoardColumnData, fresh: readonly TaskId[]): BoardColumnData {
+  if (fresh.length === 0) return column
+  const at = (id: TaskId) => {
+    const i = fresh.indexOf(id)
+    return i < 0 ? Number.MAX_SAFE_INTEGER : i
+  }
+  const loose = [...column.loose].sort((a, b) => at(a.task.id) - at(b.task.id))
+  return { ...column, loose }
+}
 
 /** The tasks as they will be once one has moved: done just now, if that is where it went. */
 const landed = (tasks: readonly TaskResponse[], id: TaskId, to: TaskStatus) =>
@@ -135,11 +147,41 @@ function Board({
     [all, drag, today, timeZone, allDone],
   )
   const folds = useBoardFolds(projectId, columns)
+  // A card that arrives while the board is open stays in sight (BUG-040): one of the project's own
+  // (To do's box makes those) goes to the top of its column for this visit, newest first; one
+  // under a parent opens its group, and the whole run when it lands past the fifth. What was
+  // there on the first draw is not new.
+  const seen = useRef<Set<TaskId> | null>(null)
+  const [fresh, setFresh] = useState<readonly TaskId[]>([])
+  useEffect(() => {
+    if (seen.current === null) {
+      seen.current = new Set(all.map((t) => t.id))
+      return
+    }
+    for (const t of all) {
+      if (seen.current.has(t.id)) continue
+      seen.current.add(t.id)
+      const column = columns.get(t.status)
+      const run = column
+        ? [{ root: null, cards: column.loose }, ...column.groups].find((r) =>
+            r.cards.some((c) => c.task.id === t.id),
+          )
+        : undefined
+      if (!run) continue
+      if (run.root === null) {
+        setFresh((now) => [t.id, ...now])
+        continue
+      }
+      const at = run.cards.findIndex((c) => c.task.id === t.id)
+      folds.reveal(t.status, run.root.id, at >= GROUP_LIMIT)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- about the tasks arriving, not the folds' handlers.
+  }, [all])
   const opened = (status: TaskStatus) => !SIDE_STATUSES.includes(status) || sides.has(status)
   const shown = new Map(
     BOARD_ORDER.filter(opened).map((status) => [
       status,
-      shownColumn(columns.get(status)!, {
+      shownColumn(freshFirst(columns.get(status)!, fresh), {
         isOpen: (root) => folds.isOpen(status, root),
         isAll: (root) => folds.isAll(status, root),
         landing: drag?.id ?? null,
@@ -158,6 +200,11 @@ function Board({
 
   const { openId, setOpenId } = useTaskParam()
   const cards = useRowRefs()
+  // The open card's column comes into sight, however far along the board it is.
+  useEffect(() => {
+    if (openId) cards.get(openId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- about the card opening.
+  }, [openId])
   const pane = useRowPane({
     rows: cards,
     tasks: all,
@@ -272,7 +319,13 @@ function Board({
           if (task && isStatus(over?.id)) move(task, over.id, { keys: false })
         }}
       >
-        <div data-board onKeyDown={onKeyDown} className="flex min-w-0 gap-3 max-md:flex-col">
+        {/* At least 240 a column (DES-001 v1.21): what does not fit scrolls sideways in here,
+            never the page. */}
+        <div
+          data-board
+          onKeyDown={onKeyDown}
+          className="flex min-w-0 gap-3 max-md:flex-col md:overflow-x-auto md:pb-1"
+        >
           {BOARD_ORDER.map((status) => {
             const column = columns.get(status)!
             const side = SIDE_STATUSES.includes(status)

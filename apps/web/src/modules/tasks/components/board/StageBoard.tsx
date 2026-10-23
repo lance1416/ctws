@@ -19,7 +19,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { useMutation } from '@tanstack/react-query'
-import { useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ymd } from '../../../../platform/time/dates'
 import { useNow } from '../../../../platform/time/useNow'
 import { ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
@@ -83,6 +83,11 @@ export function StageBoard({
 
   const { openId, setOpenId } = useTaskParam()
   const cards = useRowRefs()
+  // The open card's column comes into sight, however far along the board it is.
+  useEffect(() => {
+    if (openId) cards.get(openId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- about the card opening.
+  }, [openId])
   const pane = useRowPane({
     rows: cards,
     tasks: all,
@@ -169,7 +174,8 @@ export function StageBoard({
         <div
           data-board="stage"
           onKeyDown={onKeyDown}
-          className="flex min-w-0 gap-3 max-md:flex-col md:h-[calc(100dvh-16rem)] md:min-h-96"
+          // At least 240 a column (DES-001 v1.21), scrolling sideways in here, not the page.
+          className="flex min-w-0 gap-3 max-md:flex-col md:h-[calc(100dvh-16rem)] md:min-h-96 md:overflow-x-auto md:pb-1"
         >
           {columns.map(({ stage, cards: list }) =>
             opened(stage) ? (
@@ -264,7 +270,7 @@ function StageColumnView({
       data-stage-column={stage.id}
       // A stage with nothing in it gives its width to the ones that have (FR-058).
       className={`flex min-w-0 flex-col rounded-block border border-line bg-chrome ${
-        count === 0 && !adding ? 'md:flex-[0_0_180px]' : 'flex-1 basis-0'
+        count === 0 && !adding ? 'md:flex-[0_0_180px]' : 'flex-1 basis-0 md:min-w-60'
       } ${isOver ? OVER : ''}`}
     >
       <h3 className="flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 text-ui">

@@ -14,12 +14,12 @@ import {
 import { useNow } from '../../../platform/time/useNow'
 import { Button } from '../../../platform/ui/Button'
 import { DetailHead } from '../../../platform/ui/DetailPane'
-import { area, label } from '../../../platform/ui/formStyles'
+import { area, boxed, label } from '../../../platform/ui/formStyles'
 import { FlagIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
 import type { UnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { useTimeZone } from '../../../shell/auth'
-import { ProjectChip, useEveryProject } from '../../../shell/projects'
+import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { instantPhrase, moveDueToDay } from '../logic/dueDates'
 import { STATUS_LABEL } from '../logic/status'
 import { DependencyRows } from './Dependencies'
@@ -30,10 +30,6 @@ import { StatusMark } from './StatusMark'
 import { DateDecisions, StatusRadios } from './TaskFields'
 import type { useTaskDetailForm } from './useTaskDetailForm'
 import { useTaskPlace } from './useTaskPlace'
-
-/** For days the named ones miss: quieter by size, not by a fainter edge, which says "control". */
-const exact =
-  'h-9 w-full max-w-[14rem] rounded-control border border-line-strong bg-panel px-2 text-ui text-ink'
 
 /**
  * THE TASK EDITED IN PLACE (FR-056): the inspector's own rows, each turned into its control --
@@ -70,6 +66,7 @@ export function TaskEditForm({
   const scheduledOn = watch('scheduledOn')
   const dueAt = watch('dueAt')
   const projectId = watch('projectId')
+  const movingTo = projects.data?.find((p) => p.id === projectId)
 
   // Edit is a request to type, so the title takes focus.
   const titleField = useRef<HTMLInputElement | null>(null)
@@ -89,13 +86,22 @@ export function TaskEditForm({
     setValue('dueAt', dueAt ? moveDueToDay(dueAt, day, timeZone) : dayEndIso(day, timeZone), dirty)
 
   return (
-    <form onSubmit={submit(onSaved)} className="flex flex-col gap-4">
+    <form
+      onSubmit={submit(onSaved)}
+      // Ctrl Enter saves from any field (FR-029); a plain Enter in the notes is a new line.
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.nativeEvent.isComposing) return
+        e.preventDefault()
+        if (!save.isPending && !stageBusy && title?.trim()) e.currentTarget.requestSubmit()
+      }}
+      className="flex flex-col gap-4"
+    >
       <div>
         <DetailHead
           kind={
             // Where it is read, the project it is in; here also what moves it.
             <span className="flex min-w-0 items-center gap-1.5">
-              <ProjectChip projectId={projectId} />
+              {movingTo && <ProjectSquare project={movingTo} />}
               <PickOne
                 label="Projects"
                 value={projectId}
@@ -213,23 +219,37 @@ export function TaskEditForm({
             onClear={() => setValue('dueAt', null, dirty)}
             htmlFor="detail-due"
             exact={
-              // The form holds the instant; the field shows wall-clock text in the account's zone.
-              <Controller
-                name="dueAt"
-                control={control}
-                render={({ field: due }) => (
-                  <input
-                    id="detail-due"
-                    type="datetime-local"
-                    name={due.name}
-                    ref={due.ref}
-                    onBlur={due.onBlur}
-                    value={toDayTimeInput(due.value ?? null, timeZone)}
-                    onChange={(e) => due.onChange(fromDayTimeInput(e.target.value, timeZone))}
-                    className={`${exact} mt-1.5`}
-                  />
-                )}
-              />
+              // The day typed or pointed at as everywhere (FR-034, I-01), its time after it; the
+              // form holds the instant, read and written on the account's clock.
+              <span className="mt-1.5 flex flex-wrap items-start gap-2">
+                <DayField
+                  id="detail-due"
+                  label="Due"
+                  value={dueAt ? ymd(new Date(dueAt), timeZone) : null}
+                  onChange={(day) => (day ? setDueDay(day) : setValue('dueAt', null, dirty))}
+                  today={today}
+                  className="max-w-60 min-w-0 flex-1"
+                />
+                <input
+                  type="time"
+                  aria-label="Due time"
+                  disabled={!dueAt}
+                  value={dueAt ? toDayTimeInput(dueAt, timeZone).slice(11) : ''}
+                  onChange={(e) => {
+                    if (!dueAt) return
+                    const day = ymd(new Date(dueAt), timeZone)
+                    // An emptied time is the end of the day, as a deadline set by day alone is.
+                    setValue(
+                      'dueAt',
+                      e.target.value
+                        ? fromDayTimeInput(`${day}T${e.target.value}`, timeZone)
+                        : dayEndIso(day, timeZone),
+                      dirty,
+                    )
+                  }}
+                  className={`${boxed} w-28 shrink-0 disabled:opacity-50`}
+                />
+              </span>
             }
             echo={dueAt ? instantPhrase(dueAt, today, timeZone) : null}
           />
@@ -247,7 +267,7 @@ export function TaskEditForm({
           </Field>
         )}
         {/* Written the moment each is named or taken away, not by Save. */}
-        <DependencyRows taskId={task.id} projectId={task.projectId} editing />
+        <DependencyRows taskId={task.id} title={task.title} projectId={task.projectId} editing />
       </dl>
 
       {/* `htmlFor`, not a wrapping label: React writes a textarea's value into its text, so a

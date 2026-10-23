@@ -268,6 +268,17 @@ describe('task dependencies', () => {
     // someone looks to ask why it sat still.
     expect(types).toContain('dependency_added')
     expect(types).toContain('dependency_removed')
+    // Named by its title, so the timeline says what it waited on (FR-045).
+    const payloads = (await eventsOf(ctx, b))
+      .filter((e) => e.type.startsWith('dependency_'))
+      .map((e) => e.payload)
+    expect(payloads).toEqual(
+      expect.arrayContaining([
+        { blockerId: a, title: 'A' },
+        { blockerId: a, title: 'A' },
+      ]),
+    )
+    expect(payloads).toHaveLength(2)
   })
 
   it('reports what is in the way on the project list too', async () => {

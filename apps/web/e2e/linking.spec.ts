@@ -157,7 +157,7 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
   await page.getByRole('listitem').filter({ hasText: '准备一面' }).first().click()
   const pane = page.getByRole('dialog', { name: 'Task details' })
   await expect(pane).toBeVisible()
-  await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
+  await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('None yet')
 
   await pane.getByRole('button', { name: 'Link something' }).click()
   await picker(page).getByRole('combobox', { name: 'Search' }).fill('Ying')

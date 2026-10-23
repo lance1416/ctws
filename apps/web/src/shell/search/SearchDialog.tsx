@@ -572,15 +572,23 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
           )}
         </div>
       ) : (
-        legends.length > 0 && (
-          <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
-            {legends.map(([k, does]) => (
-              <Legend key={`${k}:${does}`} keys={k}>
-                {does}
-              </Legend>
-            ))}
-          </div>
-        )
+        <>
+          {/* A pick that is the whole act says here why it did not take (a refused move). */}
+          {pick?.error && (
+            <p role="alert" className="border-t border-line px-3.5 py-2.5 text-ui text-stop-t">
+              {pick.error}
+            </p>
+          )}
+          {legends.length > 0 && (
+            <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
+              {legends.map(([k, does]) => (
+                <Legend key={`${k}:${does}`} keys={k}>
+                  {does}
+                </Legend>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </Modal>
   )

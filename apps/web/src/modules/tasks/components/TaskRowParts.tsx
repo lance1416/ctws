@@ -7,11 +7,13 @@ import { KIND_ICON, LockIcon } from '../../../platform/ui/icons'
 export const opensOnClick = (e: MouseEvent) => !(e.target as HTMLElement).closest('button')
 
 /**
- * The tree's four columns (FR-054, artboard 8): name, stage, progress, due, a row 36 high. On a
- * phone only the name and the due day: the stage and the progress are in the detail.
+ * The tree's four columns (FR-054, artboard 8): name, stage, progress, due, a row 36 high; then
+ * a place of its own for the row's hover controls, so they never cover the due day (I-06): 64
+ * for two buttons, wider where a list sets `--row-acts` (the inbox's Move to…). On a phone only
+ * the name and the due day: the stage and the progress are in the detail.
  */
 export const TREE_ROW =
-  'grid min-h-9 grid-cols-[minmax(0,1fr)_112px_96px_92px] items-center gap-x-3 px-3 max-md:grid-cols-[minmax(0,1fr)_84px]'
+  'grid min-h-9 grid-cols-[minmax(0,1fr)_112px_96px_92px_var(--row-acts,64px)] items-center gap-x-3 px-3 max-md:grid-cols-[minmax(0,1fr)_84px]'
 
 /** A column the phone's tree leaves out. */
 export const WIDE_ONLY = 'max-md:hidden'
@@ -24,12 +26,6 @@ export const markStart = (depth: number) => (depth - 1) * INDENT_PX + 16 + 6
 
 /** Where a row's title starts, past its mark: the inline new-task boxes start there too. */
 export const titleStart = (depth: number) => markStart(depth) + 16 + 6 + 4
-
-/**
- * The ground under controls over a hovered row's end: an opaque sheet under the hover layer, which
- * alone is translucent and would let the title show through.
- */
-export const OVER_ROW = 'bg-panel shadow-[inset_0_0_0_100vmax_var(--color-hover)]'
 
 /** The Done view's rows carry nothing on the right, so its list is kept narrow. */
 export const DONE_LIST_MEASURE = 'max-w-[36rem]'

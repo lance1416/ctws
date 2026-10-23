@@ -8,6 +8,7 @@ import {
   saveTaskBody,
   serverTask,
   navLink,
+  setDue,
 } from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
@@ -112,7 +113,7 @@ test('the named deadline decisions write the day the row would show', async ({ p
   // through the exact field first, and to something that is NOT the default a new deadline gets:
   // with 23:59 on both sides this assertion would hold however the day was moved.
   await openTaskPane(page, pid, '交报告')
-  await page.getByLabel('Due', { exact: true }).fill(`${dayOffset(3)}T09:15`)
+  await setDue(page, dayOffset(3), '09:15')
   await saveTaskBody(page)
   const kept = (await serverTask(page, pid, id)).dueAt!
   expect(new Date(kept).getHours(), 'the fixture really is not the 23:59 default').toBe(9)
@@ -164,7 +165,11 @@ test('both dates change in one request, and nothing is saved until Save is press
 test('the edit is the reading, in place: the same rows, each its control', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '原地编辑')
+  // Planned and due, or there would be no line for them to read (I-02).
+  await makeTask(page, pid, '原地编辑', {
+    scheduledOn: '2019-03-14',
+    dueAt: '2019-03-20T10:00:00Z',
+  })
   await openTaskPane(page, pid, '原地编辑', false)
 
   const dialog = page.getByRole('dialog', { name: 'Task details' })
@@ -465,7 +470,8 @@ test('the task in the inspector: where it sits, its fields a line each, its reso
   // The project's square, then the path down to it (FR-056).
   await expect(dialog.locator('[data-detail-path]')).toHaveText('Job hunt / Amazon / SDE II')
   await expect(dialog.locator('[data-detail-title]')).toHaveText('Prepare the system design round')
-  await expect(dialog.locator('dt')).toHaveText(['Status', 'Planned', 'Due'])
+  // Only the fields it has a value for: no plan and no deadline, no lines for them (I-02).
+  await expect(dialog.locator('dt')).toHaveText(['Status'])
   await expect(dialog.getByRole('button', { name: 'Status: To do' })).toBeVisible()
 
   // A resource, named, with where it is from.
@@ -487,7 +493,7 @@ test('the task in the inspector: where it sits, its fields a line each, its reso
 
   // A parent: no plan of its own, and a status that is its children's (FR-038, FR-043).
   await openTaskPane(page, pid, 'SDE II', false)
-  await expect(dialog.locator('dt')).toHaveText(['Status', 'Due'])
+  await expect(dialog.locator('dt')).toHaveText(['Status'])
   await expect(dialog.getByRole('button', { name: /^Status:/ })).toHaveCount(0)
   // In progress, because the task under it was started above: said, not offered to change.
   await expect(dialog.locator('dd').first()).toHaveText('In progress')
@@ -507,4 +513,18 @@ test('away from its project, the inspector opens a task’s full page: its proje
   await expect(dialog.locator('[data-detail-title]')).toHaveText('在别处打开')
   // On its own project's page it already is where its full page is: no such button there.
   await expect(dialog.getByRole('link', { name: 'Open full page' })).toHaveCount(0)
+})
+
+test('Ctrl Enter saves the edit from any field (FR-029)', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Keys')
+  await makeTask(page, pid, '按键保存')
+  await openTaskPane(page, pid, '按键保存')
+  const dialog = page.getByRole('dialog', { name: 'Task details' })
+  await dialog.getByRole('textbox', { name: 'Title' }).fill('按键保存了')
+  await dialog.getByRole('textbox', { name: 'Notes', exact: true }).click()
+  await page.keyboard.press('Control+Enter')
+  // Back to reading, with what was typed.
+  await expect(dialog.locator('[data-detail-title]')).toHaveText('按键保存了')
+  await expect(dialog.getByRole('button', { name: 'Save' })).toHaveCount(0)
 })

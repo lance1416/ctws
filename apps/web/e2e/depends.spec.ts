@@ -26,6 +26,8 @@ const openPane = async (page: Page, title: string) => {
 /** The pane's dependency lists, which are the only place an edge can be removed. */
 const waitingFor = (page: Page) => pane(page).locator('[data-blocked-by] li')
 const inTheWayOf = (page: Page) => pane(page).locator('[data-blocks] li')
+/** The picker Waiting on's Add opens: the search box with its keys (FR-024, BUG-042). */
+const waitsOn = (page: Page) => page.getByRole('dialog').filter({ hasText: 'waits on' })
 /** Dependencies are added and taken away in the edit (P-07); read, they are only rows. */
 const edit = (page: Page) => pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
 
@@ -77,10 +79,17 @@ test('a dependency is added by searching, and it reaches into another project', 
   await expect(pane(page).getByText('None', { exact: true })).toHaveCount(0)
   await edit(page)
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
-  await pane(page).getByLabel('Search for a task to wait on').fill('rrgen')
-  await pane(page)
-    .getByRole('button', { name: /跑通 rrgen 的 CI/ })
-    .click()
+  // From the keyboard alone: type, and Enter takes the first (BUG-042).
+  const search = waitsOn(page).getByRole('combobox', { name: 'Search' })
+  // The answer for these words, not the likely few shown before any were typed.
+  const answered = page.waitForResponse(
+    (r) => r.url().includes('view=candidates') && r.url().includes('rrgen') && r.ok(),
+  )
+  await search.fill('rrgen')
+  await answered
+  await expect(waitsOn(page).getByRole('option', { name: /跑通 rrgen 的 CI/ })).toBeVisible()
+  await search.press('Enter')
+  await expect(waitsOn(page)).toHaveCount(0)
 
   // The pane says which project the other end is in: a dependency that crosses projects is the
   // usual case here, and a bare title would not say where to go looking.
@@ -104,16 +113,16 @@ test('the search never offers the task itself', async ({ page }) => {
   await openPane(page, '配色重做的收尾')
   await edit(page)
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
-  await pane(page).getByLabel('Search for a task to wait on').fill('配色重做')
+  await waitsOn(page).getByRole('combobox', { name: 'Search' }).fill('配色重做')
 
   // The sibling is offered; itself is not. A task waiting for itself is the one edge the server refuses
   // outright, and an interface that proposes it is proposing something it knows cannot happen.
   // Both titles match the query, so the count is the assertion: one candidate, and it is the
-  // sibling. A candidate is named "<title> <project>", hence the anchored patterns.
-  const candidates = pane(page).locator('[data-dep-candidates] li')
+  // sibling.
+  const candidates = waitsOn(page).getByRole('option')
   await expect(candidates).toHaveCount(1)
-  await expect(candidates.getByRole('button', { name: /^配色重做 / })).toHaveCount(1)
-  await expect(candidates.getByRole('button', { name: /^配色重做的收尾/ })).toHaveCount(0)
+  await expect(candidates).toContainText('配色重做')
+  await expect(candidates).not.toContainText('配色重做的收尾')
 })
 
 test('a dependency is removed from the pane, and the row stops waiting', async ({ page }) => {
@@ -186,13 +195,12 @@ test('a loop is refused in words, not by silently doing nothing', async ({ page 
   await openPane(page, '搭脚手架')
   await edit(page)
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
-  await pane(page).getByLabel('Search for a task to wait on').fill('接上后端')
-  await pane(page)
-    .getByRole('button', { name: /接上后端/ })
+  await waitsOn(page).getByRole('combobox', { name: 'Search' }).fill('接上后端')
+  await waitsOn(page)
+    .getByRole('option', { name: /接上后端/ })
     .click()
 
-  await expect(pane(page).getByRole('alert')).toHaveText(
-    'That would leave the two waiting on each other',
-  )
+  // Said where the pick was made, which stays open to pick again.
+  await expect(waitsOn(page)).toContainText('That would leave the two waiting on each other')
   await expect(waitingFor(page)).toHaveCount(0)
 })

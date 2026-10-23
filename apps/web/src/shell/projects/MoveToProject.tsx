@@ -1,6 +1,6 @@
 import type { ObjectType, ProjectId } from '@ctws/contracts'
 import { idFrom, projectId as projectIdSchema } from '@ctws/contracts'
-import { SearchDialog } from '../search/SearchDialog'
+import { PickThing } from '../search/PickThing'
 
 /**
  * MOVE TO… (FR-059): the link picker (FR-024, FR-027), offering projects only and never the one
@@ -25,18 +25,15 @@ export function MoveToProject({
   onClose: () => void
 }) {
   return (
-    <SearchDialog
+    <PickThing
+      of={of}
+      title={`Move “${title}” to`}
+      only="project"
+      leaveOut={[from]}
+      busy={busy}
+      error={error}
+      onPick={(to) => onPick(idFrom(projectIdSchema, to.id))}
       onClose={onClose}
-      pick={{
-        of,
-        title: `Move “${title}” to`,
-        only: 'project',
-        asksWhy: false,
-        leaveOut: [from],
-        busy,
-        error,
-        onPick: (to) => onPick(idFrom(projectIdSchema, to.id)),
-      }}
     />
   )
 }

@@ -1,6 +1,6 @@
 import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import { monthDay, ymd } from '../../../platform/time/dates'
-import { FlagIcon, NewIcon, PLACE_ICON } from '../../../platform/ui/icons'
+import { FlagIcon, LockIcon, NewIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import type { ChangeLine } from '../../../shell/contract'
 import { StatusMark } from '../components/StatusMark'
 
@@ -16,9 +16,11 @@ const BECAME: Record<TaskStatus, string> = {
 const isStatus = (v: unknown): v is TaskStatus =>
   typeof v === 'string' && (TASK_STATUSES as readonly string[]).includes(v)
 const text = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null)
-/** A logged value's `from` or `to`. */
-const side = (payload: unknown, key: 'from' | 'to'): unknown =>
+/** One field of a logged payload, whatever shape the payload has. */
+const field = (payload: unknown, key: string): unknown =>
   typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>)[key] : null
+/** A logged value's `from` or `to`. */
+const side = (payload: unknown, key: 'from' | 'to'): unknown => field(payload, key)
 
 /**
  * A task's changes on its timeline (FR-044, FR-045): "Started", "Due Oct 22 → Oct 24",
@@ -61,14 +63,25 @@ export function describeTaskChange(
       return { mark: null, text: 'Notes edited' }
     case 'stage_changed': {
       const stage = text(now)
-      return { mark: null, text: stage ? `Stage ${stage}` : 'Stage cleared' }
+      return { mark: null, text: stage ? `Stage set to ${stage}` : 'Stage cleared' }
     }
     case 'moved':
       return { mark: null, text: 'Moved' }
-    case 'dependency_added':
-      return { mark: null, text: 'Waiting on another task' }
-    case 'dependency_removed':
-      return { mark: null, text: 'No longer waiting' }
+    // Named by the title it had then; a change logged before titles were kept says less.
+    case 'dependency_added': {
+      const blocker = text(field(event.payload, 'title'))
+      return {
+        mark: <LockIcon size={16} />,
+        text: blocker ? `Waiting on ${blocker}` : 'Waiting on another task',
+      }
+    }
+    case 'dependency_removed': {
+      const blocker = text(field(event.payload, 'title'))
+      return {
+        mark: <LockIcon size={16} />,
+        text: blocker ? `No longer waiting on ${blocker}` : 'No longer waiting',
+      }
+    }
     case 'became_parent':
       return { mark: null, text: 'Broken into subtasks' }
     case 'became_leaf':

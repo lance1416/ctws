@@ -65,7 +65,9 @@ test('a stage is set in the inspector, offered again, and logged', async ({ page
     page.getByRole('listitem').filter({ hasText: 'Stripe' }).locator('[data-stage-label]'),
   ).toHaveText(/Phone screen/)
   // And logged on its timeline (FR-040).
-  await expect(pane.getByRole('region', { name: 'Timeline' })).toContainText('Stage Phone screen')
+  await expect(pane.getByRole('region', { name: 'Timeline' })).toContainText(
+    'Stage set to Phone screen',
+  )
 
   // Offered again, for another company, whatever case it is typed in.
   await page.getByRole('listitem').filter({ hasText: 'Monzo' }).first().click()

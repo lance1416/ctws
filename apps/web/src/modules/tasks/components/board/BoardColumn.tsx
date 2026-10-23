@@ -55,7 +55,7 @@ export function BoardColumn({
       ref={setNodeRef}
       aria-labelledby={`board-${status}`}
       data-board-column={status}
-      className={`flex min-w-0 flex-1 basis-0 flex-col rounded-block border border-line bg-chrome ${
+      className={`flex min-w-60 flex-1 basis-0 flex-col rounded-block border border-line bg-chrome max-md:min-w-0 ${
         isOver ? OVER : ''
       }`}
     >

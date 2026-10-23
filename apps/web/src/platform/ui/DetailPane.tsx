@@ -86,13 +86,15 @@ export function DetailPane({
         aria-label={label}
         data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
-        style={{ top: top + 12 }}
+        // As a column it is the page's right edge, top to bottom (artboard 8, I-08); as an
+        // overlay, a sheet 12px in from the edges.
+        style={{ top: wide ? top : top + 12 }}
         // A flex column so `DangerZone` (`mt-auto`) sits on the pane's floor.
-        className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto p-5 text-ink focus:outline-none ${
-          // Below 1024 the overlay stops 12px above the tab bar.
-          `right-3 bottom-3 rounded-block bg-float shadow-float ${
-            wide ? 'w-inspector' : 'w-[calc(100%-1.5rem)] max-w-md max-lg:bottom-19'
-          }`
+        className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto bg-float p-5 text-ink shadow-float focus:outline-none ${
+          wide
+            ? 'right-0 bottom-0 w-inspector'
+            : // Below 1024 the overlay stops 12px above the tab bar.
+              'right-3 bottom-3 w-[calc(100%-1.5rem)] max-w-md rounded-block max-lg:bottom-19'
         }`}
       >
         {children}

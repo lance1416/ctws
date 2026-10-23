@@ -281,3 +281,18 @@ test('a board that cannot load says so, instead of empty columns', async ({ page
   await expect(page.getByRole('alert')).toContainText('Couldn’t load the tasks')
   await expect(page.locator('[data-board-column]')).toHaveCount(0)
 })
+
+test('a card made at the top of To do shows, though five are there before it', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Full')
+  for (let i = 1; i <= 6; i++) await makeTask(page, pid, `Step ${i}`)
+  await page.goto(`/projects/${pid}?view=board`)
+  await expect(cardsIn(page, 'todo')).toHaveCount(5)
+
+  // BUG-040: at the top of the column, where it was typed, not behind "N more".
+  const box = column(page, 'todo').getByRole('textbox', { name: 'New task' })
+  await box.fill('Made just now')
+  await box.press('Enter')
+  await expect(cardsIn(page, 'todo').first()).toContainText('Made just now')
+  await expect(cardsIn(page, 'todo')).toHaveCount(5)
+})

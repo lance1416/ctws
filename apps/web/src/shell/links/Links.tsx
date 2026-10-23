@@ -75,10 +75,14 @@ export function LinkedChips({ of, types }: Linked) {
   const items = groups.flatMap((group) => group.items)
   return (
     <section aria-labelledby="linked-head" className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
         <h3 id="linked-head" className="text-ui font-medium text-ink">
           Linked
         </h3>
+        {!links.isError && !links.isLoading && items.length === 0 && (
+          <span className="text-meta text-subtle">None yet</span>
+        )}
+        <span aria-hidden="true" className="flex-1" />
         <button
           type="button"
           aria-label="Link something"
@@ -90,23 +94,23 @@ export function LinkedChips({ of, types }: Linked) {
       </div>
       {links.isError ? (
         <BlockFailed what="links" onRetry={() => void links.refetch()} />
-      ) : items.length > 0 ? (
-        <ul className="flex flex-wrap gap-1.5">
-          {items.map((item) => (
-            <li key={item.relationId}>
-              <LinkedChip
-                item={item}
-                onUnlink={
-                  item.origin === 'manual' && !unlink.isPending
-                    ? () => unlink.mutate(item.relationId)
-                    : undefined
-                }
-              />
-            </li>
-          ))}
-        </ul>
       ) : (
-        !links.isLoading && <p className="text-ui text-subtle">Nothing linked yet</p>
+        items.length > 0 && (
+          <ul className="flex flex-wrap gap-1.5">
+            {items.map((item) => (
+              <li key={item.relationId}>
+                <LinkedChip
+                  item={item}
+                  onUnlink={
+                    item.origin === 'manual' && !unlink.isPending
+                      ? () => unlink.mutate(item.relationId)
+                      : undefined
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        )
       )}
       {picker}
     </section>

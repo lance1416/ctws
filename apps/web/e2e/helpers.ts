@@ -210,6 +210,17 @@ export async function openTaskPane(page: Page, projectId: string, title: string,
   if (edit) await editDetail(page)
 }
 
+/**
+ * Sets an open edit's deadline the way a person does (FR-034, I-01): the day typed into the shared
+ * date field, read when it is left, then its time of day in the box after it.
+ */
+export async function setDue(page: Page, day: string, time: string): Promise<void> {
+  const box = page.getByLabel('Due', { exact: true })
+  await box.fill(day)
+  await box.press('Tab')
+  await page.getByLabel('Due time').fill(time)
+}
+
 /** Runs one statement on the stack's database; the e2e needs `docker compose` and the stack up. */
 function psql(statement: string): string {
   return execFileSync(
