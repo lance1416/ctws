@@ -43,13 +43,14 @@ export function PersonPage({ person }: { person: PersonResponse }) {
   const registry = useRegistry()
   // One hook per module that lists its own things with a person: the registry's list is fixed.
   const owned = registry.personThings.map((t) => ({ kind: t.kind, ...t.useThings(person.id) }))
-  const { blocks, picker } = useKindBlocks({
+  const { blocks, full, picker } = useKindBlocks({
     of: { type: 'person', id: person.id },
     kinds: (['meeting', 'task', 'reading'] as const).filter((k) =>
       registry.relations.some((r) => r.type === k),
     ),
     owned,
-    none: `None with ${person.givenName} yet`,
+    none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${person.givenName} yet`,
+    titles: { reading: 'Recommended reading' },
   })
   return (
     <div className="flex flex-col gap-4">
@@ -57,7 +58,17 @@ export function PersonPage({ person }: { person: PersonResponse }) {
       <div className="grid items-start gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
         <Profile person={person} />
         <div className="flex min-w-0 flex-col gap-4">
-          <div className="grid items-start gap-3 xl:grid-cols-2">{blocks}</div>
+          {/* Two across; an odd last full block takes the row, and the empty ones follow it. */}
+          <div className="grid items-start gap-3 xl:grid-cols-2">
+            {blocks.map((block, i) => (
+              <div
+                key={i}
+                className={`min-w-0 ${full % 2 === 1 && i === full - 1 ? 'xl:col-span-2' : ''}`}
+              >
+                {block}
+              </div>
+            ))}
+          </div>
           {picker}
           <Timeline of={{ type: 'person', id: person.id }} />
         </div>
@@ -179,13 +190,18 @@ function Profile({ person }: { person: PersonResponse }) {
       )}
       <Places person={person} />
       {person.birthday && <Birthday birthday={person.birthday} />}
-      {person.note && (
-        <Section title="Notes" icon={KIND_ICON.note}>
+      {/* Always there: it is where what you know of them that fits nowhere else goes. */}
+      <Section title="Notes" icon={KIND_ICON.note} prose>
+        {person.note ? (
           <div className="text-prose">
             <NoteBody source={person.note} />
           </div>
-        </Section>
-      )}
+        ) : (
+          <p className="text-ui text-subtle">
+            What you want to remember about {person.givenName} goes here.
+          </p>
+        )}
+      </Section>
     </aside>
   )
 }
@@ -193,10 +209,13 @@ function Profile({ person }: { person: PersonResponse }) {
 function Section({
   title,
   icon: Icon,
+  prose = false,
   children,
 }: {
   title: string
   icon: IconComponent
+  /** Running text, not a list of facts. */
+  prose?: boolean
   children: ReactNode
 }) {
   return (
@@ -205,9 +224,13 @@ function Section({
         <Icon size={16} aria-hidden="true" className="text-muted" />
         {title}
       </h2>
-      <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 pl-6 text-ui">
-        {children}
-      </dl>
+      {prose ? (
+        <div>{children}</div>
+      ) : (
+        <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 pl-6 text-ui">
+          {children}
+        </dl>
+      )}
     </section>
   )
 }
@@ -275,7 +298,7 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
             <span className="sr-only"> ({day === today ? 'today' : day})</span>
           </span>
           {b.calendar === 'lunar' && b.lunarDate && (
-            <span className="text-muted">Lunar {b.lunarDate}</span>
+            <span className="text-muted">Lunar {b.lunarDate.replace(/^农历/, '')}</span>
           )}
           <span className="flex flex-wrap items-center gap-x-3 text-meta text-subtle">
             <span>{b.next.turns === null ? 'Year not known' : `Turns ${b.next.turns}`}</span>

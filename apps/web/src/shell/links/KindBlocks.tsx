@@ -49,22 +49,26 @@ type KindBlockProps = {
 /**
  * A thing's blocks, a kind each (FR-011, FR-055, FR-061): a module's own things with it first
  * (a project's meetings, the reading a person recommended), then what is only linked to it by
- * hand. The full blocks come first; an empty one is its head, saying `none`. A block's + makes a
- * new thing where `creatorFor` names a creator of its kind, and links one otherwise.
+ * hand. The full blocks come first, `full` of them; an empty one is its head, saying what `none`
+ * says of its kind. A block is headed by its kind's plural unless `titles` names it otherwise. A
+ * block's + makes a new thing where `creatorFor` names a creator of its kind, and links one
+ * otherwise.
  */
 export function useKindBlocks({
   of,
   kinds,
   owned,
   creatorFor = () => null,
-  none = 'None yet',
+  none = () => 'None yet',
+  titles = {},
 }: {
   of: { type: ObjectType; id: string }
   kinds: readonly ObjectType[]
   owned: readonly ({ kind: ObjectType } & OwnThings)[]
   creatorFor?: (kind: ObjectType) => Creator | null
-  none?: string
-}): { blocks: ReactNode[]; picker: ReactNode } {
+  none?: (kind: ObjectType) => string
+  titles?: Partial<Record<ObjectType, string>>
+}): { blocks: ReactNode[]; full: number; picker: ReactNode } {
   const registry = useRegistry()
   const openNew = useContext(NewContext)
   const { links, groups, unlink, setAdding, picker } = useLinked(of, kinds)
@@ -80,8 +84,8 @@ export function useKindBlocks({
     const creator = creatorFor(kind)
     return {
       kind,
-      title: where.plural,
-      none,
+      title: titles[kind] ?? where.plural,
+      none: none(kind),
       things,
       linked,
       failed: (mine?.isError ?? false) || links.isError,
@@ -97,10 +101,12 @@ export function useKindBlocks({
     }
   })
   const size = (b: KindBlockProps) => b.things.length + b.linked.length
+  const full = blocks.filter((b) => size(b) > 0)
   return {
-    blocks: [...blocks.filter((b) => size(b) > 0), ...blocks.filter((b) => size(b) === 0)].map(
-      (b) => <KindBlock key={b.kind} {...b} />,
-    ),
+    blocks: [...full, ...blocks.filter((b) => size(b) === 0)].map((b) => (
+      <KindBlock key={b.kind} {...b} />
+    )),
+    full: full.length,
     picker,
   }
 }
@@ -185,19 +191,25 @@ function KindBlock({
  * the title, then a fact.
  */
 function ThingRow({ row }: { row: Row }) {
+  // A kind with no word to lead with (reading) gives its title the room.
+  const lead = row.initials || row.lead !== undefined
   return (
     <Link
       to={row.to}
       data-linked={row.id}
-      className="grid min-h-9 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui text-ink hover:bg-hover"
+      className={`grid min-h-9 min-w-0 flex-1 items-center gap-x-3 px-3 text-ui text-ink hover:bg-hover ${
+        lead ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]'
+      }`}
     >
       {row.initials ? (
         <Avatar initials={row.initials} />
       ) : (
-        // As wide as "Nov 21 10:00", so the titles after a weekday and after a date line up.
-        <span className="min-w-[12ch] font-mono text-meta whitespace-nowrap text-muted">
-          {row.lead ?? ''}
-        </span>
+        lead && (
+          // As wide as "Nov 21 10:00", so the titles after a weekday and after a date line up.
+          <span className="min-w-[12ch] font-mono text-meta whitespace-nowrap text-muted">
+            {row.lead ?? ''}
+          </span>
+        )
       )}
       <span className="truncate">{row.title}</span>
       <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>
