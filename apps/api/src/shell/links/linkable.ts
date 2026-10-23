@@ -2,6 +2,7 @@ import {
   type LinkCandidate,
   type NextAbout,
   type ObjectType,
+  type ProjectId,
   type WorkspaceId,
 } from '@ctws/contracts'
 import { asc, inArray, sql, type SQL } from 'drizzle-orm'
@@ -23,16 +24,20 @@ export type Linkable = {
   rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<LinkCandidate[]>
   /**
    * For a module with things still to come, its part of what comes next about each of these other
-   * things, by their id (FR-058): a meeting's next occurrence, a reply's follow-up day. Things with
-   * nothing next are left out.
+   * things, by their id (FR-058): a meeting's next occurrence, a reply's follow-up day. What is
+   * related to a thing outright counts wherever it is filed; what is only inferred through a person
+   * counts when it is filed under `projectId`. Things with nothing next are left out.
    */
   nextAbout?: (
     q: Queryable,
     workspaceId: WorkspaceId,
     about: readonly { type: ObjectType; id: string }[],
-    now: Date,
+    at: NextAt,
   ) => Promise<Map<string, NextAbout>>
 }
+
+/** When, and from which project, what comes next is asked. */
+export type NextAt = { now: Date; projectId: ProjectId }
 
 /**
  * These ids, at most `limit` of them by title, or a text match with the likely few first; empty

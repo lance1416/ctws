@@ -1,5 +1,6 @@
 import type { NextAbout, ObjectType, WorkspaceId } from '@ctws/contracts'
 import type { Queryable } from '../../platform/db/client'
+import type { NextAt } from './linkable'
 import type { LinkRegistry } from './registry'
 
 /**
@@ -12,13 +13,11 @@ export async function nextAbout(
   q: Queryable,
   workspaceId: WorkspaceId,
   about: readonly { type: ObjectType; id: string }[],
-  now: Date,
+  at: NextAt,
 ): Promise<Map<string, NextAbout>> {
   const out = new Map<string, NextAbout>()
   if (about.length === 0) return out
-  const parts = await Promise.all(
-    registry.all.map((l) => l.nextAbout?.(q, workspaceId, about, now)),
-  )
+  const parts = await Promise.all(registry.all.map((l) => l.nextAbout?.(q, workspaceId, about, at)))
   for (const part of parts) {
     for (const [id, next] of part ?? []) out.set(id, { ...out.get(id), ...next })
   }

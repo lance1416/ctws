@@ -41,8 +41,8 @@ async function stagesOf(ctx: Harness, projectId: string, names: string[]) {
   return new Map(stages.map((s) => [s.name, s.id]))
 }
 
-/** A sent email to `parties`, waiting for a reply by `on`. */
-const awaiting = async (ctx: Harness, parties: object[], on: string) =>
+/** A sent email to `parties`, waiting for a reply by `on`, filed under `projectId` if given. */
+const awaiting = async (ctx: Harness, parties: object[], on: string, projectId?: string) =>
   (
     (await send(ctx, '/communication', {
       direction: 'sent',
@@ -51,6 +51,7 @@ const awaiting = async (ctx: Harness, parties: object[], on: string) =>
       parties,
       awaitingReply: true,
       followUpOn: on,
+      ...(projectId ? { projectId } : {}),
     })) as { id: string }
   ).id
 
@@ -79,16 +80,25 @@ describe('GET /tasks?projectId: next', () => {
       'PUT',
     )
 
-    // Stripe's: one already over, the first screen with Mira tomorrow, and Leo's, which is not.
+    // Stripe's, through Mira and in this project: one already over and the first screen tomorrow.
+    // Leo's is not Stripe's; Mira's sync in another project is not this card's (FR-058).
     await createMeeting(ctx, {
       title: 'Intro call',
       startsLocal: '2026-10-20T10:00',
       attendeeIds: [mira.id],
+      projectId: p,
     })
     const screen = await createMeeting(ctx, {
       title: 'First screen',
       startsLocal: '2026-10-22T14:00',
       attendeeIds: [mira.id],
+      projectId: p,
+    })
+    await createMeeting(ctx, {
+      title: 'rust-analyzer sync',
+      startsLocal: '2026-10-21T16:00',
+      attendeeIds: [mira.id],
+      projectId: await createProject(ctx, 'rust-analyzer'),
     })
     await createMeeting(ctx, {
       title: 'Coffee',
@@ -106,9 +116,11 @@ describe('GET /tasks?projectId: next', () => {
     const cvTalk = await createMeeting(ctx, { title: 'CV review', startsLocal: '2026-10-21T16:00' })
     await relate(ctx, { type: 'task', id: cv }, { type: 'meeting', id: cvTalk.meetingId })
 
-    // Stripe's follow-ups: through Mira on Friday, to the company itself on Sunday.
-    const toMira = await awaiting(ctx, [{ type: 'person', id: mira.id }], '2026-10-23')
+    // Stripe's follow-ups: through Mira on Friday, in this project; to the company itself on
+    // Sunday, filed nowhere. Through Mira but filed nowhere, Thursday's is not this card's.
+    const toMira = await awaiting(ctx, [{ type: 'person', id: mira.id }], '2026-10-23', p)
     await awaiting(ctx, [{ type: 'organisation', id: st.id }], '2026-10-25')
+    await awaiting(ctx, [{ type: 'person', id: mira.id }], '2026-10-22')
     // The company above the role: one related to it, its day already past.
     const late = await awaiting(ctx, [{ type: 'person', id: leo.id }], '2026-10-20')
     await relate(ctx, { type: 'communication', id: late }, { type: 'task', id: amazon })

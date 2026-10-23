@@ -120,7 +120,7 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
         app.db,
         user.workspaceId,
         [...about].map(([id, type]) => ({ type, id })),
-        app.clock(),
+        { now: app.clock(), projectId: req.query.projectId },
       )
       return {
         stages:

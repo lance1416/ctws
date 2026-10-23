@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { Queryable } from '../../platform/db/client'
 import { rowsOf } from '../../platform/db/raw'
 import { scoped, within } from '../../platform/db/scope'
+import type { NextAt } from '../../shell/links'
 import { occurrencesIn } from './occurrences'
 import { meetingExceptions, meetings } from './tables'
 import { heldOn, type Tenure } from './tenure'
@@ -21,14 +22,15 @@ const uuids = (ids: readonly string[]) =>
 
 /**
  * The next meeting about each task or organisation (FR-058): the soonest occurrence not yet over
- * of a series related to it outright, or, for an organisation, one held while an attendee had a
- * role there, as its timeline counts them (FR-065).
+ * of a series related to it outright, wherever it is filed, or, for an organisation, of a series
+ * filed under the project asked from, held while an attendee had a role there (as its timeline
+ * counts them, FR-065).
  */
 export async function nextMeetingAbout(
   q: Queryable,
   workspaceId: WorkspaceId,
   about: readonly { type: ObjectType; id: string }[],
-  now: Date,
+  { now, projectId }: NextAt,
 ): Promise<Map<string, NextAbout>> {
   const out = new Map<string, NextAbout>()
   const ids = [
@@ -105,7 +107,9 @@ export async function nextMeetingAbout(
     for (const r of related.filter((r) => r.meetingId === s.id)) {
       offer(r.subjectId, s, coming[0]!.startsAt)
     }
-    // Through its people: only the occurrences one of them held a role there on.
+    // Through its people: only a series of this project, and the occurrences one of them held a
+    // role there on.
+    if (s.projectId !== projectId) continue
     const tenures = new Map<string, Tenure[]>()
     for (const a of attended.filter((a) => a.meetingId === s.id)) {
       tenures.set(a.subjectId, [...(tenures.get(a.subjectId) ?? []), a])

@@ -44,6 +44,8 @@ test('a card names its next meeting and its follow-up, and sorts by the nearest 
     timeZone: 'Europe/London',
     durationMinutes: 45,
     attendeeIds: [mira.id],
+    // Through a person, only what is filed under this project counts (FR-058).
+    projectId,
   })
   await apiPost(page, '/communication', {
     direction: 'sent',
@@ -52,6 +54,7 @@ test('a card names its next meeting and its follow-up, and sorts by the nearest 
     subject: 'Availability',
     awaitingReply: true,
     followUpOn: '2026-10-23',
+    projectId,
   })
 
   await page.goto(`/projects/${projectId}?view=board&columns=stage`)
