@@ -1,5 +1,6 @@
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
+import { useMeetingsWith } from './hooks/personThings'
 import { useProjectMeetings } from './hooks/projectThings'
 import { meetingKeys } from './api'
 import { CalendarOccurrence } from './components/OccurrencePane'
@@ -70,6 +71,7 @@ export const meetingModule: WorkspaceModule = {
   ],
   // A project's page lists the meetings coming up in it (FR-055).
   project: { Things: { kind: 'meeting', useThings: useProjectMeetings } },
+  person: { Things: { kind: 'meeting', useThings: useMeetingsWith } },
   relations: [
     {
       type: 'meeting',

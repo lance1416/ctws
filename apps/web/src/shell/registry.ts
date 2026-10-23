@@ -16,6 +16,7 @@ import type {
   Creator,
   KindEntry,
   ModulePage,
+  PersonContribution,
   ProjectContribution,
   Reads,
   RelationContribution,
@@ -178,6 +179,7 @@ export type Registry = {
   projectMain: RegisteredProjectMain | null
   /** Each module's own things in a project, by the kind they are. */
   projectThings: (NonNullable<ProjectContribution['Things']> & { moduleId: string })[]
+  personThings: (NonNullable<PersonContribution['Things']> & { moduleId: string })[]
   projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectCard: NonNullable<ProjectContribution['Card']> | null
   projectOutline: ComponentType<{ projectId: ProjectId }> | null
@@ -267,6 +269,9 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       if (!found) throw new Error(`no module says where a ${type} lives`)
       return found
     },
+    personThings: modules.flatMap((m) =>
+      m.person?.Things ? [{ moduleId: m.id, ...m.person.Things }] : [],
+    ),
     projectThings: modules.flatMap((m) =>
       m.project?.Things ? [{ moduleId: m.id, ...m.project.Things }] : [],
     ),

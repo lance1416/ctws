@@ -3,6 +3,7 @@ import {
   type LinkCandidate,
   type ObjectType,
   type ProjectResponse,
+  type PersonId,
   type ProjectId,
 } from '@ctws/contracts'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
@@ -34,6 +35,8 @@ export type WorkspaceModule = {
   /** What this module can make from anywhere: `N` then the creator's key, and the New menu. */
   creates?: readonly Creator[]
   project?: ProjectContribution
+  /** What this module adds to a person's page (FR-061). */
+  person?: PersonContribution
   /**
    * The module's key tables, in its order: the keyboard help shows them, the switch there silences
    * their single keys, and the components that answer them bind their actions from them.
@@ -81,7 +84,7 @@ export type ProjectContribution = {
   Things?: {
     kind: ObjectType
     /** A hook: called once per page, in registry order. */
-    useThings: (projectId: ProjectId) => ProjectThings
+    useThings: (projectId: ProjectId) => OwnThings
   }
   /**
    * A project's card on the overview (FR-051, artboard 18), at most one module's: `Moved` beside
@@ -118,8 +121,20 @@ type ProjectView = {
   wide?: boolean
 }
 
+export type PersonContribution = {
+  /**
+   * This module's own things with a person, for their block on the person's page: the meetings
+   * they are in, the reading they recommended. The shell puts them with what is linked by hand.
+   */
+  Things?: {
+    kind: ObjectType
+    /** A hook: called once per page, in registry order. */
+    useThings: (personId: PersonId) => OwnThings
+  }
+}
+
 /** One of a module's things in a project, as its block lists it. */
-type ProjectThing = {
+type OwnThing = {
   id: string
   title: string
   /** Where it opens, when not the kind's own address (a meeting's next occurrence). */
@@ -132,8 +147,8 @@ type ProjectThing = {
   fact?: string | null
 }
 
-export type ProjectThings = {
-  things: ProjectThing[]
+export type OwnThings = {
+  things: OwnThing[]
   isPending: boolean
   isError: boolean
   retry: () => void

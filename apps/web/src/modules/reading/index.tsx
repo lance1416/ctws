@@ -1,5 +1,6 @@
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
+import { useRecommendedBy } from './hooks/personThings'
 import { useProjectReading } from './hooks/projectThings'
 import { readingKeys } from './api'
 import { UnfiledLine } from './components/ReadingKind'
@@ -58,6 +59,7 @@ export const readingModule: WorkspaceModule = {
   ],
   // A project's page lists its reading (FR-055).
   project: { Things: { kind: 'reading', useThings: useProjectReading } },
+  person: { Things: { kind: 'reading', useThings: useRecommendedBy } },
   relations: [
     {
       type: 'reading',

@@ -6,7 +6,7 @@ import {
 import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
 import { deleteReadingItem, patchReadingItem, readingKeys } from '../api'
-import { readingLabel, recentEntry } from '../logic/item'
+import { READING_STATUS_LABEL, readingLabel, recentEntry } from '../logic/item'
 import { ProjectChip, ProjectPicker } from '../../../shell/projects'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { planChoices, type PlanDay } from '../logic/plans'
@@ -23,16 +23,9 @@ import { CHIP, field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
 
-const STATUS_LABEL: Record<ReadingStatus, string> = {
-  todo: 'To read',
-  reading: 'Reading',
-  done: 'Finished',
-  dropped: 'Dropped',
-}
-
-const STATUS_CHOICES = (Object.keys(STATUS_LABEL) as ReadingStatus[]).map((s) => ({
+const STATUS_CHOICES = (Object.keys(READING_STATUS_LABEL) as ReadingStatus[]).map((s) => ({
   value: s,
-  label: STATUS_LABEL[s],
+  label: READING_STATUS_LABEL[s],
 }))
 
 const PLAN_LABELS: Record<PlanDay, string> = {
@@ -128,7 +121,7 @@ function ReadingFields({
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           <Field label="Status">
-            <span className="text-ui text-ink">{STATUS_LABEL[item.status]}</span>
+            <span className="text-ui text-ink">{READING_STATUS_LABEL[item.status]}</span>
           </Field>
           <Field label="Finish by">
             <span className={`text-ui ${item.planOn ? 'text-ink' : 'text-subtle'}`}>

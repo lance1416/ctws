@@ -24,6 +24,7 @@
 import type { ComponentProps, ComponentType } from 'react'
 import {
   Archive,
+  Bell,
   BookOpen,
   BuildingComplex,
   Cake,
@@ -54,6 +55,8 @@ import {
   Link,
   ListTree,
   Lock,
+  MapPin,
+  Mail,
   Mailbox,
   MessagesSquare,
   Moon,
@@ -171,6 +174,11 @@ export const CirclesIcon = UsersRound
 /** How the last exchange with someone went (FR-060): a message sent, one received. */
 export const SentIcon = Send
 export const ReceivedIcon = Mailbox
+/** A person's profile, section by section (FR-061): how to reach them, where they are. */
+export const ContactIcon = Mail
+export const PlacesIcon = MapPin
+/** When a reminder comes: "3 days before". */
+export const RemindIcon = Bell
 /** Waiting on another task that is not finished (FR-054). */
 export const LockIcon = Lock
 export const JoinIcon = Video

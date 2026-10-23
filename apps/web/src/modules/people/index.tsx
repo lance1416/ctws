@@ -12,6 +12,7 @@ import { useBirthdayEntries, usePeopleHits } from './hooks/contributions'
 import { PEOPLE_ID } from './logic/id'
 import { PeopleSidebar } from './components/PeopleSidebar'
 import { People } from './pages/People'
+import { Person, PersonEdit } from './pages/Person'
 
 // For other modules: a meeting picks its attendees from this list.
 export { usePeople } from './hooks/usePeople'
@@ -40,8 +41,8 @@ export const peopleModule: WorkspaceModule = {
     { index: true, element: <People />, handle: PAGE },
     // Birthdays is the sidebar's list now (FR-060), not a page: an old address lands there.
     { path: 'birthdays', element: <Navigate to="/people?list=birthdays" replace /> },
-    // A person has no page of their own: this is the list with their pane open.
-    { path: ':id', element: <People />, handle: PAGE },
+    { path: ':id', element: <Person />, handle: PAGE },
+    { path: ':id/edit', element: <PersonEdit />, handle: PAGE },
   ],
   search: { useHits: usePeopleHits },
   calendar: {

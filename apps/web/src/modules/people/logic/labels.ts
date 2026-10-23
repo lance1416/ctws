@@ -1,7 +1,7 @@
 import { type Circle, CIRCLES, type Gender, REMIND_LEADS, type RemindLead } from '@ctws/contracts'
 import type { Choice } from '../../../platform/ui/inline'
 
-export const CIRCLE_LABELS: Record<Circle, string> = {
+const CIRCLE_LABELS: Record<Circle, string> = {
   family: 'Family',
   friend: 'Friends',
   work: 'Work',
@@ -12,7 +12,7 @@ export const CIRCLE_CHOICES: Choice<Circle | null>[] = [
   ...CIRCLES.map((c) => ({ value: c, label: CIRCLE_LABELS[c] })),
 ]
 
-export const GENDER_LABELS: Record<Gender, string> = {
+const GENDER_LABELS: Record<Gender, string> = {
   female: 'Female',
   male: 'Male',
   other: 'Other',
