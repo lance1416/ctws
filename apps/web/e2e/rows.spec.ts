@@ -190,9 +190,10 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
   // due columns do not grow or shrink with it. (Opening the detail moves Linked under the tree, so
   // the list is about as wide either way.)
   expect(closed.cell - open.cell, 'the title moves with the list').toBe(closed.list - open.list)
-  // The stage, progress and due columns are a fixed 336px with their gaps: the title has the
-  // rest, the larger share, at either width.
-  expect(open.cell / open.list, `title cell ${open.cell}px of ${open.list}px`).toBeGreaterThan(0.45)
+  // The stage, progress and due columns and the row's own controls (I-06) are a fixed 412px with
+  // their gaps: the title has all the rest, the larger share with the inspector closed, and still
+  // more than a third beside the 400px inspector.
+  expect(open.cell / open.list, `title cell ${open.cell}px of ${open.list}px`).toBeGreaterThan(0.35)
 })
 
 /**
