@@ -13,7 +13,7 @@ import { problemText } from '../../platform/http/api'
 import { keyLabel } from '../../platform/keyboard/keys'
 import { BUTTON, KEY_ON_INK } from '../../platform/ui/buttonStyles'
 import { DangerZone } from '../../platform/ui/DangerZone'
-import { field, label } from '../../platform/ui/formStyles'
+import { boxed, field, label } from '../../platform/ui/formStyles'
 import { DoneIcon, KIND_ICON } from '../../platform/ui/icons'
 import type { Crumbs } from '../layout/page'
 import { createProject, projectKeys, updateProject, useEveryProject } from './api'
@@ -68,15 +68,10 @@ function useEditedProject(): { project: ProjectResponse | undefined; gone: boole
   return { project, gone: every.isSuccess && !project }
 }
 
+/** The thing open is the project being edited (FR-018). */
 export function useEditProjectCrumbs(): Crumbs {
   const { project } = useEditedProject()
-  return project
-    ? [
-        { label: 'Projects', to: '/projects' },
-        { label: project.name, to: `/projects/${project.id}` },
-        { label: 'Edit' },
-      ]
-    : []
+  return project ? [{ label: 'Projects', to: '/projects' }, { label: project.name }] : []
 }
 
 /**
@@ -271,7 +266,7 @@ function ProjectForm({
                   })
                 }
                 aria-describedby={`${ids}-initials-from`}
-                className={`${field} w-16 font-medium uppercase`}
+                className={`${boxed} w-16 font-medium uppercase`}
               />
               <span id={`${ids}-initials-from`} className="text-meta text-subtle">
                 {draft.own ? 'One or two characters' : 'From the name'}
