@@ -7,12 +7,12 @@ import {
   type TaskResponse,
   type TaskStatus,
 } from '@ctws/contracts'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { useDelayed } from '../../../platform/time/useDelayed'
 import { BlockFailed } from '../../../platform/ui/Block'
-import { useProjects } from '../../../shell/projects'
-import { projectTasksQuery } from '../api'
+import { MoveToProject, useProjects } from '../../../shell/projects'
+import { patchTask, projectTasksQuery, taskKeys } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { isFinished } from '../logic/status'
 import { blockLength, flatten } from '../logic/tree/flatten'
@@ -57,6 +57,14 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
 
   // Said above the tree: a refused move or a depth limit has no single row to sit beside.
   const [error, setError] = useState<string | null>(null)
+  // The inbox's row being moved to a project (FR-059), and the move itself.
+  const [moving, setMoving] = useState<TaskResponse | null>(null)
+  const move = useMutation({
+    mutationFn: ({ id, to }: { id: TaskId; to: ProjectId }) =>
+      patchTask(id, { projectId: to, parentId: null }),
+    meta: { changes: ['task'], awaits: [taskKeys.all], ownsError: true },
+    onSuccess: () => setMoving(null),
+  })
   const folds = useCollapsed(projectId)
   const shown = useTreeVisibility(projectId, all)
   const rows = useMemo(
@@ -200,6 +208,21 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
     />
   )
 
+  const mover = moving && (
+    <MoveToProject
+      of={{ type: 'task', id: moving.id }}
+      title={moving.title}
+      from={moving.projectId}
+      busy={move.isPending}
+      error={move.isError ? 'Couldn’t move it. Try again.' : null}
+      onPick={(to) => move.mutate({ id: moving.id, to })}
+      onClose={() => {
+        move.reset()
+        setMoving(null)
+      }}
+    />
+  )
+
   // Reading or not read: the tree's own block says so, and never draws an empty project with its
   // "New task" (FR-031, FR-032, BUG-039).
   if (tasks.isError)
@@ -268,6 +291,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
                     open: () => setOpenId(row.id),
                     toggleSelected: () => picked.toggle(row.id),
                     addChild: () => adder.addChild(row),
+                    moveTo: inInbox ? () => setMoving(byId.get(row.id) ?? null) : undefined,
                   }}
                 />,
                 ...(inputSlot === i + 1 ? [<Fragment key="new-task">{input}</Fragment>] : []),
@@ -280,6 +304,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
         {/* After the list, not in it: it is a way to add a row, not one of them. */}
         {last}
       </div>
+      {mover}
       {openTask && (
         // A save marks the row and leaves the pane open, reading back what was written.
         <TaskDetail

@@ -409,3 +409,35 @@ test('the open project’s outline in the sidebar lists its parents and its own 
     'true',
   )
 })
+
+test('the inbox is a tree to empty: Move to… takes a line to a project', async ({ page }) => {
+  await registerFreshUser(page)
+  const ctws = await makeProject(page, 'CTWS')
+  const projects = (await (await page.request.get('/api/v1/projects')).json()) as
+    { id: string; isInbox: boolean }[] | { projects: { id: string; isInbox: boolean }[] }
+  const list = Array.isArray(projects) ? projects : projects.projects
+  const inbox = list.find((p) => p.isInbox)!.id
+  for (const t of ['想到的一句', '另一句']) await makeTask(page, inbox, t)
+  await page.goto(`/projects/${inbox}?view=board`)
+
+  // FR-059: no Tree and Board here, and the tree whatever the address says.
+  await expect(page.getByRole('tab', { name: 'Board' })).toHaveCount(0)
+  await expect(page.locator('[data-task-tree]')).toBeVisible()
+
+  const row = page.locator('[data-task-tree] li').filter({ hasText: '想到的一句' })
+  await row.hover()
+  await row.getByRole('button', { name: 'Move “想到的一句” to…' }).click()
+  const picker = page.getByRole('dialog').filter({ hasText: 'Move “想到的一句” to' })
+  await picker.getByRole('combobox', { name: 'Search' }).fill('CT')
+  // Projects only, and never the inbox it is in.
+  await expect(picker.getByRole('option')).toHaveCount(1)
+  await picker.getByRole('option', { name: /CTWS/ }).click()
+
+  await expect(picker).toHaveCount(0)
+  await expect(row).toHaveCount(0)
+  await expect(page.locator('[data-task-tree] li')).toHaveCount(1)
+  const moved = await page.request.get(`/api/v1/tasks?projectId=${ctws}`)
+  expect(
+    ((await moved.json()) as { tasks: { title: string }[] }).tasks.map((t) => t.title),
+  ).toEqual(['想到的一句'])
+})

@@ -10,6 +10,7 @@ import { capturedLabel } from '../logic/dueDates'
 import { treeDue, type TreeDue } from '../logic/tree/treeDue'
 import { useTimeZone } from '../../../shell/auth'
 import {
+  Grip,
   INDENT_PX,
   OVER_ROW,
   OrganisationMark,
@@ -57,6 +58,8 @@ type RowActions = {
   open: () => void
   toggleSelected: () => void
   addChild: () => void
+  /** The inbox's rows: picks a project to move it to (FR-059). */
+  moveTo?: (() => void) | undefined
 }
 
 /**
@@ -139,11 +142,7 @@ export function TaskRow({
         onKeyDown={on.keyDown}
         className="absolute inset-y-0 left-0 flex w-3 cursor-grab touch-none items-center justify-center text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       >
-        <svg viewBox="0 0 6 12" width="6" height="12" aria-hidden="true" fill="currentColor">
-          {[1.5, 4.5].flatMap((x) =>
-            [2, 6, 10].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r="0.9" />),
-          )}
-        </svg>
+        <Grip />
       </button>
 
       <span
@@ -241,6 +240,18 @@ export function TaskRow({
       <span
         className={`absolute top-0 right-2 flex h-9 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 ${OVER_ROW}`}
       >
+        {on.moveTo && (
+          // The pointer's way; the keyboard moves it from the inspector's edit, as any task.
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`Move “${title}” to…`}
+            onClick={on.moveTo}
+            className="h-7 shrink-0 rounded-control px-2 text-meta text-muted hover:bg-hover hover:text-ink"
+          >
+            Move to…
+          </button>
+        )}
         <StartButton
           status={status}
           title={title}

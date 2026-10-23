@@ -60,11 +60,15 @@ export function ProjectPage() {
 function OpenProject({ id }: { id: ProjectId }) {
   const registry = useRegistry()
   const main = registry.projectMain
-  const [view, pickView] = useViewParam(main?.views ?? [])
+  const [asked, pickView] = useViewParam(main?.views ?? [])
+  // The inbox is a list to empty: its tree, whatever the address asks (FR-059).
+  const inbox = useEveryProject().data?.find((p) => p.id === id)?.isInbox === true
+  const view = inbox ? (main?.views[0].id ?? asked) : asked
   const pinned = pinnedOf(useQuery(resourcesQuery({ type: 'project', id })).data ?? [])
   const views = main?.views ?? []
   useDocumentKeys(PROJECT_KEYS, {
     switchView: () => {
+      if (inbox) return
       const at = views.findIndex((v) => v.id === view)
       const next = views[(at + 1) % views.length]
       if (next) pickView(next.id)

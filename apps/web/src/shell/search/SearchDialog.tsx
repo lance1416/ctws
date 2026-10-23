@@ -118,6 +118,10 @@ export type Pick = {
   busy?: boolean
   /** Why the last pick did not take, said at the foot. */
   error?: string | null
+  /** False for a pick that is the whole act (a move): no line of why is asked. */
+  asksWhy?: boolean
+  /** Things not to offer, though they would match: where it already is. */
+  leaveOut?: readonly string[]
 }
 
 export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pick }) {
@@ -215,7 +219,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const typed = typing.toLocaleLowerCase()
   const scoping = scope === null && query.startsWith('/')
   const hits = (debounced.length > 0 || pick ? results.rows : []).filter(
-    (h) => (scope ?? 'all') === 'all' || h.type === scope,
+    (h) => ((scope ?? 'all') === 'all' || h.type === scope) && !pick?.leaveOut?.includes(h.id),
   )
   const view: Tab = pick ? 'all' : (scope ?? tab)
   const tabs: Tab[] = ['all', ...kindsWithHits(hits).map((k) => k.type)]
@@ -308,10 +312,13 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     if (row.kind === 'scope') return scopeTo(row.type)
     if (row.kind === 'hit' && typed && !settled) return
     if (pick) {
-      if (row.kind === 'hit') {
-        setWhy('')
-        setChosen(hitsById.get(row.id)!)
+      if (row.kind !== 'hit') return
+      if (pick.asksWhy === false) {
+        if (!pick.busy) pick.onPick(hitsById.get(row.id)!, null)
+        return
       }
+      setWhy('')
+      setChosen(hitsById.get(row.id)!)
       return
     }
     onClose()

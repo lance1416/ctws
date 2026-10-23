@@ -48,7 +48,8 @@ export function ProjectHead({
             Archived
           </span>
         )}
-        {views.length > 1 && (
+        {/* The inbox is a list to empty, never a board (FR-059). */}
+        {views.length > 1 && !project.isInbox && (
           <Segmented label="View" segments={views} current={view} onPick={onView} />
         )}
         <NewMenu projectName={project.name} className="shrink-0" />
