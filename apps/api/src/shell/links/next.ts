@@ -1,4 +1,4 @@
-import type { NextAbout, ObjectType, WorkspaceId } from '@ctws/contracts'
+import type { LastExchange, NextAbout, ObjectType, WorkspaceId } from '@ctws/contracts'
 import type { Queryable } from '../../platform/db/client'
 import type { NextAt } from './linkable'
 import type { LinkRegistry } from './registry'
@@ -20,6 +20,31 @@ export async function nextAbout(
   const parts = await Promise.all(registry.all.map((l) => l.nextAbout?.(q, workspaceId, about, at)))
   for (const part of parts) {
     for (const [id, next] of part ?? []) out.set(id, { ...out.get(id), ...next })
+  }
+  return out
+}
+
+/**
+ * The latest exchange with each of these people, by their id, across every module that keeps
+ * exchanges (FR-060): whichever of a message and a meeting together was last. None, not a key.
+ */
+export async function lastAbout(
+  registry: LinkRegistry,
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  people: readonly string[],
+  now: Date,
+): Promise<Map<string, LastExchange>> {
+  const out = new Map<string, LastExchange>()
+  if (people.length === 0) return out
+  const parts = await Promise.all(
+    registry.all.map((l) => l.lastAbout?.(q, workspaceId, people, now)),
+  )
+  for (const part of parts) {
+    for (const [id, last] of part ?? []) {
+      const held = out.get(id)
+      if (!held || held.at < last.at) out.set(id, last)
+    }
   }
   return out
 }

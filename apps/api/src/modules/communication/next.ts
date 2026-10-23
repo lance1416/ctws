@@ -1,4 +1,10 @@
-import { communicationId, type NextAbout, type ObjectType, type WorkspaceId } from '@ctws/contracts'
+import {
+  communicationId,
+  type LastExchange,
+  type NextAbout,
+  type ObjectType,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable } from '../../platform/db/client'
@@ -52,5 +58,44 @@ export async function nextFollowUpAbout(
     z.object({ subjectId: z.string(), id: communicationId, on: z.string() }),
   )
   for (const r of rows) out.set(r.subjectId, { followUp: { id: r.id, on: r.on } })
+  return out
+}
+
+/**
+ * The last message with each of these people (FR-060): the latest, sent or received by `now`, that
+ * names them as a party or is related to them outright.
+ */
+export async function lastMessageWith(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  people: readonly string[],
+  now: Date,
+): Promise<Map<string, LastExchange>> {
+  const out = new Map<string, LastExchange>()
+  if (people.length === 0) return out
+  const wanted = sql.join(
+    people.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  )
+  const rows = rowsOf(
+    await q.execute(sql`
+      select distinct on (s.id) s.id::text as "personId", c.direction as kind, c.occurred_at as at
+      from communications c
+      join lateral (
+        select cp.party_id as id from communication_parties cp
+        where cp.communication_id = c.id and cp.party_type = 'person'
+        union
+        select x.to_id from relations x
+        where x.from_type = 'communication' and x.from_id = c.id and x.to_type = 'person'
+        union
+        select x.from_id from relations x
+        where x.to_type = 'communication' and x.to_id = c.id and x.from_type = 'person'
+      ) s on true
+      where ${scoped(communications, workspaceId, 'c')}
+        and c.occurred_at <= ${now.toISOString()}::timestamptz and s.id in (${wanted})
+      order by s.id, c.occurred_at desc, c.id desc`),
+    z.object({ personId: z.string(), kind: z.enum(['sent', 'received']), at: z.coerce.date() }),
+  )
+  for (const r of rows) out.set(r.personId, { kind: r.kind, at: r.at.toISOString() })
   return out
 }

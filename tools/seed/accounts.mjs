@@ -230,6 +230,11 @@ await post('/relations', {
   to: { type: 'organisation', id: stripe.id },
   note: 'Mira works there',
 })
+// The company the card is about: its next meeting is the phone screen with Mira (FR-058).
+await post('/relations', {
+  from: { type: 'task', id: stripeTask.id },
+  to: { type: 'organisation', id: stripe.id },
+})
 await post('/resources', {
   owner: { type: 'project', id: projects['Job hunt'] },
   url: 'https://docs.google.com/document/d/1abc/edit',

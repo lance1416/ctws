@@ -58,6 +58,7 @@ import {
 } from './meeting'
 import {
   birthdaysResponse,
+  peopleTouchResponse,
   createPersonBody,
   peopleListQuery,
   peopleResponse,
@@ -736,6 +737,14 @@ export const api = {
       query: viewQuery('birthdays'),
       ok: 200,
       response: birthdaysResponse,
+    }),
+    touch: endpoint({
+      method: 'GET',
+      path: '/people',
+      summary: 'Who you were in touch with lately, and with whom it has been a while (view=touch).',
+      query: viewQuery('touch'),
+      ok: 200,
+      response: peopleTouchResponse,
     }),
     calendar: endpoint({
       method: 'GET',

@@ -243,6 +243,24 @@ const birthdayListRow = z.object({
 })
 export type BirthdayListRow = z.infer<typeof birthdayListRow>
 
+/** The latest exchange with someone (FR-060): a message sent or received, or a meeting together. */
+const lastExchange = z.object({
+  kind: z.enum(['sent', 'received', 'meeting']),
+  at: instant,
+})
+export type LastExchange = z.infer<typeof lastExchange>
+
+/** Last in touch this long ago or more, someone is "not in touch for a while" (FR-060). */
+export const QUIET_AFTER_DAYS = 90
+
+/** Who you were in touch with lately, and with whom it has been a while (FR-060). */
+export const peopleTouchResponse = z.object({
+  /** In the last 30 days on your calendar, the latest first. */
+  recent: z.array(lastExchange.extend({ personId })),
+  /** QUIET_AFTER_DAYS or more ago, the shortest while first. */
+  quiet: z.array(lastExchange.extend({ personId })),
+})
+
 export const birthdaysResponse = z.object({
   today: calendarDate,
   coming: z.array(birthdayListRow),

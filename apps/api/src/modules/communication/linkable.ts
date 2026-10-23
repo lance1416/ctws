@@ -1,7 +1,7 @@
 import { desc } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
 import { wanted, type Linkable } from '../../shell/links'
-import { nextFollowUpAbout } from './next'
+import { lastMessageWith, nextFollowUpAbout } from './next'
 import { communications } from './tables'
 
 export const communicationLinkable: Linkable = {
@@ -36,4 +36,5 @@ export const communicationLinkable: Linkable = {
     }))
   },
   nextAbout: nextFollowUpAbout,
+  lastAbout: lastMessageWith,
 }

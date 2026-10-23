@@ -1,5 +1,5 @@
-import type { MeetingId, NextAbout, ObjectType, WorkspaceId } from '@ctws/contracts'
-import { and, gt, inArray, isNull, or, sql } from 'drizzle-orm'
+import type { LastExchange, MeetingId, NextAbout, ObjectType, WorkspaceId } from '@ctws/contracts'
+import { and, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable } from '../../platform/db/client'
 import { rowsOf } from '../../platform/db/raw'
@@ -117,6 +117,67 @@ export async function nextMeetingAbout(
     for (const [subjectId, held] of tenures) {
       const o = coming.find((o) => held.some((t) => heldOn(t, o.startsLocal.slice(0, 10))))
       if (o) offer(subjectId, s, o.startsAt)
+    }
+  }
+  return out
+}
+
+/** How far back a series' rule is walked for the last occurrence with someone. */
+const BACK_MS = 3 * 366 * DAY_MS
+
+/**
+ * The last meeting with each of these people (FR-060): the latest occurrence started by `now` of a
+ * series they attend, or of one related to them outright.
+ */
+export async function lastMeetingWith(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  people: readonly string[],
+  now: Date,
+): Promise<Map<string, LastExchange>> {
+  const out = new Map<string, LastExchange>()
+  if (people.length === 0) return out
+  const pairs = rowsOf(
+    await q.execute(sql`
+      select a.meeting_id::text as "meetingId", a.person_id::text as "personId"
+      from meeting_attendees a where a.person_id in (${uuids(people)})
+      union
+      select x.from_id::text, x.to_id::text from relations x
+      where x.workspace_id = ${workspaceId} and x.from_type = 'meeting' and x.to_type = 'person'
+        and x.to_id in (${uuids(people)})
+      union
+      select x.to_id::text, x.from_id::text from relations x
+      where x.workspace_id = ${workspaceId} and x.to_type = 'meeting' and x.from_type = 'person'
+        and x.from_id in (${uuids(people)})`),
+    z.object({ meetingId: z.string(), personId: z.string() }),
+  )
+  const ids = [...new Set(pairs.map((p) => p.meetingId as MeetingId))]
+  if (ids.length === 0) return out
+  const [series, exceptions] = await Promise.all([
+    q
+      .select()
+      .from(meetings)
+      .where(
+        within(
+          scoped(meetings, workspaceId),
+          and(inArray(meetings.id, ids), lte(meetings.firstStartsAt, now)),
+        ),
+      ),
+    q.select().from(meetingExceptions).where(inArray(meetingExceptions.meetingId, ids)),
+  ])
+  for (const s of series) {
+    const from = new Date(Math.max(s.firstStartsAt.getTime(), now.getTime() - BACK_MS))
+    const held = occurrencesIn(
+      s,
+      exceptions.filter((e) => e.meetingId === s.id),
+      { from, to: now },
+    ).filter((o) => o.startsAt <= now)
+    const last = held.at(-1)
+    if (!last) continue
+    const at = last.startsAt.toISOString()
+    for (const p of pairs.filter((p) => p.meetingId === s.id)) {
+      const known = out.get(p.personId)
+      if (!known || known.at < at) out.set(p.personId, { kind: 'meeting', at })
     }
   }
   return out

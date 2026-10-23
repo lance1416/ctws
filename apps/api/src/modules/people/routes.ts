@@ -2,14 +2,24 @@ import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser, todayOf } from '../../shell/auth'
+import type { LinkRegistry } from '../../shell/links'
 import { birthdayEntries, listBirthdays, previewBirthday } from './birthdays'
 import { listCircles, putCircles } from './circles'
 import { toPersonResponse } from './mapper'
 import { getPerson, listPeople, searchPeople } from './queries'
 import { createPerson, replaceRoles, deletePerson, updatePerson } from './service'
+import { peopleInTouch } from './touch'
 
-export const personRoutes: FastifyPluginAsyncZod = async (app) => {
+export const personRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = async (
+  app,
+  { registry },
+) => {
   serve(app, [
+    on(api.people.touch, async (req) => {
+      const user = currentUser(req)
+      return peopleInTouch(registry, app.db, user.workspaceId, app.clock(), user.timezone)
+    }),
+
     on(api.people.list, async (req) => {
       const { rows, page } = await listPeople(app.db, currentUser(req).workspaceId, req.query)
       return { people: rows.map((p) => toPersonResponse(p, todayOf(req))), page }

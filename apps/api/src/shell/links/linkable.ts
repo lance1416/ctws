@@ -1,4 +1,5 @@
 import {
+  type LastExchange,
   type LinkCandidate,
   type NextAbout,
   type ObjectType,
@@ -34,6 +35,16 @@ export type Linkable = {
     about: readonly { type: ObjectType; id: string }[],
     at: NextAt,
   ) => Promise<Map<string, NextAbout>>
+  /**
+   * For a module whose things are exchanges with people, the latest of its own with each of these
+   * people by their id, up to `now` (FR-060): a message, a meeting together. None, not a key.
+   */
+  lastAbout?: (
+    q: Queryable,
+    workspaceId: WorkspaceId,
+    about: readonly string[],
+    now: Date,
+  ) => Promise<Map<string, LastExchange>>
 }
 
 /** When, and from which project, what comes next is asked. */
