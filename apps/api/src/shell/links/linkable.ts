@@ -1,4 +1,9 @@
-import { type LinkCandidate, type ObjectType, type WorkspaceId } from '@ctws/contracts'
+import {
+  type LinkCandidate,
+  type NextAbout,
+  type ObjectType,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { asc, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
@@ -16,6 +21,17 @@ export type Linkable = {
    * What the workspace cannot see is left out, and the shell drops the edges that pointed at it.
    */
   rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<LinkCandidate[]>
+  /**
+   * For a module with things still to come, its part of what comes next about each of these other
+   * things, by their id (FR-058): a meeting's next occurrence, a reply's follow-up day. Things with
+   * nothing next are left out.
+   */
+  nextAbout?: (
+    q: Queryable,
+    workspaceId: WorkspaceId,
+    about: readonly { type: ObjectType; id: string }[],
+    now: Date,
+  ) => Promise<Map<string, NextAbout>>
 }
 
 /**

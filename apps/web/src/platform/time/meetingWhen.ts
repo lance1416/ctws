@@ -1,5 +1,5 @@
 import { clockTime } from '@ctws/core/clock'
-import { monthDay, weekdayOf, ymd } from '../../../platform/time/dates'
+import { monthDay, weekdayOf, ymd } from './dates'
 
 const WEEK_MS = 7 * 86_400_000
 

@@ -1,5 +1,7 @@
 import {
+  communicationId,
   idFrom,
+  meetingId,
   projectId,
   stageId,
   taskId,
@@ -7,7 +9,7 @@ import {
   type TaskResponse,
 } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { stageColumns } from './stageColumns'
+import { stageColumns, type Around } from './stageColumns'
 
 /** Thursday, October 22, in London: given, never read off the clock. */
 const TODAY = '2026-10-22'
@@ -47,8 +49,8 @@ const task = (
 })
 
 const titles = (cards: { task: TaskResponse }[]) => cards.map((c) => c.task.title)
-const board = (tasks: TaskResponse[]) =>
-  stageColumns(tasks, [APPLIED, ONSITE], { today: TODAY, timeZone: TZ })
+const board = (tasks: TaskResponse[], around: Around = { organisations: {}, next: {} }) =>
+  stageColumns(tasks, [APPLIED, ONSITE], { today: TODAY, timeZone: TZ }, around)
 
 describe('stageColumns', () => {
   it('puts each node at its stage, at any depth, with the path above it', () => {
@@ -112,5 +114,72 @@ describe('stageColumns', () => {
       }),
     ]
     expect(titles(board(tasks)[0]!.cards)).toEqual(['T4', 'T3', 'T2', 'T5', 'T1'])
+  })
+
+  it('reads the soonest meeting and follow-up about the node, those above it and their organisations', () => {
+    const ORG = '00000000-0000-0000-0000-0000000000f1'
+    const meeting = (n: string, startsAt: string) => ({
+      id: idFrom(meetingId, `00000000-0000-0000-0000-${n.padStart(12, '0')}`),
+      title: `M${n}`,
+      startsAt,
+    })
+    const followUp = (n: string, on: string) => ({
+      id: idFrom(communicationId, `00000000-0000-0000-0000-${n.padStart(12, '0')}`),
+      on,
+    })
+    const tasks = [
+      task('1', null, 'a'),
+      task('2', '1', 'a', { stageId: ONSITE.id }),
+      task('3', null, 'b', { stageId: APPLIED.id }),
+    ]
+    const [applied, onsite] = board(tasks, {
+      organisations: { [id('1')]: [{ id: ORG }] },
+      next: {
+        // The company's people next week, the role itself on Monday: Monday is the meeting.
+        [ORG]: {
+          meeting: meeting('71', '2026-10-29T10:00:00Z'),
+          followUp: followUp('81', '2026-10-24'),
+        },
+        [id('2')]: { meeting: meeting('72', '2026-10-26T10:00:00Z') },
+        [id('1')]: { followUp: followUp('82', '2026-10-23') },
+        // Not about anything on this card.
+        [id('3')]: { meeting: meeting('73', '2026-10-23T09:00:00Z') },
+      },
+    })
+    const card = onsite!.cards[0]!
+    expect(card.meeting?.title).toBe('M72')
+    expect(card.followUp?.on).toBe('2026-10-23')
+    expect(card.soonest).toBe('2026-10-23')
+    expect(applied!.cards[0]!.followUp).toBeNull()
+  })
+
+  it('sorts by the nearest of the deadline, the meeting and the follow-up', () => {
+    const tasks = [
+      task('1', null, 'a', { stageId: APPLIED.id, dueAt: '2026-10-30T17:00:00Z' }),
+      task('2', null, 'b', { stageId: APPLIED.id, stageSince: '2026-10-01T09:00:00Z' }),
+      task('3', null, 'c', { stageId: APPLIED.id, dueAt: '2026-10-28T17:00:00Z' }),
+      task('4', null, 'd', { stageId: APPLIED.id }),
+    ]
+    const cards = board(tasks, {
+      organisations: {},
+      next: {
+        // A meeting on the 24th puts the first ahead of the third.
+        [id('1')]: {
+          meeting: {
+            id: idFrom(meetingId, '00000000-0000-0000-0000-000000000071'),
+            title: 'Screen',
+            startsAt: '2026-10-24T13:00:00Z',
+          },
+        },
+        // A follow-up already past is the nearest of all.
+        [id('4')]: {
+          followUp: {
+            id: idFrom(communicationId, '00000000-0000-0000-0000-000000000081'),
+            on: '2026-10-20',
+          },
+        },
+      },
+    })[0]!.cards
+    expect(titles(cards)).toEqual(['T4', 'T1', 'T3', 'T2'])
   })
 })

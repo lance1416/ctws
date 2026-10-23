@@ -9,6 +9,7 @@ import { isAfterCursor, type TimelineSource } from '../../shell/events'
 import { occurrencesIn } from './occurrences'
 import { attendeesOf } from './queries'
 import { meetingExceptions, meetings } from './tables'
+import { heldOn } from './tenure'
 
 /**
  * For an organisation's timeline, a test of each occurrence: related series count whole; others
@@ -50,14 +51,6 @@ async function organisationFilter(
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-
-/** A role someone held at an organisation, by the month it began and the month it ended. */
-type Tenure = { personId: string; from: string | null; to: string | null }
-
-/** Whether `day` (`YYYY-MM-DD`) falls in a tenure: both the first and the last month count whole. */
-const heldOn = (t: Tenure, day: string): boolean =>
-  (t.from === null || t.from.slice(0, 7) <= day.slice(0, 7)) &&
-  (t.to === null || day.slice(0, 7) <= t.to.slice(0, 7))
 
 /**
  * The meetings a thing was in, one entry per occurrence that has happened (FR-045): a person's

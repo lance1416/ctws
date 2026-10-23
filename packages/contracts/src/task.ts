@@ -1,5 +1,14 @@
 import { z } from 'zod'
-import { projectId, type ProjectId, stageId, taskId, type TaskId } from './id'
+import {
+  communicationId,
+  meetingId,
+  objectId,
+  projectId,
+  type ProjectId,
+  stageId,
+  taskId,
+  type TaskId,
+} from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
 import { pageInfo, pageQuery } from './page'
@@ -165,6 +174,16 @@ export const dependencyParams = z.object({ id: taskId, blockerId: taskId }).stri
 
 export const projectTasksQuery = z.object({ projectId: projectId }).strict()
 
+/**
+ * What comes next about a thing, for a card on the board by stage (FR-058): its next meeting not
+ * yet over, and the soonest day a reply to it is awaited by.
+ */
+const nextAbout = z.object({
+  meeting: z.object({ id: meetingId, title: z.string(), startsAt: instant }).optional(),
+  followUp: z.object({ id: communicationId, on: calendarDate }).optional(),
+})
+export type NextAbout = z.infer<typeof nextAbout>
+
 /** A project's flat task list with each task's rollup and what is still in its way. */
 export const projectTasksResponse = z.object({
   /** The project's stages, in order, for the board by stage (FR-058). */
@@ -178,6 +197,12 @@ export const projectTasksResponse = z.object({
    * FR-054); a task linked to none is not a key.
    */
   organisations: z.record(taskId, z.array(z.object({ id: z.string(), title: z.string() }))),
+  /**
+   * What comes next about the nodes with a stage, their ancestors and their organisations, keyed
+   * by their ids; a card reads the soonest among its own (FR-058). Things with nothing next are not
+   * keys.
+   */
+  next: z.record(objectId, nextAbout),
 })
 
 /** What changed state in a window, read from the event log and grouped by project. */

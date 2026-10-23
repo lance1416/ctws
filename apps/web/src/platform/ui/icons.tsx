@@ -60,6 +60,7 @@ import {
   RotateCcwClock,
   RotateCw,
   Search,
+  Send,
   SquareCheckBig,
   SquareKanban,
   StickyNote,
@@ -111,6 +112,8 @@ export const ByStatusIcon = CircleDashed
 export const ByStageIcon = Flag
 /** How long a node has been at its stage, on the board by stage (FR-058): "5d". */
 export const InStageIcon = Hourglass
+/** A sent message awaiting a reply by a day (FR-048), on a card on the board by stage. */
+export const FollowUpIcon = Send
 export const MoreIcon = Ellipsis
 /**
  * A resource by the service its address names (FR-046, DES-001 section 4): the shape says what

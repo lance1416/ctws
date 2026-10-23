@@ -2,6 +2,7 @@ import { desc } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
 import { wanted, type Linkable } from '../../shell/links'
 import { instantOf } from '../../platform/zone'
+import { nextMeetingAbout } from './next'
 import { meetings } from './tables'
 
 export const meetingLinkable: Linkable = {
@@ -33,4 +34,5 @@ export const meetingLinkable: Linkable = {
       timeZone: r.timeZone,
     }))
   },
+  nextAbout: nextMeetingAbout,
 }

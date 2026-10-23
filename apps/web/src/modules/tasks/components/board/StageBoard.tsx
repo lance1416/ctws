@@ -20,10 +20,18 @@ import {
 } from '@dnd-kit/core'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { ymd } from '../../../../platform/time/dates'
+import { nearDay, shortDay, ymd } from '../../../../platform/time/dates'
+import { meetingWhen } from '../../../../platform/time/meetingWhen'
 import { useNow } from '../../../../platform/time/useNow'
 import { ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
-import { BarExpandIcon, EditIcon, InStageIcon, NewIcon } from '../../../../platform/ui/icons'
+import {
+  BarExpandIcon,
+  EditIcon,
+  FollowUpIcon,
+  InStageIcon,
+  KIND_ICON,
+  NewIcon,
+} from '../../../../platform/ui/icons'
 import { useLineEntry } from '../../../../platform/ui/useLineEntry'
 import { Button } from '../../../../platform/ui/Button'
 import { useTimeZone } from '../../../../shell/auth'
@@ -39,7 +47,7 @@ import { TaskDetail } from '../TaskDetail'
 import { OrganisationMark } from '../TaskRowParts'
 import { useTaskParam } from '../tree/useTreeParams'
 import { useRowPane, useRowRefs } from '../useRowPane'
-import { DateChip } from './BoardCard'
+import { CHIP, DateChip } from './BoardCard'
 import { EditStages } from './EditStages'
 
 const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const
@@ -66,8 +74,9 @@ export function StageBoard({
   const byId = new Map(all.map((t) => [t.id, t]))
   const counts = leafCounts(all)
   const timeZone = useTimeZone()
-  const today = ymd(useNow(), timeZone)
-  const columns = stageColumns(all, data.stages, { today, timeZone })
+  const now = useNow()
+  const today = ymd(now, timeZone)
+  const columns = stageColumns(all, data.stages, { today, timeZone }, data)
 
   const [shownFolded, setShownFolded] = useState<ReadonlySet<StageId>>(new Set())
   const opened = (stage: StageResponse) => !stage.collapsed || shownFolded.has(stage.id)
@@ -201,6 +210,7 @@ export function StageBoard({
                     card={c}
                     counts={counts.get(c.task.id)}
                     organisations={data.organisations}
+                    now={now}
                     today={today}
                     timeZone={timeZone}
                     tabStop={c.task.id === tabId}
@@ -229,6 +239,7 @@ export function StageBoard({
                 card={card}
                 counts={counts.get(card.task.id)}
                 organisations={data.organisations}
+                now={now}
                 today={today}
                 timeZone={timeZone}
               />
@@ -383,6 +394,7 @@ type CardProps = {
   card: StageCard
   counts: { done: number; counted: number; backlog: number } | undefined
   organisations: ProjectTasks['organisations']
+  now: Date
   today: string
   timeZone: string
 }
@@ -435,12 +447,14 @@ function StageCardView({
 
 /**
  * What a card says, only the lines it has data for (FR-058): the path above a node below the
- * top; the node's organisation, name and progress; the next leaf to do; how long it has been at
- * the stage, amber once that is two weeks, and its deadline. With nothing more than its name, one
- * line: name, days, progress.
+ * top; the node's organisation, name and progress; the next leaf to do; the next meeting; how long
+ * it has been at the stage, amber once that is two weeks, its deadline and the day a reply is
+ * awaited by. With nothing more than its name, one line: name, days, progress.
  */
-function CardFace({ card, counts, organisations, today, timeZone }: CardProps) {
-  const { task, path, next, days } = card
+const Meeting = KIND_ICON.meeting
+
+function CardFace({ card, counts, organisations, now, today, timeZone }: CardProps) {
+  const { task, path, next, days, meeting, followUp } = card
   const orgOf = (id: TaskId) => organisations[id]?.map((o) => o.title)
   const top = path[0]
   const progress = counts ? (
@@ -470,6 +484,17 @@ function CardFace({ card, counts, organisations, today, timeZone }: CardProps) {
     )
   const due = <DateChip task={task} today={today} timeZone={timeZone} />
   const hasDue = task.dueAt !== null && card.dueDay !== null
+  const awaited = followUp && (
+    <span
+      data-stage-follow-up
+      title={`Awaiting a reply, follow up ${shortDay(followUp.on, today)}`}
+      className={`${CHIP} bg-communication-bg text-communication-t`}
+    >
+      <span className="sr-only">Follow up </span>
+      <FollowUpIcon size={12} aria-hidden="true" className="shrink-0" />
+      {nearDay(followUp.on, today) ?? shortDay(followUp.on, today)}
+    </span>
+  )
   const own = orgOf(task.id)
   const nameRow = (
     <span className="flex min-w-0 items-center gap-2">
@@ -478,7 +503,7 @@ function CardFace({ card, counts, organisations, today, timeZone }: CardProps) {
         {task.title}
       </span>
       {/* With nothing else to say, the days sit on the name's line. */}
-      {!top && !next && !hasDue && waited}
+      {!top && !next && !meeting && !hasDue && !followUp && waited}
       {progress}
     </span>
   )
@@ -499,11 +524,22 @@ function CardFace({ card, counts, organisations, today, timeZone }: CardProps) {
           <span className="truncate">{next.title}</span>
         </span>
       )}
-      {(top || next || hasDue) && (waited || hasDue) && (
+      {meeting && (
+        <span data-stage-meeting className="flex min-w-0 items-center gap-2 text-ui">
+          <Meeting size={16} aria-hidden="true" className="shrink-0 text-meeting" />
+          <span className="sr-only">Next meeting </span>
+          <span className="min-w-0 flex-1 truncate text-muted">{meeting.title}</span>
+          <span className="shrink-0 font-mono text-meta text-meeting-t">
+            {meetingWhen(meeting.startsAt, timeZone, now)}
+          </span>
+        </span>
+      )}
+      {(top || next || meeting || hasDue || followUp) && (waited || hasDue || followUp) && (
         <span className="flex min-w-0 items-center gap-2">
           {waited}
           <span aria-hidden="true" className="flex-1" />
           {due}
+          {awaited}
         </span>
       )}
     </>

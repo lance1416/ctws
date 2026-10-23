@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { meetingWhen } from './listedMeeting'
+import { meetingWhen } from './meetingWhen'
 
 const NOW = new Date('2026-10-20T09:00:00.000Z')
 

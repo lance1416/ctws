@@ -9,7 +9,8 @@ import { treeDue } from '../../logic/tree/treeDue'
 import { StatusMark } from '../StatusMark'
 import { WaitingBadge } from '../TaskRowParts'
 
-const CHIP =
+/** A date on a card: the deadline, the plan, a follow-up. */
+export const CHIP =
   'inline-flex h-5.5 shrink-0 items-center gap-1.25 rounded-control px-2 text-meta font-medium whitespace-nowrap tabular-nums'
 const DUE_TONE = {
   soon: 'bg-warn-bg text-warn-t',

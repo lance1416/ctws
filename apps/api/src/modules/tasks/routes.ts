@@ -1,9 +1,9 @@
-import { api } from '@ctws/contracts'
+import { api, type ObjectType } from '@ctws/contracts'
 import { stagesOf } from '../../shell/projects'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
-import type { LinkRegistry } from '../../shell/links'
+import { nextAbout, type LinkRegistry } from '../../shell/links'
 import { relatedAmong } from '../../shell/relations'
 import { addDependency, createTask, removeDependency, deleteTask, updateTask } from './service'
 import {
@@ -104,6 +104,24 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
         { type: 'task', ids: board.tasks.map((t) => t.id) },
         'organisation',
       )
+      // A card reads the soonest of what comes next about its node, the nodes above it and their
+      // organisations (FR-058).
+      const byId = new Map(board.tasks.map((t) => [t.id, t]))
+      const about = new Map<string, ObjectType>()
+      for (const staged of board.tasks.filter((t) => t.stageId !== null)) {
+        for (let t = byId.get(staged.id); t; t = t.parentId ? byId.get(t.parentId) : undefined) {
+          if (about.has(t.id)) break
+          about.set(t.id, 'task')
+          for (const o of organisations.get(t.id) ?? []) about.set(o.id, 'organisation')
+        }
+      }
+      const next = await nextAbout(
+        registry,
+        app.db,
+        user.workspaceId,
+        [...about].map(([id, type]) => ({ type, id })),
+        app.clock(),
+      )
       return {
         stages:
           (await stagesOf(app.db, user.workspaceId, [req.query.projectId])).get(
@@ -113,6 +131,7 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
         rollups: Object.fromEntries(board.rollups),
         blockers: Object.fromEntries(board.blockers),
         organisations: Object.fromEntries(organisations),
+        next: Object.fromEntries(next),
       }
     }),
 
