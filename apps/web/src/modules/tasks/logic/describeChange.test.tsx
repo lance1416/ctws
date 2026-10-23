@@ -30,6 +30,9 @@ describe('describeTaskChange', () => {
     expect(say('created', { from: null, to: { title: 'x' } })).toBe('Created')
     expect(say('title_changed', { from: 'Old', to: 'New' })).toBe('Renamed from “Old”')
     expect(say('stage_changed', { from: null, to: 'Onsite' })).toBe('Stage set to Onsite')
+    expect(say('stage_renamed', { from: 'Phone Screen', to: 'Phone screen' })).toBe(
+      'Stage renamed Phone Screen → Phone screen',
+    )
     // What it waits on, by the title kept with the change; an older change says less.
     expect(say('dependency_added', { blockerId: 'x', title: 'Update the CV' })).toBe(
       'Waiting on Update the CV',

@@ -39,6 +39,7 @@ export type TreeAction =
   | 'moveDown'
   | 'outdent'
   | 'indent'
+  | 'moveTo'
 
 /** Alt, with or without any other modifier: the tree's Alt presses answer to them all. */
 const ALT_ANY = { held: ['Alt'], either: ['Ctrl', 'Meta', 'Shift'] } as const
@@ -95,6 +96,8 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
       },
     },
     ...STATUS_ROWS,
+    // The inbox's rows only (FR-059): the picker its rows' Move to… opens.
+    { keys: 'M', does: 'Move to a project, in the inbox', presses: { m: 'moveTo' } },
   ],
 }
 

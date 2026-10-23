@@ -439,4 +439,24 @@ test('the inbox is a tree to empty: Move to… takes a line to a project', async
   expect(
     ((await moved.json()) as { tasks: { title: string }[] }).tasks.map((t) => t.title),
   ).toEqual(['想到的一句'])
+
+  // From the keyboard: M on a focused row opens the same picker (TC-574), and the help says so.
+  await page.getByRole('button', { name: 'Task: 另一句', exact: true }).focus()
+  await page.keyboard.press('m')
+  await expect(page.getByRole('dialog').filter({ hasText: 'Move “另一句” to' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('?')
+  await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toContainText(
+    'Move to a project, in the inbox',
+  )
+})
+
+test('M does nothing on a row outside the inbox', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'CTWS')
+  await makeTask(page, pid, 'A line')
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('button', { name: 'Task: A line', exact: true }).focus()
+  await page.keyboard.press('m')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 })

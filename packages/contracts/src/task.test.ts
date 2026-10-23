@@ -129,6 +129,7 @@ describe('task event types', () => {
         'dependency_removed',
         'scheduled_changed',
         'stage_changed',
+        'stage_renamed',
         'status_changed',
         'title_changed',
       ].sort(),

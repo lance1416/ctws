@@ -144,6 +144,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
     focusRow: (row) => {
       if (row) handles.get(row.id)?.focus()
     },
+    moveTo: inInbox ? (id) => setMoving(byId.get(id) ?? null) : undefined,
   })
 
   const stageOf = (id: StageId | null) => {

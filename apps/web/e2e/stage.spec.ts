@@ -171,6 +171,37 @@ test('a card dragged to another stage takes it, and keeps its status', async ({ 
   expect(stripe.status).toBe('in_progress')
 })
 
+test('a card moved with Alt and an arrow keeps the focus, or its folded stage has it', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  const [applied, onsite, rejected] = await stagesOf(
+    page,
+    pid,
+    ['Applied', 'Onsite', 'Rejected'],
+    ['Rejected'],
+  )
+  await node(page, pid, 'Stripe', { stageId: applied!.id })
+  await openStageBoard(page, pid)
+
+  await card(page, 'Stripe').focus()
+  const patched = taskPatched(page)
+  await page.keyboard.press('Alt+ArrowRight')
+  expect((await patched).request().postDataJSON()).toEqual({ stageId: onsite!.id })
+  await expect(column(page, onsite!).locator('[data-stage-title]')).toHaveText(['Stripe'])
+  // Still on the card, in its new column: Enter opens it (BUG-044).
+  await expect(card(page, 'Stripe')).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // Into a folded stage, the strip it went into has the focus.
+  await card(page, 'Stripe').focus()
+  await page.keyboard.press('Alt+ArrowRight')
+  await expect(page.locator(`[data-stage-strip="${rejected!.id}"]`)).toBeFocused()
+})
+
 test('Edit stages renames, merges, folds, removes, adds and reorders, as the whole list', async ({
   page,
 }) => {

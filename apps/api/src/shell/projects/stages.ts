@@ -90,8 +90,9 @@ export async function getStage(
 /**
  * Makes the list the whole set of a project's stages (FR-040, REQ v1.4): the order given is the
  * order; one named by id is renamed, one without is new, one left out is removed, which only an
- * unused stage may be. A rename onto an existing name is refused unless the entry says which
- * stage to merge into; then its tasks move there, each logged, and it goes.
+ * unused stage may be. A rename is logged on each task at the stage. A rename onto an existing name
+ * is refused unless the entry says which stage to merge into; then its tasks move there, each
+ * logged, and it goes.
  */
 /** A stage merged into itself would be a stage removed by accident. */
 class MergeIntoItself extends DomainError {
@@ -157,6 +158,23 @@ export async function putStages(
       ),
     )
   }
+  // A rename is logged on each task at the stage, as a rename and not a move: the review's "Stages
+  // moved" leaves it out, and the days at the stage go on (BUG-045).
+  for (const e of kept) {
+    const was = e.id === undefined ? undefined : byId.get(e.id)
+    if (!was || was.name === e.name) continue
+    const at = await tx.execute(sql`
+      select id from tasks where stage_id = ${was.id} and deleted_at is null
+    `)
+    await eventLog(tx, ctx).appendAll(
+      rowsOf(at, z.object({ id: z.string() })).map((t) => ({
+        subject: { type: 'task' as const, id: t.id },
+        type: 'stage_renamed',
+        payload: { from: was.name, to: e.name },
+      })),
+    )
+  }
+
   // Two passes: names are unique per project, so every kept row moves aside before any is named.
   for (const [rank, e] of kept.entries()) {
     if (e.id !== undefined) {

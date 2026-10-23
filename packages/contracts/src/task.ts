@@ -348,6 +348,8 @@ export const TASK_EVENT_TYPES = [
   'became_leaf',
   // From one of the project's stages to another, by name (FR-040).
   'stage_changed',
+  // The stage it is at was renamed in Edit stages: the same stage, a new name.
+  'stage_renamed',
 ] as const
 export type TaskEventType = (typeof TASK_EVENT_TYPES)[number]
 

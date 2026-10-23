@@ -39,6 +39,14 @@ const setStage = (ctx: Harness, task: string, stageId: string | null) =>
     payload: { stageId },
   })
 
+/** When the task reached its stage, as its own read says. */
+const sinceOf = async (ctx: Harness, task: string) =>
+  (
+    (
+      await ctx.app.inject({ method: 'GET', url: `/api/v1/tasks/${task}`, headers: ctx.authed })
+    ).json() as TaskResponse
+  ).stageSince
+
 describe('a project’s stages', () => {
   it('are a list of its own, remembered in order, and shown on the project', async () => {
     const { ctx, projectId } = await setup()
@@ -134,6 +142,9 @@ describe('a project’s stages', () => {
     await setStage(ctx, t1, b!.id)
     await setStage(ctx, t2, b!.id)
 
+    const before = await sinceOf(ctx, t1)
+    expect(before).not.toBeNull()
+
     // Rename keeps the id and the tasks.
     const renamed = await put(ctx, projectId, [
       { id: a!.id, name: 'Applied' },
@@ -145,6 +156,15 @@ describe('a project’s stages', () => {
       ['Phone screen', 2],
       ['Rejected', 0],
     ])
+    // Logged on each task at it as a rename, not a move: its time at the stage goes on (BUG-045).
+    for (const t of [t1, t2]) {
+      const logged = await eventsOf(ctx, t)
+      expect(logged.filter((e) => e.type === 'stage_renamed').map((e) => e.payload)).toEqual([
+        { from: 'Phone Screen', to: 'Phone screen' },
+      ])
+      expect(logged.filter((e) => e.type === 'stage_changed')).toHaveLength(1)
+    }
+    expect(await sinceOf(ctx, t1)).toBe(before)
 
     // A stage in use cannot be left out; an unused one can.
     const inUse = await put(ctx, projectId, [

@@ -19,7 +19,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { useMutation } from '@tanstack/react-query'
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { nearDay, shortDay, ymd } from '../../../../platform/time/dates'
 import { meetingWhen } from '../../../../platform/time/meetingWhen'
 import { useNow } from '../../../../platform/time/useNow'
@@ -114,6 +114,25 @@ export function StageBoard({
     setError(null)
     actions.patch(id, { stageId: to })
   }
+  // A card moved from the keyboard keeps focus once it has been drawn in its new column (the
+  // change reaches the cache a tick after the key), or the strip it went into has it (BUG-044).
+  const focusNext = useRef<{ card: TaskId; in: StageId } | { strip: StageId } | null>(null)
+  useEffect(() => {
+    const next = focusNext.current
+    if (!next) return
+    const el =
+      'card' in next
+        ? cards.get(next.card)
+        : document.querySelector<HTMLElement>(`[data-stage-strip="${next.strip}"]`)
+    if (!el) return
+    if (
+      'card' in next &&
+      el.closest<HTMLElement>('[data-stage-column]')?.dataset.stageColumn !== next.in
+    )
+      return
+    focusNext.current = null
+    el.focus()
+  })
   const [lifted, setLifted] = useState<TaskId | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -128,7 +147,9 @@ export function StageBoard({
       e.preventDefault()
       const here = data.stages.findIndex((s) => s.id === byId.get(from)?.stageId)
       const to = data.stages[here + (arrow === 'ArrowLeft' ? -1 : 1)]
-      if (here >= 0 && to) move(from, to.id)
+      if (here < 0 || !to) return
+      move(from, to.id)
+      focusNext.current = opened(to) ? { card: from, in: to.id } : { strip: to.id }
       return
     }
     e.preventDefault()

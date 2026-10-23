@@ -65,6 +65,8 @@ export function describeTaskChange(
       const stage = text(now)
       return { mark: null, text: stage ? `Stage set to ${stage}` : 'Stage cleared' }
     }
+    case 'stage_renamed':
+      return { mark: null, text: `Stage renamed ${text(was) ?? ''} → ${text(now) ?? ''}` }
     case 'moved':
       return { mark: null, text: 'Moved' }
     // Named by the title it had then; a change logged before titles were kept says less.

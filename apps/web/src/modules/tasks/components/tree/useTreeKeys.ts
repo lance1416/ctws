@@ -19,6 +19,7 @@ export function useTreeKeys({
   move,
   toggle,
   focusRow,
+  moveTo,
 }: {
   rows: () => readonly FlatRow[]
   statusOf: (id: TaskId) => TaskStatus
@@ -31,6 +32,8 @@ export function useTreeKeys({
   toggle: (id: TaskId) => void
   /** Focuses this row, if there is one. */
   focusRow: (row: FlatRow | undefined) => void
+  /** Opens Move to… for this row; only the inbox's rows have it (FR-059). */
+  moveTo?: ((id: TaskId) => void) | undefined
 }) {
   const keys = useKeyTable(TREE_KEYS)
 
@@ -56,6 +59,7 @@ export function useTreeKeys({
         const next = index + blockLength(rows, index)
         if (next < rows.length) move(rows, row.id, next + blockLength(rows, next), row.depth)
       },
+      ...(moveTo ? { moveTo: () => moveTo(row.id) } : {}),
       indent: () => move(rows, row.id, index, row.depth + 1),
       outdent: () => move(rows, row.id, index, row.depth - 1),
       // Clamped, not wrapping: a jump from bottom to top loses the person's place.
