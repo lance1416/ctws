@@ -81,10 +81,12 @@ test('a link added while the overview is still loading is on it', async ({ page 
   await capture(page).press('Enter')
   await made
   release()
-  await expect(toRead(page)).toContainText('typography.invalid/elements')
+  await expect(
+    toRead(page).getByRole('link', { name: /^elements\s*typography\.invalid/ }),
+  ).toBeVisible()
 })
 
-test('an untitled link is named by host and path, and its page opens it away from the app', async ({
+test('an untitled link is named by its path beside its site, and by host and path on its page', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -94,10 +96,11 @@ test('an untitled link is named by host and path, and its page opens it away fro
   })
   await page.goto('/reading')
 
-  // A pasted link shows its HOST AND PATH -- the host alone ("x.com", "github.com") does not
-  // say which tweet or which repo, so a row of it carries no information at all.
+  // In a row its site is said once, on the right; its name is the path, which says which page
+  // (R-02). The host alone ("x.com", "github.com") would not say which tweet or which repo.
   const row = page.locator(`[data-to-read="${item.id}"]`)
-  await expect(row).toContainText('linear.invalid/now/how-we-redesigned-issues')
+  await expect(row.locator('span').nth(0)).toHaveText('now/how-we-redesigned-issues')
+  await expect(row.locator('span').nth(1)).toHaveText('linear.invalid')
   await row.click()
   await expect(page).toHaveURL(new RegExp(`/reading/${item.id}$`))
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
@@ -203,7 +206,7 @@ test('a reading item is deleted from the foot of its edit page, after one questi
   await expect(page).toHaveURL(new RegExp(`/reading/${id}/edit$`))
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Edit 设计心理学')
 
-  const remove = page.getByRole('button', { name: 'Delete item' })
+  const remove = page.getByRole('button', { name: 'Delete 设计心理学' })
   // The last thing on the page: the form, and its Save, are above it.
   const [box, save] = await Promise.all([
     remove.boundingBox(),
@@ -213,7 +216,9 @@ test('a reading item is deleted from the foot of its edit page, after one questi
 
   await remove.click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this item' })
-  await expect(ask).toContainText('Delete “设计心理学”?')
+  await expect(ask).toContainText(
+    'Delete 设计心理学? It goes from your reading. Notes about it, and the people, tasks and projects it is linked to, stay.',
+  )
   expect(deletes).toHaveLength(0)
   await ask.getByRole('button', { name: /^Delete/ }).click()
   await expect(page).toHaveURL(/\/reading$/)
@@ -329,7 +334,9 @@ test('the overview has a card for each item being read: who recommended it or it
   await expect(ying).toContainText('Reading')
   await expect(ying).toContainText('Recommended by Ying Chen')
   const ctws = page.locator(`[data-reading-card="${forCtws}"]`)
-  await expect(ctws).toContainText('linear.invalid/now/how-we-redesigned-issues')
+  // Its path for a name, its site under it once (R-02).
+  await expect(ctws).toContainText('now/how-we-redesigned-issues')
+  await expect(ctws).toContainText('linear.invalid')
   await expect(ctws).toContainText('In CTWS')
   // What is waiting is not a card; it is a row under To read.
   await expect(toRead(page)).toContainText('Waiting book')
@@ -363,7 +370,8 @@ test('N finished opens the sidebar on what is finished, with what was dropped ap
   await page.goto('/reading')
   await expect(sidebarPart(page, 'To read')).toContainText('Waiting book')
 
-  await page.getByRole('main').getByRole('link', { name: '2 finished' }).click()
+  // What was dropped is not finished (BUG-055).
+  await page.getByRole('main').getByRole('link', { name: '1 finished' }).click()
   await expect(page).toHaveURL(/\/reading\?list=finished$/)
   await expect(sidebarPart(page, 'Finished')).toContainText('Finished book')
   await expect(sidebarPart(page, 'Finished')).not.toContainText('Dropped book')
@@ -385,7 +393,9 @@ test('Add reading opens the capture box on Reading', async ({ page }) => {
   // A link pasted there is on the list.
   await capture(page).fill('https://typography.invalid/elements')
   await capture(page).press('Enter')
-  await expect(toRead(page)).toContainText('typography.invalid/elements')
+  await expect(
+    toRead(page).getByRole('link', { name: /^elements\s*typography\.invalid/ }),
+  ).toBeVisible()
 })
 
 test('a book title typed in the capture box on Reading is a book to read', async ({ page }) => {
@@ -485,4 +495,38 @@ test('starting a book from its page puts Started reading on its timeline', async
   await setStatus(page, 'Reading')
   expect((await patched).ok()).toBe(true)
   await expect(timeline).toContainText('Started reading')
+})
+
+test('who recommended it is picked on the edit page, shown with their face, and cleared', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const mira = await apiPost(page, '/people', { givenName: 'Mira', familyName: 'Chen' })
+  const id = await makeReading(page, { kind: 'book', title: 'Thinking in Systems' })
+  await page.goto(`/reading/${id}/edit`)
+
+  // People only, one of them (FR-073).
+  await page.getByRole('button', { name: 'Recommended by: Nobody' }).click()
+  const picker = page.getByRole('dialog')
+  await picker.getByRole('combobox').fill('Mira')
+  await picker.getByRole('option', { name: /Mira Chen/ }).click()
+  await expect(page.getByRole('button', { name: 'Recommended by: Mira Chen' })).toBeVisible()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`/reading/${id}$`))
+
+  // On its page: an avatar and a name, the way to the person (R-03); the timeline says so.
+  const by = page.locator(`[data-recommended-by="${mira.id}"]`)
+  await expect(by).toHaveText('MCMira Chen')
+  await expect(page.locator('[data-timeline-entry="change"]').first()).toContainText(
+    'Recommended by Mira Chen',
+  )
+
+  await page.getByRole('main').getByRole('link', { name: 'Edit', exact: true }).click()
+  await page.getByRole('button', { name: 'Clear who recommended it' }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`/reading/${id}$`))
+  await expect(by).toHaveCount(0)
+  await expect(page.locator('[data-timeline-entry="change"]').first()).toContainText(
+    'No longer recommended by Mira Chen',
+  )
 })

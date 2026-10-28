@@ -17,7 +17,7 @@ const BECAME: Record<ReadingStatus, string> = {
 
 /**
  * A reading item's changes on its timeline (FR-073): "Added", "Started reading", "Finished",
- * "Renamed from …", "Finish by Oct 3". Which project it moved to says nothing here: its head says.
+ * "Renamed from …", "Finish by Oct 3", "Recommended by Mira Chen". Which project it moved to says nothing here: its head says.
  */
 export function describeReadingChange(event: {
   type: string
@@ -39,6 +39,13 @@ export function describeReadingChange(event: {
       if (which === 'title') {
         const old = text(was)
         return old ? { mark: <EditIcon size={16} />, text: `Renamed from “${old}”` } : null
+      }
+      if (which === 'recommendedBy') {
+        const to = text(field(event.payload, 'toName'))
+        const from = text(field(event.payload, 'fromName'))
+        const Mark = KIND_ICON.person
+        if (to) return { mark: <Mark size={16} />, text: `Recommended by ${to}` }
+        return from ? { mark: <Mark size={16} />, text: `No longer recommended by ${from}` } : null
       }
       if (which === 'planOn') {
         const day = text(now)

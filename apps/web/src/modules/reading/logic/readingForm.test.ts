@@ -9,6 +9,7 @@ const link: ReadingForm = {
   status: 'reading',
   planOn: '2026-10-20',
   projectId: null,
+  recommendedBy: null,
 }
 
 describe('the reading form', () => {
@@ -19,6 +20,7 @@ describe('the reading form', () => {
       status: 'reading',
       planOn: '2026-10-20',
       projectId: null,
+      recommendedById: null,
     })
   })
 
@@ -28,6 +30,7 @@ describe('the reading form', () => {
       status: 'reading',
       planOn: '2026-10-20',
       projectId: null,
+      recommendedById: null,
     })
   })
 
@@ -40,6 +43,15 @@ describe('the reading form', () => {
       status: 'reading',
       planOn: '2026-10-20',
       projectId: null,
+      recommendedById: null,
     })
+  })
+
+  it('sends who recommended it as their id, and nobody as null', () => {
+    const mira = { id: '6f1c2a3b-0000-4000-8000-000000000001', name: 'Mira Chen' } as const
+    expect(readingForm.parse({ ...link, recommendedBy: mira })).toMatchObject({
+      recommendedById: mira.id,
+    })
+    expect(readingForm.parse(link)).toMatchObject({ recommendedById: null })
   })
 })

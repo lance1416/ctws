@@ -112,7 +112,7 @@ test('a reading delete the server refuses says so, and the edit page stays', asy
   const item = await apiPost(page, '/reading', { kind: 'book', title: 'The C book' })
   await page.goto(`/reading/${item.id}/edit`)
   await refuse(page, `**/api/v1/reading/${item.id}`, 'DELETE')
-  await page.getByRole('button', { name: 'Delete item' }).click()
+  await page.getByRole('button', { name: 'Delete The C book' }).click()
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: /^Delete/ })

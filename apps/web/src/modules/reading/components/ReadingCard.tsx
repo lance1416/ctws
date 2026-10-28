@@ -4,7 +4,7 @@ import { shortDay, ymd } from '../../../platform/time/dates'
 import { KIND_ICON, LinkIcon } from '../../../platform/ui/icons'
 import { linkLabel } from '../../../platform/ui/url'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
-import { READING_STATUS_LABEL, readingLabel } from '../logic/item'
+import { nameBesideSite, READING_STATUS_LABEL } from '../logic/item'
 
 /** "martinfowler.com" for a link, the author for a book: the line under a title. */
 export const byline = (item: ReadingItemResponse) =>
@@ -32,7 +32,7 @@ export function ReadingCard({ item }: { item: ReadingItemResponse }) {
           <Icon size={16} />
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-ui font-medium text-ink">{readingLabel(item)}</span>
+          <span className="truncate text-ui font-medium text-ink">{nameBesideSite(item)}</span>
           {byline(item) && <span className="truncate text-meta text-muted">{byline(item)}</span>}
         </span>
         <span className="inline-flex h-5.5 shrink-0 items-center rounded-control bg-reading-bg px-2 text-meta font-medium text-reading-t">

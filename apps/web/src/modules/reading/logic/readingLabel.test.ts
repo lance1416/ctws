@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readingLabel } from './item'
+import { nameBesideSite, readingLabel } from './item'
 
 describe('readingLabel', () => {
   it('prefers the title someone typed', () => {
@@ -20,5 +20,17 @@ describe('readingLabel', () => {
 
   it('shows a url it cannot parse rather than an empty row', () => {
     expect(readingLabel({ title: null, url: 'not a url' })).toBe('not a url')
+  })
+})
+
+describe('nameBesideSite', () => {
+  it('names an untitled link by its path, its site being beside it (R-02)', () => {
+    expect(nameBesideSite({ title: null, url: 'https://stripe.com/blog/idempotency' })).toBe(
+      'blog/idempotency',
+    )
+    expect(nameBesideSite({ title: null, url: 'https://example.com/' })).toBe('example.com')
+    expect(nameBesideSite({ title: 'Payment retries', url: 'https://stripe.com/blog/x' })).toBe(
+      'Payment retries',
+    )
   })
 })

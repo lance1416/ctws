@@ -55,10 +55,11 @@ test('a note deleted from its page is gone from Recent, and the rest stay', asyn
   await expect(rows(page)).toHaveCount(2)
 
   await row(page, doomed.id).click()
-  await page.getByRole('button', { name: 'Delete this note' }).click()
-  const ask = page.getByRole('alertdialog', { name: 'Delete this note' })
-  await expect(ask).toContainText('Delete “Delete me”?')
-  await ask.getByRole('button', { name: 'Delete this note' }).click()
+  // The button says what it deletes (FR-035, R-06).
+  await page.getByRole('button', { name: 'Delete Delete me' }).click()
+  const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this note' })
+  await expect(ask).toContainText('Delete Delete me? The note goes. What it hangs on stays.')
+  await ask.getByRole('button', { name: 'Delete Delete me' }).click()
 
   await expect(page).toHaveURL(/\/notes$/)
   await expect(rows(page)).toHaveCount(1)
@@ -105,4 +106,16 @@ test('an empty Notes is the module empty state, whose button starts a note', asy
     .click()
   await expect(page).toHaveURL(/\/notes\/new$/)
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
+})
+
+test('an untitled note’s Title box says what it is called, its first line (R-05)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const note = await apiPost(page, '/notes', { body: '## Updates\n- Billing in staging.' })
+  await page.goto(`/notes/${note.id}`)
+  const title = page.getByRole('textbox', { name: 'Title' })
+  await expect(title).toHaveValue('')
+  await expect(title).toHaveAttribute('placeholder', 'Updates')
+  await expect(page.getByRole('main').getByRole('button', { name: 'Delete Updates' })).toBeVisible()
 })

@@ -20,6 +20,7 @@ import {
   OpenFullIcon,
   type IconComponent,
 } from '../../../platform/ui/icons'
+import { Avatar } from '../../../platform/ui/Avatar'
 import { PickOne } from '../../../platform/ui/inline'
 import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
 import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
@@ -86,10 +87,11 @@ function ReadingPage({ item }: { item: ReadingItemResponse }) {
       <div className="grid items-start gap-4 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
         <Profile item={item} />
         <div className="flex min-w-0 flex-col gap-4">
+          {/* What it is linked to, then what happened to it: as a person's page has them (R-04). */}
+          <div className="grid items-start gap-3 xl:grid-cols-2">{blocks}</div>
           <div className="rounded-block border border-line bg-panel p-4">
             <Timeline of={{ type: 'reading', id: item.id }} />
           </div>
-          <div className="grid items-start gap-3 xl:grid-cols-2">{blocks}</div>
           {picker}
         </div>
       </div>
@@ -192,8 +194,10 @@ function Profile({ item }: { item: ReadingItemResponse }) {
         <Section title="Recommended by" icon={KIND_ICON.person}>
           <Link
             to={`/people/${item.recommendedBy.id}`}
-            className="pl-6 text-ui text-ink hover:underline"
+            data-recommended-by={item.recommendedBy.id}
+            className="flex items-center gap-2 pl-6 text-ui text-ink hover:underline"
           >
+            <Avatar initials={initialsOf(item.recommendedBy.name)} />
             {item.recommendedBy.name}
           </Link>
         </Section>
@@ -291,4 +295,16 @@ function EditPage({ item }: { item: ReadingItemResponse }) {
       </DangerZone>
     </div>
   )
+}
+
+/**
+ * A person's initials from their name alone, as their avatar shows them: the first character of a
+ * Chinese name, the first letters of the first and last words of any other.
+ */
+function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/)
+  const first = [...(words[0] ?? '')][0] ?? ''
+  if (/\p{Script=Han}/u.test(first)) return first
+  const last = words.length > 1 ? ([...words.at(-1)!][0] ?? '') : ''
+  return (first + last).toUpperCase()
 }

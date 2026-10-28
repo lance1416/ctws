@@ -1,4 +1,6 @@
 import {
+  idFrom,
+  personId,
   type ReadingItemResponse,
   type ReadingStatus,
   type UpdateReadingItemBody,
@@ -20,6 +22,10 @@ import { Field } from '../../../platform/ui/Field'
 import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
+import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
+import { CloseIcon } from '../../../platform/ui/icons'
+import { PickThing } from '../../../shell/search'
+import { useState } from 'react'
 
 export const STATUS_CHOICES = (Object.keys(READING_STATUS_LABEL) as ReadingStatus[]).map((s) => ({
   value: s,
@@ -57,7 +63,7 @@ export function ReadingForm({
     // A book with no title is simply not saved, as before; focus stays where it is.
     shouldFocusError: false,
   })
-  const { status, planOn, projectId } = form.watch()
+  const { status, planOn, projectId, recommendedBy } = form.watch()
   const dirty = { shouldDirty: true }
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
@@ -130,9 +136,72 @@ export function ReadingForm({
               none="Not on any project"
             />
           </Field>
+          <Field label="Recommended by">
+            <RecommendedBy
+              item={item}
+              value={recommendedBy}
+              onPick={(who) => form.setValue('recommendedBy', who, dirty)}
+            />
+          </Field>
         </div>
       </div>
     </form>
+  )
+}
+
+type Recommender = ReadingForm['recommendedBy']
+
+/**
+ * Who recommended it (FR-073): one person, picked from people only, or nobody. The name is the
+ * picker's trigger; the × beside it clears it.
+ */
+function RecommendedBy({
+  item,
+  value,
+  onPick,
+}: {
+  item: ReadingItemResponse
+  value: Recommender
+  onPick: (who: Recommender) => void
+}) {
+  const [picking, setPicking] = useState(false)
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={() => setPicking(true)}
+        aria-label={`Recommended by: ${value?.name ?? 'Nobody'}`}
+        className="-mx-1.5 flex h-8 min-w-0 items-center rounded-control px-1.5 text-ui text-ink hover:bg-hover"
+      >
+        <span className={`truncate ${value ? '' : 'text-subtle'}`}>{value?.name ?? 'Nobody'}</span>
+      </button>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onPick(null)}
+          aria-label="Clear who recommended it"
+          title="Clear who recommended it"
+          className={ICON_BUTTON}
+        >
+          <CloseIcon size={14} aria-hidden="true" />
+        </button>
+      )}
+      {picking && (
+        <PickThing
+          of={{ type: 'reading', id: item.id }}
+          title={`Who recommended “${readingLabel(item)}”?`}
+          only="person"
+          leaveOut={value ? [value.id] : []}
+          busy={false}
+          error={null}
+          onPick={(thing) => {
+            onPick({ id: idFrom(personId, thing.id), name: thing.title })
+            setPicking(false)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
+    </div>
   )
 }
 
@@ -153,9 +222,10 @@ export function DeleteReading({
   return (
     <>
       <DangerAction
-        label="Delete item"
+        label={`Delete ${readingLabel(item)}`}
         confirmLabel="Confirm deleting this item"
-        message={`Delete “${readingLabel(item)}”? This cannot be undone.`}
+        // What goes, then what stays (FR-035).
+        message={`Delete ${readingLabel(item)}? It goes from your reading. Notes about it, and the people, tasks and projects it is linked to, stay.`}
         busy={drop.isPending}
         onConfirm={() => drop.mutate()}
       />

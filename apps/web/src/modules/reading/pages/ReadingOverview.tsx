@@ -13,7 +13,7 @@ import { ModuleEmpty } from '../../../shell/layout'
 import { readingQuery } from '../api'
 import { AddReading } from '../components/AddReading'
 import { byline, ReadingCard } from '../components/ReadingCard'
-import { isToRead, readingLabel } from '../logic/item'
+import { nameBesideSite } from '../logic/item'
 
 /** The To read block shows this many before "All N" (FR-072). */
 const SHOWN = 5
@@ -34,7 +34,9 @@ export function ReadingOverview() {
   if (items.isSuccess && rows.length === 0 && !by)
     return <ModuleEmpty kind="reading" onNew={() => openCapture('reading')} />
   const reading = rows.filter((i) => i.status === 'reading')
-  const finished = rows.filter((i) => !isToRead(i)).length
+  // Read to the end, not given up on: what was dropped is apart in the sidebar (BUG-055).
+  const finished = rows.filter((i) => i.status === 'done').length
+  const dropped = rows.filter((i) => i.status === 'dropped').length
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-3">
@@ -63,13 +65,19 @@ export function ReadingOverview() {
             </section>
           )}
           <ToRead />
-          {finished > 0 && (
+          {(finished > 0 || dropped > 0) && (
             <Link
               to="/reading?list=finished"
-              className="inline-flex items-center gap-1.5 self-start text-meta text-muted hover:text-ink"
+              className="inline-flex items-center gap-3 self-start text-meta text-muted hover:text-ink"
             >
-              <DoneIcon size={12} aria-hidden="true" />
-              {finished} finished
+              {finished > 0 && (
+                <span className="inline-flex items-center gap-1.5">
+                  <DoneIcon size={12} aria-hidden="true" />
+                  {finished} finished
+                </span>
+              )}
+              {/* Given up on is not read: counted apart (R-01). */}
+              {dropped > 0 && <span>{dropped} dropped</span>}
             </Link>
           )}
         </>
@@ -104,7 +112,7 @@ function ToRead() {
                 className="grid min-h-9 grid-cols-[16px_minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
               >
                 <Icon size={16} aria-hidden="true" className="text-reading" />
-                <span className="truncate text-ink">{readingLabel(i)}</span>
+                <span className="truncate text-ink">{nameBesideSite(i)}</span>
                 <span className="truncate text-meta text-muted">{byline(i) ?? ''}</span>
                 <span className="text-right font-mono text-meta text-muted tabular-nums">
                   {monthDay(ymd(new Date(i.createdAt), zone))}

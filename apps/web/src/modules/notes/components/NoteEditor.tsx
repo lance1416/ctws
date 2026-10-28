@@ -5,6 +5,7 @@ import { problemText } from '../../../platform/http/api'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { area, field } from '../../../platform/ui/formStyles'
 import { createNote, noteKeys, notesQuery, patchNote } from '../api'
+import { noteTitle } from '../logic/title'
 
 /** How long the text rests before what is typed is saved. */
 const SAVE_AFTER_MS = 800
@@ -26,6 +27,11 @@ export function NoteEditor({
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
   const [preview, setPreview] = useState(body)
+  // Untitled, it is called by its first line, as lists call it; the box says so (R-05).
+  const named =
+    body.trim() || note?.anchor
+      ? noteTitle({ title: null, body, anchor: note?.anchor ?? null })
+      : null
   const made = useRef<NoteResponse | null>(note)
   const save = useMutation({
     mutationFn: async (next: { title: string; body: string }) => {
@@ -80,11 +86,11 @@ export function NoteEditor({
     <div className="flex flex-col gap-3">
       <input
         aria-label="Title"
-        placeholder="Title"
+        placeholder={named ?? 'Title'}
         value={title}
         autoFocus={note === null}
         onChange={(e) => setTitle(e.target.value)}
-        className={`${field} h-9 text-subject`}
+        className={`${field} h-9 text-subject ${named ? 'placeholder:text-ink' : ''}`}
       />
       <div className="grid items-start gap-3 lg:grid-cols-2">
         <textarea

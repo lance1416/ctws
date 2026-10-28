@@ -70,11 +70,13 @@ export async function updateReadingItem(
       throw new WrongKindError('empty title', 'book')
     }
     if (patch.projectId) await assertProjectsVisible(tx, workspaceId, [patch.projectId])
-    if (patch.recommendedById) {
-      const who = await registry
-        .of('person')
-        .rows(tx, workspaceId, { ids: [patch.recommendedById], limit: 1 })
-      if (who.length === 0) throw new NotFound('Person')
+    // Who is named, then and now: the timeline says them, and reading does not know people.
+    const named = new Map<string, string>()
+    const asked = [patch.recommendedById, current.recommendedBy].filter((x) => !!x) as string[]
+    if (patch.recommendedById !== undefined && asked.length > 0) {
+      const who = await registry.of('person').rows(tx, workspaceId, { ids: asked, limit: 2 })
+      for (const p of who) named.set(p.id, p.title)
+      if (patch.recommendedById && !named.has(patch.recommendedById)) throw new NotFound('Person')
     }
 
     const { recommendedById, ...fields } = patch
@@ -90,6 +92,8 @@ export async function updateReadingItem(
         field: 'recommendedBy',
         from: current.recommendedBy,
         to: recommendedById,
+        fromName: current.recommendedBy ? (named.get(current.recommendedBy) ?? null) : null,
+        toName: recommendedById ? (named.get(recommendedById) ?? null) : null,
       })
     }
     await tx

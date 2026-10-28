@@ -106,10 +106,10 @@ function DeleteNote({ note, onDeleted }: { note: NoteResponse; onDeleted: () => 
   return (
     <>
       <DangerAction
-        label="Delete this note"
-        confirmLabel="Delete this note"
-        message={`Delete “${noteTitle(note)}”? What it hangs on stays.`}
-        confirm="Delete this note"
+        label={`Delete ${noteTitle(note)}`}
+        confirmLabel="Confirm deleting this note"
+        message={`Delete ${noteTitle(note)}? The note goes. What it hangs on stays.`}
+        confirm={`Delete ${noteTitle(note)}`}
         busy={drop.isPending}
         onConfirm={() => drop.mutate()}
       />

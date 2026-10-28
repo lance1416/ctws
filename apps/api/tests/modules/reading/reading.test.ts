@@ -1,4 +1,5 @@
 import type { ReadingItemResponse } from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { setupWith, type Harness, web, secondUser } from '../../helpers/harness'
 import { createProject, createReading } from '../../helpers/builders'
@@ -111,9 +112,8 @@ describe('reading list', () => {
     expect(kept).toMatchObject({ title: '留下来的书', projectId: null, projectName: null })
   })
 
-  it('lists only what belongs to no project, for the workbench widget', async () => {
-    // UNFILED: the workbench card's whole contents. What is filed under a project is on that
-    // project's page, and a widget that repeated it would make two places to keep in your head.
+  it('lists only what belongs to no project, for the line under Reading in Things', async () => {
+    // UNFILED: what is filed under a project is on that project's page; the line counts the rest.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
     await filed(ctx, { kind: 'link', url: 'https://x.test/filed' }, pid)
@@ -224,5 +224,51 @@ describe('adding in a flood', () => {
     expect(answers.slice(0, 30)).toEqual(Array(30).fill(201))
     expect(answers[30]).toBe(429)
     expect((await add(other, { kind: 'book', title: 'Mine' })).statusCode).toBe(201)
+  })
+})
+
+describe('who recommended it (FR-073)', () => {
+  it('is set, changed and cleared on the item, each a line naming them on its timeline', async () => {
+    const ctx = await setup()
+    const item = await createReading(ctx, { kind: 'book', title: 'Thinking in Systems' })
+    const person = async (givenName: string) => {
+      const r = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/people',
+        headers: web(ctx),
+        payload: { givenName },
+      })
+      return (r.json() as { id: string }).id
+    }
+    const mira = await person('Mira')
+    const james = await person('James')
+    const set = async (recommendedById: string | null) => {
+      const res = await patch(ctx, item.id, { recommendedById })
+      expect(res.statusCode, res.body).toBe(200)
+      return (res.json() as ReadingItemResponse).recommendedBy
+    }
+    expect(await set(mira)).toEqual({ id: mira, name: 'Mira' })
+    expect(await set(james)).toEqual({ id: james, name: 'James' })
+    expect(await set(null)).toBeNull()
+
+    const lines = await ctx.db.execute(sql`
+      select payload from events
+      where object_type = 'reading' and object_id = ${item.id} and type = 'field_changed'
+      order by occurred_at, id
+    `)
+    expect(lines.rows.map((r) => r.payload)).toEqual([
+      { field: 'recommendedBy', from: null, to: mira, fromName: null, toName: 'Mira' },
+      { field: 'recommendedBy', from: mira, to: james, fromName: 'Mira', toName: 'James' },
+      { field: 'recommendedBy', from: james, to: null, fromName: 'James', toName: null },
+    ])
+  })
+
+  it('refuses someone who is not there', async () => {
+    const ctx = await setup()
+    const item = await createReading(ctx, { kind: 'book', title: 'Thinking in Systems' })
+    const res = await patch(ctx, item.id, {
+      recommendedById: '00000000-0000-4000-8000-000000000000',
+    })
+    expect(res.statusCode).toBe(404)
   })
 })

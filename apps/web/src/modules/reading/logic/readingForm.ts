@@ -1,4 +1,5 @@
 import {
+  personId,
   projectId,
   READING_KINDS,
   READING_STATUSES,
@@ -21,6 +22,7 @@ export const readingForm = z
     status: z.enum(READING_STATUSES),
     planOn: z.string().nullable(),
     projectId: projectId.nullable(),
+    recommendedBy: z.object({ id: personId, name: z.string() }).nullable(),
   })
   .refine((v) => v.kind === 'link' || v.title.trim() !== '', { path: ['title'] })
   .transform((v): UpdateReadingItemBody => ({
@@ -30,6 +32,7 @@ export const readingForm = z
     status: v.status,
     planOn: v.planOn,
     projectId: v.projectId,
+    recommendedById: v.recommendedBy?.id ?? null,
   }))
 export type ReadingForm = z.input<typeof readingForm>
 
@@ -42,4 +45,5 @@ export const readingDefaults = (item: ReadingItemResponse): ReadingForm => ({
   status: item.status,
   planOn: item.planOn,
   projectId: item.projectId,
+  recommendedBy: item.recommendedBy,
 })
