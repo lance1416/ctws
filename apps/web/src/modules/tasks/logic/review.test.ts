@@ -1,32 +1,67 @@
 import { describe, expect, it } from 'vitest'
-import { reviewRows, weekAfter, weekBefore } from './review'
+import { barShare, cellLines, weekStep, weeksByMonth } from './review'
 
 describe('stepping through weeks', () => {
-  it('steps back to the whole week before, Monday to Sunday', () => {
-    // This week so far is Mon 12 – Wed 14 October 2026.
-    expect(weekBefore('2026-10-12')).toEqual({ from: '2026-10-05', to: '2026-10-11' })
-  })
-
-  it('steps forward a whole week while that week is still past', () => {
-    expect(weekAfter('2026-09-28', '2026-10-12')).toEqual({ from: '2026-10-05', to: '2026-10-11' })
+  it('steps back a week, and forward while that week is past', () => {
+    expect(weekStep('2026-10-12', -1, '2026-10-19')).toBe('2026-10-05')
+    expect(weekStep('2026-10-05', 1, '2026-10-19')).toBe('2026-10-12')
   })
 
   it('steps forward into this week as the default, never past it', () => {
-    expect(weekAfter('2026-10-05', '2026-10-12')).toBeNull()
+    expect(weekStep('2026-10-12', 1, '2026-10-19')).toBeNull()
   })
 })
 
-describe("a project's rows", () => {
-  it('draws a task started and finished in one week once in each list, under its own key', () => {
-    const task = { id: 't1', title: 'Ship', at: '2026-10-14T09:00:00.000Z' }
-    const rows = reviewRows({
-      projectId: 'p1',
-      projectName: 'P',
-      finished: [task],
-      started: [task],
-      dropped: [],
-    } as unknown as Parameters<typeof reviewRows>[0])
-    expect(rows.map((r) => r.list)).toEqual(['finished', 'started'])
-    expect(new Set(rows.map((r) => r.key)).size).toBe(2)
+type Moved = Parameters<typeof cellLines>[0][number]
+
+const task = (id: string, parent: string | null = null) =>
+  ({
+    id,
+    title: id,
+    at: '2026-10-14T09:00:00.000Z',
+    parent: parent ? { id: parent, title: parent } : null,
+  }) as Moved
+
+describe("a cell's lines", () => {
+  it('tells the leaves of one parent as one line, the biggest first', () => {
+    const lines = cellLines(
+      [
+        task('a', 'Redesign'),
+        task('b', 'Backend'),
+        task('c', 'Redesign'),
+        task('d', 'Backend'),
+        task('e', 'Redesign'),
+        task('Release'),
+      ],
+      new Set(),
+    )
+    expect(
+      lines.map((l) => (l.kind === 'parent' ? `${l.parent.title} ${l.tasks.length}` : l.task.id)),
+    ).toEqual(['Redesign 3', 'Backend 2', 'Release'])
+  })
+
+  it('leaves a lone leaf as itself, unless its parent closed with it', () => {
+    expect(cellLines([task('a', 'Bugs')], new Set())[0]!.kind).toBe('task')
+    expect(cellLines([task('a', 'Bugs')], new Set(['Bugs']))[0]!.kind).toBe('parent')
+  })
+})
+
+describe('the weeks', () => {
+  it('fall under the month their Monday is in', () => {
+    const months = weeksByMonth([
+      { from: '2026-10-19' },
+      { from: '2026-10-05' },
+      { from: '2026-09-28' },
+    ])
+    expect(months.map((m) => [m.month, m.weeks.length])).toEqual([
+      ['2026-10', 2],
+      ['2026-09', 1],
+    ])
+  })
+
+  it('draw their bars on one scale, the busiest full', () => {
+    expect(barShare(25, 25)).toBe(100)
+    expect(barShare(14, 25)).toBe(56)
+    expect(barShare(0, 0)).toBe(0)
   })
 })

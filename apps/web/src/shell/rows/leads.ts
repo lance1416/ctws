@@ -55,15 +55,3 @@ export function leadFor(
   }
   return null
 }
-
-/**
- * A day in a week under review: its weekday from the window's first day on, so last week reads
- * Mon to Sun, and its date before the window.
- */
-export function weekDayWord(day: string, today: string, from: string): string {
-  if (day === today) return 'Today'
-  return day >= from && day < today ? weekdayOf(day, true) : monthDay(day)
-}
-
-/** One width for every list of tasks. */
-export const LIST_MEASURE = 'max-w-[64rem]'

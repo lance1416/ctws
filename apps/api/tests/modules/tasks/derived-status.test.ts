@@ -258,7 +258,7 @@ describe('the review counts leaves', () => {
     expect(project?.finished.map((t) => t.id).sort()).toEqual([a, b].sort())
     expect(project?.started).toEqual([])
     expect(project?.closedParents).toEqual([
-      { id: amazon, title: 'Amazon', at: expect.any(String) },
+      { id: amazon, title: 'Amazon', at: expect.any(String), parent: null },
     ])
   })
 })

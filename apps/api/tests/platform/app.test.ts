@@ -209,6 +209,7 @@ describe('the OpenAPI document', () => {
       'movement',
       'ready',
       'review',
+      'review-weeks',
       'today',
     ])
     expect(tasks.map((p) => p.name)).toEqual(

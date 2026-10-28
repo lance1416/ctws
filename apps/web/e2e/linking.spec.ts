@@ -323,7 +323,7 @@ test('the task pages still answer on their own addresses', async ({ page }) => {
   await page.goto('/today')
   await expect(page.locator('#today-heading')).toBeVisible()
   await page.goto('/review')
-  await expect(page.getByRole('heading', { level: 1, name: 'Review' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /^Week of / })).toBeVisible()
 })
 
 test('a project’s Organisations + writes a new one down on it, and Remove takes it off', async ({

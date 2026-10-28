@@ -18,6 +18,17 @@ export function Sidebar({ place }: { place: Place }) {
   const registry = useRegistry()
   const openNew = useContext(NewContext)
   if (place.id === 'projects') return <ProjectsSidebar />
+  const own = registry.pageSidebars[place.to]
+  if (own)
+    return (
+      <aside
+        aria-label={own.label}
+        className="flex w-sidebar shrink-0 flex-col border-r border-line bg-chrome"
+      >
+        <SidebarHead label={own.label} />
+        <own.List />
+      </aside>
+    )
   const kind = registry.kinds.find((k) => k.label === place.label)
   const Count = kind?.Count
   const List = kind?.List

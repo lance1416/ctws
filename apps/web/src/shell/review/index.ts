@@ -1,0 +1,1 @@
+export { useAlsoThisWeek } from './api'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dueTodayAt, leadFor, weekDayWord } from './leads'
+import { dueTodayAt, leadFor } from './leads'
 
 const TODAY = '2026-10-12' // a Monday
 const TZ = 'America/Toronto' // EDT, UTC-4, all of this month
@@ -63,20 +63,6 @@ describe('the margin', () => {
     expect(leadFor(row({ dueAt: '2027-01-05T14:30:00.000Z' }), TODAY, TZ)?.exact).toBe(
       'Due Jan 5, 2027, 09:30',
     )
-  })
-})
-
-describe('a day in the week under review', () => {
-  it('says today as Today', () => {
-    expect(weekDayWord(TODAY, TODAY, '2026-10-12')).toBe('Today')
-  })
-  it('names every day of the week by its weekday, the first included', () => {
-    // Reviewing the week of Oct 5 on Monday Oct 12: its Monday is a weekday, not "Oct 5".
-    expect(weekDayWord('2026-10-05', TODAY, '2026-10-05')).toBe('Mon')
-    expect(weekDayWord('2026-10-11', TODAY, '2026-10-05')).toBe('Sun')
-  })
-  it('names a day before the week by its date', () => {
-    expect(weekDayWord('2026-10-04', TODAY, '2026-10-05')).toBe('Oct 4')
   })
 })
 

@@ -3,6 +3,7 @@ import { readingConfig } from './config'
 import { readingLinkable } from './linkable'
 import { readingRoutes } from './routes'
 import { unfurl, type Unfurl } from './unfurl/unfurl'
+import { readingWeekCounts } from './weekCounts'
 
 /** Reading's one outside part is the fetch that reads a pasted link's own title. */
 export const readingModule: ModuleDefinition<{ unfurl: Unfurl }> = {
@@ -13,5 +14,6 @@ export const readingModule: ModuleDefinition<{ unfurl: Unfurl }> = {
       enabled: readingConfig(env).unfurl,
     }),
     linkable: readingLinkable,
+    weekCounts: readingWeekCounts,
   }),
 }

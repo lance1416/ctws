@@ -88,3 +88,15 @@ export const calendarDaysResponse = z.object({
   days: z.record(calendarDate, z.string()),
   festivals: z.record(calendarDate, z.string()),
 })
+
+/** A week's window for what the modules count of it, inclusive days in the account's zone. */
+export const weekCountsQuery = z
+  .object({ from: calendarDate, to: calendarDate })
+  .strict()
+  .refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
+
+/**
+ * What each module counted of the window, by the name it gives: "meetingsHeld", "peopleAdded". The
+ * review's "Also this week" (FR-081); the web words them.
+ */
+export const weekCountsResponse = z.object({ counts: z.record(z.string(), z.number().int()) })

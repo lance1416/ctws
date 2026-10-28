@@ -1,4 +1,6 @@
+import type { WorkspaceId } from '@ctws/contracts'
 import type { SQL } from 'drizzle-orm'
+import type { Queryable } from '../platform/db/client'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { TimelineSource } from './events'
 import type { Linkable } from './links/linkable'
@@ -10,6 +12,16 @@ import type { ProjectGraves } from './projects/service'
  * Each is SQL correlated through the literal `projects.id`.
  */
 export type ProjectColumns = Record<string, SQL<number>>
+
+/**
+ * What a module counts of a window for the review's "Also this week" (FR-081), each by a name no
+ * other module uses. The window is instants, its end no later than now.
+ */
+export type WeekCounts = (
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  window: { from: Date; to: Date },
+) => Promise<Record<string, number>>
 
 /** The environment as the process got it: a module reads its own settings from it. */
 export type EnvSource = Readonly<Record<string, string | undefined>>
@@ -40,4 +52,5 @@ export type ApiModule = {
   timelineSources?: (registry: LinkRegistry) => readonly TimelineSource[]
   /** What of this module's goes with a project when the project is deleted: the tasks in it. */
   projectGraves?: ProjectGraves
+  weekCounts?: WeekCounts
 }

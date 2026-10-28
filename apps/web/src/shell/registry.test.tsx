@@ -256,11 +256,22 @@ describe('what a write leaves stale', () => {
   const staleFor = build([notes, files]).staleFor
 
   it("is every module's queries that read the kind of thing it changed", () => {
-    expect(staleFor(['reading'])).toEqual([['links'], ['timeline'], ['notes']])
+    expect(staleFor(['reading'])).toEqual([
+      ['links'],
+      ['timeline'],
+      ['review', 'counts'],
+      ['notes'],
+    ])
   })
 
   it("takes in the project list when a module counts that kind into a project's columns", () => {
-    expect(staleFor(['task'])).toEqual([['links'], ['timeline'], ['projects'], ['files']])
+    expect(staleFor(['task'])).toEqual([
+      ['links'],
+      ['timeline'],
+      ['review', 'counts'],
+      ['projects'],
+      ['files'],
+    ])
   })
 
   it('reaches whatever names a project, and what it pins, when a project changes', () => {
@@ -268,14 +279,16 @@ describe('what a write leaves stale', () => {
       ['links'],
       ['resources', 'pinned'],
       ['timeline'],
+      ['review', 'counts'],
       ['projects'],
       ['notes'],
     ])
   })
 
-  it('is the links and timelines alone for a kind no module reads', () => {
-    // Any write may add a line to some thing's timeline, as it may change an edge's far end.
-    expect(staleFor(['person'])).toEqual([['links'], ['timeline']])
+  it("is the links, timelines and the review's counts alone for a kind no module reads", () => {
+    // Any write may add a line to some thing's timeline, as it may change an edge's far end, and
+    // the review counts every kind's things.
+    expect(staleFor(['person'])).toEqual([['links'], ['timeline'], ['review', 'counts']])
   })
 })
 

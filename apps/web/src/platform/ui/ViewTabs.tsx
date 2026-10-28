@@ -18,34 +18,3 @@ export function useViewParam(views: readonly View[]): [string, (id: string) => v
   }
   return [current, pick]
 }
-
-/** The tabs in a block's head, and in the calendar's. */
-export function ViewTabs({
-  views,
-  current,
-  onPick,
-}: {
-  views: readonly View[]
-  current: string
-  onPick: (id: string) => void
-}) {
-  if (views.length < 2) return null
-  return (
-    <span role="tablist" className="flex items-center gap-0.5">
-      {views.map((v) => (
-        <button
-          key={v.id}
-          type="button"
-          role="tab"
-          aria-selected={v.id === current}
-          onClick={() => onPick(v.id)}
-          className={`h-8 rounded-control px-2.5 text-ui ${
-            v.id === current ? 'bg-select text-ink' : 'text-muted hover:bg-hover hover:text-ink'
-          }`}
-        >
-          {v.label}
-        </button>
-      ))}
-    </span>
-  )
-}

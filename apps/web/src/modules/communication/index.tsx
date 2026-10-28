@@ -1,4 +1,5 @@
 import { topPage } from '../../shell/layout'
+import { ReceivedIcon, SentIcon } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { communicationKeys } from './api'
 import { AwaitingCount } from './components/CommunicationFacts'
@@ -44,6 +45,10 @@ export const communicationModule: WorkspaceModule = {
       resolve: () => `/${COMMUNICATION_ID}`,
       order: 45,
     },
+  ],
+  weekCounts: [
+    { key: 'messagesSent', label: 'Messages sent', icon: SentIcon, order: 30 },
+    { key: 'messagesReceived', label: 'Messages received', icon: ReceivedIcon, order: 40 },
   ],
   today: [{ id: 'follow-up', order: 10, Block: FollowUpsToday }],
   widgets: [{ place: 'awaiting', Component: AwaitingReply }],

@@ -36,6 +36,7 @@ export const taskKeys = {
   ready: (day: string) => ['tasks', 'ready', day] as const,
   search: (q: string) => ['tasks', 'search', q] as const,
   calendar: (range: Range) => ['tasks', 'calendar', range.from, range.to] as const,
+  reviewWeeks: (today: string) => ['tasks', 'review-weeks', today] as const,
   review: (range: Range | null) =>
     ['tasks', 'review', range?.from ?? 'week', range?.to ?? ''] as const,
   dependencies: (id: TaskId) => ['tasks', 'dependencies', id] as const,
@@ -123,6 +124,14 @@ export const reviewQuery = (range: Range | null) =>
     queryKey: taskKeys.review(range),
     queryFn: ({ signal }) =>
       call(api.tasks.review, { query: { view: 'review', ...range } }, { signal }),
+  })
+
+/** The review's weeks with how many each finished; read again on a new day, when one begins. */
+export const reviewWeeksQuery = (today: string) =>
+  queryOptions({
+    queryKey: taskKeys.reviewWeeks(today),
+    queryFn: async ({ signal }) =>
+      (await call(api.tasks.reviewWeeks, { query: { view: 'review-weeks' } }, { signal })).weeks,
   })
 
 /** Both directions for one task, finished blockers included -- what the detail pane shows. */

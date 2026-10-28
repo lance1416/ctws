@@ -11,22 +11,8 @@ import { useProjectRail } from '../projects/projectColor'
  * threads still read as one column.
  */
 
-/**
- * The body's gutter after the thread: 8px on a phone, 14px from 640 up. A CSS variable, so the
- * row, its guides and the new-task input all offset from one value (`gutterPlus`).
- */
-const BODY_GUTTER = '[--gutter:8px] sm:[--gutter:14px]'
-
-/**
- * A row's body after the thread: it takes the rest of the row and starts at the gutter, so every
- * list's markers and titles line up. A tree row sets its own `padding-left` from the gutter.
- */
-export const ROW_BODY = `flex min-w-0 flex-1 pl-[var(--gutter)] ${BODY_GUTTER}`
-
 /** A row body whose gutter is 14px at every width: Today's rows, Done today and Completed. */
 export const ROW_BODY_WIDE = 'flex min-w-0 flex-1 pl-[var(--gutter)] [--gutter:14px]'
-
-export const ROW_LIST = 'flex flex-col'
 
 /**
  * The 3px project strand, full height so a run of one project's rows reads as one strand. Never

@@ -2,6 +2,7 @@ import {
   calendarDate,
   projectId,
   REVIEW_TRANSITIONS,
+  REVIEW_WEEKS,
   taskId,
   type ReviewList,
   type ReviewResponse,
@@ -38,6 +39,8 @@ const reviewRow = z.object({
   at: z.string(),
   /** A parent's change, worked out from its children rather than made (FR-043). */
   derived: z.boolean(),
+  parent_id: taskId.nullable(),
+  parent_title: z.string().nullable(),
 })
 
 const boundsRow = z.object({ from_day: calendarDate, to_day: calendarDate })
@@ -95,11 +98,14 @@ export async function listReview(
       t.title,
       ev.payload ->> 'to' as to_status,
       to_char(ev.occurred_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at,
-      coalesce((ev.payload ->> 'derived')::boolean, false) as derived
+      coalesce((ev.payload ->> 'derived')::boolean, false) as derived,
+      t.parent_id,
+      pt.title as parent_title
     from events ev
     join bounds b on true
     join tasks t on t.id = ev.object_id
     join projects p on p.id = t.project_id
+    left join tasks pt on pt.id = t.parent_id
     where ${scoped(events, workspaceId, 'ev')}
       and ev.object_type = 'task'
       and ev.type = 'status_changed'
@@ -124,16 +130,18 @@ export async function listReview(
       }
       byProject.set(r.project_id, group)
     }
+    const parent =
+      r.parent_id && r.parent_title !== null ? { id: r.parent_id, title: r.parent_title } : null
     // A parent closing is a heading over what closed it, not one more thing finished.
     if (r.derived) {
       if (r.to_status === 'done' && !group.closedParents.some((e) => e.id === r.task_id))
-        group.closedParents.push({ id: r.task_id, title: r.title, at: r.at })
+        group.closedParents.push({ id: r.task_id, title: r.title, at: r.at, parent })
       continue
     }
     const list = group[LIST_FOR[r.to_status]]
     // Once per task per list; rows are newest first, so the latest is kept.
     if (!list.some((e) => e.id === r.task_id))
-      list.push({ id: r.task_id, title: r.title, at: r.at })
+      list.push({ id: r.task_id, title: r.title, at: r.at, parent })
   }
 
   const stages = await q.execute(sql`
@@ -169,4 +177,49 @@ export async function listReview(
   }))
 
   return { from: edge.from_day, to: edge.to_day, projects: [...byProject.values()], stagesMoved }
+}
+
+const weekRow = z.object({ week: calendarDate, finished: z.coerce.number().int() })
+
+/**
+ * The last `REVIEW_WEEKS` weeks, this one first, each by its Monday in the account's zone with how
+ * many leaves it finished: the review's list of weeks, a week with nothing finished included.
+ * Counted as the review counts, once per task in its week.
+ */
+export async function listReviewWeeks(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  timezone: string,
+  now: Date,
+): Promise<{ from: string; finished: number }[]> {
+  const local = localNow(now, timezone)
+  const result = await q.execute(sql`
+    with weeks as (
+      select generate_series(
+        date_trunc('week', ${local}) - (${REVIEW_WEEKS - 1} * interval '1 week'),
+        date_trunc('week', ${local}),
+        interval '1 week'
+      ) as monday
+    ),
+    finished as (
+      select date_trunc('week', ev.occurred_at at time zone ${timezone}) as monday, ev.object_id
+      from events ev
+      join tasks t on t.id = ev.object_id
+      join projects p on p.id = t.project_id
+      where ${scoped(events, workspaceId, 'ev')}
+        and ev.object_type = 'task'
+        and ev.type = 'status_changed'
+        and ev.payload ->> 'to' = 'done'
+        and not coalesce((ev.payload ->> 'derived')::boolean, false)
+        and ev.occurred_at >= (date_trunc('week', ${local})
+          - (${REVIEW_WEEKS - 1} * interval '1 week')) at time zone ${timezone}
+        and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
+    )
+    select w.monday::date as week, count(distinct f.object_id) as finished
+    from weeks w
+    left join finished f on f.monday = w.monday
+    group by w.monday
+    order by w.monday desc
+  `)
+  return rowsOf(result, weekRow).map((r) => ({ from: r.week, finished: r.finished }))
 }

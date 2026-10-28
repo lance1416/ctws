@@ -102,10 +102,10 @@ for (const width of [320, 375]) {
       await expect(page.getByRole('main').getByText(shown).first()).toBeVisible()
       expect(await problems(page), path).toEqual([])
     }
-    // Review with its stepper at its widest: a week back, so "This week" is there too.
+    // Review a week back, where both steps are live.
     await page.goto('/review')
-    await page.getByRole('button', { name: 'The week before' }).click()
-    await expect(page.getByRole('button', { name: 'This week' })).toBeVisible()
+    await page.getByRole('button', { name: 'Previous week' }).click()
+    await expect(page.getByRole('button', { name: 'Next week' })).toBeEnabled()
     expect(await problems(page), 'review, a week back').toEqual([])
   })
 }

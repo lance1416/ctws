@@ -286,3 +286,15 @@ export async function meetingEntries(
   }))
   return { rows: entries, page }
 }
+
+/** How many occurrences began in a window, cancelled ones not: the review's "Meetings held". */
+export async function occurrencesBegun(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  window: Window,
+): Promise<number> {
+  const series = await hydrate(q, await selectSeries(q, workspaceId, window))
+  return series
+    .flatMap((s) => expand(s, window))
+    .filter((o) => o.startsAt >= window.from && o.startsAt < window.to).length
+}

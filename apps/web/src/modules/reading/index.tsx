@@ -1,4 +1,5 @@
 import { topPage } from '../../shell/layout'
+import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useRecommendedBy } from './hooks/personThings'
 import { useProjectReading } from './hooks/projectThings'
@@ -62,6 +63,9 @@ export const readingModule: WorkspaceModule = {
     useEntries: useReadingEntries,
     show: (e) => ({ to: `/${READING_ID}/${e.id}`, label: 'to read' }),
   },
+  weekCounts: [
+    { key: 'readingFinished', label: 'Reading finished', icon: KIND_ICON.reading, order: 50 },
+  ],
   widgets: [{ place: 'reading', Component: ReadingNow }],
   // A project's page lists its reading (FR-055).
   project: { Things: { kind: 'reading', useThings: useProjectReading } },

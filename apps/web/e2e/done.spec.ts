@@ -30,8 +30,12 @@ const nav = (page: Page) => page.getByRole('navigation', { name: 'Modules' })
  */
 const goCompleted = async (page: Page) => {
   await nav(page).getByRole('link', { name: 'Review' }).click()
-  await page.getByRole('tab', { name: 'Done' }).click()
-  await expect(page.getByRole('tab', { name: 'Done' })).toHaveAttribute('aria-selected', 'true')
+  // Under the weeks in Review's sidebar.
+  await page
+    .getByRole('navigation', { name: 'Weeks' })
+    .getByRole('button', { name: 'Done' })
+    .click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Done' })).toBeVisible()
 }
 
 const rowsIn = (page: Page, section: string | RegExp) =>

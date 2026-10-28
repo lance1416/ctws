@@ -22,6 +22,7 @@ import type {
   RelationContribution,
   ShownEntry,
   TodayBlock,
+  WeekCount,
   Widget,
   WorkbenchPlace,
   WorkspaceModule,
@@ -31,6 +32,7 @@ import { useTimeZone } from './auth/useMe'
 import { said } from './calendar/said'
 import { linkKeys } from './links/api'
 import { resourceKeys } from './resources/api'
+import { weekCountKeys } from './review/api'
 import { timelineKeys } from './timeline/Timeline'
 import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
@@ -152,6 +154,10 @@ export type Registry = {
   widgets: Partial<Record<WorkbenchPlace, RegisteredWidget>>
   /** Today's right column, every module's, in order. */
   todayBlocks: (TodayBlock & { moduleId: string })[]
+  /** The sidebars of pages across kinds, by the page's address. */
+  pageSidebars: Record<string, NonNullable<ModulePage['Sidebar']>>
+  /** What the review counts of a week, every module's, in order (FR-081). */
+  weekCounts: WeekCount[]
   relations: RegisteredRelation[]
   relationFor: (type: ObjectType) => RegisteredRelation
   projectMain: RegisteredProjectMain | null
@@ -210,6 +216,8 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     { queryKey: resourceKeys.pinned, of: ['project'] },
     // A timeline holds a thing's changes and whatever is said about it: any write may add a line.
     { queryKey: timelineKeys.all, of: OBJECT_TYPES },
+    // The review's counts are of every module's things.
+    { queryKey: weekCountKeys.all, of: OBJECT_TYPES },
     {
       queryKey: projectKeys.all,
       of: ['project', ...modules.flatMap((m) => m.project?.counts ?? [])],
@@ -241,6 +249,10 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     todayBlocks: modules
       .flatMap((m) => (m.today ?? []).map((b) => ({ ...b, moduleId: m.id })))
       .sort((a, b) => a.order - b.order),
+    pageSidebars: Object.fromEntries(
+      [...offered.values()].flatMap((p) => (p.Sidebar ? [[p.to, p.Sidebar] as const] : [])),
+    ),
+    weekCounts: modules.flatMap((m) => m.weekCounts ?? []).sort((a, b) => a.order - b.order),
     relations,
     relationFor: (type) => {
       const found = relations.find((r) => r.type === type)

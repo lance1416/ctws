@@ -183,4 +183,57 @@ describe('the weekly review', () => {
     expect(body.projects[0]!.finished.map((t) => t.title)).toEqual(['留下的'])
     expect(body.projects.map((p) => p.projectName)).toEqual(['改版'])
   })
+
+  it('names the parent of each leaf, so the leaves under one parent can be told as one line', async () => {
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'CTWS')
+    const redesign = await createTask(ctx, pid, 'Redesign')
+    const page = await createTask(ctx, pid, 'Draw the page list', redesign)
+    const alone = await createTask(ctx, pid, 'Release v0.30.1')
+    await setStatus(ctx, page, 'done')
+    await setStatus(ctx, alone, 'done')
+
+    const finished = (await review(ctx)).projects[0]!.finished
+    expect(finished.find((t) => t.id === page)!.parent).toEqual({ id: redesign, title: 'Redesign' })
+    expect(finished.find((t) => t.id === alone)!.parent).toBeNull()
+  })
+})
+
+describe('the weeks under review', () => {
+  it('counts what each of the last twelve weeks finished, newest first, empty weeks too', async () => {
+    // The clock moves as the weeks are lived; the eleven-pm finish is Sunday's in London.
+    let now = new Date('2026-10-07T10:00:00Z')
+    const clocked = await appWithUser(undefined, { timezone: 'Europe/London', clock: () => now })
+    cleanups.push(clocked.stop)
+    const pid = await createProject(clocked, 'CTWS')
+    const finish = async (title: string, at: string) => {
+      now = new Date(at)
+      await setStatus(clocked, await createTask(clocked, pid, title), 'done')
+    }
+    await finish('one', '2026-10-07T10:00:00Z')
+    await finish('two', '2026-10-13T10:00:00Z')
+    await finish('three', '2026-10-18T22:00:00Z')
+    // Done twice in one week is one thing finished.
+    const again = await createTask(clocked, pid, 'again')
+    now = new Date('2026-10-20T10:00:00Z')
+    await setStatus(clocked, again, 'done')
+    await setStatus(clocked, again, 'todo')
+    await setStatus(clocked, again, 'done')
+    now = new Date('2026-10-22T10:00:00Z')
+
+    const res = await clocked.app.inject({
+      method: 'GET',
+      url: '/api/v1/tasks?view=review-weeks',
+      headers: clocked.authed,
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    const { weeks } = res.json() as { weeks: { from: string; finished: number }[] }
+    expect(weeks).toHaveLength(12)
+    expect(weeks.slice(0, 4)).toEqual([
+      { from: '2026-10-19', finished: 1 },
+      { from: '2026-10-12', finished: 2 },
+      { from: '2026-10-05', finished: 1 },
+      { from: '2026-09-28', finished: 0 },
+    ])
+  })
 })

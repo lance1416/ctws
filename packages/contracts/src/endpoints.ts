@@ -10,6 +10,8 @@ import { loginBody, meResponse, registerBody, userResponse } from './auth'
 import { birthdayPreviewQuery, birthdayPreviewResponse } from './birthday'
 import {
   calendarDaysResponse,
+  weekCountsQuery,
+  weekCountsResponse,
   calendarEntriesResponse,
   calendarView,
   lunarDaysQuery,
@@ -132,6 +134,7 @@ import {
   projectTasksResponse,
   reviewQuery,
   reviewResponse,
+  reviewWeeksResponse,
   searchTasksResponse,
   taskParams,
   taskResponse,
@@ -466,6 +469,17 @@ export const api = {
     }),
   },
 
+  review: {
+    counts: endpoint({
+      method: 'GET',
+      path: '/review/counts',
+      summary: 'What each module counts of a week, for the review (FR-081).',
+      query: weekCountsQuery,
+      ok: 200,
+      response: weekCountsResponse,
+    }),
+  },
+
   cities: {
     search: endpoint({
       method: 'GET',
@@ -510,6 +524,14 @@ export const api = {
       query: viewQuery('ready'),
       ok: 200,
       response: readyResponse,
+    }),
+    reviewWeeks: endpoint({
+      method: 'GET',
+      path: '/tasks',
+      summary: 'The recent weeks and how many leaves each finished (view=review-weeks).',
+      query: viewQuery('review-weeks'),
+      ok: 200,
+      response: reviewWeeksResponse,
     }),
     review: endpoint({
       method: 'GET',

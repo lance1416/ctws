@@ -8,6 +8,7 @@ import { partyNames } from './names'
 import { communicationsWith } from './queries'
 import { communicationRoutes } from './routes'
 import { communications } from './tables'
+import { communicationWeekCounts } from './weekCounts'
 
 /**
  * A message on another thing's timeline (FR-045, FR-065): what was said with it, or about its
@@ -63,4 +64,5 @@ export const communicationModule = fixedModule({
   routes: communicationRoutes,
   linkable: communicationLinkable,
   timelineSources: (registry) => [messages(registry)],
+  weekCounts: communicationWeekCounts,
 })

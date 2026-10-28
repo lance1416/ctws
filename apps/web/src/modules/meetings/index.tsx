@@ -1,4 +1,5 @@
 import { topPage } from '../../shell/layout'
+import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useMeetingsWith } from './hooks/personThings'
 import { useProjectMeetings } from './hooks/projectThings'
@@ -62,6 +63,7 @@ export const meetingModule: WorkspaceModule = {
       Pane: CalendarOccurrence,
     },
   },
+  weekCounts: [{ key: 'meetingsHeld', label: 'Meetings held', icon: KIND_ICON.meeting, order: 10 }],
   widgets: [{ place: 'meetings', Component: NextMeetings }],
   // A project's page lists the meetings coming up in it (FR-055).
   project: { Things: { kind: 'meeting', useThings: useProjectMeetings } },

@@ -18,6 +18,7 @@ import { useRemembered } from './remembered'
 import { Shortcuts } from '../shortcuts/Shortcuts'
 import { MentionChip } from '../links/MentionChip'
 import { MentionContext, type Mention } from '../../platform/notes/mention'
+import { useRegistry } from '../registry'
 import { Sidebar } from './Sidebar'
 import { SubjectProvider, useSubject } from './subject'
 import { TopBar } from './TopBar'
@@ -98,8 +99,10 @@ function Frame({
     () => window.matchMedia('(min-width: 1280px)').matches,
   )
   const place = placeOf(pathname)
-  // The pages across kinds have no list beside them (artboard 7); Review's weeks come with its batch.
-  const hasSidebar = place !== null && place.kind !== null
+  // The pages across kinds have no list beside them (artboard 7) unless they bring one: Review's
+  // weeks (FR-081).
+  const registry = useRegistry()
+  const hasSidebar = place !== null && (place.kind !== null || place.to in registry.pageSidebars)
   const subject = useSubject()
   // What a New makes on a project page belongs to the project (FR-026).
   const onProject = useMatch('/projects/:id')

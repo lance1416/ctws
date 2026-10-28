@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import { KIND_ICON } from '../../platform/ui/icons'
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useProjectPeople } from './hooks/projectThings'
@@ -59,6 +60,7 @@ export const peopleModule: WorkspaceModule = {
     }),
   },
   widgets: [{ place: 'birthdays', Component: UpcomingBirthdays }],
+  weekCounts: [{ key: 'peopleAdded', label: 'People added', icon: KIND_ICON.person, order: 60 }],
   creates: [{ kind: 'person', key: 'p', label: 'Person', Dialog: NewPerson }],
   chords: [
     {

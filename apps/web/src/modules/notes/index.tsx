@@ -1,4 +1,5 @@
 import { topPage } from '../../shell/layout'
+import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { noteKeys } from './api'
 import { NotesCount, NotesSidebar } from './components/NotesSidebar'
@@ -31,6 +32,7 @@ export const notesModule: WorkspaceModule = {
   ],
   creates: [{ kind: 'note', key: 'n', label: 'Note', to: `/${NOTES_ID}/new` }],
   chords: [{ id: 'notes', key: 'n', label: 'Notes', resolve: () => `/${NOTES_ID}`, order: 55 }],
+  weekCounts: [{ key: 'meetingsWithNotes', label: 'With notes', icon: KIND_ICON.note, order: 20 }],
   relations: [{ type: 'note', kind: 'Note', plural: 'Notes', to: (id) => `/${NOTES_ID}/${id}` }],
   // What a note hangs on is named on it.
   reads: [

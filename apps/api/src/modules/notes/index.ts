@@ -4,6 +4,7 @@ import { fixedModule } from '../../shell/module'
 import { noteLinkable } from './linkable'
 import { notesOn, wordCount } from './queries'
 import { noteRoutes } from './routes'
+import { noteWeekCounts } from './weekCounts'
 
 /** The notes hung on a thing, on its timeline (FR-045). */
 const hung: TimelineSource = {
@@ -30,4 +31,5 @@ export const notesModule = fixedModule({
   routes: noteRoutes,
   linkable: noteLinkable,
   timelineSources: () => [hung],
+  weekCounts: noteWeekCounts,
 })

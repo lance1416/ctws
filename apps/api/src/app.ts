@@ -17,6 +17,7 @@ import {
   warmDummyHash,
 } from './shell/auth'
 import { calendarDayRoutes } from './shell/calendar'
+import { reviewCountRoutes } from './shell/review'
 import { linkRoutes, linkRegistry } from './shell/links'
 import { timelineRoutes } from './shell/events'
 import { mentionSource, relatedStageChanges, relationRoutes } from './shell/relations'
@@ -130,6 +131,9 @@ export async function buildApp(opts: {
         await authed.register(tombstoneRoutes)
         await authed.register(migrationRoutes)
         await authed.register(calendarDayRoutes)
+        await authed.register(reviewCountRoutes, {
+          counters: modules.flatMap((m) => (m.weekCounts ? [m.weekCounts] : [])),
+        })
         await authed.register(cityRoutes)
         for (const m of modules) {
           await authed.register(m.routes, { prefix: `/${m.id}`, registry })

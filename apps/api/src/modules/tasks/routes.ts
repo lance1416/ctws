@@ -21,6 +21,7 @@ import {
   listProjectMovement,
   listReady,
   listReview,
+  listReviewWeeks,
   listTaskCalendar,
   listToday,
   projectBoard,
@@ -53,6 +54,11 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     on(api.tasks.ready, async (req) => {
       const rows = await listReady(app.db, currentUser(req).workspaceId)
       return { tasks: rows.map(toReadyResponse) }
+    }),
+
+    on(api.tasks.reviewWeeks, async (req) => {
+      const user = currentUser(req)
+      return { weeks: await listReviewWeeks(app.db, user.workspaceId, user.timezone, app.clock()) }
     }),
 
     on(api.tasks.review, async (req) => {

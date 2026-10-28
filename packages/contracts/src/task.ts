@@ -206,7 +206,13 @@ export const projectTasksResponse = z.object({
 })
 
 /** What changed state in a window, read from the event log and grouped by project. */
-const reviewTask = z.object({ id: taskId, title: z.string(), at: instant })
+const reviewTask = z.object({
+  id: taskId,
+  title: z.string(),
+  at: instant,
+  /** What it is under, so the leaves of one parent are told as one line (FR-081). */
+  parent: z.object({ id: taskId, title: z.string() }).nullable(),
+})
 
 export const reviewResponse = z.object({
   /** The window's own bounds, as days in the account's zone. */
@@ -237,6 +243,14 @@ export const reviewResponse = z.object({
   ),
 })
 export type ReviewResponse = z.infer<typeof reviewResponse>
+
+/** How many weeks the review's list goes back, this one included. */
+export const REVIEW_WEEKS = 12
+
+/** The weeks under review, newest first: each by its Monday, with how many leaves it finished. */
+export const reviewWeeksResponse = z.object({
+  weeks: z.array(z.object({ from: calendarDate, finished: z.number().int() })),
+})
 
 export const reviewQuery = viewQuery('review', {
   from: calendarDate.optional(),

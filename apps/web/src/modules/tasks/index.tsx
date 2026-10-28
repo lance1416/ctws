@@ -18,6 +18,7 @@ import { openTasksOf } from './logic/openTasks'
 import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
+import { ReviewWeeks } from './pages/ReviewWeeks'
 import { Today } from './pages/Today'
 import { NowWidget } from './widgets/Now'
 
@@ -42,7 +43,14 @@ export const taskModule: WorkspaceModule = {
       ),
     },
     // Done is a view of Review, not a page of its own: both answer what I did.
-    { id: 'review', to: '/review', label: 'Review', end: false, chord: 'review' },
+    {
+      id: 'review',
+      to: '/review',
+      label: 'Review',
+      end: false,
+      chord: 'review',
+      Sidebar: { label: 'Weeks', List: ReviewWeeks },
+    },
   ],
   // Tasks have no list page of their own yet: they are dealt with on Today and live in their
   // projects, so that is where this kind's row goes.

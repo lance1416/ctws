@@ -56,6 +56,8 @@ export type WorkspaceModule = {
   today?: readonly TodayBlock[]
   /** Where this module's things live, for the shell's edge table and backlinks. */
   relations?: readonly RelationContribution[]
+  /** What it counts of a week, for the review (FR-081). */
+  weekCounts?: readonly WeekCount[]
   /**
    * What the module's queries show, by key prefix: a write that changes one of those kinds of
    * thing refreshes them, and no write that changes none of them does.
@@ -291,7 +293,18 @@ export type ModulePage = {
   Count?: ComponentType
   /** The glyph over the label where a phone shows the page as a tab: paths in a 22px box. */
   icon?: ReactNode
+  /**
+   * A list of its own in the sidebar's place, for a page across kinds that has one: Review's
+   * weeks (FR-081). `label` heads it.
+   */
+  Sidebar?: { label: string; List: ComponentType }
 }
+
+/**
+ * One thing a module counts of a week for the review's "Also this week" (FR-081): the name the
+ * server counts it by, its words and its icon, and where it goes among the others.
+ */
+export type WeekCount = { key: string; label: string; icon: IconComponent; order: number }
 
 /** A kind of thing, as Things lists it. */
 export type KindEntry = {
