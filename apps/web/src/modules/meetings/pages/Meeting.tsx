@@ -14,6 +14,7 @@ import { useSubjectOf } from '../../../shell/layout'
 import { useForgetWhenGone, useRecordRecent } from '../../../shell/search'
 import {
   type EditScope,
+  cancelledQuery,
   meetingKeys,
   occurrenceQuery,
   restoreOccurrence,
@@ -39,18 +40,24 @@ function useAddressed() {
   const one = useQuery({ ...occurrenceQuery(series, at ?? ''), enabled: at !== null })
   const next = useQuery({ ...seriesQuery(series, today), enabled: at === null })
   const read = at === null ? next : one
+  const gone = read.isSuccess && !read.data
+  // Not there: cancelled from its More menu, it can be taken back (FR-068), by its own address too.
+  const cancelled = useQuery({ ...cancelledQuery(series, at ?? ''), enabled: gone && at !== null })
   return {
     id,
     at,
     meeting: read.data ?? null,
-    gone: read.isSuccess && !read.data,
+    gone,
+    cancelled: cancelled.data === true,
+    // Until it is known which, nothing is said.
+    settled: !gone || at === null || cancelled.isSuccess || cancelled.isError,
     params,
   }
 }
 
 /** `/meetings/:id`: one occurrence's page (FR-067), or what happened to it. */
 export function Meeting() {
-  const { id, at, meeting: m, gone, params } = useAddressed()
+  const { id, at, meeting: m, gone, cancelled, settled, params } = useAddressed()
   useForgetWhenGone('meeting', id, gone && at === null)
   useSubjectOf(m ? { type: 'meeting', id: m.meetingId, title: m.title } : null)
   useRecordRecent(
@@ -65,7 +72,8 @@ export function Meeting() {
       : null,
   )
   // Cancelled from its More menu, it can be taken back from here (FR-068).
-  if (gone && at && params.get('cancelled') === '1') return <Cancelled id={id} at={at} />
+  if (!settled) return null
+  if (cancelled && at) return <Cancelled id={id} at={at} />
   if (gone) return <DeletedNotice type="meeting" id={id} />
   if (!m) return null
   return (

@@ -15,6 +15,8 @@ export class ApiError extends Error {
     message: string,
     /** problem+json's `detail`: the sentence meant for the person. */
     readonly detail?: string,
+    /** problem+json's `type`, for a refusal the server names: `urn:ctws:problem:…`. */
+    readonly type?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -82,7 +84,12 @@ export async function call<E extends Endpoint>(
   const text = res.status === 204 ? '' : await res.text()
   if (!res.ok) {
     const refusal = parseProblem(text)
-    throw new ApiError(res.status, refusal?.title ?? `HTTP ${res.status}`, refusal?.detail)
+    throw new ApiError(
+      res.status,
+      refusal?.title ?? `HTTP ${res.status}`,
+      refusal?.detail,
+      refusal?.type,
+    )
   }
   if (!endpoint.response) return undefined as ResponseOf<E>
   // A response schema drops fields it does not know: a page left open across a deploy meets fields
@@ -113,10 +120,14 @@ export async function everyPage<P extends { page: PageInfo }>(
 }
 
 /**
- * What a refusal says: the title and detail of problem+json, read loosely, since a proxy in front
+ * What a refusal says: the type, title and detail of problem+json, read loosely, since a proxy in front
  * of the API may answer with less. Null when the body is not JSON at all.
  */
-const refusalText = z.object({ title: z.string().optional(), detail: z.string().optional() })
+const refusalText = z.object({
+  type: z.string().optional(),
+  title: z.string().optional(),
+  detail: z.string().optional(),
+})
 
 function parseProblem(text: string): z.infer<typeof refusalText> | null {
   try {

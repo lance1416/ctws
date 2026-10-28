@@ -171,7 +171,7 @@ function More({ meeting: m }: { meeting: MeetingOccurrence }) {
   const cancel = useMutation({
     mutationFn: () => cancelMeeting(m.meetingId, 'one', m.recurrenceId),
     meta: { changes: ['meeting'], awaits: [meetingKeys.all], ownsError: true },
-    onSuccess: () => navigate(`${occurrenceTo(m)}&cancelled=1`, { replace: true }),
+    onSuccess: () => navigate(occurrenceTo(m), { replace: true }),
   })
   return (
     <>

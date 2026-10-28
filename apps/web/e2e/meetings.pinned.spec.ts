@@ -290,6 +290,14 @@ test('one occurrence cancelled from More can be taken back', async ({ page }) =>
   // Only that one: the week after is still on.
   expect(await heldOn(page, '2026-11-05')).toEqual([['Weekly sync', '2026-11-05T10:00']])
 
+  // Left and opened again by its own address, it is still cancelled, not gone (BUG-051).
+  const own = new URL(page.url())
+  own.searchParams.delete('cancelled')
+  await page.goto('/meetings')
+  await page.goto(own.pathname + own.search)
+  await expect(page.getByRole('heading', { name: 'This one is cancelled' })).toBeVisible()
+  await expect(page.getByText('This meeting was deleted')).toHaveCount(0)
+
   await page.getByRole('button', { name: 'Take it back' }).click()
   await expect(title(page)).toHaveText('Weekly sync')
   await expect(page).toHaveURL(/at=2026-10-29T10(%3A|:)00/)
@@ -314,7 +322,10 @@ test('Delete this meeting, at the edit page’s foot, removes the whole series',
   const zone = page.locator('main [data-stop-zone]')
   await zone.getByRole('button', { name: 'Delete this meeting' }).click()
   const ask = page.getByRole('alertdialog')
-  await expect(ask).toContainText('every occurrence of it')
+  // Three Thursdays held before the pinned day, 10-22 (FR-035).
+  await expect(ask).toContainText(
+    'Delete Weekly sync? The series goes, with the 3 meetings already held. Their notes stay, as notes on their own.',
+  )
   await ask.getByRole('button', { name: 'Delete this meeting' }).click()
 
   await expect(page).toHaveURL(/\/meetings$/)

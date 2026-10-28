@@ -38,7 +38,7 @@ describe('repeatChoices', () => {
   it('names the weekly choices after the day the meeting falls on', () => {
     const tuesday = repeatChoices('2026-10-20T09:00').map((c) => c.label)
     expect(tuesday).toContain('Weekly on Tuesday')
-    expect(tuesday).toContain('Every two weeks on Tuesday')
+    expect(tuesday).toContain('Every other Tuesday')
     const friday = repeatChoices('2026-10-23T09:00').map((c) => c.label)
     expect(friday).toContain('Weekly on Friday')
   })

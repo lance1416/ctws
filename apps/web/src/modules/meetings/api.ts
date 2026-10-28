@@ -153,6 +153,32 @@ export const occurrenceQuery = (meetingId: MeetingId | null, recurrenceId: strin
         : ({ signal }) => readOccurrence(meetingId, recurrenceId, signal),
   })
 
+/**
+ * Whether the occurrence was cancelled from its More menu (FR-068), so it can still be taken back;
+ * false when it is there, or gone for good.
+ */
+export const cancelledQuery = (meetingId: MeetingId | null, recurrenceId: string) =>
+  queryOptions({
+    queryKey: [...meetingKeys.occurrence(meetingId, recurrenceId), 'cancelled'] as const,
+    queryFn:
+      meetingId === null
+        ? skipToken
+        : async ({ signal }) => {
+            try {
+              await call(
+                api.meetings.occurrence,
+                { params: { id: meetingId, recurrenceId } },
+                { signal },
+              )
+              return false
+            } catch (e) {
+              if (e instanceof ApiError && e.status === 404)
+                return e.type === 'urn:ctws:problem:occurrence-cancelled'
+              throw e
+            }
+          },
+  })
+
 /** One occurrence, or null when it is cancelled or gone. */
 export async function readOccurrence(
   id: MeetingId,
@@ -308,7 +334,7 @@ export function repeatChoices(startsLocal: string): RepeatChoice[] {
     { value: null, label: 'Does not repeat' },
     { value: 'FREQ=DAILY', label: 'Daily' },
     { value: `FREQ=WEEKLY;BYDAY=${weekday}`, label: `Weekly on ${name}` },
-    { value: `FREQ=WEEKLY;INTERVAL=2;BYDAY=${weekday}`, label: `Every two weeks on ${name}` },
+    { value: `FREQ=WEEKLY;INTERVAL=2;BYDAY=${weekday}`, label: `Every other ${name}` },
     { value: `FREQ=MONTHLY;BYMONTHDAY=${d}`, label: `Monthly on the ${ordinal(d)}` },
   ]
 }

@@ -312,6 +312,17 @@ describe('editing one occurrence', () => {
         url: `/api/v1/meetings/${series.meetingId}/occurrences/${at}/restore`,
         headers: web(ctx),
       })
+    // Read by its own address, it says it was cancelled, not that it is gone (BUG-051).
+    const read = (at: string) =>
+      ctx.app.inject({
+        method: 'GET',
+        url: `/api/v1/meetings/${series.meetingId}/occurrences/${at}`,
+        headers: web(ctx),
+      })
+    const cancelled = await read('2026-10-27T09:00')
+    expect(cancelled.statusCode).toBe(404)
+    expect(cancelled.json()).toMatchObject({ type: 'urn:ctws:problem:occurrence-cancelled' })
+    expect((await read('2026-10-28T09:00')).json()).toMatchObject({ type: 'about:blank' })
     const back = await restore('2026-10-27T09:00')
     expect(back.statusCode, back.body).toBe(200)
     expect((back.json() as MeetingOccurrence).startsLocal).toBe('2026-10-27T09:00')

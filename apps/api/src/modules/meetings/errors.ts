@@ -15,3 +15,16 @@ export class OnceOnlyError extends DomainError {
     })
   }
 }
+
+/**
+ * One occurrence cancelled from its More menu (FR-068): not there, but not gone either, since it
+ * can be taken back. Named, so its page can say so rather than call it deleted.
+ */
+export class OccurrenceCancelledError extends DomainError {
+  constructor() {
+    super('not-found', {
+      type: 'urn:ctws:problem:occurrence-cancelled',
+      title: 'Occurrence cancelled',
+    })
+  }
+}

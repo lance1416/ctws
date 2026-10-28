@@ -16,6 +16,7 @@ import { groupBy } from '../../platform/values'
 import { projectNameSql } from '../../shell/projects'
 import { type Exception, type Occurrence, occurrencesIn } from './occurrences'
 import { meetingExceptions, meetings } from './tables'
+import { OccurrenceCancelledError } from './errors'
 import { windowOf } from './zone'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
@@ -236,8 +237,13 @@ export async function getOccurrence(
   const at =
     series.exceptions.find((e) => e.recurrenceId === recurrenceId)?.startsLocal ?? recurrenceId
   const one = expand(series, around(at)).find((o) => o.recurrenceId === recurrenceId)
-  if (!one) throw new NotFound('Occurrence')
-  return one
+  if (one) return one
+  const cancelled = series.exceptions.some((e) => e.recurrenceId === recurrenceId && e.cancelled)
+  if (cancelled) {
+    assertOccurs(series, recurrenceId)
+    throw new OccurrenceCancelledError()
+  }
+  throw new NotFound('Occurrence')
 }
 
 /**
