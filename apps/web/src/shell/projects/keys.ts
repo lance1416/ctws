@@ -28,8 +28,19 @@ export const PROJECT_KEYS: KeyTable<ProjectAction> = {
   ],
 }
 
+/** The launcher's cells for links: two rows of four, the last cell pinning another. */
+export const LAUNCHER_LINKS = 7
+
 /** On the workbench (FR-076, artboard 24): the launcher's links, by the digit on each. */
 export const WORKBENCH_KEYS: KeyTable<OpenDigit> = {
   title: 'On the Workbench',
-  rows: [{ keys: '1–9', does: 'Open a launcher link', presses: digitPresses }],
+  rows: [
+    {
+      keys: `1–${LAUNCHER_LINKS}`,
+      does: 'Open a launcher link',
+      presses: Object.fromEntries(
+        DIGITS.slice(0, LAUNCHER_LINKS).map((d) => [d, digitPresses[d]]),
+      ) as Partial<Record<Digit, OpenDigit>>,
+    },
+  ],
 }

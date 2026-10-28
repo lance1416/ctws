@@ -10,7 +10,7 @@ import { textbox } from '../../platform/ui/formStyles'
 import { LauncherIcon, NewIcon } from '../../platform/ui/icons'
 import { Modal } from '../../platform/ui/Modal'
 import { ProjectPicker, ProjectSquare, useEveryProject } from '../projects'
-import { digitHandlers, WORKBENCH_KEYS } from '../projects/keys'
+import { digitHandlers, LAUNCHER_LINKS, WORKBENCH_KEYS } from '../projects/keys'
 import {
   followable,
   pinnedEverywhereQuery,
@@ -20,9 +20,6 @@ import {
 } from '../resources/api'
 import { useGoOut } from '../resources/away'
 import { ResourceIcon } from '../resources/ResourceIcon'
-
-/** Two rows of four, the last cell for pinning another: the launcher's seven, keys 1 to 7. */
-const SHOWN = 7
 
 /** Where a resource is from, under its name: the service's word, GitHub, or the site. */
 function sourceOf(r: ResourceResponse): string {
@@ -40,7 +37,7 @@ export function Launcher({ tall }: { tall: boolean }) {
   const pinned = useQuery(pinnedEverywhereQuery())
   const projects = useEveryProject()
   const goOut = useGoOut()
-  const shown = (pinned.data ?? []).slice(0, SHOWN)
+  const shown = (pinned.data ?? []).slice(0, LAUNCHER_LINKS)
   const open = (r: ResourceResponse) => {
     const project = projects.data?.find((p) => p.id === r.owner.id)
     goOut({
