@@ -24,7 +24,13 @@ import { useRegistry, type RegisteredRelation, type Registry } from '../registry
 import { formatInspect, useInspector, type Inspected } from './inspectorAddress'
 
 /** One thing gone back past: what it was, its name, and where its page was scrolled to. */
-type Behind = { thing: Inspected; title: string; scrollTop: number }
+type Behind = {
+  thing: Inspected
+  title: string
+  scrollTop: number
+  /** The list the next was opened from (artboard 32), for "3 of 7" and ↑ ↓ along it. */
+  among?: readonly Inspected[]
+}
 
 /**
  * THE INSPECTOR (FR-022, artboards 8, 32, 33): a narrow look at something linked from the page
@@ -55,9 +61,17 @@ export function Inspector() {
 
   const context = useMemo(
     () => ({
-      go: (thing: Inspected) => {
+      go: (thing: Inspected, among?: readonly Inspected[]) => {
         if (!open) return
-        setBehind((b) => [...b, { thing: open, title, scrollTop: body.current?.scrollTop ?? 0 }])
+        setBehind((b) => [
+          ...b,
+          {
+            thing: open,
+            title,
+            scrollTop: body.current?.scrollTop ?? 0,
+            ...(among ? { among } : {}),
+          },
+        ])
         ours.current = formatInspect(thing)
         setTitle('')
         swap(thing)
@@ -75,6 +89,21 @@ export function Inspector() {
   const view = viewOf(registry, open)
   const { relation, Narrow, Icon } = view
   const last = behind.at(-1)
+  // Opened from a list: where it is in it, and the ones either side (artboard 32).
+  const place = last?.among ? last.among.findIndex((t) => formatInspect(t) === shown) : -1
+  const along = (step: number) => {
+    const next = last?.among?.[place + step]
+    if (place < 0 || !next) return
+    ours.current = formatInspect(next)
+    swap(next)
+    body.current?.scrollTo({ top: 0 })
+  }
+  const where =
+    last?.among && place >= 0 ? (
+      <span className="shrink-0 text-subtle tabular-nums">
+        {place + 1} of {last.among.length}
+      </span>
+    ) : null
   const back = () => {
     if (!last) return
     setBehind((b) => b.slice(0, -1))
@@ -89,6 +118,14 @@ export function Inspector() {
   }
   const edit = relation?.edit
   const onKeyDown = (e: KeyboardEvent) => {
+    const typing =
+      e.target instanceof HTMLElement &&
+      (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.altKey && !typing && place >= 0) {
+      e.preventDefault()
+      along(e.key === 'ArrowDown' ? 1 : -1)
+      return
+    }
     if (e.key === 'ArrowLeft' && e.altKey && last) {
       e.preventDefault()
       back()
@@ -104,7 +141,7 @@ export function Inspector() {
       onKeyDown={onKeyDown}
       className="flex w-inspector shrink-0 flex-col bg-float shadow-float max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-lg:inset-x-0 max-lg:w-auto"
     >
-      {relation?.ownHead ? (
+      {view.ownHead ? (
         // A narrow page with a head of its own keeps only the way back here.
         <div
           ref={head}
@@ -120,6 +157,7 @@ export function Inspector() {
             >
               <BackIcon size={14} aria-hidden="true" className="shrink-0" />
               <span className="truncate">{last.title || last.thing.type}</span>
+              {where}
             </button>
           )}
         </div>
@@ -138,6 +176,7 @@ export function Inspector() {
             >
               <BackIcon size={14} aria-hidden="true" className="shrink-0" />
               <span className="truncate">{last.title || last.thing.type}</span>
+              {where}
             </button>
           ) : (
             <span className="flex min-w-0 flex-1 items-center gap-2 px-1 text-meta text-muted">
@@ -225,6 +264,8 @@ function viewOf(
   Icon: IconComponent | undefined
   Narrow: ComponentType<{ id: string; at?: string | undefined }> | undefined
   list: ReactNode
+  /** Its page draws its own head; the inspector keeps only the way back. */
+  ownHead: boolean
 } {
   if (open.type !== 'list') {
     const relation = registry.relationFor(open.type)
@@ -234,12 +275,14 @@ function viewOf(
       Icon: KIND_ICON[open.type as keyof typeof KIND_ICON],
       Narrow: relation.Narrow,
       list: null,
+      ownHead: relation.ownHead === true,
     }
   }
   const dot = open.id.indexOf('.')
   const name = dot < 0 ? open.id : open.id.slice(0, dot)
   const arg = dot < 0 ? '' : open.id.slice(dot + 1)
-  const none = { relation: null, Narrow: undefined }
+  // A list's head is its block's: icon, name, count, the block's action, and close (artboard 32).
+  const none = { relation: null, Narrow: undefined, ownHead: true }
   if (name === LINKED_LIST)
     return { ...none, label: 'Linked', Icon: undefined, list: <LinkedList arg={arg} /> }
   const list = registry.listFor(name)

@@ -1,9 +1,9 @@
 import { idFrom, OBJECT_TYPES, personId, projectId, type ObjectType } from '@ctws/contracts'
 import { KIND_ICON, type Kind } from '../../platform/ui/icons'
-import { KIND_TEXT } from '../../platform/ui/kinds'
+import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 import { useRegistry } from '../registry'
 import { useNarrowKindBlocks } from './kindBlocks'
-import { NarrowHead } from './narrow'
+import { ListHead } from './ListHead'
 
 /** The full list of one kind with a thing: `?inspect=list:linked.<kind>.<type>.<id>`. */
 export const LINKED_LIST = 'linked'
@@ -58,12 +58,12 @@ function Listed({ kind, of }: { kind: ObjectType; of: { type: ObjectType; id: st
   if (!block) return null
   return (
     <>
-      <NarrowHead
-        mark={Icon && <Icon size={20} aria-hidden="true" className={KIND_TEXT[kind as Kind]} />}
+      <ListHead
+        badge={{ icon: Icon, tint: `${KIND_TINT[kind as Kind]} ${KIND_TEXT[kind as Kind]}` }}
         title={block.title}
-        tags={<span className="text-muted tabular-nums">{block.count}</span>}
+        count={typeof block.count === 'number' ? block.count : 0}
       />
-      <div className="border-t border-line px-4 py-3">
+      <div className="px-4 py-3">
         {block.empty ? <p className="text-meta text-subtle">{block.empty}</p> : block.body}
       </div>
     </>

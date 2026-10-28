@@ -476,8 +476,15 @@ test('in progress and ready to start show five, and All N opens the rest beside 
   await expect(inspector.getByRole('heading', { name: 'In progress' })).toBeVisible()
   await expect(inspector.getByRole('listitem')).toHaveCount(7)
   // A row opens that task in its place, with the way back to the list.
-  await inspector.getByRole('button', { name: /在做3/ }).click()
-  await expect(inspector.getByRole('button', { name: /In progress/ })).toBeVisible()
+  await inspector.getByRole('button', { name: '在做3', exact: true }).click()
+  // Where it is in the list, and the next one a key away (artboard 32).
+  const back = inspector.getByRole('button', { name: /^In progress/ })
+  await expect(back).toContainText(/\d of 7/)
+  const at = Number((await back.textContent())!.match(/(\d) of 7/)![1])
+  await page.keyboard.press('ArrowDown')
+  await expect(back).toContainText(`${at + 1} of 7`)
+  await back.click()
+  await expect(inspector.getByRole('heading', { name: 'In progress' })).toBeVisible()
   await page.keyboard.press('Escape')
 
   const ready = block(page, 'Ready to start')

@@ -8,7 +8,9 @@ export {
   OpensBeside,
   PropRow,
   PropRows,
+  useInspectorGo,
   useNarrowName,
 } from './narrow'
 export { useCloseInspector } from './close'
+export { ListHead } from './ListHead'
 export { useNarrowKindBlocks } from './kindBlocks'

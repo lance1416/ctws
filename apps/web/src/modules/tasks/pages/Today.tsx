@@ -1,25 +1,15 @@
 import type { TaskId, TodayTaskResponse } from '@ctws/contracts'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { addDays } from '@ctws/core/day'
 import { clockTime } from '@ctws/core/clock'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, useState, type CSSProperties } from 'react'
-import { longDay, nextMonday, ymd } from '../../../platform/time/dates'
+import { longDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { inColumns, splitColumns, useColumns } from '../../../platform/ui/columns'
-import {
-  CarriedIcon,
-  ExpandIcon,
-  FlagIcon,
-  InProgressIcon,
-  PLACE_ICON,
-} from '../../../platform/ui/icons'
-import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
+import { CarriedIcon, FlagIcon, InProgressIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
 import { useLunarName } from '../../../shell/calendar'
-import { DayPickButton } from '../../../shell/dates'
 import { useRegistry } from '../../../shell/registry'
 import { dueTodayAt } from '../../../shell/rows'
 import { readyQuery, todayQuery } from '../api'
@@ -31,6 +21,7 @@ import { carriedFrom } from '../logic/todayMarks'
 import { todaySegments } from '../logic/today'
 import { DoneButton, LINE, TaskLine, TaskPath } from './today/TaskLine'
 import { Timeline } from './today/Timeline'
+import { MoveAllMenu, PlanButtons } from './today/planParts'
 import { minutesOf, type TimedItem } from './today/dayLine'
 import { useOthersToday, useTodayRows } from './today/useTodayRows'
 import { ALL_ROW, TODAY_LISTS } from '../components/TodayLists'
@@ -339,12 +330,6 @@ function OverdueBlock({
   line: Line
   onMove: (id: TaskId, to: string) => void
 }) {
-  const monday = nextMonday(day)
-  const days = [
-    { label: 'Today', to: day },
-    { label: 'Tomorrow', to: addDays(day, 1) },
-    { label: 'Mon', to: monday },
-  ]
   const shown = overdue.slice(0, SHOWN)
   return (
     <Block
@@ -352,55 +337,11 @@ function OverdueBlock({
       title="Overdue"
       count={overdue.length}
       actions={
-        overdue.length > SHOWN && (
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger className={`${BUTTON.quiet} h-7 px-2.5 text-meta`}>
-              Move all to…
-              <ExpandIcon size={12} aria-hidden="true" />
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content align="end" sideOffset={6} className={MENU_SURFACE}>
-                {days.map((d) => (
-                  <DropdownMenu.Item
-                    key={d.label}
-                    onSelect={() =>
-                      overdue.filter((t) => !t.children).forEach((t) => onMove(t.id, d.to))
-                    }
-                    className={MENU_ITEM}
-                  >
-                    {d.label === 'Mon' ? 'Next Monday' : d.label}
-                  </DropdownMenu.Item>
-                ))}
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-        )
+        overdue.length > SHOWN && <MoveAllMenu overdue={overdue} day={day} onMove={onMove} />
       }
     >
       <ul className="p-1.5">
-        {shown.map((t) =>
-          line(
-            t,
-            <span className="inline-flex items-center gap-1">
-              {days.map((d) => (
-                <button
-                  key={d.label}
-                  type="button"
-                  onClick={() => onMove(t.id, d.to)}
-                  aria-label={`Plan “${t.title}” for ${d.label === 'Mon' ? 'next Monday' : d.label.toLocaleLowerCase()}`}
-                  className="inline-flex h-6.5 items-center rounded-control border border-line bg-panel px-2 text-meta font-medium text-ink hover:bg-hover"
-                >
-                  {d.label}
-                </button>
-              ))}
-              <DayPickButton
-                label={`Plan “${t.title}” for another day`}
-                today={day}
-                onPick={(to) => onMove(t.id, to)}
-              />
-            </span>,
-          ),
-        )}
+        {shown.map((t) => line(t, <PlanButtons task={t} day={day} onMove={onMove} />))}
       </ul>
       {overdue.length > SHOWN && (
         <AllInInspector list={TODAY_LISTS.overdue} count={overdue.length} className={ALL_ROW} />

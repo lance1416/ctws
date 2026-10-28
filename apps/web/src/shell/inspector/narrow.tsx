@@ -13,9 +13,13 @@ export type Inspectable = { type: ObjectType | 'list'; id: string; at?: string }
  * and say its own name, for the "‹" back to it. Null outside the inspector.
  */
 export const InspectorContext = createContext<{
-  go: (thing: Inspectable) => void
+  /** Show it in the inspector's place; `among`, the list it was opened from, for ↑ ↓ and "3 of 7". */
+  go: (thing: Inspectable, among?: readonly Inspectable[]) => void
   name: (title: string) => void
 } | null>(null)
+
+/** Opening a thing in the inspector's place, from inside it; null outside the inspector. */
+export const useInspectorGo = () => useContext(InspectorContext)?.go ?? null
 
 /** A narrow page says what it is called, for the next one's way back to it. */
 export function useNarrowName(title: string | undefined) {
