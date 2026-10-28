@@ -9,6 +9,7 @@ import { BirthdaysToday } from './components/BirthdaysToday'
 import { NewPerson } from './components/NewPerson'
 import { PersonFact, PersonMark } from './components/PersonFacts'
 import { useBirthdayEntries, usePeopleHits } from './hooks/contributions'
+import { describePersonChange } from './logic/describeChange'
 import { PEOPLE_ID } from './logic/id'
 import { PeopleSidebar } from './components/PeopleSidebar'
 import { People } from './pages/People'
@@ -89,6 +90,7 @@ export const peopleModule: WorkspaceModule = {
       to: (id) => `/${PEOPLE_ID}/${id}`,
       Mark: PersonMark,
       Fact: PersonFact,
+      describeChange: describePersonChange,
     },
   ],
   // A person names the projects they are on.

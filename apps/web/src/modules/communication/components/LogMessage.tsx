@@ -314,7 +314,8 @@ export function LogMessage({
           )}
         </Field>
 
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
+        {/* Each its own row: the pane is too narrow to share one with the subject. */}
+        <div className="grid gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <label htmlFor={`${ids}-subject`} className={label}>
               Subject
@@ -330,7 +331,7 @@ export function LogMessage({
           <div className="flex min-w-0 flex-col gap-1">
             <span className={label}>When</span>
             {/* The shared date picker for the day, the time beside it (FR-070). */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex max-w-72 items-center gap-1.5">
               <DayField
                 label="When, day"
                 value={d.when.slice(0, 10)}
