@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { instant, nameText, noteText, patchOf } from './common'
-import { organisationId, personId } from './id'
+import { organisationId, personId, projectId } from './id'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
@@ -49,6 +49,17 @@ const roleHolder = z.object({
   to: z.string().nullable(),
 })
 
+/**
+ * Where a thing stands in one project (FR-064, FR-065): the project, and the stage of the node
+ * there that is related to it ("Shortlisted"), or null when that node has no stage.
+ */
+export const projectStanding = z.object({
+  projectId,
+  projectName: z.string(),
+  stage: z.string().nullable(),
+})
+export type ProjectStanding = z.infer<typeof projectStanding>
+
 export const organisationResponse = z.object({
   id: organisationId,
   name: z.string(),
@@ -61,6 +72,8 @@ export const organisationResponse = z.object({
   people: z.object({ now: z.array(roleHolder), before: z.array(roleHolder) }),
   /** How many people hold or held a role here, for "3 people lose a role there" (FR-035). */
   roleCount: z.number().int().nonnegative(),
+  /** The projects it is in through a node related to it, the most recently staged first. */
+  inProjects: z.array(projectStanding),
   createdAt: instant,
   updatedAt: instant,
 })

@@ -4,7 +4,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { Queryable } from '../../platform/db/client'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
-import type { LinkRegistry } from '../../shell/links'
+import { standingOf, type LinkRegistry } from '../../shell/links'
 import {
   getOrganisation,
   listOrganisations,
@@ -39,6 +39,7 @@ async function respond(
       ? []
       : await registry.of('person').rows(q, workspaceId, { ids, limit: ids.length })
   const named = new Map(people.map((p) => [p.id, p.title]))
+  const standing = await standingOf(registry, q, workspaceId, [row.id])
   const holders = roles
     .filter((r) => named.has(r.personId))
     .map((r) => ({
@@ -61,6 +62,7 @@ async function respond(
       before: holders.filter((h) => h.to !== null),
     },
     roleCount: new Set(holders.map((h) => h.personId)).size,
+    inProjects: standing.get(row.id) ?? [],
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }

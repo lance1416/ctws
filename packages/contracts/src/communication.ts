@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
 import { communicationId, objectId, organisationId, projectId } from './id'
+import { projectStanding } from './organisation'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
@@ -131,6 +132,8 @@ const nextStep = z.discriminatedUnion('kind', [
 const organisationInTouch = z.object({
   organisationId,
   organisationName: z.string(),
+  /** The project it stands furthest along in, and that node's stage (FR-064, FR-071). */
+  standing: projectStanding.nullable(),
   /** People of that organisation the exchanges were with. */
   peopleCount: z.number().int().nonnegative(),
   lastContact: z.object({
@@ -150,6 +153,7 @@ export const communicationOverviewResponse = z.object({
   inTouch: z.array(organisationInTouch),
   inTouchTotal: z.number().int().nonnegative(),
 })
+export type CommunicationOverviewResponse = z.infer<typeof communicationOverviewResponse>
 
 /** "In touch": an exchange within this many days (FR-060, FR-071). */
 export const IN_TOUCH_DAYS = 30

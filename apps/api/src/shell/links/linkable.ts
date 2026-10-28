@@ -4,6 +4,7 @@ import {
   type NextAbout,
   type ObjectType,
   type ProjectId,
+  type ProjectStanding,
   type WorkspaceId,
 } from '@ctws/contracts'
 import { asc, inArray, sql, type SQL } from 'drizzle-orm'
@@ -45,6 +46,16 @@ export type Linkable = {
     about: readonly string[],
     now: Date,
   ) => Promise<Map<string, LastExchange>>
+  /**
+   * For a module whose things sit in projects at a stage, where each of these other things stands:
+   * by their id, a project each, through a thing of its own related to it (FR-064, FR-065), the
+   * most recently staged first. None, not a key.
+   */
+  standingOf?: (
+    q: Queryable,
+    workspaceId: WorkspaceId,
+    about: readonly string[],
+  ) => Promise<Map<string, ProjectStanding[]>>
 }
 
 /** When, and from which project, what comes next is asked. */

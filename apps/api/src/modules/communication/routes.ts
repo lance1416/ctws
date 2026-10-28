@@ -12,7 +12,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { Queryable } from '../../platform/db/client'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
-import type { LinkRegistry } from '../../shell/links'
+import { standingOf, type LinkRegistry } from '../../shell/links'
 import { daysBetween } from './days'
 import {
   type CommunicationRow,
@@ -112,7 +112,8 @@ export const communicationRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry
         user.timezone,
         app.clock(),
       )
-      const ids = touched.slice(0, OVERVIEW_ROWS).map((t) => t.organisationId)
+      // Every one touched is named: one gone would otherwise take a row from those that are not.
+      const ids = touched.map((t) => t.organisationId)
       const orgs = new Map(
         ids.length === 0
           ? []
@@ -124,9 +125,16 @@ export const communicationRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry
       )
       // Only organisations that can still be seen count, before the table is cut to its rows.
       const seen = touched.filter((t) => orgs.has(t.organisationId))
+      const stands = await standingOf(
+        registry,
+        app.db,
+        user.workspaceId,
+        seen.slice(0, OVERVIEW_ROWS).map((t) => t.organisationId),
+      )
       const inTouch: OrganisationInTouch[] = seen.slice(0, OVERVIEW_ROWS).map((t) => ({
         organisationId: t.organisationId as OrganisationInTouch['organisationId'],
         organisationName: orgs.get(t.organisationId)!,
+        standing: stands.get(t.organisationId)?.[0] ?? null,
         peopleCount: t.peopleCount,
         lastContact: {
           communicationId: t.lastId as OrganisationInTouch['lastContact']['communicationId'],

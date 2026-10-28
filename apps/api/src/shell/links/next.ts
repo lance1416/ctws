@@ -1,4 +1,10 @@
-import type { LastExchange, NextAbout, ObjectType, WorkspaceId } from '@ctws/contracts'
+import type {
+  LastExchange,
+  NextAbout,
+  ObjectType,
+  ProjectStanding,
+  WorkspaceId,
+} from '@ctws/contracts'
 import type { Queryable } from '../../platform/db/client'
 import type { NextAt } from './linkable'
 import type { LinkRegistry } from './registry'
@@ -45,6 +51,25 @@ export async function lastAbout(
       const held = out.get(id)
       if (!held || held.at < last.at) out.set(id, last)
     }
+  }
+  return out
+}
+
+/**
+ * Where each of these things stands in projects, by their id (FR-064, FR-065): a project each, and
+ * the stage of the node there related to it. None, not a key.
+ */
+export async function standingOf(
+  registry: LinkRegistry,
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  about: readonly string[],
+): Promise<Map<string, ProjectStanding[]>> {
+  const out = new Map<string, ProjectStanding[]>()
+  if (about.length === 0) return out
+  const parts = await Promise.all(registry.all.map((l) => l.standingOf?.(q, workspaceId, about)))
+  for (const part of parts) {
+    for (const [id, standing] of part ?? []) out.set(id, [...(out.get(id) ?? []), ...standing])
   }
   return out
 }
