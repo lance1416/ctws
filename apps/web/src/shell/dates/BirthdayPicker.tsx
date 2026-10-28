@@ -1,4 +1,5 @@
 import { HOUR_BRANCHES, LUNAR_DAYS, LUNAR_MONTHS } from '@ctws/core'
+import { radioKeys } from '../../platform/ui/radioKeys'
 import { useEffect, useState, type ReactNode } from 'react'
 import { KIND_ICON, NewIcon } from '../../platform/ui/icons'
 import { boxed } from '../../platform/ui/formStyles'
@@ -80,6 +81,7 @@ export function BirthdayPicker({
       <div className="flex items-center gap-2">
         <div
           role="radiogroup"
+          onKeyDown={radioKeys}
           aria-label="Which calendar"
           className="inline-flex rounded-card bg-hover p-0.5"
         >
@@ -89,6 +91,7 @@ export function BirthdayPicker({
               type="button"
               role="radio"
               aria-checked={value.calendar === c}
+              tabIndex={value.calendar === c ? 0 : -1}
               onClick={() => set({ calendar: c, leapMonth: c === 'lunar' && value.leapMonth })}
               className={`h-7 rounded-control px-2.5 text-meta font-medium ${
                 value.calendar === c ? 'bg-panel text-ink ring-1 ring-line' : 'text-muted'

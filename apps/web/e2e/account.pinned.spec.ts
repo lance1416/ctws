@@ -41,12 +41,20 @@ test('the zone changes in place, saved on picking, and the clock follows', async
 
 test('the theme here and the top bar switch are one setting', async ({ page }) => {
   await registerFreshUser(page, '/account')
-  const theme = page.getByRole('tablist', { name: 'Theme' })
-  await expect(theme.getByRole('tab', { name: 'System' })).toHaveAttribute('aria-selected', 'true')
+  const theme = page.getByRole('radiogroup', { name: 'Theme' })
+  await expect(theme.getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true')
   await page.getByRole('button', { name: /^Switch to / }).click()
-  await expect(theme.getByRole('tab', { name: 'System' })).toHaveAttribute('aria-selected', 'false')
-  await theme.getByRole('tab', { name: 'Dark' }).click()
+  await expect(theme.getByRole('radio', { name: 'System' })).toHaveAttribute(
+    'aria-checked',
+    'false',
+  )
+  await theme.getByRole('radio', { name: 'Dark' }).click()
   await expect(page.getByRole('button', { name: 'Switch to light' })).toBeVisible()
+  // One Tab stop; the arrows pick as they move (DES-001 section 4).
+  await expect(theme.getByRole('radio', { name: 'Light' })).toHaveAttribute('tabindex', '-1')
+  await theme.getByRole('radio', { name: 'Dark' }).press('ArrowRight')
+  await expect(theme.getByRole('radio', { name: 'System' })).toBeFocused()
+  await expect(theme.getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true')
 })
 
 test('the password changes under its row, saying why it cannot first', async ({ page }) => {

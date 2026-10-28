@@ -1,3 +1,4 @@
+import { radioKeys } from '../../../platform/ui/radioKeys'
 import {
   CHANNELS,
   FOLLOW_UP_DAYS,
@@ -243,6 +244,7 @@ export function LogMessage({
           {!reply && (
             <div
               role="radiogroup"
+              onKeyDown={radioKeys}
               aria-label="Direction"
               className="inline-flex rounded-control border border-line p-0.5"
             >
@@ -254,6 +256,7 @@ export function LogMessage({
                     type="button"
                     role="radio"
                     aria-checked={d.direction === dir}
+                    tabIndex={d.direction === dir ? 0 : -1}
                     onClick={() => set({ direction: dir })}
                     className="inline-flex h-7 items-center gap-1.5 rounded-key px-2.5 text-ui text-muted aria-checked:bg-select aria-checked:font-medium aria-checked:text-ink"
                   >
@@ -266,6 +269,7 @@ export function LogMessage({
           )}
           <div
             role="radiogroup"
+            onKeyDown={radioKeys}
             aria-label="Channel"
             className="inline-flex rounded-control border border-line p-0.5"
           >
@@ -277,6 +281,7 @@ export function LogMessage({
                   type="button"
                   role="radio"
                   aria-checked={d.channel === c}
+                  tabIndex={d.channel === c ? 0 : -1}
                   aria-label={CHANNEL_WORDS[c]}
                   title={CHANNEL_WORDS[c]}
                   onClick={() => set({ channel: c })}

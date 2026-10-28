@@ -1,4 +1,5 @@
 import type { ProjectId } from '@ctws/contracts'
+import { radioKeys } from '../../platform/ui/radioKeys'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
@@ -182,6 +183,7 @@ export function Capture() {
           />
           <div
             role="radiogroup"
+            onKeyDown={radioKeys}
             aria-label="Kind"
             className="mx-3 mt-2.5 grid grid-cols-3 rounded-card bg-hover p-0.5"
           >
@@ -367,6 +369,7 @@ function Segment({
       type="button"
       role="radio"
       aria-checked={on}
+      tabIndex={on ? 0 : -1}
       disabled={disabled}
       onClick={onClick}
       className={`inline-flex h-7 items-center justify-center gap-1.5 rounded-control text-meta font-medium ${

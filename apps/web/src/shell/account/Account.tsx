@@ -214,6 +214,7 @@ function ThemeSwitch() {
   return (
     <Segmented
       label="Theme"
+      picks
       segments={THEMES}
       current={theme}
       onPick={(id) => applyTheme(id as Theme)}

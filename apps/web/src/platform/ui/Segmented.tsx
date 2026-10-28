@@ -1,3 +1,4 @@
+import { radioKeys } from './radioKeys'
 import type { IconComponent } from './icons'
 
 type Segment = {
@@ -17,20 +18,33 @@ export function Segmented({
   segments,
   current,
   onPick,
+  picks = false,
 }: {
   label: string
   segments: readonly Segment[]
   current: string
   onPick: (id: string) => void
+  /**
+   * It picks a setting that is kept (a theme), not a view of what is under it: a radiogroup, one
+   * Tab stop, the arrows picking as they move (DES-001 section 4).
+   */
+  picks?: boolean
 }) {
   return (
-    <span role="tablist" aria-label={label} className="inline-flex rounded-card bg-hover p-0.5">
+    <span
+      role={picks ? 'radiogroup' : 'tablist'}
+      aria-label={label}
+      onKeyDown={picks ? radioKeys : undefined}
+      className="inline-flex rounded-card bg-hover p-0.5"
+    >
       {segments.map(({ id, label: name, icon: Icon, unavailable }) => (
         <button
           key={id}
           type="button"
-          role="tab"
-          aria-selected={id === current}
+          role={picks ? 'radio' : 'tab'}
+          {...(picks
+            ? { 'aria-checked': id === current, tabIndex: id === current ? 0 : -1 }
+            : { 'aria-selected': id === current })}
           // Not `disabled`: a disabled button never hears the hover that would say why.
           aria-disabled={unavailable ? true : undefined}
           title={typeof unavailable === 'string' ? unavailable : undefined}

@@ -124,8 +124,8 @@ test('the theme is picked on the account page and survives a reload', async ({ p
   const dark = await ground()
 
   await page.goto('/account')
-  const theme = page.getByRole('tablist', { name: 'Theme' })
-  await theme.getByRole('tab', { name: 'Light' }).click()
+  const theme = page.getByRole('radiogroup', { name: 'Theme' })
+  await theme.getByRole('radio', { name: 'Light' }).click()
   const light = await ground()
   expect(light).not.toBe(dark)
 
@@ -135,7 +135,7 @@ test('the theme is picked on the account page and survives a reload', async ({ p
   expect(await ground()).toBe(light)
 
   // Back to System: the attribute goes, and the system's dark applies again.
-  await theme.getByRole('tab', { name: 'System' }).click()
+  await theme.getByRole('radio', { name: 'System' }).click()
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBeUndefined()
   expect(await ground()).toBe(dark)
 })
