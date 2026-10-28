@@ -5,6 +5,7 @@ import { longDay, nearDay } from '../../platform/time/dates'
 import { BUTTON } from '../../platform/ui/buttonStyles'
 import {
   CakeIcon,
+  DoneIcon,
   FlagIcon,
   JoinIcon,
   KIND_ICON,
@@ -48,7 +49,7 @@ export function DayPanel({
   const row = (entry: Placed, lead: ReactNode, Mark: IconComponent | null, trail?: ReactNode) => (
     <Row key={entry.key} entry={entry} lead={lead} Mark={Mark} open={opener(entry)} trail={trail} />
   )
-  const late = (entry: Placed) => entry.day < today
+  const late = (entry: Placed) => entry.day < today && !entry.done
 
   return (
     <div className="flex flex-col">
@@ -97,7 +98,7 @@ export function DayPanel({
               <span className={`text-meta ${late(t) ? 'text-stop-t' : 'text-muted'}`}>
                 {late(t) ? 'Late' : (nearDay(day, today) ?? '')}
               </span>,
-              FlagIcon,
+              t.done ? DoneIcon : FlagIcon,
             ),
           )}
         </Section>
@@ -194,7 +195,10 @@ function Row({
 }) {
   const projects = useEveryProject()
   const project = entry.projectId ? projects.data?.find((p) => p.id === entry.projectId) : null
-  const name = 'min-w-0 truncate text-left text-ui text-ink hover:underline'
+  // A deadline met stays on its day, struck through.
+  const name = `min-w-0 truncate text-left text-ui hover:underline ${
+    entry.done ? 'text-subtle line-through' : 'text-ink'
+  }`
   return (
     <li className="grid min-h-7 grid-cols-[48px_20px_minmax(0,1fr)_auto_auto] items-center gap-x-2.5">
       <span className="min-w-0 truncate">{lead}</span>

@@ -76,6 +76,8 @@ const calendarEntry = z.object({
   turns: z.number().int().nullable(),
   /** Where to join, for a meeting held on a call (Today's "Join"). */
   joinUrl: z.string().nullable(),
+  /** A deadline met: the calendar keeps it, struck through (FR-080). */
+  done: z.boolean(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
 })

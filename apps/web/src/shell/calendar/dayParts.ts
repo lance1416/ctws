@@ -29,10 +29,13 @@ export function dayParts(entries: readonly Placed[]): DayParts {
   }
 }
 
-/** A square's lines, in the order they are read: meetings by time, deadlines, follow-ups, birthdays. */
+/**
+ * A square's lines, in the order they are read: birthdays, which last the day; meetings by time;
+ * deadlines; follow-ups. The planned count comes last, after them.
+ */
 export const squareLines = (parts: DayParts): Placed[] => [
+  ...parts.birthdays,
   ...parts.meetings,
   ...parts.due,
   ...parts.followUps,
-  ...parts.birthdays,
 ]

@@ -126,6 +126,32 @@ test.describe('on the 27-inch screen', () => {
   })
 })
 
+test.describe('from the keyboard', () => {
+  test.use({ viewport: { width: 2560, height: 1310 } })
+
+  test('the grid is one Tab stop, and the arrows move the chosen day across months', async ({
+    page,
+  }) => {
+    await registerFreshUser(page, '/')
+    await page.goto('/calendar')
+    const today = page.getByRole('button', { name: 'Thursday, October 22' })
+    await expect(today).toHaveAttribute('tabindex', '0')
+    await expect(page.getByRole('button', { name: 'Friday, October 23' })).toHaveAttribute(
+      'tabindex',
+      '-1',
+    )
+
+    await today.focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(page).toHaveURL(/day=2026-10-23/)
+    await expect(page.getByRole('button', { name: 'Friday, October 23' })).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('ArrowDown')
+    await expect(page).toHaveURL(/day=2026-11-06/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('November 2026')
+  })
+})
+
 test('on a MacBook Air the chosen day opens over the grid and closes with Esc', async ({
   page,
 }) => {

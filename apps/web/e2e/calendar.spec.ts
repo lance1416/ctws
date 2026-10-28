@@ -55,9 +55,7 @@ test('the months step, and Today comes back', async ({ page }) => {
   await expect(square(page, dayOffset(1))).toContainText('这个月的')
 })
 
-test('a finished thing leaves the grid, because the calendar is about what is ahead', async ({
-  page,
-}) => {
+test('a deadline met stays on its day, struck through', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'CTWS')
   const id = await makeTask(page, pid, '做完的', { dueAt: `${dayOffset(1)}T09:00:00.000Z` })
@@ -66,7 +64,9 @@ test('a finished thing leaves the grid, because the calendar is about what is ah
 
   await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { status: 'done' } })
   await page.reload()
-  await expect(square(page, dayOffset(1))).not.toContainText('做完的')
+  await expect(square(page, dayOffset(1)).getByRole('link', { name: /做完的/ })).toHaveClass(
+    /line-through/,
+  )
 })
 
 test('a birthday sits on the day the server gives, and clicking it opens the person', async ({

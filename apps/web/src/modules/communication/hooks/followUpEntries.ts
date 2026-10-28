@@ -25,6 +25,7 @@ export function useFollowUpEntries(range: { from: string; to: string }) {
             timeZone: null,
             turns: null,
             joinUrl: null,
+            done: false,
             projectId: m.projectId,
             projectName: m.projectName,
           },

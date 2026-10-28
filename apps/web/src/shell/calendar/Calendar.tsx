@@ -1,12 +1,25 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { addDays } from '@ctws/core/day'
+import {
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { longDay, monthDay, ymd } from '../../platform/time/dates'
 import { useNow } from '../../platform/time/useNow'
 import { BUTTON, CHOSEN, ICON_BUTTON } from '../../platform/ui/buttonStyles'
-import { useColumns } from '../../platform/ui/columns'
 import { DetailPane } from '../../platform/ui/DetailPane'
-import { BackIcon, CakeIcon, FlagIcon, ForwardIcon, KIND_ICON } from '../../platform/ui/icons'
+import {
+  BackIcon,
+  CakeIcon,
+  DoneIcon,
+  FlagIcon,
+  ForwardIcon,
+  KIND_ICON,
+} from '../../platform/ui/icons'
 import { KIND_ON_TINT, KIND_TINT } from '../../platform/ui/kinds'
 import { useTimeZone } from '../auth/useMe'
 import { useEveryProject } from '../projects/api'
@@ -28,9 +41,25 @@ import {
 
 /** Lines a square shows before it says "+N more" (FR-015). */
 const PER_SQUARE = 3
-/** From this many content columns the chosen day stays beside the grid; under it, it opens over. */
-const RESIDENT_FROM = 4
+/**
+ * From this window width the chosen day stays beside the grid: a square still has about 200 for
+ * its names. Under it, a chosen day opens over the grid.
+ */
+const RESIDENT_QUERY = '(min-width: 1920px)'
 const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+/** The arrow keys' steps through the grid, in days. */
+const STEPS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
+
+const subscribe = (change: () => void) => {
+  const query = window.matchMedia(RESIDENT_QUERY)
+  query.addEventListener('change', change)
+  return () => query.removeEventListener('change', change)
+}
+
+/** Whether the window is wide enough for the chosen day to stay beside the grid. */
+const useResident = () =>
+  useSyncExternalStore(subscribe, () => window.matchMedia(RESIDENT_QUERY).matches)
 
 /** The key above the grid: each kind of line, in its colour. */
 const LEGEND = [
@@ -55,9 +84,10 @@ export function Calendar() {
   const asked = params.get('day')
   const picked = asked && DAY.test(asked) ? asked : null
   const [cursor, setCursor] = useState(picked ?? today)
-  const page = useRef<HTMLDivElement>(null)
-  const resident = useColumns(page) >= RESIDENT_FROM
+  const resident = useResident()
   const chosen = picked ?? (resident ? today : null)
+  // The day the arrow keys are on: the grid is one Tab stop, and this day's number holds it.
+  const [focused, setFocused] = useState(chosen ?? today)
 
   const setDay = (day: string | null) =>
     setParams(
@@ -101,6 +131,24 @@ export function Calendar() {
   }
 
   const squares = monthSquares(cursor)
+  // The Tab stop: the day the arrows are on, or this month's first when it is on another month.
+  const stop = squares.some((s) => s.day === focused)
+    ? focused
+    : (squares.find((s) => s.inMonth)?.day ?? focused)
+  // The arrows move the day; off this month's squares the month follows. Beside the grid the
+  // moved-to day is chosen at once; over it, Enter opens it.
+  const onGridKey = (e: KeyboardEvent) => {
+    const step = STEPS[e.key]
+    if (step === undefined) return
+    e.preventDefault()
+    const next = addDays(stop, step)
+    setFocused(next)
+    if (resident) setDay(next)
+    if (!squares.some((s) => s.day === next && s.inMonth)) setCursor(next)
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>(`[data-day="${next}"] [data-day-number]`)?.focus(),
+    )
+  }
   const panel = chosen && (
     <DayPanel
       day={chosen}
@@ -111,7 +159,7 @@ export function Calendar() {
   )
 
   return (
-    <div ref={page} className="flex min-h-full flex-1 flex-col gap-3">
+    <div className="flex min-h-full flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="text-title text-ink tabular-nums">{monthTitle(cursor)}</h1>
         {lunarMonths.map((name) => (
@@ -136,7 +184,8 @@ export function Calendar() {
             type="button"
             onClick={() => {
               setCursor(today)
-              if (picked) setDay(today)
+              setFocused(today)
+              setDay(today)
             }}
             className={`${BUTTON.secondary} h-8`}
           >
@@ -175,9 +224,11 @@ export function Calendar() {
       )}
 
       <div
-        className={`grid min-h-0 flex-1 gap-3 ${resident ? 'grid-cols-[minmax(0,1fr)_420px]' : ''}`}
+        className={`grid min-h-0 flex-1 gap-3 ${resident ? 'grid-cols-[minmax(0,1fr)_var(--width-inspector)]' : ''}`}
       >
         <div
+          aria-label={monthTitle(cursor)}
+          onKeyDown={onGridKey}
           className="grid min-w-0 grid-cols-7 overflow-hidden rounded-card border border-line bg-panel"
           style={{
             gridTemplateRows: `2rem repeat(${squares.length / 7}, minmax(7.5rem, 1fr))`,
@@ -200,11 +251,15 @@ export function Calendar() {
               inMonth={inMonth}
               isToday={day === today}
               chosen={day === chosen}
+              focusable={day === stop}
               last={{ column: i % 7 === 6, row: i >= squares.length - 7 }}
               lunar={lunarSquareName(lunar.data?.days[day], lunar.data?.festivals[day])}
               entries={byDay.get(day) ?? []}
               today={today}
-              onPick={() => setDay(day)}
+              onPick={() => {
+                setFocused(day)
+                setDay(day)
+              }}
               opener={opener}
             />
           ))}
@@ -234,6 +289,7 @@ function Square({
   inMonth,
   isToday,
   chosen,
+  focusable,
   last,
   lunar,
   entries,
@@ -245,6 +301,8 @@ function Square({
   inMonth: boolean
   isToday: boolean
   chosen: boolean
+  /** The grid's one Tab stop. */
+  focusable: boolean
   last: { column: boolean; row: boolean }
   lunar: ReturnType<typeof lunarSquareName>
   entries: Placed[]
@@ -269,6 +327,8 @@ function Square({
       <div className={`mb-0.5 flex items-baseline justify-between ${inMonth ? '' : 'opacity-55'}`}>
         <button
           type="button"
+          data-day-number
+          tabIndex={focusable ? 0 : -1}
           aria-label={longDay(day)}
           aria-pressed={chosen}
           aria-current={isToday ? 'date' : undefined}
@@ -312,7 +372,10 @@ function Square({
   )
 }
 
-/** How a line looks, by what its date is to the thing: late is red, due today amber. */
+/**
+ * How a line looks, by what its date is to the thing: late is red, due today amber, a deadline
+ * met struck through and quiet.
+ */
 function lineLook(entry: Placed, today: string): { tone: string; icon: ReactNode } {
   const late = entry.day < today
   const icon = (Icon: typeof FlagIcon) => <Icon size={12} aria-hidden="true" />
@@ -329,9 +392,8 @@ function lineLook(entry: Placed, today: string): { tone: string; icon: ReactNode
           : `${KIND_TINT.communication} ${KIND_ON_TINT.communication}`,
         icon: icon(KIND_ICON.communication),
       }
-    case 'birthday':
-      return { tone: `${KIND_TINT.person} ${KIND_ON_TINT.person}`, icon: icon(CakeIcon) }
-    default:
+    case 'due':
+      if (entry.done) return { tone: 'text-subtle line-through', icon: icon(DoneIcon) }
       return {
         tone: late
           ? 'bg-stop-bg text-stop-t'
@@ -340,6 +402,10 @@ function lineLook(entry: Placed, today: string): { tone: string; icon: ReactNode
             : 'bg-hover text-muted',
         icon: icon(FlagIcon),
       }
+    case 'birthday':
+      return { tone: `${KIND_TINT.person} ${KIND_ON_TINT.person}`, icon: icon(CakeIcon) }
+    default:
+      return { tone: 'bg-hover text-muted', icon: icon(FlagIcon) }
   }
 }
 

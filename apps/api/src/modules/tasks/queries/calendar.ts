@@ -12,13 +12,15 @@ const calendarRow = z.object({
   kind: z.enum(['planned', 'due']),
   projectId,
   projectName: z.string(),
+  done: z.boolean(),
 })
 
 export type CalendarRow = z.output<typeof calendarRow>
 
 /**
  * Open tasks by the day they are planned for and the day they are due, which may be two
- * entries for one task. A deadline is an instant, so its day is read in the account's zone.
+ * entries for one task; and the deadlines met, which the calendar keeps struck through (FR-080).
+ * A deadline is an instant, so its day is read in the account's zone.
  */
 export async function listTaskCalendar(
   q: Queryable,
@@ -28,20 +30,21 @@ export async function listTaskCalendar(
 ): Promise<CalendarRow[]> {
   const result = await q.execute(sql`
     with visible as (
-      select t.id, t.title, t.scheduled_on, t.due_at, p.id as project_id, p.name as project_name
+      select t.id, t.title, t.scheduled_on, t.due_at, p.id as project_id, p.name as project_name,
+             ${taskOpenSql('t')} as open, t.status = 'done' as done
       from tasks t
       join projects p on p.id = t.project_id
       where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
-        and ${taskOpenSql('t')}
+        and (${taskOpenSql('t')} or t.status = 'done')
     )
     select id, scheduled_on as day, title, 'planned' as kind,
-           project_id as "projectId", project_name as "projectName"
+           project_id as "projectId", project_name as "projectName", false as done
     from visible
-    where scheduled_on is not null
+    where open and scheduled_on is not null
       and scheduled_on between ${range.from}::date and ${range.to}::date
     union all
     select id, (due_at at time zone ${timezone})::date as day, title,
-           'due' as kind, project_id as "projectId", project_name as "projectName"
+           'due' as kind, project_id as "projectId", project_name as "projectName", done
     from visible
     where due_at is not null
       and (due_at at time zone ${timezone})::date

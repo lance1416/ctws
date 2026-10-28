@@ -281,6 +281,7 @@ export async function meetingEntries(
     timeZone: m.timeZone,
     turns: null,
     joinUrl: m.joinUrl,
+    done: false,
     projectId: m.projectId,
     projectName: m.projectName,
   }))

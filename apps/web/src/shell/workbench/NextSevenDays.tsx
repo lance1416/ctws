@@ -33,7 +33,8 @@ export function NextSevenDays() {
   // One that opens over the calendar's grid opens there; the rest go where their module says.
   const entries = results.flatMap(({ entries, opens }) =>
     entries
-      .filter((e) => (SHOWN_KINDS as readonly string[]).includes(e.kind))
+      // A deadline met is the calendar's to keep, not the week's to do.
+      .filter((e) => (SHOWN_KINDS as readonly string[]).includes(e.kind) && !e.done)
       .map((e) => (opens ? { ...e, to: `/calendar?${new URLSearchParams(opens.params(e))}` } : e)),
   )
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i))

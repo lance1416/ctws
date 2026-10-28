@@ -14,6 +14,7 @@ const meeting = (startsAt: string, endsAt: string): CalendarEntry => ({
   timeZone: 'America/Toronto',
   turns: null,
   joinUrl: null,
+  done: false,
   projectId: null,
   projectName: null,
 })

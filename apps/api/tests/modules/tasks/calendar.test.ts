@@ -76,6 +76,29 @@ describe('the task calendar', () => {
     expect(got.map((e) => e.title)).toEqual(['这个月的'])
   })
 
+  it('keeps a deadline met, marked done, and drops its plan and anything dropped', async () => {
+    // The calendar strikes a met deadline through on its day (FR-080); a plan for a finished
+    // task is nothing to do, and a cancelled task met nothing.
+    const ctx = await setup()
+    const pid = await createProject(ctx, 'CTWS')
+    const met = await createTask(ctx, pid, '按时交了')
+    await patchTask(ctx, met, {
+      scheduledOn: '2026-10-05',
+      dueAt: '2026-10-09T09:00:00.000Z',
+      status: 'done',
+    })
+    const dropped = await createTask(ctx, pid, '不做了')
+    await patchTask(ctx, dropped, { dueAt: '2026-10-09T09:00:00.000Z', status: 'cancelled' })
+    const open = await createTask(ctx, pid, '还要交')
+    await patchTask(ctx, open, { dueAt: '2026-10-10T09:00:00.000Z' })
+
+    const got = await entries(ctx, '2026-10-01', '2026-10-31')
+    expect(got.map((e) => [e.title, e.kind, e.done])).toEqual([
+      ['按时交了', 'due', true],
+      ['还要交', 'due', false],
+    ])
+  })
+
   it('keeps one workspace out of another', async () => {
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')

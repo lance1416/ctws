@@ -81,5 +81,6 @@ export function toCalendarEntry(r: CalendarRow): CalendarEntry {
     title: r.title,
     projectId: r.projectId,
     projectName: r.projectName,
+    done: r.done,
   })
 }
