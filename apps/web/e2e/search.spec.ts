@@ -499,3 +499,19 @@ test('search counts every match, shows five a kind, and reads a kind on as it is
   })
   await expect(dialog.getByRole('option')).toHaveCount(40)
 })
+
+test('a kind picked with the pointer keeps the typing in the box (BUG-062)', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  await apiPost(page, '/projects', { name: 'Ledgr' })
+  await page.keyboard.press('Control+k')
+  const box = searchBox(page)
+  await box.fill('/pro')
+  await page
+    .getByRole('dialog', { name: 'Search' })
+    .getByRole('option', { name: /Projects/ })
+    .click()
+  await expect(box).toBeFocused()
+  await page.keyboard.type('ledgr')
+  await expect(box).toHaveValue('ledgr')
+  await expect(result(page, 'Ledgr')).toBeVisible()
+})

@@ -143,7 +143,13 @@ export function Timeline({
           </div>
         )}
       </div>
-      <div id={shown} className="contents">
+      {/* What the tabs show: Tab goes from the chosen tab to here (DES-001 section 4). */}
+      <div
+        id={shown}
+        {...(filters
+          ? { role: 'tabpanel', tabIndex: 0, 'aria-label': `${filter.label} in the timeline` }
+          : {})}
+      >
         {entries.isError ? (
           <BlockFailed what="timeline" onRetry={() => void entries.refetch()} />
         ) : (

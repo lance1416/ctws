@@ -146,6 +146,10 @@ test('an organisation’s page says what it is, who is there and where it stands
   await expect(timeline.getByRole('tab', { name: 'All' })).toBeFocused()
   await expect(timeline.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true')
   await expect(timeline).toContainText('Added')
+  // Tab goes from the chosen tab to what it shows.
+  await page.keyboard.press('Tab')
+  await expect(page.locator(`[id="${shown!}"]`)).toBeFocused()
+  await expect(page.locator(`[id="${shown!}"]`)).toHaveRole('tabpanel')
 })
 
 test('N O writes one down on a page of its own, and Edit changes it', async ({ page }) => {

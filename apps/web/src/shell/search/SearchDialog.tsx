@@ -331,16 +331,22 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       openNew(creator, { opens: true })
     }
   }
+  // What a pointer picks here leaves the typing where it was: in the box (BUG-062).
   const scopeTo = (type: ObjectType) => {
     setScope(type)
     setTab('all')
     setQuery('')
+    box.current?.focus()
+  }
+  const showTab = (t: Tab) => {
+    setTab(t)
+    box.current?.focus()
   }
   // `typed`: from the keyboard, a hit for words not yet sent would be the previous words' (wait);
   // a pointer chooses what it can see.
   const open = (row: Row, beside: boolean, typed = false) => {
     if (row.kind === 'scope') return scopeTo(row.type)
-    if (row.kind === 'all') return setTab(row.type)
+    if (row.kind === 'all') return showTab(row.type)
     if (row.kind === 'hit' && typed && !settled) return
     if (row.kind === 'new') {
       if (!pick?.busy) pick?.makes?.run(row.title)
@@ -483,7 +489,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                 role="tab"
                 aria-selected={view === t}
                 tabIndex={-1}
-                onClick={() => setTab(t)}
+                onClick={() => showTab(t)}
                 className={`inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium whitespace-nowrap ${
                   view === t ? 'bg-select text-ink' : 'text-muted hover:bg-hover'
                 }`}
@@ -528,7 +534,10 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             <NextStep
               icon={<PLACE_ICON.search size={16} />}
               keys="Tab"
-              onClick={() => setScope(null)}
+              onClick={() => {
+                setScope(null)
+                box.current?.focus()
+              }}
             >
               Search every kind
             </NextStep>
