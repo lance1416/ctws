@@ -86,7 +86,7 @@ test('a reading status change the server refuses says so', async ({ page }) => {
     .getByRole('main')
     .getByRole('button', { name: /^Status: / })
     .click()
-  await page.getByRole('menuitem', { name: /^Reading/ }).click()
+  await page.getByRole('menuitemradio', { name: /^Reading/ }).click()
   await expect(said(page)).toBeVisible()
   await expect(
     page.getByRole('main').getByRole('button', { name: 'Status: To read' }),

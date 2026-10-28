@@ -117,7 +117,7 @@ test('a birthday picked says this year’s day by its weekday, and when the remi
   await expect(block.getByRole('button', { name: /^Tell me/ })).toBeVisible()
   await expect(block).toContainText('At 00:00 their time')
   await block.getByRole('button', { name: /^Tell me/ }).click()
-  await expect(page.getByRole('menuitem')).toHaveText([
+  await expect(page.getByRole('menuitemradio')).toHaveText([
     /On the day/,
     /A day before/,
     /3 days before/,

@@ -4,6 +4,9 @@ import { CHIP } from './formStyles'
 import { MENU_ITEM, MENU_SURFACE } from './menuSurface'
 import { CloseIcon, ExpandIcon, NewIcon } from './icons'
 
+/** The radio value of the choice of nothing: a radio's value is a string. */
+const NOTHING = '\u0000nothing'
+
 /** One choice; a `null` value is the choice of nothing ("Not set", "Top level"). */
 export type Choice<T extends string | null> = { value: T; label: string; mark?: ReactNode }
 
@@ -46,23 +49,31 @@ export function PickOne<T extends string | null>({
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
-          {choices.map((c) => (
-            <DropdownMenu.Item
-              key={c.value ?? ''}
-              onSelect={() => {
-                if (c.value !== value) onPick(c.value)
-              }}
-              className={MENU_ITEM}
-            >
-              {c.mark && (
-                <span aria-hidden="true" className="flex shrink-0">
-                  {c.mark}
-                </span>
-              )}
-              <span className="truncate">{c.label}</span>
-              {c.value === value && <span className="ml-auto text-meta text-subtle">Current</span>}
-            </DropdownMenu.Item>
-          ))}
+          {/* Radios, so the current one is said as checked, not only seen as "Current". */}
+          <DropdownMenu.RadioGroup value={current ? (current.value ?? NOTHING) : ''}>
+            {choices.map((c) => (
+              <DropdownMenu.RadioItem
+                key={c.value ?? NOTHING}
+                value={c.value ?? NOTHING}
+                onSelect={() => {
+                  if (c.value !== value) onPick(c.value)
+                }}
+                className={MENU_ITEM}
+              >
+                {c.mark && (
+                  <span aria-hidden="true" className="flex shrink-0">
+                    {c.mark}
+                  </span>
+                )}
+                <span className="truncate">{c.label}</span>
+                {c.value === value && (
+                  <span aria-hidden="true" className="ml-auto text-meta text-subtle">
+                    Current
+                  </span>
+                )}
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

@@ -56,7 +56,7 @@ test('N X on an organisation logs a message to it, and it is on every timeline i
     .click()
   // Filed under a project, it is on the project's timeline too.
   await form.getByRole('button', { name: 'Projects: No project' }).click()
-  await page.getByRole('menuitem', { name: 'Find a lawyer' }).click()
+  await page.getByRole('menuitemradio', { name: 'Find a lawyer' }).click()
   await form.getByRole('textbox', { name: 'What was said' }).press('Control+Enter')
   await expect(form).toHaveCount(0)
 

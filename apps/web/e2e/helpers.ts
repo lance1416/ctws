@@ -281,14 +281,23 @@ export function completedAt(taskId: string, at: string): void {
  * It deliberately moves the EVENT LOG and not `updated_at`: the panel reads the log precisely so
  * that a reorder cannot make a dead project look alive, and a helper that moved the wrong column
  * would let a broken panel pass.
+ *
+ * Days are counted on the account's calendar, so the history lands at noon `days` days before
+ * today in `timeZone`: a plain `now() - 9 days` lands on the next day there late in the evening
+ * across a change of clocks, and the count comes out one short.
  */
-export function backdateProjectActivity(projectId: string, ago: string): void {
-  if (!/^[0-9a-f-]{36}$/.test(projectId) || !/^\d+ (minutes|hours|days)$/.test(ago)) {
+export function backdateProjectActivity(projectId: string, days: number, timeZone: string): void {
+  if (
+    !/^[0-9a-f-]{36}$/.test(projectId) ||
+    !Number.isInteger(days) ||
+    !/^[A-Za-z_]+(\/[A-Za-z_+-]+)*$/.test(timeZone)
+  ) {
     throw new Error('backdateProjectActivity: refusing a malformed argument')
   }
+  const noon = `((now() at time zone '${timeZone}')::date - ${days} + time '12:00') at time zone '${timeZone}'`
   const out = psql(
     // A task's history is in the shell's change log since the redesign (RFC-001).
-    `update events set occurred_at = now() - interval '${ago}' ` +
+    `update events set occurred_at = ${noon} ` +
       `where object_type = 'task' and object_id in (select id from tasks where project_id = '${projectId}')`,
   )
   // A no-op update would leave the test proving nothing about history.
@@ -306,7 +315,11 @@ export async function pickOne(
   const page = 'page' in where ? where.page() : where
   const trigger = where.getByRole('button', { name: new RegExp(`^${label}`) })
   await trigger.click()
-  await page.getByRole('menuitem', { name: choice }).click()
+  // A choice of one is a radio; a menu of actions has plain items.
+  await page
+    .getByRole('menuitemradio', { name: choice })
+    .or(page.getByRole('menuitem', { name: choice }))
+    .click()
   // The menu hands focus back to its trigger a moment after it closes. Under load that lands
   // after the caller has moved on -- into a field it then types in, so the keystrokes go to the
   // trigger and the field is left empty, which a field that speaks up when it is left reads as

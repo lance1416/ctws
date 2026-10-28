@@ -35,7 +35,7 @@ const sidebarPart = (page: Page, name: string) =>
 async function setStatus(page: Page, label: string) {
   const main = page.getByRole('main')
   await main.getByRole('button', { name: /^Status: / }).click()
-  await page.getByRole('menuitem', { name: new RegExp(`^${label}`) }).click()
+  await page.getByRole('menuitemradio', { name: new RegExp(`^${label}`) }).click()
   await expect(main.getByRole('button', { name: `Status: ${label}` })).toBeEnabled()
 }
 
