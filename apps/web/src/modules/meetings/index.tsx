@@ -77,7 +77,8 @@ export const meetingModule: WorkspaceModule = {
       to: (id) => `/${MEETINGS_ID}/${id}`,
       Fact: MeetingFact,
       Narrow: MeetingNarrow,
-      edit: (id) => `/${MEETINGS_ID}/${id}/edit`,
+      // Its own page at the occurrence shown, whose Edit asks which ones a change touches.
+      edit: (id, at) => `/${MEETINGS_ID}/${id}${at ? `?${new URLSearchParams({ at })}` : ''}`,
     },
   ],
   // An occurrence names its attendees and its project.

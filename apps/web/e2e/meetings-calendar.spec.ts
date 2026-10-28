@@ -27,6 +27,13 @@ const arrange = (page: Page, data: Record<string, unknown>) =>
 
 const inLondon = (page: Page) => registerFreshUser(page, '/')
 
+/**
+ * The occurrence's pane over the grid, as the address names it (the workbench's week opens it so);
+ * a click on the grid opens the inspector instead (FR-022).
+ */
+const openPane = (page: Page, m: { meetingId: string }, at: string) =>
+  page.goto(`/calendar?${new URLSearchParams({ meeting: m.meetingId, at })}`)
+
 const WEEKLY_IN_TORONTO = {
   title: '周会',
   startsLocal: '2026-10-20T09:00',
@@ -71,11 +78,9 @@ test('a square makes nothing; a meeting is made from the chosen day', async ({ p
 
 test('a repeating meeting asks which occurrences a move touches', async ({ page }) => {
   await inLondon(page)
-  await arrange(page, WEEKLY_IN_TORONTO)
-  await page.goto('/calendar')
-
+  const m = await arrange(page, WEEKLY_IN_TORONTO)
+  await openPane(page, m, '2026-10-27T09:00')
   await openOctober(page)
-  await square(page, '2026-10-27').getByRole('button', { name: /周会/ }).click()
   await expect(pane(page)).toBeVisible()
 
   // Edited like a person or a task: Edit opens the form, and one Save writes it back.
@@ -104,19 +109,20 @@ test('a meeting late in its own zone opens from the next day here', async ({ pag
   await page.goto('/calendar')
   await openOctober(page)
 
-  // 21:00 on the 20th in Toronto is 02:00 on the 21st in London.
-  await square(page, '2026-10-21')
-    .getByRole('button', { name: /Late call/ })
-    .click()
-  await expect(pane(page)).toContainText('Late call')
+  // 21:00 on the 20th in Toronto is 02:00 on the 21st in London; it opens in the inspector.
+  await square(page, '2026-10-21').locator('[data-entry]').filter({ hasText: 'Late call' }).click()
+  await expect(
+    page
+      .getByRole('complementary', { name: 'Inspector' })
+      .getByRole('heading', { name: 'Late call' }),
+  ).toBeVisible()
 })
 
 test('a one-off meeting moved from the calendar stays open at its new time', async ({ page }) => {
   await inLondon(page)
-  await arrange(page, { ...WEEKLY_IN_TORONTO, title: 'Once', rrule: null })
-  await page.goto('/calendar')
+  const m = await arrange(page, { ...WEEKLY_IN_TORONTO, title: 'Once', rrule: null })
+  await openPane(page, m, '2026-10-20T09:00')
   await openOctober(page)
-  await square(page, '2026-10-20').getByRole('button', { name: /Once/ }).click()
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
   await pane(page).getByLabel('Start').fill('2026-10-20T11:00')
   await pane(page).getByRole('button', { name: 'Save' }).click()
@@ -126,11 +132,9 @@ test('a one-off meeting moved from the calendar stays open at its new time', asy
 
 test('cancelling one week leaves the series alone', async ({ page }) => {
   await inLondon(page)
-  await arrange(page, WEEKLY_IN_TORONTO)
-  await page.goto('/calendar')
+  const m = await arrange(page, WEEKLY_IN_TORONTO)
+  await openPane(page, m, '2026-10-27T09:00')
   await openOctober(page)
-
-  await square(page, '2026-10-27').getByRole('button', { name: /周会/ }).click()
   await pane(page).getByRole('button', { name: 'Cancel meeting' }).click()
   await page.getByRole('button', { name: 'Just this one' }).click()
 
@@ -141,11 +145,9 @@ test('cancelling one week leaves the series alone', async ({ page }) => {
 test('the people in the room come out of the people module', async ({ page }) => {
   await inLondon(page)
   await apiPost(page, '/people', { name: '陈颖' })
-  await arrange(page, { ...WEEKLY_IN_TORONTO, rrule: null })
-  await page.goto('/calendar')
+  const m = await arrange(page, { ...WEEKLY_IN_TORONTO, rrule: null })
+  await openPane(page, m, '2026-10-20T09:00')
   await openOctober(page)
-
-  await square(page, '2026-10-20').getByRole('button', { name: /周会/ }).click()
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
   await pane(page).getByRole('button', { name: 'Add Attendees' }).click()
   await page.getByRole('menuitem', { name: '陈颖' }).click()
@@ -226,10 +228,9 @@ test('a one-off meeting moved from the calendar keeps its pane rather than reope
   page,
 }) => {
   await inLondon(page)
-  await arrange(page, { ...WEEKLY_IN_TORONTO, title: 'Once', rrule: null })
-  await page.goto('/calendar')
+  const m = await arrange(page, { ...WEEKLY_IN_TORONTO, title: 'Once', rrule: null })
+  await openPane(page, m, '2026-10-20T09:00')
   await openOctober(page)
-  await square(page, '2026-10-20').getByRole('button', { name: /Once/ }).click()
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
   // A mark on the pane's own element: a pane closed and opened again is a new one, without it.
   await pane(page).evaluate((el) => el.setAttribute('data-test-mark', ''))
@@ -237,4 +238,20 @@ test('a one-off meeting moved from the calendar keeps its pane rather than reope
   await pane(page).getByRole('button', { name: 'Save' }).click()
   await expect(pane(page)).toContainText('Oct 20, 11:00')
   await expect(pane(page)).toHaveAttribute('data-test-mark', '')
+})
+
+test('a meeting clicked on the grid opens that occurrence in the inspector, and a reload keeps it', async ({
+  page,
+}) => {
+  await inLondon(page)
+  await arrange(page, WEEKLY_IN_TORONTO)
+  await page.goto('/calendar')
+  await openOctober(page)
+  await square(page, '2026-10-27').locator('[data-entry]').filter({ hasText: '周会' }).click()
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  // The 27th, not the series' next (FR-022, FR-067); the address names it.
+  await expect(inspector).toContainText('Tue, Oct 27')
+  await expect(page).toHaveURL(/inspect=meeting%3A[^&]+%402026-10-27T09%3A00/)
+  await page.reload()
+  await expect(inspector).toContainText('Tue, Oct 27')
 })

@@ -6,7 +6,7 @@ import { useInspector } from '../layout/inspectorAddress'
 import { useRegistry } from '../registry'
 
 /** A thing a narrow page opens: its kind and id. */
-export type Inspectable = { type: ObjectType; id: string }
+export type Inspectable = { type: ObjectType; id: string; at?: string }
 
 /**
  * What a narrow page may ask of the inspector it is in: open a linked thing in its place (FR-022),
@@ -235,4 +235,10 @@ export function OpensBeside({
       {children}
     </Link>
   )
+}
+
+/** The occurrence an address names (`?at=`), for a row that links one meeting's day. */
+export function atOf(to: string): string | undefined {
+  const query = to.split('?')[1]
+  return query ? (new URLSearchParams(query).get('at') ?? undefined) : undefined
 }

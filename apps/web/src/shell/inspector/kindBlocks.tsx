@@ -7,7 +7,7 @@ import { KIND_TEXT } from '../../platform/ui/kinds'
 import type { OwnThings } from '../contract'
 import { linksQuery } from '../links/api'
 import { useRegistry } from '../registry'
-import { NarrowRow, type NarrowBlockOf } from './narrow'
+import { atOf, NarrowRow, type NarrowBlockOf } from './narrow'
 
 /** A narrow block's rows before its "All N" (FR-011). */
 const SHOWN = 5
@@ -57,7 +57,7 @@ export function useNarrowKindBlocks({
         <NarrowRow
           key={t.id}
           mark={t.initials ? <Avatar initials={t.initials} /> : mark}
-          thing={{ type: kind, id: t.id }}
+          thing={{ type: kind, id: t.id, ...(t.to && atOf(t.to) ? { at: atOf(t.to)! } : {}) }}
           to={t.to ?? where.to(t.id)}
           title={t.title}
           fact={t.lead ?? t.fact}

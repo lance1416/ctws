@@ -3,23 +3,25 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 
 /**
  * THE INSPECTOR'S ADDRESS (FR-022): `?inspect=<type>:<id>` on whatever page is open, so a reload
- * brings it back and the page under it stays. Any other search parameter is left alone.
+ * brings it back and the page under it stays; `<type>:<id>@<when>` for one occurrence of a series
+ * (a meeting's, FR-067). Any other search parameter is left alone.
  */
 const INSPECT = 'inspect'
 
-export type Inspected = { type: ObjectType; id: string }
+export type Inspected = { type: ObjectType; id: string; at?: string }
 
 export function parseInspect(value: string | null): Inspected | null {
   if (!value) return null
-  const at = value.indexOf(':')
-  if (at < 1) return null
-  const type = value.slice(0, at)
-  const id = value.slice(at + 1)
+  const colon = value.indexOf(':')
+  if (colon < 1) return null
+  const type = value.slice(0, colon)
+  const [id, at] = value.slice(colon + 1).split('@') as [string, string | undefined]
   if (!id || !(OBJECT_TYPES as readonly string[]).includes(type)) return null
-  return { type: type as ObjectType, id }
+  return at ? { type: type as ObjectType, id, at } : { type: type as ObjectType, id }
 }
 
-export const formatInspect = ({ type, id }: Inspected): string => `${type}:${id}`
+export const formatInspect = ({ type, id, at }: Inspected): string =>
+  `${type}:${id}${at ? `@${at}` : ''}`
 
 /** The element that opened the inspector, so closing can hand focus back to it. */
 let opener: HTMLElement | null = null

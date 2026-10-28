@@ -219,9 +219,9 @@ export type RelationContribution = {
    * Its narrow page in the inspector (FR-022, artboard 33): the full page's blocks, in its order,
    * in one column, 400 wide. Without it the inspector offers only the full page.
    */
-  Narrow?: ComponentType<{ id: string }>
+  Narrow?: ComponentType<{ id: string; at?: string | undefined }>
   /** Its edit page, for the inspector's Edit; none where it is edited in place (a task). */
-  edit?: (id: string) => string
+  edit?: (id: string, at?: string) => string
   /** Its narrow page has a head of its own (a task's pane, artboard 8); the inspector's goes. */
   ownHead?: boolean
 }

@@ -20,7 +20,7 @@ import {
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { Timeline } from '../../../shell/timeline'
 import { usePeople } from '../../people'
-import { earlierQuery, seriesNotesQuery, seriesQuery } from '../api'
+import { earlierQuery, occurrenceQuery, seriesNotesQuery, seriesQuery } from '../api'
 import { MEETINGS_ID } from '../logic/id'
 import { lengthLabel } from './MeetingControls'
 
@@ -31,14 +31,18 @@ const pageOf = (m: MeetingOccurrence) =>
   `/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`
 
 /**
- * A MEETING IN THE INSPECTOR (FR-022, artboard 33): its next occurrence, or its latest; the date
+ * A MEETING IN THE INSPECTOR (FR-022, artboard 33): the occurrence clicked, or else the series'
+ * next, or its latest; the date
  * and project under the name; when and where, with Join; who is in it, its notes, the meetings
  * before it in the series, and the latest of its timeline.
  */
-export function MeetingNarrow({ id }: { id: string }) {
+export function MeetingNarrow({ id, at }: { id: string; at?: string | undefined }) {
   const today = useAccountToday()
   const zone = useTimeZone()
-  const found = useQuery(seriesQuery(idFrom(meetingId, id), today))
+  // The occurrence clicked, when one was (FR-067); else the series' next, or its latest.
+  const one = useQuery({ ...occurrenceQuery(idFrom(meetingId, id), at ?? ''), enabled: !!at })
+  const next = useQuery({ ...seriesQuery(idFrom(meetingId, id), today), enabled: !at })
+  const found = at ? one : next
   const people = usePeople()
   const me = useMe().data
   const projects = useEveryProject()
@@ -169,7 +173,7 @@ export function MeetingNarrow({ id }: { id: string }) {
                     >
                       <KIND_ICON.note size={14} aria-hidden="true" className={KIND_TEXT.note} />
                       <InspectLink
-                        thing={{ type: 'meeting', id: o.meetingId }}
+                        thing={{ type: 'meeting', id: o.meetingId, at: o.recurrenceId }}
                         to={pageOf(o)}
                         className="min-w-0 truncate text-ui text-ink hover:underline"
                       >

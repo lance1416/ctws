@@ -11,7 +11,7 @@ import { SearchDialog } from '../search/SearchDialog'
 import { KIND_WORDS } from '../search/view'
 import type { Makes } from './LinkDialog'
 import { LinkedRow } from './LinkedRow'
-import { OpensBeside } from '../inspector/narrow'
+import { atOf, OpensBeside } from '../inspector/narrow'
 import { type Item, useLinked } from './useLinked'
 
 /** "an organisation", "a note": one of a kind, as a button's name says it. */
@@ -332,7 +332,7 @@ function ThingRow({ row, kind, hover = true }: { row: Row; kind: ObjectType; hov
   const lead = row.initials || row.lead !== undefined
   return (
     <OpensBeside
-      thing={{ type: kind, id: row.id }}
+      thing={{ type: kind, id: row.id, ...(atOf(row.to) ? { at: atOf(row.to)! } : {}) }}
       to={row.to}
       data-linked={row.id}
       className={`grid min-h-9 min-w-0 flex-1 items-center gap-x-3 px-3 text-ui text-ink ${hover ? 'hover:bg-hover' : ''} ${

@@ -123,19 +123,24 @@ export function Calendar() {
     }
 
   // An entry whose module opens it over the grid names it in the address; the rest are links.
-  // A meeting opens its own occurrence over the grid; anything else with a narrow page opens in
-  // the inspector (FR-022, DES-001 "日历"); the rest are links to their pages.
+  // What has a narrow page opens in the inspector, a meeting as the occurrence clicked (FR-022,
+  // FR-067, DES-001 "日历"); else over the grid where its module opens it; else a link.
   const opener = (entry: Placed) => {
-    const opens = providers.find((p) => p.moduleId === entry.moduleId)?.opens
-    if (opens)
+    if (registry.relationFor(entry.type).Narrow)
       return () =>
-        setParams((prev) => {
-          const next = new URLSearchParams(prev)
-          for (const [k, v] of Object.entries(opens.params(entry))) next.set(k, v)
-          return next
+        inspector.show({
+          type: entry.type,
+          id: entry.id,
+          ...(entry.recurrenceId ? { at: entry.recurrenceId } : {}),
         })
-    if (!registry.relationFor(entry.type).Narrow) return null
-    return () => inspector.show({ type: entry.type, id: entry.id })
+    const opens = providers.find((p) => p.moduleId === entry.moduleId)?.opens
+    if (!opens) return null
+    return () =>
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        for (const [k, v] of Object.entries(opens.params(entry))) next.set(k, v)
+        return next
+      })
   }
 
   const squares = monthSquares(cursor)

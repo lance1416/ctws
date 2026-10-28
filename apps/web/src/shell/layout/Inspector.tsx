@@ -150,7 +150,7 @@ export function Inspector() {
               type="button"
               onClick={() => {
                 close()
-                navigate(edit(open.id))
+                navigate(edit(open.id, open.at))
               }}
               aria-label="Edit"
               title="Edit"
@@ -173,7 +173,7 @@ export function Inspector() {
       <div ref={body} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {Narrow ? (
           <InspectorContext.Provider value={context}>
-            <Narrow key={shown} id={open.id} />
+            <Narrow key={shown} id={open.id} at={open.at} />
           </InspectorContext.Provider>
         ) : (
           <div className="flex flex-col gap-4 p-4">
