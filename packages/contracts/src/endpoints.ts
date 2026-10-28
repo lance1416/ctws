@@ -708,6 +708,15 @@ export const api = {
       ok: 204,
       refusals: [404],
     }),
+    restoreOccurrence: endpoint({
+      method: 'POST',
+      path: '/meetings/:id/occurrences/:recurrenceId/restore',
+      summary: 'Undo cancelling one occurrence of a repeating meeting (FR-068).',
+      params: occurrenceParams,
+      ok: 200,
+      response: meetingOccurrence,
+      refusals: [404],
+    }),
     cancelFrom: endpoint({
       method: 'DELETE',
       path: '/meetings/:id/occurrences',

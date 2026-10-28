@@ -300,6 +300,31 @@ describe('editing one occurrence', () => {
       '2026-11-10',
     ])
   })
+
+  it('takes a cancelled week back, and leaves a moved one as it is (FR-068)', async () => {
+    const ctx = await setup()
+    const series = await arrange(ctx)
+    await cancelOne(ctx, series.meetingId, '2026-10-27T09:00')
+    await editOne(ctx, series.meetingId, '2026-11-03T09:00', { startsLocal: '2026-11-04T09:00' })
+    const restore = (at: string) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: `/api/v1/meetings/${series.meetingId}/occurrences/${at}/restore`,
+        headers: web(ctx),
+      })
+    const back = await restore('2026-10-27T09:00')
+    expect(back.statusCode, back.body).toBe(200)
+    expect((back.json() as MeetingOccurrence).startsLocal).toBe('2026-10-27T09:00')
+    expect((await restore('2026-11-03T09:00')).statusCode).toBe(200)
+    expect(days(await listed(ctx, '?from=2026-10-20&to=2026-11-10'))).toEqual([
+      '2026-10-20',
+      '2026-10-27',
+      '2026-11-04',
+      '2026-11-10',
+    ])
+    // A week the rule never gives is not one to take back.
+    expect((await restore('2026-10-28T09:00')).statusCode).toBe(404)
+  })
 })
 
 /**

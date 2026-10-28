@@ -12,6 +12,7 @@ import {
 } from './queries'
 import {
   cancelMeeting,
+  restoreOccurrence,
   continueSeries,
   createMeeting,
   updateOccurrence,
@@ -93,6 +94,13 @@ export const meetingRoutes: FastifyPluginAsyncZod = async (app) => {
 
     on(api.meetings.cancelOccurrence, async (req) => {
       await cancelMeeting(app.db, actorOf(req), req.params.id, 'one', req.params.recurrenceId)
+    }),
+
+    on(api.meetings.restoreOccurrence, async (req) => {
+      const { id, recurrenceId } = req.params
+      const { workspaceId } = currentUser(req)
+      await restoreOccurrence(app.db, actorOf(req), id, recurrenceId)
+      return toOccurrenceResponse(await getOccurrence(app.db, workspaceId, id, recurrenceId))
     }),
 
     on(api.meetings.cancelFrom, async (req) => {

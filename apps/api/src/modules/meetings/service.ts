@@ -263,6 +263,28 @@ async function cancelOne({ tx, workspaceId, now, series, recurrenceId }: Cancel)
   await recomputeBounds(tx, series.id)
 }
 
+/**
+ * Undoes cancelling one occurrence (FR-068): its cancelled exception goes, and the rule produces it
+ * again. One moved, not cancelled, is left as it is.
+ */
+export async function restoreOccurrence(
+  db: Db,
+  { workspaceId, now }: Actor,
+  id: MeetingId,
+  recurrenceId: LocalTime,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const series = await lockMeeting(tx, workspaceId, id)
+    assertOccurs(series, recurrenceId)
+    await tx.execute(sql`
+      delete from meeting_exceptions
+      where meeting_id = ${series.id} and recurrence_id = ${recurrenceId} and cancelled
+    `)
+    await touch(tx, { workspaceId, now }, series.id)
+    await recomputeBounds(tx, series.id)
+  })
+}
+
 async function cancelFollowing(c: Cancel) {
   const { tx, workspaceId, now, series, recurrenceId } = c
   assertOccurs(series, recurrenceId!)
