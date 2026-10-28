@@ -195,6 +195,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       recommendedBy: null,
       fetchedTitle: null,
       fetchedSummary: null,
+      statusSince: AT,
       createdAt: AT,
       updatedAt: AT,
     })
