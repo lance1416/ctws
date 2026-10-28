@@ -27,6 +27,17 @@ export const loginBody = z
   })
   .strict()
 
+/** The account's own settings it may change (artboard 30): its zone, for now. */
+export const updateMeBody = z.object({ timezone: canonicalTimeZone }).strict()
+
+/** A new password, given with the one it replaces. */
+export const changePasswordBody = z
+  .object({
+    current: z.string().min(1).max(1024),
+    next: newPassword,
+  })
+  .strict()
+
 export const userResponse = z.object({
   id: userId,
   email: z.email(),
@@ -45,6 +56,8 @@ export const meResponse = userResponse.extend({
   clockPinned: z.boolean(),
   /** The report of the move to the new layout, while it is not Done: how many items wait. */
   migrationReport: z.object({ pending: z.number().int().nonnegative() }).nullable(),
+  /** When the password was last changed here; null for one set at sign-up. */
+  passwordChangedAt: instant.nullable(),
 })
 
-export type UserResponse = z.infer<typeof userResponse>
+export type MeResponse = z.infer<typeof meResponse>

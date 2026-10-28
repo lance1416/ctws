@@ -1,4 +1,4 @@
-import { api, type UserResponse } from '@ctws/contracts'
+import { api, type MeResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, call } from '../../platform/http/api'
 import { browserZone, ymd } from '../../platform/time/dates'
@@ -13,7 +13,7 @@ export const meKey = ['me'] as const
  * other failure throws, so the shell can say the server is unreachable.
  */
 export function useMe() {
-  return useQuery<UserResponse | null>({
+  return useQuery<MeResponse | null>({
     queryKey: meKey,
     queryFn: async ({ signal }) => {
       try {

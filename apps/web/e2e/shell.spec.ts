@@ -117,14 +117,15 @@ test('a server that cannot be reached says so instead of showing the login page'
  * The theme is written to `data-theme` on `<html>` by a script in `index.html` that runs before
  * React, so a reload never flashes the system theme first.
  */
-test('the theme is picked in the account menu and survives a reload', async ({ page }) => {
+test('the theme is picked on the account page and survives a reload', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await registerFreshUser(page)
   const ground = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
   const dark = await ground()
 
-  await page.getByTestId('current-user').click()
-  await page.getByRole('menuitemradio', { name: 'Light' }).click()
+  await page.goto('/account')
+  const theme = page.getByRole('tablist', { name: 'Theme' })
+  await theme.getByRole('tab', { name: 'Light' }).click()
   const light = await ground()
   expect(light).not.toBe(dark)
 
@@ -134,8 +135,7 @@ test('the theme is picked in the account menu and survives a reload', async ({ p
   expect(await ground()).toBe(light)
 
   // Back to System: the attribute goes, and the system's dark applies again.
-  await page.getByTestId('current-user').click()
-  await page.getByRole('menuitemradio', { name: 'System' }).click()
+  await theme.getByRole('tab', { name: 'System' }).click()
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBeUndefined()
   expect(await ground()).toBe(dark)
 })

@@ -19,6 +19,7 @@ import { Shortcuts } from '../shortcuts/Shortcuts'
 import { MentionChip } from '../links/MentionChip'
 import { MentionContext, type Mention } from '../../platform/notes/mention'
 import { useRegistry } from '../registry'
+import { SignOutContext } from './signOut'
 import { Sidebar } from './Sidebar'
 import { SubjectProvider, useSubject } from './subject'
 import { TopBar } from './TopBar'
@@ -115,64 +116,66 @@ function Frame({
   }
 
   return (
-    <NewContext.Provider value={openNew}>
-      {/* Every note in the app draws its mentions as chips that open the thing (FR-042). */}
-      <MentionContext.Provider value={drawMention}>
-        <div className="flex h-dvh flex-col">
-          <div className="contents max-lg:hidden">
-            <TopBar
-              email={email}
-              onSearch={() => setSearching(true)}
-              onHelp={() => setHelp(true)}
-              onLogout={onLogout}
-            />
-          </div>
-          <div className="flex min-h-0 flex-1">
+    <SignOutContext.Provider value={onLogout}>
+      <NewContext.Provider value={openNew}>
+        {/* Every note in the app draws its mentions as chips that open the thing (FR-042). */}
+        <MentionContext.Provider value={drawMention}>
+          <div className="flex h-dvh flex-col">
             <div className="contents max-lg:hidden">
-              <IconBar expanded={barExpanded} setExpanded={setBarExpanded} />
-              {hasSidebar && sidebarOpen && <Sidebar place={place} />}
+              <TopBar
+                email={email}
+                onSearch={() => setSearching(true)}
+                onHelp={() => setHelp(true)}
+                onLogout={onLogout}
+              />
             </div>
-            <div className="relative flex min-w-0 flex-1">
-              {/* An item open as a column (`DetailPane`, from 1280) takes its width from the main
+            <div className="flex min-h-0 flex-1">
+              <div className="contents max-lg:hidden">
+                <IconBar expanded={barExpanded} setExpanded={setBarExpanded} />
+                {hasSidebar && sidebarOpen && <Sidebar place={place} />}
+              </div>
+              <div className="relative flex min-w-0 flex-1">
+                {/* An item open as a column (`DetailPane`, from 1280) takes its width from the main
                 area's right, so it sits beside the page rather than over it: 22rem, its 12px
                 inset, and a 12px gap. */}
-              <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20 has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
-                <LeaveGuardContext.Provider value={leaveGuard}>
-                  <Outlet />
-                  {/* Inside main: one that opens as a column (Log a message) makes room for
+                <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20 has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
+                  <LeaveGuardContext.Provider value={leaveGuard}>
+                    <Outlet />
+                    {/* Inside main: one that opens as a column (Log a message) makes room for
                       itself as the page's own panes do (K-02). */}
-                  {creating?.creator.Dialog && (
-                    <creating.creator.Dialog
-                      projectId={projectId}
-                      about={subject}
-                      opens={creating.opens}
-                      day={creating.day ?? null}
-                      onClose={() => setCreating(null)}
-                    />
-                  )}
-                </LeaveGuardContext.Provider>
-              </main>
-              <Inspector />
-              <BackOnline />
-              <BackFromNote />
+                    {creating?.creator.Dialog && (
+                      <creating.creator.Dialog
+                        projectId={projectId}
+                        about={subject}
+                        opens={creating.opens}
+                        day={creating.day ?? null}
+                        onClose={() => setCreating(null)}
+                      />
+                    )}
+                  </LeaveGuardContext.Provider>
+                </main>
+                <Inspector />
+                <BackOnline />
+                <BackFromNote />
+              </div>
             </div>
+            <Shortcuts
+              search={searching}
+              setSearch={setSearching}
+              help={help}
+              setHelp={setHelp}
+              onSidebar={() => setSidebarOpen(!sidebarOpen)}
+              onLink={() => {
+                if (subject) setLinking(true)
+              }}
+              onNew={openNew}
+            />
+            {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
+            <BottomBar onSearch={() => setSearching(true)} />
           </div>
-          <Shortcuts
-            search={searching}
-            setSearch={setSearching}
-            help={help}
-            setHelp={setHelp}
-            onSidebar={() => setSidebarOpen(!sidebarOpen)}
-            onLink={() => {
-              if (subject) setLinking(true)
-            }}
-            onNew={openNew}
-          />
-          {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
-          <BottomBar onSearch={() => setSearching(true)} />
-        </div>
-      </MentionContext.Provider>
-    </NewContext.Provider>
+        </MentionContext.Provider>
+      </NewContext.Provider>
+    </SignOutContext.Provider>
   )
 }
 

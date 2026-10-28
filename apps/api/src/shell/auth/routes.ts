@@ -3,11 +3,19 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { currentUser } from './authenticated'
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './cookie'
-import { InvalidCredentialsError } from './errors'
+import { InvalidCredentialsError, WrongPasswordError } from './errors'
 import { signInLimits } from './limits'
-import { authenticate, loadAccount, registerUser } from './service'
-import { createSession, revokeSession } from './session'
+import {
+  authenticate,
+  changePassword,
+  loadAccount,
+  passwordChangedAt,
+  registerUser,
+  setTimezone,
+} from './service'
+import { createSession, revokeOtherSessions, revokeSession } from './session'
 import { migrationPending } from '../migration'
+import type { Account } from './service'
 
 /** Registration, sign-in and sign-out: reachable without a session. */
 export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -70,13 +78,36 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
 
 /** The signed-in account; registered inside the authenticated scope. */
 export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
+  const passwordLimit = signInLimits(app)
+  const me = async (account: Account) => ({
+    ...account,
+    now: app.clock().toISOString(),
+    clockPinned: app.env.clockPinnedAt !== undefined,
+    migrationReport: await migrationPending(app.db, account.workspaceId),
+    passwordChangedAt: (await passwordChangedAt(app.db, account.id))?.toISOString() ?? null,
+  })
+
   serve(app, [
     // Read already, with the session that let the request in.
-    on(api.auth.me, async (req) => ({
-      ...currentUser(req),
-      now: app.clock().toISOString(),
-      clockPinned: app.env.clockPinnedAt !== undefined,
-      migrationReport: await migrationPending(app.db, currentUser(req).workspaceId),
-    })),
+    on(api.auth.me, async (req) => me(currentUser(req))),
+
+    on(api.auth.updateMe, async (req) => {
+      const account = currentUser(req)
+      await setTimezone(app.db, account.id, req.body.timezone)
+      return me({ ...account, timezone: req.body.timezone })
+    }),
+
+    on(
+      api.auth.changePassword,
+      async (req) => {
+        const account = currentUser(req)
+        if (!(await changePassword(app.db, account.id, req.body, app.clock())))
+          throw new WrongPasswordError()
+        // Anyone signed in elsewhere with the old one is signed out; this session stays.
+        const token = req.cookies[SESSION_COOKIE]
+        if (token) await revokeOtherSessions(app.db, account.id, token)
+      },
+      passwordLimit,
+    ),
   ])
 }

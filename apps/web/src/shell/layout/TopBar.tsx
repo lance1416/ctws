@@ -74,7 +74,7 @@ export function TopBar({
   )
 }
 
-/** Light or dark by hand; following the system is in the account menu (FR-005). */
+/** Light or dark by hand; following the system is on the account page (FR-005, artboard 30). */
 function ThemeSwitch() {
   const [scheme, setScheme] = useState<'light' | 'dark'>(() => shownScheme())
   useEffect(() => onSchemeChange(() => setScheme(shownScheme())), [])

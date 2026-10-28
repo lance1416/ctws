@@ -27,6 +27,16 @@ export class InvalidCredentialsError extends DomainError {
   }
 }
 
+/** Changing the password needs the current one, and it was not that. */
+export class WrongPasswordError extends DomainError {
+  constructor() {
+    super('forbidden', {
+      type: 'urn:ctws:problem:wrong-password',
+      title: 'That is not your current password',
+    })
+  }
+}
+
 export class SessionRequiredError extends DomainError {
   constructor() {
     super('unauthenticated', {

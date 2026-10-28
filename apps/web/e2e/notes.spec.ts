@@ -128,8 +128,7 @@ test('a diagram follows the theme picked in the menu, not only the system one', 
   await expect(box).toBeVisible()
   const light = await fill()
 
-  await page.getByTestId('current-user').click()
-  await page.getByRole('menuitemradio', { name: 'Dark' }).click()
+  await page.getByRole('button', { name: 'Switch to dark' }).click()
   await expect.poll(fill).not.toBe(light)
 })
 

@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Login } from '../shell/auth'
+import { Account } from '../shell/account'
 import { Calendar } from '../shell/calendar'
 import { Layout, RouteError, topPage, type PageHandle } from '../shell/layout'
 import {
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <Workbench />, handle: topPage('Workbench') },
               { path: '/calendar', element: <Calendar />, handle: topPage('Calendar') },
+              { path: '/account', element: <Account />, handle: topPage('Account') },
               { path: '/projects', element: <Projects />, handle: topPage('Projects') },
               {
                 path: '/projects/new',

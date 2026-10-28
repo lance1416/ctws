@@ -30,6 +30,7 @@ import {
   type IconComponent,
 } from '../../../platform/ui/icons'
 import { LAYER } from '../../../platform/ui/layers'
+import { ZoneBox, zoneFrom } from '../../../platform/ui/ZoneBox'
 import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
 import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { useAccountToday } from '../../../shell/auth'
@@ -883,6 +884,7 @@ function ZoneLine({
       {changing ? (
         <ZoneBox
           zone={zone}
+          placeholder="From Lives in"
           typed={typed}
           onType={setTyped}
           onZone={(next) => {
@@ -998,87 +1000,6 @@ function Circles({
         <span role="alert" className="text-meta text-stop-t">
           Couldn’t add the circle. Try again.
         </span>
-      )}
-    </div>
-  )
-}
-
-/** Every zone the browser knows, for one typed by hand. */
-const ZONES = Intl.supportedValuesOf('timeZone')
-
-/** A zone typed and picked from the browser's list; emptied, the zone is the city's again. */
-/** The zones whose names hold the words typed, a space read as `_`. */
-const zonesMatching = (words: string) => {
-  const asked = words.trim().toLowerCase().replace(/ /g, '_')
-  return asked ? ZONES.filter((z) => z.toLowerCase().includes(asked)) : []
-}
-
-/**
- * What typed words choose: null (from the city) when there are none, the zone they name, else the
- * first they match; undefined when they match none, which changes nothing.
- */
-function zoneFrom(words: string): string | null | undefined {
-  const asked = words.trim().toLowerCase().replace(/ /g, '_')
-  if (!asked) return null
-  return ZONES.find((z) => z.toLowerCase() === asked) ?? zonesMatching(words)[0]
-}
-
-function ZoneBox({
-  zone,
-  typed,
-  onType,
-  onZone,
-  onLeave,
-}: {
-  zone: string | null
-  typed: string
-  onType: (words: string) => void
-  onZone: (zone: string | null) => void
-  onLeave: () => void
-}) {
-  const listId = useId()
-  const found = zonesMatching(typed).slice(0, 12)
-  return (
-    <div className="relative min-w-0">
-      <input
-        aria-label="Time zone"
-        role="combobox"
-        aria-expanded={found.length > 0}
-        aria-controls={listId}
-        autoComplete="off"
-        autoFocus
-        placeholder="From Lives in"
-        value={typed}
-        onChange={(e) => onType(e.target.value)}
-        onBlur={onLeave}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter' || e.ctrlKey || e.metaKey) return
-          e.preventDefault()
-          onLeave()
-        }}
-        className={`${boxed} w-full font-mono`}
-      />
-      {found.length > 0 && (
-        <ul
-          id={listId}
-          role="listbox"
-          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-block bg-float py-1 shadow-float`}
-        >
-          {found.map((z) => (
-            <li key={z} role="option" aria-selected={z === zone}>
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  onZone(z)
-                }}
-                className="block w-full truncate px-3 py-1.5 text-left font-mono text-ui text-ink hover:bg-hover"
-              >
-                {z}
-              </button>
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   )

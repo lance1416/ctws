@@ -23,6 +23,8 @@ export const users = pgTable(
     role: text('role').$type<Role>().notNull().default('member'),
     // Set means the account cannot sign in; its data stays.
     disabledAt: timestamp('disabled_at', { withTimezone: true }),
+    // When the password was last changed; null for the one set at sign-up.
+    passwordChangedAt: timestamp('password_changed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

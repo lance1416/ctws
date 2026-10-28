@@ -6,7 +6,14 @@ import {
   adminUserListResponse,
   userParams,
 } from './admin'
-import { loginBody, meResponse, registerBody, userResponse } from './auth'
+import {
+  changePasswordBody,
+  loginBody,
+  meResponse,
+  registerBody,
+  updateMeBody,
+  userResponse,
+} from './auth'
 import { birthdayPreviewQuery, birthdayPreviewResponse } from './birthday'
 import {
   calendarDaysResponse,
@@ -193,6 +200,22 @@ export const api = {
       summary: "The signed-in account, and the server's clock.",
       ok: 200,
       response: meResponse,
+    }),
+    updateMe: endpoint({
+      method: 'PATCH',
+      path: '/auth/me',
+      summary: "Change the account's time zone.",
+      body: updateMeBody,
+      ok: 200,
+      response: meResponse,
+    }),
+    changePassword: endpoint({
+      method: 'POST',
+      path: '/auth/password',
+      summary: 'Change the password; every other session of the account ends.',
+      body: changePasswordBody,
+      ok: 204,
+      refusals: [403],
     }),
   },
 

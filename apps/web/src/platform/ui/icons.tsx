@@ -56,16 +56,19 @@ import {
   GitPullRequest,
   Inbox,
   Keyboard,
+  KeyRound,
   LayoutDashboard,
   Link,
   ListTree,
   Lock,
+  LogOut,
   MapPin,
   Mail,
   Mailbox,
   MessageSquare,
   MessagesSquare,
   Music,
+  Monitor,
   Moon,
   PanelLeftOpen,
   PanelRight,
@@ -176,6 +179,15 @@ export const RemoveIcon = Trash
 /** The theme switch shows the scheme it would switch TO. */
 export const LightIcon = Sun
 export const DarkIcon = Moon
+/** Following the system's light or dark (artboard 30). */
+export const SystemIcon = Monitor
+/** The account page's rows (artboard 30). */
+export const SignOutIcon = LogOut
+export const PasswordIcon = KeyRound
+export const EmailIcon = Mail
+export const TimeZoneIcon = Clock
+/** The move to the new layout, and its report (FR-099). */
+export const MovedIcon = History
 
 /** Time on Today (FR-079): a deadline's flag, a birthday's cake, a call's camera. */
 export const FlagIcon = Flag

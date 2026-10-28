@@ -1,6 +1,6 @@
 import { DAY_MS, type UserId } from '@ctws/contracts'
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq, gt, isNull, lt } from 'drizzle-orm'
+import { and, eq, gt, isNull, lt, ne } from 'drizzle-orm'
 import { v4 as uuidv4 } from 'uuid'
 import type { Queryable } from '../../platform/db/client'
 import { type Account, ACCOUNT, FIRST_WORKSPACE } from './service'
@@ -74,4 +74,15 @@ export async function findSessionAccount(
 
 export async function revokeSession(db: Queryable, token: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.tokenHash, digest(token)))
+}
+
+/** Ends every session of the account but the one `keep` is the token of. */
+export async function revokeOtherSessions(
+  db: Queryable,
+  userId: UserId,
+  keep: string,
+): Promise<void> {
+  await db
+    .delete(sessions)
+    .where(and(eq(sessions.userId, userId), ne(sessions.tokenHash, digest(keep))))
 }

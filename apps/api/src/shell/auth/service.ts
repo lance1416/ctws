@@ -127,3 +127,38 @@ export async function loadAccount(db: Queryable, userId: UserId): Promise<Accoun
     .limit(1)
   return row ?? null
 }
+
+/** The account's zone, from now on the one every day boundary is decided in. */
+export async function setTimezone(db: Queryable, userId: UserId, timezone: string): Promise<void> {
+  await db.update(users).set({ timezone }).where(eq(users.id, userId))
+}
+
+/** When the password was last changed here, or null for the one set at sign-up. */
+export async function passwordChangedAt(db: Queryable, userId: UserId): Promise<Date | null> {
+  const [row] = await db
+    .select({ at: users.passwordChangedAt })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+  return row?.at ?? null
+}
+
+/** A new password, given the current one; false, and nothing changed, when that is not it. */
+export async function changePassword(
+  db: Queryable,
+  userId: UserId,
+  { current, next }: { current: string; next: string },
+  now: Date,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+  if (!row || !(await verifyPassword(row.passwordHash, current))) return false
+  await db
+    .update(users)
+    .set({ passwordHash: await hashPassword(next), passwordChangedAt: now })
+    .where(eq(users.id, userId))
+  return true
+}
