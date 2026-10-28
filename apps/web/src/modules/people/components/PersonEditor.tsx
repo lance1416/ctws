@@ -869,16 +869,27 @@ function ZoneLine({
   onZone: (zone: string | null) => void
 }) {
   const [changing, setChanging] = useState(false)
+  const [typed, setTyped] = useState('')
+  // Done, Enter and leaving the box all keep what was typed (BUG-048): a zone it names, or the
+  // first it matches; nothing typed means "from the city"; words matching no zone change nothing.
+  const commit = (words: string) => {
+    const next = zoneFrom(words)
+    if (next !== undefined) onZone(next)
+    setChanging(false)
+  }
   return (
     <div className="grid grid-cols-[6rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-control bg-hover px-3 py-2 text-ui">
       <span className="text-meta text-muted">Time zone</span>
       {changing ? (
         <ZoneBox
           zone={zone}
+          typed={typed}
+          onType={setTyped}
           onZone={(next) => {
             onZone(next)
             setChanging(false)
           }}
+          onLeave={() => commit(typed)}
         />
       ) : (
         <span className="flex min-w-0 items-center gap-2">
@@ -886,7 +897,17 @@ function ZoneLine({
           {fromCity && <span className="text-meta text-subtle">From Lives in</span>}
         </span>
       )}
-      <button type="button" onClick={() => setChanging((c) => !c)} className={BUTTON.inline}>
+      <button
+        type="button"
+        // Done keeps the box's focus, so leaving it does not commit a second time.
+        onMouseDown={(e) => changing && e.preventDefault()}
+        onClick={() => {
+          if (changing) return commit(typed)
+          setTyped(zone ?? '')
+          setChanging(true)
+        }}
+        className={BUTTON.inline}
+      >
         {changing ? 'Done' : 'Change'}
       </button>
       <span className="text-meta text-muted">Their time</span>
@@ -986,11 +1007,37 @@ function Circles({
 const ZONES = Intl.supportedValuesOf('timeZone')
 
 /** A zone typed and picked from the browser's list; emptied, the zone is the city's again. */
-function ZoneBox({ zone, onZone }: { zone: string | null; onZone: (zone: string | null) => void }) {
-  const [typed, setTyped] = useState(zone ?? '')
+/** The zones whose names hold the words typed, a space read as `_`. */
+const zonesMatching = (words: string) => {
+  const asked = words.trim().toLowerCase().replace(/ /g, '_')
+  return asked ? ZONES.filter((z) => z.toLowerCase().includes(asked)) : []
+}
+
+/**
+ * What typed words choose: null (from the city) when there are none, the zone they name, else the
+ * first they match; undefined when they match none, which changes nothing.
+ */
+function zoneFrom(words: string): string | null | undefined {
+  const asked = words.trim().toLowerCase().replace(/ /g, '_')
+  if (!asked) return null
+  return ZONES.find((z) => z.toLowerCase() === asked) ?? zonesMatching(words)[0]
+}
+
+function ZoneBox({
+  zone,
+  typed,
+  onType,
+  onZone,
+  onLeave,
+}: {
+  zone: string | null
+  typed: string
+  onType: (words: string) => void
+  onZone: (zone: string | null) => void
+  onLeave: () => void
+}) {
   const listId = useId()
-  const asked = typed.trim().toLowerCase().replace(/ /g, '_')
-  const found = asked ? ZONES.filter((z) => z.toLowerCase().includes(asked)).slice(0, 12) : []
+  const found = zonesMatching(typed).slice(0, 12)
   return (
     <div className="relative min-w-0">
       <input
@@ -1002,12 +1049,12 @@ function ZoneBox({ zone, onZone }: { zone: string | null; onZone: (zone: string 
         autoFocus
         placeholder="From Lives in"
         value={typed}
-        onChange={(e) => setTyped(e.target.value)}
+        onChange={(e) => onType(e.target.value)}
+        onBlur={onLeave}
         onKeyDown={(e) => {
           if (e.key !== 'Enter' || e.ctrlKey || e.metaKey) return
           e.preventDefault()
-          if (!asked) onZone(null)
-          else if (found[0]) onZone(found[0])
+          onLeave()
         }}
         className={`${boxed} w-full font-mono`}
       />

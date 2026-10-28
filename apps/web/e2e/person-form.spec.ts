@@ -103,6 +103,34 @@ test('the zone follows Lives in, until it is set by hand', async ({ page }) => {
   })
 })
 
+for (const how of ['Done', 'Tab'] as const) {
+  test(`a zone typed by hand is kept when the box is left by ${how} (BUG-048)`, async ({
+    page,
+  }) => {
+    await registerFreshUser(page)
+    const made = await apiPost<{ id: string }>(page, '/people', { name: '王磊' })
+    await page.goto(`/people/${made.id}/edit`)
+    await page.getByRole('combobox', { name: 'Lives in' }).fill('Shenzhen')
+    await page.getByRole('button', { name: /^Shenzhen, Guangdong, China$/ }).click()
+    await expect(page.getByText('From Lives in')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Change' }).click()
+    const zone = page.getByRole('combobox', { name: 'Time zone' })
+    await zone.fill('Asia/Tokyo')
+    if (how === 'Done') await page.getByRole('button', { name: 'Done' }).click()
+    else await zone.press('Tab')
+    await expect(zone).toHaveCount(0)
+    await expect(page.getByText('Asia/Tokyo')).toBeVisible()
+    await expect(page.getByText('From Lives in')).toHaveCount(0)
+    await page.getByRole('button', { name: /^Save/ }).click()
+    await expect(page).toHaveURL(new RegExp(`/people/${made.id}$`))
+    expect(await person(page, made.id)).toMatchObject({
+      timeZone: 'Asia/Tokyo',
+      timeZoneSource: 'manual',
+    })
+  })
+}
+
 test('Tab runs from the first field to Create person', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/people/new')
