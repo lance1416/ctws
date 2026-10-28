@@ -404,6 +404,14 @@ export const api = {
       response: resourcesResponse,
       refusals: [404],
     }),
+    pinned: endpoint({
+      method: 'GET',
+      path: '/resources/pinned',
+      summary:
+        "What the projects still worked on pin in their heads: the workbench's launcher, by project, then by digit.",
+      ok: 200,
+      response: resourcesResponse,
+    }),
     create: endpoint({
       method: 'POST',
       path: '/resources',

@@ -7,12 +7,13 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { rankBetween } from '@ctws/core'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { DomainError, NotFound } from '../../platform/errors'
 import { newId } from '../../platform/db/ids'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { eventLog } from '../events'
+import { projects } from '../projects/tables'
 import { type Resource, resources } from './tables'
 
 /** The thing a resource hangs on. */
@@ -59,6 +60,34 @@ export async function resourcesOf(
       ),
     )
     .orderBy(asc(resources.rank), asc(resources.id))
+}
+
+/**
+ * What the projects still worked on pin in their heads (FR-076): not an archived project's, nor a
+ * deleted one's. In the projects' own order, then by digit.
+ */
+export async function pinnedOnActiveProjects(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+): Promise<Resource[]> {
+  const rows = await q
+    .select({ resource: resources })
+    .from(resources)
+    .innerJoin(
+      projects,
+      and(eq(projects.workspaceId, resources.workspaceId), eq(projects.id, resources.ownerId)),
+    )
+    .where(
+      within(
+        scoped(resources, workspaceId),
+        eq(resources.ownerType, 'project'),
+        isNotNull(resources.pinnedRank),
+        isNull(projects.archivedAt),
+        isNull(projects.deletedAt),
+      ),
+    )
+    .orderBy(asc(projects.rank), asc(projects.id), asc(resources.pinnedRank))
+  return rows.map((r) => r.resource)
 }
 
 async function getResource(

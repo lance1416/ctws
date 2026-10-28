@@ -7,6 +7,7 @@ import { exists } from '../links/read'
 import type { LinkRegistry } from '../links/registry'
 import {
   addResource,
+  pinnedOnActiveProjects,
   removeResource,
   resourcesOf,
   toResourceResponse,
@@ -23,6 +24,11 @@ export const resourceRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> =
       const { workspaceId } = currentUser(req)
       if (!(await exists(registry, app.db, workspaceId, req.query))) throw new NotFound('Object')
       const rows = await resourcesOf(app.db, workspaceId, req.query)
+      return { resources: rows.map(toResourceResponse) }
+    }),
+
+    on(api.resources.pinned, async (req) => {
+      const rows = await pinnedOnActiveProjects(app.db, currentUser(req).workspaceId)
       return { resources: rows.map(toResourceResponse) }
     }),
 

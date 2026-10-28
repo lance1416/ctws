@@ -119,4 +119,52 @@ describe('a project pins resources in its head', () => {
     expect((await pin(a.id, null)).statusCode).toBe(200)
     expect((await listed(ctx, 'project', projectId)).map((r) => r.pinnedRank)).toEqual([null, 2])
   })
+
+  it('gathers what the projects still worked on pin, by project and then by digit', async () => {
+    const { ctx, projectId } = await setup()
+    const later = await createProject(ctx, 'Moving flat')
+    const shelved = await createProject(ctx, 'Old course')
+    const pinAt = async (project: string, url: string, name: string, pinnedRank: number) => {
+      const made = (await add(ctx, { type: 'project', id: project }, url, name)).json()
+      await ctx.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/resources/${made.id}`,
+        headers: ctx.authed,
+        payload: { pinnedRank },
+      })
+    }
+    await pinAt(later, 'https://docs.google.com/spreadsheets/d/budget', 'Budget', 1)
+    await pinAt(projectId, 'https://www.overleaf.com/project/cl', 'Cover letters', 2)
+    await pinAt(projectId, 'https://docs.google.com/document/d/cv', 'CV master', 1)
+    await pinAt(shelved, 'https://example.com/notes', 'Course notes', 1)
+    // Hung on the project but not pinned: not in its head, so not in the launcher.
+    await add(ctx, { type: 'project', id: projectId }, 'https://example.com/loose', 'Loose')
+    await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/projects/${shelved}`,
+      headers: ctx.authed,
+      payload: { archived: true },
+    })
+
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/resources/pinned',
+      headers: ctx.authed,
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect((res.json() as { resources: ResourceResponse[] }).resources.map((r) => r.name)).toEqual([
+      'CV master',
+      'Cover letters',
+      'Budget',
+    ])
+
+    // Another workspace sees none of them.
+    const other = await secondUser(ctx)
+    const theirs = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/resources/pinned',
+      headers: other.authed,
+    })
+    expect((theirs.json() as { resources: ResourceResponse[] }).resources).toEqual([])
+  })
 })
