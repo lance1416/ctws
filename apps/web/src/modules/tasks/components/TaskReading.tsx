@@ -24,7 +24,7 @@ import { ProgressSquare } from './ProgressSquare'
 import { StatusMark } from './StatusMark'
 import { StageDot } from './StageField'
 import { StatusPicker } from './StatusPicker'
-import { StageLabel } from './TaskRowParts'
+import { StageLabel } from '../../../platform/ui/StageLabel'
 import { WRITE_AWAITS } from './useTaskDetailForm'
 import { useTaskPlace } from './useTaskPlace'
 

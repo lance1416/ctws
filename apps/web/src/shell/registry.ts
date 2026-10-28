@@ -30,7 +30,7 @@ import { useTimeZone } from './auth/useMe'
 import { said } from './calendar/said'
 import { linkKeys } from './links/api'
 import { timelineKeys } from './timeline/Timeline'
-import { CommunicationFact, OrganisationFact } from './links/ShellFacts'
+import { CommunicationFact } from './links/ShellFacts'
 import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
 import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
@@ -42,13 +42,6 @@ const SHELL_CHORDS: Chord[] = [
   { id: 'calendar', key: 'c', label: 'Calendar', resolve: () => '/calendar', order: 15 },
   { id: 'projects', key: 'p', label: 'Projects', resolve: () => '/projects', order: 25 },
   // Their modules come in phase 3; the bar and the keys already lead to their places.
-  {
-    id: 'organisations',
-    key: 'o',
-    label: 'Organisations',
-    resolve: () => '/organisations',
-    order: 35,
-  },
   {
     id: 'communication',
     key: 'x',
@@ -74,14 +67,6 @@ const PROJECTS_KIND: KindEntry = {
 
 const SHELL_RELATIONS: RelationContribution[] = [
   { type: 'project', kind: 'Project', plural: 'Projects', to: (id) => `/projects/${id}` },
-  // Until the organisations module arrives in the web app (phase 3), the shell answers for it.
-  {
-    type: 'organisation',
-    kind: 'Organisation',
-    plural: 'Organisations',
-    to: (id) => `/organisations/${id}`,
-    Fact: OrganisationFact,
-  },
   {
     type: 'communication',
     kind: 'Communication',
@@ -94,7 +79,6 @@ const SHELL_RELATIONS: RelationContribution[] = [
 
 /** The kinds whose modules come in phase 3: `N` and the menu already lead to their places. */
 const SHELL_CREATES: Creator[] = [
-  { kind: 'organisation', key: 'o', label: 'Organisation', to: '/organisations' },
   { kind: 'communication', key: 'x', label: 'Communication', to: '/communication' },
   { kind: 'note', key: 'n', label: 'Note', to: '/notes' },
 ]

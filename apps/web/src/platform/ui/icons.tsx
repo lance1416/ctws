@@ -67,6 +67,7 @@ import {
   RotateCcwClock,
   RotateCw,
   Search,
+  Tag,
   Send,
   SquareCheckBig,
   SquareKanban,
@@ -182,6 +183,9 @@ export const ReceivedIcon = Mailbox
 /** A person's profile, section by section (FR-061): how to reach them, where they are. */
 export const ContactIcon = Mail
 export const PlacesIcon = MapPin
+/** An organisation's kind, beside its name (FR-065): "Law firm". */
+export const TypeIcon = Tag
+
 /** When a reminder comes: "3 days before". */
 export const RemindIcon = Bell
 /** Waiting on another task that is not finished (FR-054). */

@@ -14,12 +14,12 @@ import {
   INDENT_PX,
   OrganisationMark,
   SavedMark,
-  StageLabel,
   TREE_ROW,
   WIDE_ONLY,
   WaitingBadge,
   opensOnClick,
 } from './TaskRowParts'
+import { StageLabel } from '../../../platform/ui/StageLabel'
 import { ProgressSquare } from './ProgressSquare'
 import { StartButton, StatusButton } from './StatusControls'
 import { useNow } from '../../../platform/time/useNow'

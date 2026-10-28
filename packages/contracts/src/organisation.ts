@@ -43,6 +43,8 @@ export const updateOrganisationBody = patchOf(organisationFields)
 const roleHolder = z.object({
   personId,
   name: z.string(),
+  /** Their avatar's letters, as their own module works them out. */
+  initials: z.string(),
   title: z.string().nullable(),
   /** `YYYY-MM`, or null when not known. */
   from: z.string().nullable(),

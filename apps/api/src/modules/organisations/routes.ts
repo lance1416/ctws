@@ -1,4 +1,9 @@
-import { api, type OrganisationResponse, type WorkspaceId } from '@ctws/contracts'
+import {
+  api,
+  type LinkCandidate,
+  type OrganisationResponse,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import type { FastifyRequest } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { Queryable } from '../../platform/db/client'
@@ -22,6 +27,9 @@ import {
 } from './service'
 import type { Organisation } from './tables'
 
+/** A person's avatar letters, as the people module names them; a fallback that never shows. */
+const initialsOf = (p: LinkCandidate) => (p.type === 'person' ? p.initials : '')
+
 /**
  * An organisation with the people who hold or held a role there. The people are named through the
  * registry, as every cross-module read is, so this module never reads the people table itself.
@@ -38,13 +46,14 @@ async function respond(
     ids.length === 0
       ? []
       : await registry.of('person').rows(q, workspaceId, { ids, limit: ids.length })
-  const named = new Map(people.map((p) => [p.id, p.title]))
+  const named = new Map(people.map((p) => [p.id, p]))
   const standing = await standingOf(registry, q, workspaceId, [row.id])
   const holders = roles
     .filter((r) => named.has(r.personId))
     .map((r) => ({
       personId: r.personId,
-      name: named.get(r.personId)!,
+      name: named.get(r.personId)!.title,
+      initials: initialsOf(named.get(r.personId)!),
       title: r.title,
       from: monthOf(r.fromMonth),
       to: monthOf(r.toMonth),

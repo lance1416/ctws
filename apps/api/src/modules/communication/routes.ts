@@ -23,9 +23,6 @@ import {
 } from './queries'
 import { createCommunication, deleteCommunication, logReply, updateCommunication } from './service'
 
-/** How many rows the overview's tables show before "All N" (FR-015). */
-const OVERVIEW_ROWS = 5
-
 /** Names every party of these rows through the registry, one lookup per kind. */
 async function named(
   registry: LinkRegistry,
@@ -103,9 +100,7 @@ export const communicationRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry
     on(api.communication.overview, async (req) => {
       const user = currentUser(req)
       const awaitingRows = await listAwaiting(app.db, user.workspaceId)
-      const awaiting = (await say(req, awaitingRows.slice(0, OVERVIEW_ROWS))).map((r) =>
-        standing(r, today(req)),
-      )
+      const awaiting = (await say(req, awaitingRows)).map((r) => standing(r, today(req)))
       const touched = await organisationsInTouch(
         app.db,
         user.workspaceId,
@@ -123,15 +118,15 @@ export const communicationRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry
                 .rows(app.db, user.workspaceId, { ids, limit: ids.length })
             ).map((o) => [o.id, o.title]),
       )
-      // Only organisations that can still be seen count, before the table is cut to its rows.
+      // Only organisations that can still be seen count.
       const seen = touched.filter((t) => orgs.has(t.organisationId))
       const stands = await standingOf(
         registry,
         app.db,
         user.workspaceId,
-        seen.slice(0, OVERVIEW_ROWS).map((t) => t.organisationId),
+        seen.map((t) => t.organisationId),
       )
-      const inTouch: OrganisationInTouch[] = seen.slice(0, OVERVIEW_ROWS).map((t) => ({
+      const inTouch: OrganisationInTouch[] = seen.map((t) => ({
         organisationId: t.organisationId as OrganisationInTouch['organisationId'],
         organisationName: orgs.get(t.organisationId)!,
         standing: stands.get(t.organisationId)?.[0] ?? null,

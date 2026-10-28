@@ -146,7 +146,10 @@ const organisationInTouch = z.object({
 })
 export type OrganisationInTouch = z.infer<typeof organisationInTouch>
 
-/** The overview (FR-071): the awaiting table and the organisations in touch in the last 30 days. */
+/**
+ * The overview (FR-071): every message awaiting a reply and every organisation in touch in the last
+ * 30 days. A page shows five of each and the rest behind "All N" (FR-015).
+ */
 export const communicationOverviewResponse = z.object({
   awaiting: z.array(awaitingRow),
   awaitingTotal: z.number().int().nonnegative(),

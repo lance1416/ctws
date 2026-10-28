@@ -8,7 +8,13 @@ import { registry } from './registry'
 describe('this workspace', () => {
   it('registers every module it has', () => {
     // A module imported and never listed is invisible, and nothing else fails.
-    expect(MODULES.map((m) => m.id)).toEqual(['tasks', 'reading', 'people', 'meetings'])
+    expect(MODULES.map((m) => m.id)).toEqual([
+      'tasks',
+      'reading',
+      'people',
+      'organisations',
+      'meetings',
+    ])
   })
 })
 
@@ -43,6 +49,7 @@ describe('the kinds of thing', () => {
       'Projects',
       'Tasks',
       'People',
+      'Organisations',
       'Meetings',
       'Reading',
     ])
