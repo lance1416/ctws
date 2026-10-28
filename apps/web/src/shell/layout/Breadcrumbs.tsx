@@ -31,11 +31,26 @@ export function Breadcrumbs() {
 }
 
 function Here({ place, useCrumbs }: { place: Place | null; useCrumbs: () => Crumbs }) {
-  const here = useCrumbs().at(-1)
+  const crumbs = useCrumbs()
+  const here = crumbs.at(-1)
   if (!here || here.label === place?.label) return null
+  // A page outside the icon bar's places names the way to it itself: Account, then the report.
+  const steps = place
+    ? []
+    : crumbs.slice(0, -1).flatMap((c) => ('to' in c ? [c as { label: string; to: string }] : []))
   return (
     <>
-      {place && <CollapseIcon size={12} aria-hidden="true" className="shrink-0 text-subtle" />}
+      {steps.map((step, i) => (
+        <span key={step.to} className="flex shrink-0 items-center gap-1.5">
+          {i > 0 && <CollapseIcon size={12} aria-hidden="true" className="shrink-0 text-subtle" />}
+          <Link to={step.to} className="hover:text-ink">
+            {step.label}
+          </Link>
+        </span>
+      ))}
+      {(place || steps.length > 0) && (
+        <CollapseIcon size={12} aria-hidden="true" className="shrink-0 text-subtle" />
+      )}
       <span aria-current="page" className="truncate font-medium text-ink">
         {here.label}
       </span>

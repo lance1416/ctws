@@ -6,6 +6,7 @@ import {
   type MigrationItem,
   type MigrationReportResponse,
   type ObjectType,
+  type TaskStatus,
 } from '@ctws/contracts'
 import { displayName } from '@ctws/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -26,23 +27,60 @@ import {
   type IconComponent,
 } from '../../platform/ui/icons'
 import { meKey } from '../auth/useMe'
+import { KIND_TEXT } from '../../platform/ui/kinds'
+import { STATUS_LABEL, StatusMark } from '../../platform/ui/StatusMark'
+import { useEveryProject } from '../projects/api'
+import { ProjectSquare } from '../projects/ProjectSquare'
 import { useRegistry } from '../registry'
 import { checkItem, finishReport, migrationKeys, migrationQuery } from './api'
 
 type Section = MigrationItem['section']
 
 /** The report's parts, in the sidebar's two groups (FR-099, artboard 28). */
-const NEED_A_LOOK: readonly { id: Section; label: string; icon: IconComponent }[] = [
-  { id: 'names', label: 'Names', icon: KIND_ICON.person },
-  { id: 'organisationsToMerge', label: 'Organisations to merge', icon: KIND_ICON.organisation },
-  { id: 'parentsStatus', label: 'Parents whose status changed', icon: KIND_ICON.task },
-  { id: 'peopleWithoutCity', label: 'People without a city', icon: TimeZoneIcon },
-  { id: 'rolesWithoutCompany', label: 'Roles without a company', icon: KIND_ICON.organisation },
+type ReportPart = { id: Section; label: string; icon: IconComponent; tone: string }
+
+/** Each part's icon in the colour of the kind of thing it is about (MR-01). */
+const NEED_A_LOOK: readonly ReportPart[] = [
+  { id: 'names', label: 'Names', icon: KIND_ICON.person, tone: KIND_TEXT.person },
+  {
+    id: 'organisationsToMerge',
+    label: 'Organisations to merge',
+    icon: KIND_ICON.organisation,
+    tone: KIND_TEXT.organisation,
+  },
+  {
+    id: 'parentsStatus',
+    label: 'Parents whose status changed',
+    icon: KIND_ICON.task,
+    tone: KIND_TEXT.task,
+  },
+  {
+    id: 'peopleWithoutCity',
+    label: 'People without a city',
+    icon: TimeZoneIcon,
+    tone: KIND_TEXT.person,
+  },
+  {
+    id: 'rolesWithoutCompany',
+    label: 'Roles without a company',
+    icon: KIND_ICON.organisation,
+    tone: KIND_TEXT.organisation,
+  },
 ]
-const IF_YOU_LIKE: readonly { id: Section; label: string; icon: IconComponent }[] = [
-  { id: 'plannedDatesMoved', label: 'Planned dates moved down', icon: PLACE_ICON.calendar },
-  { id: 'projectColours', label: 'Project colours and initials', icon: KIND_ICON.project },
-  { id: 'citiesByName', label: 'Cities matched by name', icon: PlacesIcon },
+const IF_YOU_LIKE: readonly ReportPart[] = [
+  {
+    id: 'plannedDatesMoved',
+    label: 'Planned dates moved down',
+    icon: PLACE_ICON.calendar,
+    tone: KIND_TEXT.task,
+  },
+  {
+    id: 'projectColours',
+    label: 'Project colours and initials',
+    icon: KIND_ICON.project,
+    tone: KIND_TEXT.project,
+  },
+  { id: 'citiesByName', label: 'Cities matched by name', icon: PlacesIcon, tone: KIND_TEXT.person },
 ]
 
 /** "Everything else": what the move counted, in words; a count it does not name is not shown. */
@@ -59,17 +97,6 @@ const MOVED: readonly [string, string][] = [
 
 const sectionId = (s: Section | 'else') => `report-${s}`
 
-/** A task's status as the app says it; the report keeps the stored word. */
-const STATUS_WORD: Record<string, string> = {
-  backlog: 'Backlog',
-  todo: 'To do',
-  in_progress: 'In progress',
-  done: 'Done',
-  cancelled: 'Cancelled',
-}
-/** What a guess's values say, in words where they are a status. */
-const worded = (item: MigrationItem, value: string | null) =>
-  value !== null && item.section === 'parentsStatus' ? (STATUS_WORD[value] ?? value) : value
 const waiting = (i: MigrationItem) => i.attention && !i.checked
 
 /**
@@ -79,6 +106,7 @@ const waiting = (i: MigrationItem) => i.attention && !i.checked
  */
 export function MigrationReport() {
   const report = useQuery(migrationQuery())
+  const [chosen, setChosen] = useState<Section | 'else'>('names')
   const qc = useQueryClient()
   const navigate = useNavigate()
   const done = useMutation({
@@ -96,28 +124,49 @@ export function MigrationReport() {
   if (!data) return null
   const of = (s: Section) => data.items.filter((i) => i.section === s)
 
+  // A part chosen in the sidebar is the one shown as chosen; the first until one is.
+  const sidebar = (parts: readonly ReportPart[], counted: (s: Section) => number | null) =>
+    parts.map((s) => (
+      <SideRow
+        key={s.id}
+        {...s}
+        count={counted(s.id)}
+        chosen={chosen === s.id}
+        onChoose={() => setChosen(s.id)}
+      />
+    ))
+
   return (
-    <div className="flex gap-6">
+    // The sidebar sits where the shell's do, the main area's left edge, top to bottom (MR-01).
+    <div className="-m-5 flex min-h-[calc(100%+2.5rem)] max-lg:pb-20">
       <nav
-        aria-label="Report"
-        className="sticky top-0 hidden w-60 shrink-0 flex-col self-start lg:flex"
+        aria-label="Migration report"
+        className="sticky top-0 hidden h-[calc(100dvh-2.75rem)] w-62 shrink-0 flex-col overflow-y-auto border-r border-line bg-chrome pb-3 lg:flex"
       >
+        <h2 className="flex h-11 shrink-0 items-center px-3.5 text-ui font-medium text-ink">
+          Migration report
+        </h2>
         <SideGroup title="Need a look">
-          {NEED_A_LOOK.map((s) => {
-            const left = of(s.id).filter(waiting).length
-            return <SideRow key={s.id} {...s} count={left > 0 ? left : null} />
+          {sidebar(NEED_A_LOOK, (id) => {
+            const left = of(id).filter(waiting).length
+            return left > 0 ? left : null
           })}
         </SideGroup>
         <SideGroup title="To check if you like">
-          {IF_YOU_LIKE.map((s) => {
-            const there = of(s.id).length
-            return <SideRow key={s.id} {...s} count={there > 0 ? there : null} />
-          })}
-          <SideRow id="else" label="Everything else" icon={MovedIcon} count={null} />
+          {sidebar(IF_YOU_LIKE, (id) => of(id).length || null)}
+          <SideRow
+            id="else"
+            label="Everything else"
+            icon={MovedIcon}
+            tone="text-muted"
+            count={null}
+            chosen={chosen === 'else'}
+            onChoose={() => setChosen('else')}
+          />
         </SideGroup>
       </nav>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-5">
         <div className="mb-1 flex flex-wrap items-start gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <h1 className="text-title text-ink">Your data in the new layout</h1>
@@ -159,7 +208,7 @@ export function MigrationReport() {
 function SideGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section aria-label={title} className="flex flex-col pb-2">
-      <h2 className="px-2.5 pt-2.5 pb-1 text-meta font-medium text-subtle">{title}</h2>
+      <h3 className="px-4 pt-2.5 pb-1 text-meta font-medium text-subtle">{title}</h3>
       <ul className="flex flex-col">{children}</ul>
     </section>
   )
@@ -170,25 +219,35 @@ function SideRow({
   id,
   label,
   icon: Icon,
+  tone,
   count,
+  chosen,
+  onChoose,
 }: {
   id: Section | 'else'
   label: string
   icon: IconComponent
+  tone: string
   count: number | null
+  chosen: boolean
+  onChoose: () => void
 }) {
   return (
     <li>
       <a
         href={`#${sectionId(id)}`}
-        className="flex min-h-9 items-center gap-2.5 rounded-control px-2.5 text-ui text-ink hover:bg-hover"
+        onClick={onChoose}
+        aria-current={chosen ? 'true' : undefined}
+        className={`mx-1 flex min-h-9 items-center gap-1.5 rounded-control px-1.5 text-ui text-ink ${
+          chosen ? 'bg-select font-medium' : 'hover:bg-hover'
+        }`}
       >
-        <Icon size={16} aria-hidden="true" className="shrink-0 text-muted" />
+        <Icon size={16} aria-hidden="true" className={`shrink-0 ${tone}`} />
         <span className="min-w-0 flex-1 truncate">{label}</span>
         {count === null ? (
           <MarkDoneIcon size={14} aria-label="Looked at" className="text-go" />
         ) : (
-          <span className="text-meta text-muted tabular-nums">{count}</span>
+          <span className="text-meta font-normal text-muted tabular-nums">{count}</span>
         )}
       </a>
     </li>
@@ -215,7 +274,7 @@ function Part({
     <section
       id={sectionId(id)}
       aria-label={title}
-      className="scroll-mt-4 overflow-hidden rounded-block border border-line bg-panel"
+      className="shrink-0 scroll-mt-4 overflow-hidden rounded-block border border-line bg-panel"
     >
       <div className="flex h-11 items-center gap-2 border-b border-line pr-2 pl-3">
         <span className="inline-grid size-6 place-items-center rounded-control bg-hover text-muted">
@@ -301,7 +360,8 @@ function Names({ items }: { items: MigrationItem[] }) {
       id="names"
       icon={KIND_ICON.person}
       title="Names"
-      says={`${toLook.length} to look at, ${items.length - toLook.length} look right`}
+      // One count throughout (MR-03): what still waits, the rest, and all of them.
+      says={`${items.filter(waiting).length} to look at, ${items.filter((i) => !waiting(i)).length} look right`}
       action={
         items.length > toLook.length && (
           <button
@@ -520,16 +580,18 @@ function Plain({
               className="grid min-h-11 grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-line px-3.5 py-1.5 last:border-b-0"
             >
               {to ? (
+                // Put right on its own page (MR-06).
                 <Link to={to} className="truncate text-ui text-ink hover:underline">
                   {item.title}
+                  <span aria-hidden="true" className="ml-1 text-muted">
+                    ↗
+                  </span>
                 </Link>
               ) : (
                 <span className="truncate text-ui text-ink">{item.title}</span>
               )}
-              <span className="truncate font-mono text-meta text-muted">
-                {worded(item, item.was) ?? '—'}
-              </span>
-              <span className="truncate text-ui text-ink">{worded(item, item.now)}</span>
+              <Value item={item} which="was" />
+              <Value item={item} which="now" />
               <LooksRight item={item} />
             </li>
           )
@@ -538,6 +600,81 @@ function Plain({
     </Part>
   )
 }
+
+/** The old colours' names, as the move read them, in the new names it gave them. */
+const OLD_COLOUR: Record<string, string> = {
+  'project-1': 'blue',
+  'project-2': 'amber',
+  'project-3': 'green',
+  'project-4': 'pink',
+  'project-5': 'teal',
+  'project-6': 'olive',
+}
+
+/**
+ * What a guess was or is, drawn as what it is (MR-04, MR-05): a status by its mark and name, the
+ * second after an arrow; a project's colour as a swatch, and now its square; else the words.
+ */
+function Value({ item, which }: { item: MigrationItem; which: 'was' | 'now' }) {
+  const projects = useEveryProject()
+  const value = item[which]
+  if (item.section === 'parentsStatus' && value && value in STATUS_LABEL) {
+    const status = value as TaskStatus
+    return (
+      <span className="flex min-w-0 items-center gap-2 text-ui text-ink">
+        {which === 'now' && (
+          <span aria-hidden="true" className="text-muted">
+            →
+          </span>
+        )}
+        <StatusMark status={status} size={14} />
+        {STATUS_LABEL[status]}
+      </span>
+    )
+  }
+  if (item.section === 'projectColours') {
+    if (which === 'now') {
+      const project = projects.data?.find((p) => p.id === item.id)
+      return project ? (
+        <span className="flex items-center gap-2">
+          <span aria-hidden="true" className="text-muted">
+            →
+          </span>
+          <ProjectSquare project={project} />
+        </span>
+      ) : (
+        <span />
+      )
+    }
+    const was = value ? (OLD_COLOUR[value] ?? value) : null
+    return was && was in PROJECT_SWATCH ? (
+      <span
+        role="img"
+        aria-label={`Was ${was}`}
+        className={`size-4 rounded-key ${PROJECT_SWATCH[was as keyof typeof PROJECT_SWATCH]}`}
+      />
+    ) : (
+      <span />
+    )
+  }
+  return which === 'was' ? (
+    <span className="truncate font-mono text-meta text-muted">{value ?? '—'}</span>
+  ) : (
+    <span className="truncate text-ui text-ink">{value}</span>
+  )
+}
+
+/** Each project colour's swatch. */
+const PROJECT_SWATCH = {
+  blue: 'bg-project-blue',
+  amber: 'bg-project-amber',
+  green: 'bg-project-green',
+  pink: 'bg-project-pink',
+  teal: 'bg-project-teal',
+  olive: 'bg-project-olive',
+  red: 'bg-project-red',
+  violet: 'bg-project-violet',
+} as const
 
 function Else({ counts }: { counts: Record<string, number> }) {
   const rows = MOVED.filter(([key]) => (counts[key] ?? 0) > 0)

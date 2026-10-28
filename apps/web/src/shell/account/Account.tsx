@@ -52,7 +52,7 @@ export function Account() {
   const signOut = useSignOut()
   if (!me) return null
   return (
-    <div className="flex max-w-[1280px] flex-col gap-3">
+    <div className="flex max-w-[1440px] flex-col gap-3">
       <div className="mb-2 flex items-center gap-3.5">
         <span
           aria-hidden="true"
