@@ -416,7 +416,7 @@ export function PersonEditor({
             }
           >
             {d.roles.length > 0 && (
-              <div className="grid grid-cols-[minmax(8rem,1.2fr)_minmax(8rem,1fr)_7rem_7rem_auto] items-center gap-2">
+              <div className="grid grid-cols-[minmax(6.5rem,1fr)_minmax(9.5rem,1.2fr)_7rem_auto_auto] items-center gap-2">
                 {['Organisation', 'Role', 'From', 'To'].map((h) => (
                   <span key={h} aria-hidden="true" className={label}>
                     {h}
