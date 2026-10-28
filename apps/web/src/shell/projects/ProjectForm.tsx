@@ -165,7 +165,7 @@ function ProjectForm({
         e.preventDefault()
         if (!busy) e.currentTarget.requestSubmit()
       }}
-      className="flex min-h-full flex-col gap-4"
+      className="flex min-h-full shrink-0 flex-col gap-4"
     >
       <div className="flex flex-wrap items-center gap-3">
         <ProjectSquare

@@ -9,7 +9,7 @@ import { Segmented } from '../../platform/ui/Segmented'
 import { NewMenu } from '../creates'
 import { projectKeys, updateProject, useEveryProject } from './api'
 import { PinnedResources } from './PinnedResources'
-import { ProjectIdentity } from './ProjectIdentity'
+import { ProjectSquare } from './ProjectSquare'
 
 type View = { id: string; label: string; icon?: IconComponent }
 
@@ -40,7 +40,17 @@ export function ProjectHead({
     <div className="flex min-w-0 flex-col gap-3.5">
       {/* On a narrow screen the name has a line of its own, and the controls wrap under it. */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-        <ProjectIdentity project={project} />
+        {/* Its name and colour are changed on its edit page, not here (DES-001 v1.23). */}
+        <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">
+          <ProjectSquare project={project} size={34} />
+          <h1
+            id="project-heading"
+            tabIndex={-1}
+            className="min-w-0 flex-1 truncate text-title tracking-normal text-ink focus:outline-none"
+          >
+            {project.name}
+          </h1>
+        </div>
         {project.archivedAt && (
           <span
             data-project-archived
@@ -55,7 +65,8 @@ export function ProjectHead({
         )}
         <NewMenu projectName={project.name} className="shrink-0" />
         {/* The inbox is where capture lands, and the server refuses to archive it. */}
-        {!project.isInbox && <MoreMenu id={id} archived={project.archivedAt !== null} />}
+        {/* The inbox is edited too (its name), but never archived: capture lands there. */}
+        <MoreMenu id={id} archived={project.isInbox ? null : project.archivedAt !== null} />
       </div>
       <PinnedResources projectId={id} />
     </div>
@@ -67,7 +78,8 @@ export function ProjectHead({
  * is too; archive, which hides it from the rail and the live lists but keeps everything, and is
  * undone from the same menu.
  */
-function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean }) {
+/** `archived` null: the inbox, which is never archived. */
+function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean | null }) {
   const navigate = useNavigate()
   const toggle = useMutation({
     mutationFn: () => updateProject(id, { archived: !archived }),
@@ -87,13 +99,15 @@ function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean }) {
             >
               Edit project
             </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onSelect={() => toggle.mutate()}
-              disabled={toggle.isPending}
-              className={MENU_ITEM}
-            >
-              {archived ? 'Unarchive' : 'Archive'}
-            </DropdownMenu.Item>
+            {archived !== null && (
+              <DropdownMenu.Item
+                onSelect={() => toggle.mutate()}
+                disabled={toggle.isPending}
+                className={MENU_ITEM}
+              >
+                {archived ? 'Unarchive' : 'Archive'}
+              </DropdownMenu.Item>
+            )}
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>

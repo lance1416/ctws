@@ -173,6 +173,8 @@ export const CakeIcon = Cake
 /** The people overview's blocks (FR-060): in touch lately, not for a while, the circles. */
 export const InTouchIcon = History
 export const OutOfTouchIcon = Clock
+/** How long something lasts: a meeting's "45m". */
+export const DurationIcon = Clock
 export const CirclesIcon = UsersRound
 /** How the last exchange with someone went (FR-060): a message sent, one received. */
 export const SentIcon = Send

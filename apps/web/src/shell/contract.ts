@@ -131,6 +131,16 @@ export type PersonContribution = {
     /** A hook: called once per page, in registry order. */
     useThings: (personId: PersonId) => OwnThings
   }
+  /**
+   * How a linked thing of this module's kind is drawn on a person's page (artboard 5): a task
+   * with its status and when it is due, not the sentence that linked it; and its block's count in
+   * the module's words ("3 open").
+   */
+  Linked?: {
+    kind: ObjectType
+    Row: ComponentType<{ thing: LinkCandidate }>
+    count?: (things: readonly LinkCandidate[]) => ReactNode
+  }
 }
 
 /** One of a module's things in a project, as its block lists it. */
@@ -145,6 +155,10 @@ type OwnThing = {
   initials?: string | null
   /** A word or two at the row's end. */
   fact?: string | null
+  /** A second line under the title: a meeting's place, a book's author (artboard 5). */
+  sub?: ReactNode
+  /** What the row ends with instead of `fact`: a duration and a project, a status. */
+  trail?: ReactNode
 }
 
 export type OwnThings = {
@@ -350,6 +364,11 @@ export type Creator = {
   label: string
   Dialog?: ComponentType<{
     projectId: ProjectId | null
+    /**
+     * The thing whose page it was made from, which it is made with where its kind can be: a
+     * meeting from a person's page has them attending (FR-061).
+     */
+    about: { type: ObjectType; id: string; title: string } | null
     onClose: () => void
     /**
      * Open the made thing's page once it is made: it was made from its module's own sidebar or
@@ -357,8 +376,8 @@ export type Creator = {
      */
     opens: boolean
   }>
-  /** Where to go instead, when the kind is made on its own page. */
-  to?: string
+  /** Where to go instead, when the kind is made on its own page; given the page it is made from. */
+  to?: string | ((about: { type: ObjectType; id: string; title: string } | null) => string)
 }
 
 /** A key in the shell's key table, read after the `g` prefix. */

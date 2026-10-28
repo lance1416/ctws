@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { NoteBody } from '../../../platform/notes/NoteBody'
-import { MONTHS, weekdayOf, ymd } from '../../../platform/time/dates'
+import { fullDay, MONTHS, weekdayOf } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Avatar } from '../../../platform/ui/Avatar'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
@@ -23,9 +23,11 @@ import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { useRegistry } from '../../../shell/registry'
 import { Timeline } from '../../../shell/timeline'
 import { circlesQuery } from '../api'
-import { channelHref, channelLabel, KIND_LABEL } from '../logic/channels'
+import { usePhone } from '../hooks/usePhone'
+import { byKind, channelHref, channelLabel, KIND_LABEL } from '../logic/channels'
 import { LEAD_LABELS } from '../logic/labels'
 import { theirTime } from '../logic/localTime'
+import { cityAndCountry } from '../logic/places'
 
 /** A birthday this near shows on the head, as the overview's block counts near (FR-060). */
 const SOON_DAYS = 30
@@ -51,12 +53,23 @@ export function PersonPage({ person }: { person: PersonResponse }) {
     owned,
     none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${person.givenName} yet`,
     titles: { reading: 'Recommended reading' },
+    linkedRows: registry.personLinked,
+    // A meeting is made with them in it, a book as theirs to recommend (M-02); a task is linked.
+    creatorFor: (kind) =>
+      kind === 'meeting' || kind === 'reading'
+        ? (registry.creates.find((c) => c.kind === kind) ?? null)
+        : null,
+    sayAdd: true,
   })
+  const profiled = hasProfile(person)
   return (
     <div className="flex flex-col gap-4">
       <PersonHead person={person} />
-      <div className="grid items-start gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
-        <Profile person={person} />
+      {/* With nothing to profile, the panel is not drawn and the blocks take the width (M-03). */}
+      <div
+        className={`grid items-start gap-4 ${profiled ? 'lg:grid-cols-[20rem_minmax(0,1fr)]' : ''}`}
+      >
+        {profiled && <Profile person={person} />}
         <div className="flex min-w-0 flex-col gap-4">
           {/* Two across; an odd last full block takes the row, and the empty ones follow it. */}
           <div className="grid items-start gap-3 xl:grid-cols-2">
@@ -141,6 +154,9 @@ function PersonHead({ person }: { person: PersonResponse }) {
  * small heading, never a rule. A section with nothing to say is left out.
  */
 function Profile({ person }: { person: PersonResponse }) {
+  // Numbers grouped as their country writes them, once the phone module is here.
+  const phone = usePhone()
+  const region = phone?.currentRegion()
   const now = person.roles.filter((r) => r.to === null)
   const before = person.roles.filter((r) => r.to !== null)
   return (
@@ -150,13 +166,20 @@ function Profile({ person }: { person: PersonResponse }) {
     >
       {person.channels.length > 0 && (
         <Section title="Contact" icon={ContactIcon}>
-          {person.channels.map((c, i) => (
+          {/* By kind, email first, as written within a kind; a long address is cut, not wrapped. */}
+          {byKind(person.channels).map((c, i) => (
             <Fact key={`${c.kind}-${i}`} name={c.label ?? KIND_LABEL[c.kind]}>
               <a
                 href={channelHref(c.kind, c.value)}
-                className={`break-all text-ink hover:underline ${c.kind === 'phone' ? 'font-mono' : ''}`}
+                data-channel={c.kind}
+                title={c.value}
+                className={`block truncate text-ink hover:underline ${c.kind === 'phone' ? 'font-mono' : ''}`}
               >
-                {channelLabel(c.kind, c.value)}
+                {channelLabel(
+                  c.kind,
+                  c.value,
+                  phone ? (v) => phone.formatPhone(v, region) : undefined,
+                )}
               </a>
             </Fact>
           ))}
@@ -190,18 +213,13 @@ function Profile({ person }: { person: PersonResponse }) {
       )}
       <Places person={person} />
       {person.birthday && <Birthday birthday={person.birthday} />}
-      {/* Always there: it is where what you know of them that fits nowhere else goes. */}
-      <Section title="Notes" icon={KIND_ICON.note} prose>
-        {person.note ? (
+      {person.note && (
+        <Section title="Notes" icon={KIND_ICON.note} prose>
           <div className="text-prose">
             <NoteBody source={person.note} />
           </div>
-        ) : (
-          <p className="text-ui text-subtle">
-            What you want to remember about {person.givenName} goes here.
-          </p>
-        )}
-      </Section>
+        </Section>
+      )}
     </aside>
   )
 }
@@ -259,8 +277,8 @@ function Places({ person }: { person: PersonResponse }) {
   if (!person.city && !person.hometown && !person.timeZone) return null
   return (
     <Section title="Places" icon={PlacesIcon}>
-      {person.city && <Fact name="Lives in">{person.city}</Fact>}
-      {person.hometown && <Fact name="Hometown">{person.hometown}</Fact>}
+      {person.city && <Fact name="Lives in">{cityAndCountry(person.city)}</Fact>}
+      {person.hometown && <Fact name="Hometown">{cityAndCountry(person.hometown)}</Fact>}
       {person.timeZone && <Fact name="Local time">{theirTime(now, person.timeZone, mine)}</Fact>}
     </Section>
   )
@@ -268,7 +286,6 @@ function Places({ person }: { person: PersonResponse }) {
 
 /** A birthday as artboard 5 has it: the day on a tile, when it falls, and what it is. */
 function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birthday']> }) {
-  const today = ymd(useNow(), useTimeZone())
   const day = b.next.day
   const when =
     b.next.inDays === 0
@@ -295,7 +312,8 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
         <div className="flex min-w-0 flex-col gap-0.5 text-ui">
           <span className="font-medium text-ink">
             {when}
-            <span className="sr-only"> ({day === today ? 'today' : day})</span>
+            {/* The date in words for a screen reader, which reads the tile as nothing. */}
+            <span className="sr-only">, {fullDay(day)}</span>
           </span>
           {b.calendar === 'lunar' && b.lunarDate && (
             <span className="text-muted">Lunar {b.lunarDate.replace(/^农历/, '')}</span>
@@ -310,5 +328,14 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
         </div>
       </div>
     </section>
+  )
+}
+
+/** Whether there is anything for the profile panel to say (M-03). */
+function hasProfile(p: PersonResponse): boolean {
+  return (
+    p.channels.length > 0 ||
+    p.roles.length > 0 ||
+    Boolean(p.city || p.hometown || p.timeZone || p.birthday || p.note)
   )
 }

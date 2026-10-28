@@ -180,6 +180,7 @@ export type Registry = {
   /** Each module's own things in a project, by the kind they are. */
   projectThings: (NonNullable<ProjectContribution['Things']> & { moduleId: string })[]
   personThings: (NonNullable<PersonContribution['Things']> & { moduleId: string })[]
+  personLinked: NonNullable<PersonContribution['Linked']>[]
   projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectCard: NonNullable<ProjectContribution['Card']> | null
   projectOutline: ComponentType<{ projectId: ProjectId }> | null
@@ -269,6 +270,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       if (!found) throw new Error(`no module says where a ${type} lives`)
       return found
     },
+    personLinked: modules.flatMap((m) => (m.person?.Linked ? [m.person.Linked] : [])),
     personThings: modules.flatMap((m) =>
       m.person?.Things ? [{ moduleId: m.id, ...m.person.Things }] : [],
     ),

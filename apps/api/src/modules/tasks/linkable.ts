@@ -16,6 +16,8 @@ const taskRows = (q: Queryable, workspaceId: WorkspaceId, where: SQL | undefined
       projectId: tasks.projectId,
       projectName: sql<string>`p.name`,
       parentTitle: sql<string | null>`parent.title`,
+      dueAt: tasks.dueAt,
+      scheduledOn: tasks.scheduledOn,
     })
     .from(tasks)
     .innerJoin(sql`projects p`, sql`p.id = ${tasks.projectId}`)
@@ -34,6 +36,8 @@ const named = (r: {
   projectId: ProjectId
   projectName: string
   parentTitle: string | null
+  dueAt: Date | null
+  scheduledOn: string | null
 }) => ({
   type: 'task' as const,
   id: r.id,
@@ -42,6 +46,8 @@ const named = (r: {
   projectId: r.projectId,
   projectName: r.projectName,
   parentTitle: r.parentTitle,
+  dueAt: r.dueAt?.toISOString() ?? null,
+  scheduledOn: r.scheduledOn,
 })
 
 const COLUMNS = { id: tasks.id, title: tasks.title, text: ['tasks.title'] }

@@ -64,6 +64,8 @@ export function useTaskHits(query: string) {
       projectId: t.projectId,
       projectName: t.projectName,
       parentTitle: t.parentTitle,
+      dueAt: t.dueAt,
+      scheduledOn: t.scheduledOn,
     }
     return {
       id: t.id,

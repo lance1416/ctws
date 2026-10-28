@@ -1,5 +1,6 @@
 import { ModuleEmpty, useSubjectOf } from '../../../shell/layout'
-import type { ReadingStatus } from '@ctws/contracts'
+import { idFrom, personId, type ReadingStatus } from '@ctws/contracts'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { DeletedNotice, useOpenFromUrl } from '../../../shell/detail'
@@ -24,6 +25,11 @@ const SECTIONS: { status: ReadingStatus; label: string }[] = [
 
 export function Reading() {
   const items = useQuery(readingQuery())
+  const [params] = useSearchParams()
+  const recommender = params.get('recommendedBy')
+  const by = recommender
+    ? { id: idFrom(personId, recommender), name: params.get('by') ?? 'them' }
+    : null
   // An item has no page of its own: `/reading/<id>` opens it over this list.
   const { openId, open, gone, show, close } = useOpenFromUrl({
     list: items,
@@ -59,7 +65,7 @@ export function Reading() {
       <PageHead hang>Reading</PageHead>
 
       <div ref={addField} className={`mt-4 ${HANG} max-w-[52ch]`}>
-        <AddReading />
+        <AddReading recommendedBy={by} />
       </div>
 
       <QueryStatus query={items} />

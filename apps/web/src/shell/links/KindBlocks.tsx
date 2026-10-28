@@ -1,5 +1,5 @@
-import type { ObjectType } from '@ctws/contracts'
-import { useContext, useState, type ReactNode } from 'react'
+import type { LinkCandidate, ObjectType } from '@ctws/contracts'
+import { useContext, useState, type ComponentType, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../platform/ui/Block'
@@ -29,6 +29,8 @@ type Row = {
   lead?: string | null
   initials?: string | null
   fact?: string | null
+  sub?: ReactNode
+  trail?: ReactNode
 }
 
 type KindBlockProps = {
@@ -44,6 +46,12 @@ type KindBlockProps = {
   add: { label: string; run: () => void }
   onUnlink: (id: Item['relationId']) => void
   unlinking: boolean
+  /** A module's own row for what is linked, in place of the shell's. */
+  Linked?: ComponentType<{ thing: LinkCandidate }>
+  /** The head's count in the module's words; the number of rows otherwise. */
+  count?: ReactNode
+  /** An empty block's + says what it makes ("+ Meeting"), rather than an icon (FR-061). */
+  addSays?: string
 }
 
 /**
@@ -52,7 +60,8 @@ type KindBlockProps = {
  * hand. The full blocks come first, `full` of them; an empty one is its head, saying what `none`
  * says of its kind. A block is headed by its kind's plural unless `titles` names it otherwise. A
  * block's + makes a new thing where `creatorFor` names a creator of its kind, and links one
- * otherwise.
+ * otherwise; with `sayAdd`, an empty block's + says so in words. What is linked is drawn by the
+ * kind's own row where `linkedRows` has one.
  */
 export function useKindBlocks({
   of,
@@ -61,6 +70,8 @@ export function useKindBlocks({
   creatorFor = () => null,
   none = () => 'None yet',
   titles = {},
+  linkedRows = [],
+  sayAdd = false,
 }: {
   of: { type: ObjectType; id: string }
   kinds: readonly ObjectType[]
@@ -68,6 +79,12 @@ export function useKindBlocks({
   creatorFor?: (kind: ObjectType) => Creator | null
   none?: (kind: ObjectType) => string
   titles?: Partial<Record<ObjectType, string>>
+  linkedRows?: readonly {
+    kind: ObjectType
+    Row: ComponentType<{ thing: LinkCandidate }>
+    count?: (things: readonly LinkCandidate[]) => ReactNode
+  }[]
+  sayAdd?: boolean
 }): { blocks: ReactNode[]; full: number; picker: ReactNode } {
   const registry = useRegistry()
   const openNew = useContext(NewContext)
@@ -82,6 +99,7 @@ export function useKindBlocks({
       (item) => !things.some((t) => t.id === item.id),
     )
     const creator = creatorFor(kind)
+    const own = linkedRows.find((r) => r.kind === kind)
     return {
       kind,
       title: titles[kind] ?? where.plural,
@@ -98,6 +116,9 @@ export function useKindBlocks({
         : { label: `Link ${aOne(kind)}`, run: () => setAdding(kind) },
       onUnlink: (id) => unlink.mutate(id),
       unlinking: unlink.isPending,
+      ...(own ? { Linked: own.Row } : {}),
+      ...(own?.count ? { count: own.count(linked) } : {}),
+      ...(sayAdd ? { addSays: creator ? creator.label : 'Link' } : {}),
     }
   })
   const size = (b: KindBlockProps) => b.things.length + b.linked.length
@@ -122,8 +143,12 @@ function KindBlock({
   add,
   onUnlink,
   unlinking,
+  Linked,
+  count,
+  addSays,
 }: KindBlockProps) {
   const [all, setAll] = useState(false)
+  const registry = useRegistry()
   const rows: ReactNode[] = [
     ...things.map((t) => (
       <li key={t.id} className="flex min-w-0">
@@ -132,7 +157,17 @@ function KindBlock({
     )),
     ...linked.map((item) => (
       <li key={item.relationId} className="group flex min-w-0 items-center pr-1.5">
-        <LinkedRow item={item} />
+        {Linked ? (
+          <Link
+            to={registry.relationFor(item.type).to(item.id)}
+            data-linked={item.id}
+            className="min-w-0 flex-1 px-3 hover:bg-hover"
+          >
+            <Linked thing={item} />
+          </Link>
+        ) : (
+          <LinkedRow item={item} />
+        )}
         {/* A mention goes with its sentence; only a relation made by hand unlinks here. */}
         {item.origin === 'manual' && (
           <button
@@ -154,18 +189,30 @@ function KindBlock({
     <Block
       kind={kind}
       title={title}
-      count={rows.length}
+      count={count ?? rows.length}
       empty={rows.length === 0 && !failed ? none : null}
       actions={
-        <button
-          type="button"
-          onClick={add.run}
-          aria-label={add.label}
-          title={add.label}
-          className={ICON_BUTTON}
-        >
-          <NewIcon size={16} aria-hidden="true" />
-        </button>
+        rows.length === 0 && addSays ? (
+          <button
+            type="button"
+            onClick={add.run}
+            aria-label={add.label}
+            className="inline-flex h-7 items-center gap-1 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
+          >
+            <NewIcon size={14} aria-hidden="true" />
+            {addSays}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={add.run}
+            aria-label={add.label}
+            title={add.label}
+            className={ICON_BUTTON}
+          >
+            <NewIcon size={16} aria-hidden="true" />
+          </button>
+        )
       }
     >
       {failed ? (
@@ -211,8 +258,11 @@ function ThingRow({ row }: { row: Row }) {
           </span>
         )
       )}
-      <span className="truncate">{row.title}</span>
-      <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>
+      <span className="flex min-w-0 flex-col py-1.5">
+        <span className="truncate">{row.title}</span>
+        {row.sub && <span className="truncate text-meta text-muted">{row.sub}</span>}
+      </span>
+      {row.trail ?? <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>}
     </Link>
   )
 }

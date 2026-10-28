@@ -20,7 +20,3 @@ export function inlineEditProps(composing: Composing, { onCommit, onCancel }: Ha
     },
   }
 }
-
-export function useInlineEdit(handlers: Handlers) {
-  return inlineEditProps(useComposing(), handlers)
-}

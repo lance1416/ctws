@@ -83,7 +83,7 @@ export function ProjectCardFacts({ project: p }: { project: ProjectResponse }) {
         <Fact name="In progress" icon={<StatusMark status="in_progress" size={16} />}>
           <Count n={m?.inProgress ?? 0} />
         </Fact>
-        <Fact name="Late" icon={<FlagIcon size={16} className="text-muted" />}>
+        <Fact name="Late" icon={<FlagIcon size={16} className="text-stop" />}>
           <Count n={m?.overdue ?? 0} tone="text-stop-t" />
         </Fact>
         <Fact name="Next due" icon={<FlagIcon size={16} className="text-muted" />}>

@@ -73,6 +73,9 @@ export function Timeline({ of }: { of: Thing }) {
   )
 }
 
+/** A mention as notes store it, `[@Mira Chen](ctws://person/…)`: its name is what is shown. */
+const MENTION = /\[@([^\]\n]+)\]\(ctws:\/\/[^)\s]*\)/g
+
 /** What one entry says: a change in its module's words, the rest in the shell's. */
 function lineOf(
   entry: TimelineEntry,
@@ -101,7 +104,11 @@ function lineOf(
         text: entry.note.title ?? linkWords(entry.note.excerpt),
       }
     }
-    case 'mention':
-      return { mark: null, text: `Mentioned in “${entry.from.title}”: ${linkWords(entry.excerpt)}` }
+    case 'mention': {
+      // Where it was written, by that kind's icon; the name said plainly, not as typed (M-06).
+      const Icon = KIND_ICON[entry.from.type]
+      const said = linkWords(entry.excerpt.replace(MENTION, '$1'))
+      return { mark: <Icon size={16} />, text: `Mentioned in “${entry.from.title}”: ${said}` }
+    }
   }
 }

@@ -2,6 +2,7 @@ import type { WorkspaceModule } from '../../shell/contract'
 import { topPage } from '../../shell/layout'
 import { projectTasksQuery, taskKeys } from './api'
 import { PROJECT_VIEWS, ProjectTasks } from './components/ProjectBlock'
+import { openOf, PersonTaskRow } from './components/PersonTaskRow'
 import { ProjectOutline } from './components/ProjectOutline'
 import {
   ProjectCardFacts,
@@ -96,6 +97,8 @@ export const taskModule: WorkspaceModule = {
       span: 6,
     },
   ],
+  // A person's page draws the tasks linked to them by when they are due (FR-061).
+  person: { Linked: { kind: 'task', Row: PersonTaskRow, count: openOf } },
   project: {
     Main: { Component: ProjectTasks, views: PROJECT_VIEWS },
     Card: { Moved: ProjectMoved, Facts: ProjectCardFacts, useOrder: useProjectOrder },

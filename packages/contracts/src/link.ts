@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { instant } from './common'
+import { calendarDate, instant } from './common'
 import { objectId } from './id'
 import { objectType } from './object'
 import { TASK_STATUSES } from './task'
@@ -22,6 +22,9 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       projectName: z.string(),
       /** The task it sits under, if any: with the project's square, where it is (artboard 9). */
       parentTitle: z.string().nullable(),
+      /** Its deadline and its planned day, for a row that says when (artboard 5). */
+      dueAt: instant.nullable(),
+      scheduledOn: calendarDate.nullable(),
     }),
     z.object({
       ...shape,

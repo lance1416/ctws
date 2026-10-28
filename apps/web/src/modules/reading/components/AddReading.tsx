@@ -1,6 +1,7 @@
 import { problemText } from '../../../platform/http/api'
 import { useMutation } from '@tanstack/react-query'
-import { createReadingItem, readingKeys } from '../api'
+import type { PersonId } from '@ctws/contracts'
+import { createReadingItem, patchReadingItem, readingKeys } from '../api'
 import { isReadingUrl } from '../logic/readingUrl'
 import { useLineEntry } from '../../../platform/ui/useLineEntry'
 import { textbox } from '../../../platform/ui/formStyles'
@@ -9,16 +10,22 @@ import { textbox } from '../../../platform/ui/formStyles'
  * One input for both kinds: a url becomes a link, anything else a book, and the field says which
  * before Enter is pressed.
  */
-export function AddReading() {
+export function AddReading({
+  recommendedBy = null,
+}: {
+  /** Added from a person's page: what they recommended (FR-061). */
+  recommendedBy?: { id: PersonId; name: string } | null
+}) {
   const line = useLineEntry()
   const trimmed = line.value.trim()
   const isLink = isReadingUrl(trimmed)
 
-  const send = line.sends((text) =>
-    createReadingItem(
+  const send = line.sends(async (text) => {
+    const made = await createReadingItem(
       isReadingUrl(text) ? { kind: 'link', url: text } : { kind: 'book', title: text },
-    ),
-  )
+    )
+    return recommendedBy ? patchReadingItem(made.id, { recommendedById: recommendedBy.id }) : made
+  })
   const add = useMutation({
     mutationFn: send,
     meta: { changes: ['reading'], awaits: [readingKeys.all], ownsError: true },
@@ -32,6 +39,9 @@ export function AddReading() {
         aria-label="Add to the reading list"
         className={`w-full bg-panel ${textbox}`}
       />
+      {recommendedBy && (
+        <p className="mt-1 text-meta text-muted">Recommended by {recommendedBy.name}</p>
+      )}
       {trimmed !== '' && (
         <p className="mt-1 text-meta text-subtle">
           {isLink ? 'Enter saves it as a link' : 'Enter saves it as a book'}

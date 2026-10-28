@@ -107,7 +107,7 @@ function Frame({
   const openNew = (creator: Creator, { opens }: { opens: boolean } = { opens: false }) => {
     rememberKind(creator.kind)
     if (creator.Dialog) setCreating({ creator, opens })
-    else if (creator.to) navigate(creator.to)
+    else if (creator.to) navigate(typeof creator.to === 'string' ? creator.to : creator.to(subject))
   }
 
   return (
@@ -156,6 +156,7 @@ function Frame({
           {creating?.creator.Dialog && (
             <creating.creator.Dialog
               projectId={projectId}
+              about={subject}
               opens={creating.opens}
               onClose={() => setCreating(null)}
             />

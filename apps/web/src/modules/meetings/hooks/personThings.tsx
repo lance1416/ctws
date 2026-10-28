@@ -6,6 +6,8 @@ import { monthDay, weekdayOf, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth'
 import type { OwnThings } from '../../../shell/contract'
+import { ProjectSquare, useEveryProject } from '../../../shell/projects'
+import { DurationIcon, PlacesIcon } from '../../../platform/ui/icons'
 import { meetingsQuery } from '../api'
 import { MEETINGS_ID } from '../logic/id'
 import { nextOfEach } from '../logic/nextOfEach'
@@ -40,6 +42,11 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
   const held = [...latest.values()]
     .filter((m) => !coming.some((c) => c.meetingId === m.meetingId))
     .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+  const projects = useEveryProject()
+  const projectOf = (id: string | null) => {
+    const p = id ? projects.data?.find((x) => x.id === id) : undefined
+    return p ? <ProjectSquare project={p} /> : null
+  }
   const said = (m: MeetingOccurrence) => {
     const at = new Date(m.startsAt)
     const day = ymd(at, timeZone)
@@ -52,10 +59,31 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
       title: m.title,
       to: `/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`,
       lead: said(m),
-      fact: m.location,
+      sub: m.location && (
+        <span className="inline-flex min-w-0 items-center gap-1">
+          <PlacesIcon size={12} aria-hidden="true" className="shrink-0" />
+          <span className="truncate">{m.location}</span>
+        </span>
+      ),
+      trail: (
+        <span className="flex shrink-0 items-center gap-2.5 text-meta text-muted">
+          <span className="inline-flex items-center gap-1 tabular-nums">
+            <DurationIcon size={12} aria-hidden="true" />
+            {lasting(m.durationMinutes)}
+          </span>
+          {projectOf(m.projectId)}
+        </span>
+      ),
     })),
     isPending: window.isPending,
     isError: window.isError,
     retry: () => void window.refetch(),
   }
+}
+
+/** How long a meeting lasts, as a row says it: "45m", "1h", "1h 30m". */
+function lasting(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return h === 0 ? `${m}m` : m === 0 ? `${h}h` : `${h}h ${m}m`
 }

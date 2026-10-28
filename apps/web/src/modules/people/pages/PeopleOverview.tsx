@@ -73,6 +73,7 @@ function Block({
   tint,
   count,
   action,
+  empty = null,
   children,
 }: {
   title: string
@@ -80,6 +81,8 @@ function Block({
   tint: string
   count?: number
   action?: ReactNode
+  /** Nothing to list: the block is its head, saying this after its title (DES-001 v1.24). */
+  empty?: string | null
   children: ReactNode
 }) {
   return (
@@ -87,7 +90,9 @@ function Block({
       aria-label={title}
       className="flex min-w-0 flex-col overflow-hidden rounded-block border border-line bg-panel"
     >
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-line pr-2 pl-3">
+      <div
+        className={`flex h-10 shrink-0 items-center gap-2 pr-2 pl-3 ${empty ? '' : 'border-b border-line'}`}
+      >
         <span
           aria-hidden="true"
           className={`grid size-6 place-items-center rounded-control ${tint}`}
@@ -95,11 +100,15 @@ function Block({
           <Icon size={14} />
         </span>
         <h2 className="text-ui font-medium text-ink">{title}</h2>
-        {count !== undefined && <span className="text-meta text-subtle tabular-nums">{count}</span>}
+        {empty ? (
+          <span className="text-meta text-subtle">{empty}</span>
+        ) : (
+          count !== undefined && <span className="text-meta text-subtle tabular-nums">{count}</span>
+        )}
         <span className="flex-1" />
         {action}
       </div>
-      <div className="p-1.5">{children}</div>
+      {!empty && <div className="p-1.5">{children}</div>}
     </section>
   )
 }
@@ -132,11 +141,6 @@ function PersonRow({
   )
 }
 
-/** Nobody in a block, said in a line rather than an empty box. */
-const Nobody = ({ children }: { children: ReactNode }) => (
-  <p className="px-3 py-2.5 text-ui text-subtle">{children}</p>
-)
-
 function Birthdays() {
   const birthdays = useQuery(birthdaysQuery())
   const today = ymd(useNow(), useTimeZone())
@@ -144,6 +148,7 @@ function Birthdays() {
   const soon = all.filter((r) => r.inDays <= SOON_DAYS)
   return (
     <Block
+      empty={soon.length === 0 ? 'None' : null}
       title={`Birthdays in the next ${SOON_DAYS} days`}
       icon={CakeIcon}
       tint="bg-person-bg text-person"
@@ -156,30 +161,26 @@ function Birthdays() {
         )
       }
     >
-      {soon.length === 0 ? (
-        <Nobody>No birthdays in the next {SOON_DAYS} days</Nobody>
-      ) : (
-        <ul>
-          {soon.map((r) => (
-            <PersonRow
-              key={r.personId}
-              id={r.personId}
-              name={r.name}
-              initials={r.initials}
-              strong={r.inDays <= 7}
+      <ul>
+        {soon.map((r) => (
+          <PersonRow
+            key={r.personId}
+            id={r.personId}
+            name={r.name}
+            initials={r.initials}
+            strong={r.inDays <= 7}
+          >
+            <span className="w-24 text-meta text-subtle">{weekdayDay(r.day, today)}</span>
+            <span
+              className={`w-10 text-right text-ui tabular-nums ${
+                r.inDays <= 7 ? 'font-medium text-person-t' : 'text-muted'
+              }`}
             >
-              <span className="w-24 text-meta text-subtle">{weekdayDay(r.day, today)}</span>
-              <span
-                className={`w-10 text-right text-ui tabular-nums ${
-                  r.inDays <= 7 ? 'font-medium text-person-t' : 'text-muted'
-                }`}
-              >
-                {r.inDays} d
-              </span>
-            </PersonRow>
-          ))}
-        </ul>
-      )}
+              {r.inDays} d
+            </span>
+          </PersonRow>
+        ))}
+      </ul>
     </Block>
   )
 }
@@ -188,7 +189,7 @@ const HOW: Record<
   'sent' | 'received' | 'meeting',
   { icon: IconComponent; tint: string; word: string }
 > = {
-  sent: { icon: SentIcon, tint: 'bg-hover text-muted', word: 'Message sent' },
+  sent: { icon: SentIcon, tint: 'bg-communication-bg text-communication', word: 'Message sent' },
   received: {
     icon: ReceivedIcon,
     tint: 'bg-communication-bg text-communication',
@@ -208,31 +209,32 @@ function InTouch({ byId }: { byId: People }) {
     return p ? [{ ...t, person: p }] : []
   })
   return (
-    <Block title="Recently in touch" icon={InTouchIcon} tint="bg-hover text-muted">
-      {rows.length === 0 ? (
-        <Nobody>Nobody in the last 30 days</Nobody>
-      ) : (
-        <ul>
-          {rows.map((t) => {
-            const how = HOW[t.kind]
-            const day = ymd(new Date(t.at), timeZone)
-            return (
-              <PersonRow
-                key={t.personId}
-                id={t.personId}
-                name={t.person.name}
-                initials={avatarInitials(t.person)}
-                strong
-              >
-                <Mark icon={how.icon} tint={how.tint} word={how.word} />
-                <span className="w-16 text-right font-mono text-meta text-muted">
-                  {nearDay(day, today) ?? shortDay(day, today)}
-                </span>
-              </PersonRow>
-            )
-          })}
-        </ul>
-      )}
+    <Block
+      empty={rows.length === 0 ? 'None' : null}
+      title="Recently in touch"
+      icon={InTouchIcon}
+      tint="bg-hover text-muted"
+    >
+      <ul>
+        {rows.map((t) => {
+          const how = HOW[t.kind]
+          const day = ymd(new Date(t.at), timeZone)
+          return (
+            <PersonRow
+              key={t.personId}
+              id={t.personId}
+              name={t.person.name}
+              initials={avatarInitials(t.person)}
+              strong
+            >
+              <Mark icon={how.icon} tint={how.tint} word={how.word} />
+              <span className="w-16 text-right font-mono text-meta text-muted">
+                {nearDay(day, today) ?? shortDay(day, today)}
+              </span>
+            </PersonRow>
+          )
+        })}
+      </ul>
     </Block>
   )
 }
@@ -255,25 +257,26 @@ function OutOfTouch({ byId }: { byId: People }) {
     return p ? [{ ...t, person: p }] : []
   })
   return (
-    <Block title="Not in touch for a while" icon={OutOfTouchIcon} tint="bg-hover text-muted">
-      {rows.length === 0 ? (
-        <Nobody>Nobody out of touch</Nobody>
-      ) : (
-        <ul>
-          {rows.map((t) => (
-            <PersonRow
-              key={t.personId}
-              id={t.personId}
-              name={t.person.name}
-              initials={avatarInitials(t.person)}
-            >
-              <span className="text-meta text-subtle">
-                {sinceWords(ymd(new Date(t.at), timeZone), today)}
-              </span>
-            </PersonRow>
-          ))}
-        </ul>
-      )}
+    <Block
+      empty={rows.length === 0 ? 'None' : null}
+      title="Not in touch for a while"
+      icon={OutOfTouchIcon}
+      tint="bg-hover text-muted"
+    >
+      <ul>
+        {rows.map((t) => (
+          <PersonRow
+            key={t.personId}
+            id={t.personId}
+            name={t.person.name}
+            initials={avatarInitials(t.person)}
+          >
+            <span className="text-meta text-subtle">
+              {sinceWords(ymd(new Date(t.at), timeZone), today)}
+            </span>
+          </PersonRow>
+        ))}
+      </ul>
     </Block>
   )
 }
@@ -281,23 +284,24 @@ function OutOfTouch({ byId }: { byId: People }) {
 function Circles() {
   const circles = useQuery(circlesQuery())
   return (
-    <Block title="Circles" icon={CirclesIcon} tint="bg-hover text-muted">
-      {(circles.data ?? []).length === 0 ? (
-        <Nobody>No circles yet</Nobody>
-      ) : (
-        <div className="flex flex-wrap gap-2 p-2">
-          {circles.data!.map((c) => (
-            <Link
-              key={c.id}
-              to={`/people?circle=${c.id}`}
-              className="inline-flex h-6.5 items-center gap-1.5 rounded-control bg-hover px-2.5 text-ui text-ink hover:bg-select"
-            >
-              {c.name}
-              <span className="text-meta text-muted tabular-nums">{c.count}</span>
-            </Link>
-          ))}
-        </div>
-      )}
+    <Block
+      empty={(circles.data ?? []).length === 0 ? 'None yet' : null}
+      title="Circles"
+      icon={CirclesIcon}
+      tint="bg-hover text-muted"
+    >
+      <div className="flex flex-wrap gap-2 p-2">
+        {(circles.data ?? []).map((c) => (
+          <Link
+            key={c.id}
+            to={`/people?circle=${c.id}`}
+            className="inline-flex h-6.5 items-center gap-1.5 rounded-control bg-hover px-2.5 text-ui text-ink hover:bg-select"
+          >
+            {c.name}
+            <span className="text-meta text-muted tabular-nums">{c.count}</span>
+          </Link>
+        ))}
+      </div>
     </Block>
   )
 }

@@ -275,7 +275,7 @@ export function PersonEditor({
       }}
       // The actions come last in the document, so Tab reaches them after the last field, and sit
       // in the head on screen (FR-062).
-      className="grid min-h-full grid-cols-[minmax(0,1fr)_auto] content-start gap-x-3 gap-y-4"
+      className="grid min-h-full shrink-0 grid-cols-[minmax(0,1fr)_auto] content-start gap-x-3 gap-y-4"
     >
       <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
         <Avatar initials={initials} size={56} />

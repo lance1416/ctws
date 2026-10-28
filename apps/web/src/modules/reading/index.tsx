@@ -30,7 +30,18 @@ export const readingModule: WorkspaceModule = {
   ],
   capture: { kind: 'reading', useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
-  creates: [{ kind: 'reading', key: 'r', label: 'Reading', to: `/${READING_ID}` }],
+  creates: [
+    {
+      kind: 'reading',
+      key: 'r',
+      label: 'Reading',
+      // Made from a person's page, it is what they recommended (FR-061).
+      to: (about) =>
+        about?.type === 'person'
+          ? `/${READING_ID}?${new URLSearchParams({ recommendedBy: about.id, by: about.title })}`
+          : `/${READING_ID}`,
+    },
+  ],
   chords: [
     {
       id: 'reading',

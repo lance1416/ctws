@@ -13,7 +13,16 @@ export function useRecommendedBy(personId: PersonId): OwnThings {
       .map((item) => ({
         id: item.id,
         title: readingLabel(item),
-        fact: READING_STATUS_LABEL[item.status],
+        sub: item.author,
+        trail: (
+          <span
+            className={`inline-flex h-5.5 shrink-0 items-center rounded-control px-2 text-meta font-medium ${
+              item.status === 'reading' ? 'bg-reading-bg text-reading-t' : 'bg-hover text-muted'
+            }`}
+          >
+            {READING_STATUS_LABEL[item.status]}
+          </span>
+        ),
       })),
     isPending: reading.isPending,
     isError: reading.isError,
