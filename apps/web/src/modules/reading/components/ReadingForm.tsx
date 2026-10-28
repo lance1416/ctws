@@ -7,7 +7,7 @@ import {
 } from '@ctws/contracts'
 import { problemText } from '../../../platform/http/api'
 import { deleteReadingItem, readingKeys } from '../api'
-import { READING_STATUS_LABEL, readingLabel } from '../logic/item'
+import { initialsOf, READING_STATUS_LABEL, readingLabel } from '../logic/item'
 import { ProjectPicker } from '../../../shell/projects'
 import { ymd } from '../../../platform/time/dates'
 import { planChoices, type PlanDay } from '../logic/plans'
@@ -17,15 +17,16 @@ import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { readingDefaults, readingForm, type ReadingForm } from '../logic/readingForm'
-import { FormBar, useDestroy } from '../../../shell/detail'
+import { FormBar, saveOnChord, useDestroy } from '../../../shell/detail'
 import { Field } from '../../../platform/ui/Field'
-import { field, label } from '../../../platform/ui/formStyles'
+import { boxed, field, label } from '../../../platform/ui/formStyles'
+import { Avatar } from '../../../platform/ui/Avatar'
 import { PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { CloseIcon } from '../../../platform/ui/icons'
 import { PickThing } from '../../../shell/search'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 export const STATUS_CHOICES = (Object.keys(READING_STATUS_LABEL) as ReadingStatus[]).map((s) => ({
   value: s,
@@ -75,10 +76,9 @@ export function ReadingForm({
       onSubmit={form.handleSubmit((patch) => {
         if (!busy) onSave(patch)
       })}
+      onKeyDown={saveOnChord}
       className="flex flex-col gap-4"
     >
-      <FormBar busy={busy} failed={error} onCancel={onCancel} />
-
       <div>
         <label htmlFor="r-title" className={label}>
           Title
@@ -111,30 +111,37 @@ export function ReadingForm({
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           <Field label="Status">
-            <PickOne
-              label="Status"
-              value={status}
-              choices={STATUS_CHOICES}
-              onPick={(s) => form.setValue('status', s, dirty)}
-            />
+            {/* Framed as a field (E-01), so it reads as one to open. */}
+            <Boxed>
+              <PickOne
+                label="Status"
+                value={status}
+                choices={STATUS_CHOICES}
+                onPick={(s) => form.setValue('status', s, dirty)}
+              />
+            </Boxed>
           </Field>
           <Field label="Finish by">
-            <PickOne
-              label="Finish by"
-              value={planOn}
-              choices={[
-                { value: null, label: 'Not set' },
-                ...planChoices(today, item.planOn, PLAN_LABELS),
-              ]}
-              onPick={(day) => form.setValue('planOn', day, dirty)}
-            />
+            <Boxed>
+              <PickOne
+                label="Finish by"
+                value={planOn}
+                choices={[
+                  { value: null, label: 'Not set' },
+                  ...planChoices(today, item.planOn, PLAN_LABELS),
+                ]}
+                onPick={(day) => form.setValue('planOn', day, dirty)}
+              />
+            </Boxed>
           </Field>
           <Field label="Projects">
-            <ProjectPicker
-              value={projectId}
-              onPick={(id) => form.setValue('projectId', id, dirty)}
-              none="Not on any project"
-            />
+            <Boxed>
+              <ProjectPicker
+                value={projectId}
+                onPick={(id) => form.setValue('projectId', id, dirty)}
+                none="Not on any project"
+              />
+            </Boxed>
           </Field>
           <Field label="Recommended by">
             <RecommendedBy
@@ -145,9 +152,16 @@ export function ReadingForm({
           </Field>
         </div>
       </div>
+
+      <FormBar busy={busy} failed={error} onCancel={onCancel} />
     </form>
   )
 }
+
+/** A picker drawn as a field. */
+const Boxed = ({ children }: { children: ReactNode }) => (
+  <div className={`${boxed} flex items-center px-2`}>{children}</div>
+)
 
 type Recommender = ReadingForm['recommendedBy']
 
@@ -173,7 +187,11 @@ function RecommendedBy({
         aria-label={`Recommended by: ${value?.name ?? 'Nobody'}`}
         className="-mx-1.5 flex h-8 min-w-0 items-center rounded-control px-1.5 text-ui text-ink hover:bg-hover"
       >
-        <span className={`truncate ${value ? '' : 'text-subtle'}`}>{value?.name ?? 'Nobody'}</span>
+        {/* The person as a tag, their avatar and name, as on the item's page (E-02). */}
+        {value && <Avatar initials={initialsOf(value.name)} />}
+        <span className={`ml-1.5 truncate ${value ? '' : 'text-subtle'}`}>
+          {value?.name ?? 'Nobody'}
+        </span>
       </button>
       {value && (
         <button

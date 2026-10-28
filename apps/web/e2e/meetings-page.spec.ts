@@ -291,7 +291,7 @@ test('a meeting edit the server refuses stays open and says why', async ({ page 
         })
       : r.continue(),
   )
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page.getByRole('main').getByRole('alert')).toContainText('That title is too long')
   await expect(page).toHaveURL(new RegExp(`/meetings/${made.meetingId}/edit`))
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Refused again')
@@ -306,7 +306,7 @@ test('a one-off meeting moved on its edit page opens at its new time', async ({ 
   // A one-off is changed whole: nothing to ask, and nothing said about which.
   await expect(page.getByText(/^Changing:/)).toHaveCount(0)
   await page.getByLabel('Start', { exact: true }).fill(`${day}T11:00`)
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`/meetings/${made.meetingId}\\?at=${day}T11(%3A|:)00`))
   await expect(when(page)).toContainText('11:00 to 11:30')
   await expect(page.getByText(/^This meeting was deleted/)).toHaveCount(0)
@@ -325,7 +325,7 @@ test('this one and every one after, moved, opens on the new series', async ({ pa
   await editFromPage(page, 'This one and every one after')
   await expect(page.getByText('Changing: This one and every one after')).toBeVisible()
   await page.getByLabel('Start', { exact: true }).fill(`${next}T10:00`)
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`at=${next}T10(%3A|:)00`))
   await expect(when(page)).toContainText('10:00 to 10:30')
   await expect(page.getByText(/^This meeting was deleted/)).toHaveCount(0)
@@ -386,7 +386,7 @@ test('renaming a series keeps the week that was moved on its own', async ({ page
   await page.goto(`/meetings/${made.meetingId}?at=${day}T09:00`)
   await editFromPage(page, 'The whole series')
   await page.getByLabel('Title', { exact: true }).fill('Sync, renamed')
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(title(page)).toHaveText('Sync, renamed')
 
   expect(await heldOn(page, later)).toEqual([['Sync, renamed', `${later}T15:00`]])
@@ -418,7 +418,7 @@ test('renaming the first half of a split series keeps its moved week and its end
   await page.goto(`/meetings/${made.meetingId}?at=${day}T09:00`)
   await editFromPage(page, 'The whole series')
   await page.getByLabel('Title', { exact: true }).fill('Sync, renamed')
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(title(page)).toHaveText('Sync, renamed')
 
   expect(await heldOn(page, moved)).toEqual([['Sync, renamed', `${moved}T15:00`]])
@@ -460,7 +460,7 @@ test('a meeting with no start cannot be saved', async ({ page }) => {
   await page.goto(`/meetings/${made.meetingId}`)
   await editFromPage(page)
   await page.getByLabel('Start', { exact: true }).fill('')
-  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /^Save/ })).toBeDisabled()
 })
 
 test('this one and every one after is one write, and leaves the earlier ones as they were', async ({
@@ -482,7 +482,7 @@ test('this one and every one after is one write, and leaves the earlier ones as 
   })
   await page.getByLabel('Title', { exact: true }).fill('Weekly, later')
   await page.getByLabel('Start', { exact: true }).fill(`${later}T10:00`)
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).not.toHaveURL(/\/edit/)
 
   expect(writes).toEqual([`POST /api/v1/meetings/${made.meetingId}/successors`])

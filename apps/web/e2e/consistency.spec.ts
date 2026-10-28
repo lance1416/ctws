@@ -125,25 +125,25 @@ test('every edit has Cancel left, Save right, both at the top', async ({ page })
   expect((await save.boundingBox())!.y, 'People: Save above the fields').toBeLessThan(
     (await page.getByLabel('Given name', { exact: true }).boundingBox())!.y,
   )
-  // So is a meeting (FR-068).
-  await page.goto(
-    `/meetings/${w.meeting.meetingId}/edit?${new URLSearchParams({ at: w.meeting.recurrenceId, scope: 'all' })}`,
-  )
+  // A meeting (FR-068) and a reading item (FR-073) end with them, Save with its keys, as the
+  // forms of artboard 11 do (DES-001 section 7, E-03).
   const main = page.getByRole('main')
-  const saveMeeting = main.getByRole('button', { name: 'Save', exact: true })
-  await expect(saveMeeting).toBeVisible()
-  await leftOf(main.getByRole('button', { name: 'Cancel', exact: true }), saveMeeting)
-  expect((await saveMeeting.boundingBox())!.y, 'Meetings: Save above the fields').toBeLessThan(
-    (await main.locator('input, textarea').first().boundingBox())!.y,
-  )
-  // And a reading item (FR-073).
-  await page.goto(`/reading/${w.book.id}/edit`)
-  const saveReading = main.getByRole('button', { name: 'Save', exact: true })
-  await expect(saveReading).toBeVisible()
-  await leftOf(main.getByRole('button', { name: 'Cancel', exact: true }), saveReading)
-  expect((await saveReading.boundingBox())!.y, 'Reading: Save above the fields').toBeLessThan(
-    (await main.getByLabel('Title', { exact: true }).boundingBox())!.y,
-  )
+  for (const [name, path, first] of [
+    [
+      'Meetings',
+      `/meetings/${w.meeting.meetingId}/edit?${new URLSearchParams({ at: w.meeting.recurrenceId, scope: 'all' })}`,
+      main.locator('input, textarea').first(),
+    ],
+    ['Reading', `/reading/${w.book.id}/edit`, main.getByLabel('Title', { exact: true })],
+  ] as const) {
+    await page.goto(path)
+    const saveIt = main.getByRole('button', { name: /^Save/ })
+    await expect(saveIt).toBeVisible()
+    await leftOf(main.getByRole('button', { name: 'Cancel', exact: true }), saveIt)
+    expect((await saveIt.boundingBox())!.y, `${name}: Save under the fields`).toBeGreaterThan(
+      (await first.boundingBox())!.y,
+    )
+  }
 })
 
 test('new-item dialogs: Cancel left, Create right, at the right edge', async ({ page }) => {

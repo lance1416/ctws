@@ -53,3 +53,15 @@ export const READING_STATUS_LABEL: Record<ReadingStatus, string> = {
   done: 'Finished',
   dropped: 'Dropped',
 }
+
+/**
+ * A person's initials from their name alone, as their avatar shows them: the first character of a
+ * Chinese name, the first letters of the first and last words of any other.
+ */
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/)
+  const first = [...(words[0] ?? '')][0] ?? ''
+  if (/\p{Script=Han}/u.test(first)) return first
+  const last = words.length > 1 ? ([...words.at(-1)!][0] ?? '') : ''
+  return (first + last).toUpperCase()
+}

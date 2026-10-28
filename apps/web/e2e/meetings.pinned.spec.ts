@@ -261,7 +261,7 @@ test('Edit on a repeating meeting asks which; from this one on leaves the earlie
   await expect(title(page)).toHaveText('Edit Weekly sync')
   await expect(page.getByText('Changing: This one and every one after')).toBeVisible()
   await page.getByLabel('Start', { exact: true }).fill('2026-10-29T11:00')
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).not.toHaveURL(/\/edit/)
 
   // That one and the ones after moved; the 22nd, before it, did not.

@@ -210,7 +210,7 @@ test('a reading item is deleted from the foot of its edit page, after one questi
   // The last thing on the page: the form, and its Save, are above it.
   const [box, save] = await Promise.all([
     remove.boundingBox(),
-    page.getByRole('button', { name: 'Save', exact: true }).boundingBox(),
+    page.getByRole('button', { name: /^Save/ }).boundingBox(),
   ])
   expect(box!.y).toBeGreaterThan(save!.y)
 
@@ -238,7 +238,7 @@ test('a reading item is edited on its edit page and its page says the new title'
 
   await page.getByRole('main').getByRole('link', { name: 'Edit', exact: true }).click()
   await page.getByLabel('Title', { exact: true }).fill('Linear 怎么重做 issue')
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
 
   await expect(page).toHaveURL(new RegExp(`/reading/${item.id}$`))
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Linear 怎么重做 issue')
@@ -264,7 +264,7 @@ test('a reading edit the server refuses stays open and says why', async ({ page 
         })
       : r.continue(),
   )
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   const form = page.getByRole('form', { name: 'Edit reading item' })
   await expect(form.getByRole('alert')).toContainText('That title is too long')
   await expect(page).toHaveURL(new RegExp(`/reading/${id}/edit$`))
@@ -511,7 +511,7 @@ test('who recommended it is picked on the edit page, shown with their face, and 
   await picker.getByRole('combobox').fill('Mira')
   await picker.getByRole('option', { name: /Mira Chen/ }).click()
   await expect(page.getByRole('button', { name: 'Recommended by: Mira Chen' })).toBeVisible()
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`/reading/${id}$`))
 
   // On its page: an avatar and a name, the way to the person (R-03); the timeline says so.
@@ -523,7 +523,7 @@ test('who recommended it is picked on the edit page, shown with their face, and 
 
   await page.getByRole('main').getByRole('link', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Clear who recommended it' }).click()
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`/reading/${id}$`))
   await expect(by).toHaveCount(0)
   await expect(page.locator('[data-timeline-entry="change"]').first()).toContainText(

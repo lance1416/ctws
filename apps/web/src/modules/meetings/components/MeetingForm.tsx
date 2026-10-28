@@ -4,7 +4,7 @@ import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { area, boxed, field, label } from '../../../platform/ui/formStyles'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
-import { FormBar } from '../../../shell/detail'
+import { FormBar, saveOnChord } from '../../../shell/detail'
 import { ProjectPicker } from '../../../shell/projects'
 import { useTimeZone } from '../../../shell/auth'
 import { meetingValues, seriesPatch, useMeetingForm } from '../hooks/useMeetingForm'
@@ -42,10 +42,9 @@ export function MeetingForm({
       onSubmit={form.handleSubmit((v) => {
         if (!busy) onSave(seriesPatch(v, meeting))
       })}
+      onKeyDown={saveOnChord}
       className="flex flex-col gap-4"
     >
-      <FormBar busy={busy} disabled={!ready} onCancel={onCancel} />
-
       <div>
         <label htmlFor="m-title" className={label}>
           Title
@@ -146,6 +145,8 @@ export function MeetingForm({
           className={`${area} mt-1.5 max-w-reading`}
         />
       </div>
+
+      <FormBar busy={busy} disabled={!ready} onCancel={onCancel} />
     </form>
   )
 }
