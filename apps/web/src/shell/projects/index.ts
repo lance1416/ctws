@@ -9,7 +9,7 @@ export {
 } from './api'
 export { useProjectRail } from './projectColor'
 export { MoveToProject } from './MoveToProject'
-export { ProjectChip, ProjectPicker, ProjectsPicker } from './ProjectPicker'
+export { ProjectChip, ProjectPicker } from './ProjectPicker'
 export { EditProject, NewProject, useEditProjectCrumbs, useNewProjectCrumbs } from './ProjectForm'
 export { ProjectPage, useProjectCrumbs } from './ProjectPage'
 export { Projects } from './Projects'

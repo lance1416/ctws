@@ -1,0 +1,982 @@
+import {
+  type CircleId,
+  type CreatePersonBody,
+  type Gender,
+  type OrganisationId,
+  type PersonResponse,
+  type PersonRoleInput,
+  type ProjectId,
+  type UpdatePersonBody,
+} from '@ctws/contracts'
+import { avatarInitials, clockTime, displayName, sortKey } from '@ctws/core'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useId, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { keyLabel } from '../../../platform/keyboard/keys'
+import { useDebouncedValue } from '../../../platform/time/useDebouncedValue'
+import { useNow } from '../../../platform/time/useNow'
+import { Avatar } from '../../../platform/ui/Avatar'
+import { BUTTON, KEY_ON_INK } from '../../../platform/ui/buttonStyles'
+import { area, boxed, field, label } from '../../../platform/ui/formStyles'
+import {
+  CakeIcon,
+  CirclesIcon,
+  CloseIcon,
+  ContactIcon,
+  DoneIcon,
+  KIND_ICON,
+  NewIcon,
+  PlacesIcon,
+  type IconComponent,
+} from '../../../platform/ui/icons'
+import { LAYER } from '../../../platform/ui/layers'
+import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
+import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
+import { useAccountToday } from '../../../shell/auth'
+import { PickCity } from '../../../shell/cities'
+import { DayField } from '../../../shell/dates'
+import {
+  circlesQuery,
+  createOrganisation,
+  organisationSearchQuery,
+  peopleKeys,
+  putCircles,
+  type BirthdayDraft,
+} from '../api'
+import { BirthdayEditor } from '../birthday/BirthdayEditor'
+import { byKind } from '../logic/channels'
+import { GENDER_CHOICES } from '../logic/labels'
+import { setNewPersonDraft } from '../logic/newPersonDraft'
+import { ChannelsEditor, useChannelRows } from './ChannelsEditor'
+
+const PersonIcon = KIND_ICON.person
+const OrganisationIcon = KIND_ICON.organisation
+const NoteIcon = KIND_ICON.note
+
+type Alias = { key: number; name: string; label: string }
+
+/** A role as the form holds it: an organisation picked (an id) or only named (to be added). */
+type Role = {
+  key: number
+  organisationId: OrganisationId | null
+  organisationName: string
+  title: string
+  from: string | null
+  to: string | null
+}
+
+/** Everything the form holds but the addresses and the birthday, which keep their own state. */
+type Draft = {
+  givenName: string
+  middleName: string
+  familyName: string
+  aliases: Alias[]
+  roles: Role[]
+  city: string
+  cityKey: string | null
+  /** The zone of the city they live in, when it is known. */
+  cityZone: string | null
+  hometown: string
+  hometownKey: string | null
+  /** Set by hand; otherwise the zone is the city's (FR-063). */
+  manualZone: string | null
+  circleIds: CircleId[]
+  gender: Gender | null
+  note: string
+}
+
+let keys = 0
+const nextKey = () => ++keys
+
+function draftOf(person: PersonResponse | null): Draft {
+  return {
+    givenName: person?.givenName ?? '',
+    middleName: person?.middleName ?? '',
+    familyName: person?.familyName ?? '',
+    aliases: (person?.aliases ?? []).map((a) => ({
+      key: nextKey(),
+      name: a.name,
+      label: a.label ?? '',
+    })),
+    roles: (person?.roles ?? []).map((r) => ({
+      key: nextKey(),
+      organisationId: r.organisationId,
+      organisationName: r.organisationName,
+      title: r.title ?? '',
+      from: r.from,
+      to: r.to,
+    })),
+    city: person?.city ?? '',
+    cityKey: person?.cityKey ?? null,
+    cityZone: person?.timeZoneSource === 'city' ? person.timeZone : null,
+    hometown: person?.hometown ?? '',
+    hometownKey: person?.hometownKey ?? null,
+    manualZone: person?.timeZoneSource === 'manual' ? person.timeZone : null,
+    circleIds: person?.circleIds ?? [],
+    gender: person?.gender ?? null,
+    note: person?.note ?? '',
+  }
+}
+
+const text = (v: string) => (v.trim() === '' ? null : v.trim())
+
+/** Who is written down, as Create or Save sends it; roles go after, as their own list. */
+export type PersonWrite = {
+  body: CreatePersonBody & UpdatePersonBody
+  /** The roles, with the organisations only named so far to be added first. */
+  roles: () => Promise<PersonRoleInput[]>
+  rolesChanged: boolean
+}
+
+/**
+ * WRITING A PERSON DOWN (FR-062, FR-063, artboard 11): every field at once, grouped, the name's
+ * preview and the person's time as they are typed; Tab runs from the first field to Create, and
+ * Ctrl Enter sends it from any field. Only the name is needed. The same form edits them, filled.
+ */
+export function PersonEditor({
+  person,
+  projectId = null,
+  busy,
+  error,
+  cancelTo,
+  onSubmit,
+  children,
+}: {
+  /** Null on New person. */
+  person: PersonResponse | null
+  /** The project New person was asked for from, kept on them (FR-055). */
+  projectId?: ProjectId | null
+  busy: boolean
+  error: string | null
+  cancelTo: string
+  onSubmit: (write: PersonWrite) => void
+  /** Under the form: an edit's delete. */
+  children?: ReactNode
+}) {
+  const ids = useId()
+  const qc = useQueryClient()
+  const today = useAccountToday()
+  const now = useNow()
+  const [opened] = useState(() => draftOf(person))
+  const [d, setDraft] = useState(opened)
+  const set = (patch: Partial<Draft>) => setDraft((was) => ({ ...was, ...patch }))
+  const channels = useChannelRows(() =>
+    person
+      ? byKind(person.channels).map((c) => ({ ...c, saved: true }))
+      : [{ kind: 'email', value: '', label: null }],
+  )
+  // Left alone, the birthday is not written: `undefined`. Cleared, `null`.
+  const [birthday, setBirthday] = useState<BirthdayDraft | null | undefined>(undefined)
+  const [badDay, setBadDay] = useState(false)
+  // Folded until asked for: an open grid with a day picked reads as a birthday given.
+  const [dayOpen, setDayOpen] = useState(person?.birthday != null)
+  const [unnamed, setUnnamed] = useState(false)
+
+  const parts = {
+    givenName: d.givenName.trim(),
+    middleName: text(d.middleName),
+    familyName: text(d.familyName),
+  }
+  const named = parts.givenName !== '' || parts.familyName !== null
+  // A family name alone is the name they go by.
+  const shown = parts.givenName
+    ? displayName(parts)
+    : displayName({ givenName: parts.familyName ?? '', middleName: null, familyName: null })
+  const filed = named
+    ? sortKey(parts.givenName ? parts : { ...parts, givenName: parts.familyName ?? '' })
+    : null
+  const initials = named
+    ? avatarInitials(
+        parts.givenName ? parts : { givenName: parts.familyName ?? '', familyName: null },
+      )
+    : '?'
+
+  // The sidebar holds a place for them, marked New, while they are written down (FR-062).
+  useEffect(() => {
+    if (person) return
+    setNewPersonDraft(named && filed ? { name: shown, sortKey: filed, initials } : null)
+  }, [person, named, shown, filed, initials])
+  useEffect(() => () => setNewPersonDraft(null), [])
+
+  const rolesChanged =
+    JSON.stringify(d.roles.map(({ key: _, ...r }) => r)) !==
+    JSON.stringify(opened.roles.map(({ key: _, ...r }) => r))
+  const dirty =
+    JSON.stringify({ ...d, aliases: d.aliases.map(({ key: _, ...a }) => a), roles: [] }) !==
+      JSON.stringify({
+        ...opened,
+        aliases: opened.aliases.map(({ key: _, ...a }) => a),
+        roles: [],
+      }) ||
+    rolesChanged ||
+    channels.changed() ||
+    birthday !== undefined
+  const guard = useUnsavedGuard(dirty && !busy)
+
+  const zone = d.manualZone ?? d.cityZone
+
+  const send = () => {
+    if (!named) {
+      setUnnamed(true)
+      return
+    }
+    if (channels.bad || badDay) return
+    const roles = d.roles.filter((r) => r.organisationId || r.organisationName.trim())
+    onSubmit({
+      body: {
+        givenName: parts.givenName || (parts.familyName ?? ''),
+        middleName: parts.givenName ? parts.middleName : null,
+        familyName: parts.givenName ? parts.familyName : null,
+        aliases: d.aliases
+          .filter((a) => a.name.trim())
+          .map((a) => ({ name: a.name.trim(), label: text(a.label) })),
+        circleIds: d.circleIds,
+        city: text(d.city),
+        cityKey: text(d.city) ? d.cityKey : null,
+        hometown: text(d.hometown),
+        hometownKey: text(d.hometown) ? d.hometownKey : null,
+        timeZone: d.manualZone,
+        gender: d.gender,
+        note: text(d.note),
+        channels: channels.toSave(),
+        ...(birthday === undefined ? {} : { birthday }),
+        ...(person === null && projectId ? { projectIds: [projectId] } : {}),
+      },
+      rolesChanged: rolesChanged || (person === null && roles.length > 0),
+      roles: async () => {
+        const out: PersonRoleInput[] = []
+        for (const r of roles) {
+          const organisationId =
+            r.organisationId ?? (await createOrganisation(r.organisationName.trim()))
+          out.push({ organisationId, title: text(r.title), from: r.from, to: r.to })
+        }
+        // New organisations are in the list now.
+        void qc.invalidateQueries({ queryKey: ['organisations'] })
+        return out
+      },
+    })
+  }
+
+  const nowRoles = d.roles.filter((r) => r.to === null).length
+  const beforeRoles = d.roles.length - nowRoles
+
+  return (
+    <form
+      noValidate
+      aria-label={person ? `Edit ${person.name}` : 'New person'}
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!busy) send()
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.nativeEvent.isComposing) return
+        e.preventDefault()
+        if (!busy) e.currentTarget.requestSubmit()
+      }}
+      // The actions come last in the document, so Tab reaches them after the last field, and sit
+      // in the head on screen (FR-062).
+      className="grid min-h-full grid-cols-[minmax(0,1fr)_auto] content-start gap-x-3 gap-y-4"
+    >
+      <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
+        <Avatar initials={initials} size={56} />
+        <div className="flex min-w-0 flex-col">
+          <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
+            {person ? `Edit ${person.name}` : 'New person'}
+          </h1>
+          <p data-name-preview className="text-meta text-muted">
+            {named
+              ? `Shown as ${shown}. Sorted under ${filed}.`
+              : 'Shown as their name, once given.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="col-span-2 row-start-2 flex flex-col gap-3">
+        {guard.asking && <UnsavedAsk guard={guard} />}
+        {error && (
+          <p role="alert" className="text-ui text-stop-t">
+            {error}
+          </p>
+        )}
+      </div>
+
+      <div className="col-span-2 row-start-3 grid items-start gap-3 xl:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-3">
+          <Block title="Name" icon={PersonIcon}>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Text
+                id={`${ids}-given`}
+                label="Given name"
+                value={d.givenName}
+                autoFocus
+                invalid={unnamed}
+                onChange={(givenName) => {
+                  setUnnamed(false)
+                  set({ givenName })
+                }}
+              />
+              <Text
+                id={`${ids}-middle`}
+                label="Middle name"
+                placeholder="Optional"
+                value={d.middleName}
+                onChange={(middleName) => set({ middleName })}
+              />
+              <Text
+                id={`${ids}-family`}
+                label="Family name"
+                value={d.familyName}
+                invalid={unnamed}
+                onChange={(familyName) => {
+                  setUnnamed(false)
+                  set({ familyName })
+                }}
+              />
+            </div>
+            {unnamed && (
+              <p role="alert" className="text-meta text-stop-t">
+                Give them a name.
+              </p>
+            )}
+            <div className="flex flex-col gap-2">
+              <span className={label}>Other names</span>
+              {d.aliases.map((a, i) => (
+                <div key={a.key} className="flex items-center gap-2">
+                  <input
+                    aria-label={`Label of other name ${i + 1}`}
+                    placeholder="Label"
+                    value={a.label}
+                    onChange={(e) =>
+                      set({
+                        aliases: d.aliases.map((x) =>
+                          x.key === a.key ? { ...x, label: e.target.value } : x,
+                        ),
+                      })
+                    }
+                    className={`${boxed} w-36 shrink-0`}
+                  />
+                  <input
+                    aria-label={`Other name ${i + 1}`}
+                    placeholder="Name"
+                    value={a.name}
+                    onChange={(e) =>
+                      set({
+                        aliases: d.aliases.map((x) =>
+                          x.key === a.key ? { ...x, name: e.target.value } : x,
+                        ),
+                      })
+                    }
+                    className={`${boxed} min-w-0 flex-1`}
+                  />
+                  <Remove
+                    what={`other name ${i + 1}`}
+                    onRemove={() => set({ aliases: d.aliases.filter((x) => x.key !== a.key) })}
+                  />
+                </div>
+              ))}
+              <Another
+                onAdd={() =>
+                  set({ aliases: [...d.aliases, { key: nextKey(), name: '', label: '' }] })
+                }
+              >
+                Another name
+              </Another>
+            </div>
+          </Block>
+
+          <Block
+            title="Work"
+            icon={OrganisationIcon}
+            note={
+              d.roles.length === 0
+                ? null
+                : [
+                    nowRoles > 0 ? `${nowRoles} now` : null,
+                    beforeRoles > 0 ? `${beforeRoles} before` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(', ')
+            }
+          >
+            {d.roles.length > 0 && (
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem_8.5rem_auto] items-center gap-2">
+                {['Organisation', 'Role', 'From', 'To'].map((h) => (
+                  <span key={h} aria-hidden="true" className={label}>
+                    {h}
+                  </span>
+                ))}
+                <span />
+                {d.roles.map((r, i) => {
+                  const change = (patch: Partial<Role>) =>
+                    set({ roles: d.roles.map((x) => (x.key === r.key ? { ...x, ...patch } : x)) })
+                  return (
+                    <RoleRow
+                      key={r.key}
+                      at={i + 1}
+                      role={r}
+                      today={today}
+                      onChange={change}
+                      onRemove={() => set({ roles: d.roles.filter((x) => x.key !== r.key) })}
+                    />
+                  )
+                })}
+              </div>
+            )}
+            <Another
+              onAdd={() =>
+                set({
+                  roles: [
+                    ...d.roles,
+                    {
+                      key: nextKey(),
+                      organisationId: null,
+                      organisationName: '',
+                      title: '',
+                      from: null,
+                      to: null,
+                    },
+                  ],
+                })
+              }
+            >
+              Another role
+            </Another>
+          </Block>
+
+          <Block title="Places and time" icon={PlacesIcon}>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PickCity
+                id={`${ids}-city`}
+                label="Lives in"
+                value={d.city}
+                onChange={(city) => set({ city })}
+                onPick={(c) => set({ cityKey: c?.key ?? null, cityZone: c?.timeZone ?? null })}
+              />
+              <PickCity
+                id={`${ids}-hometown`}
+                label="Hometown"
+                value={d.hometown}
+                onChange={(hometown) => set({ hometown })}
+                onPick={(c) => set({ hometownKey: c?.key ?? null })}
+              />
+            </div>
+            <ZoneLine
+              zone={zone}
+              fromCity={d.manualZone === null && d.cityZone !== null}
+              now={now}
+              onZone={(manualZone) => set({ manualZone })}
+            />
+          </Block>
+
+          <Block title="Circles" icon={CirclesIcon} note="Pick any">
+            <Circles picked={d.circleIds} onPick={(circleIds) => set({ circleIds })} />
+            <fieldset className="flex flex-wrap items-center gap-3">
+              <legend className={`${label} float-left mr-3 leading-8`}>Gender</legend>
+              <div className="flex gap-0.5 rounded-control bg-hover p-0.5">
+                {GENDER_CHOICES.map((g) => (
+                  <label
+                    key={g.label}
+                    className="flex h-7 cursor-pointer items-center rounded-control px-2.5 text-ui text-muted has-[:checked]:bg-panel has-[:checked]:font-medium has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-task"
+                  >
+                    <input
+                      type="radio"
+                      name={`${ids}-gender`}
+                      checked={d.gender === g.value}
+                      onChange={() => set({ gender: g.value })}
+                      className="sr-only"
+                    />
+                    {g.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </Block>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-3">
+          <Block title="Ways to reach them" icon={ContactIcon}>
+            <ChannelsEditor channels={channels} />
+          </Block>
+
+          <Block title="Birthday" icon={CakeIcon} tint="text-person">
+            {!dayOpen ? (
+              <Another onAdd={() => setDayOpen(true)}>Add a birthday</Another>
+            ) : birthday === null ? (
+              <p className="flex items-center gap-2 text-ui text-muted">
+                No birthday.
+                <button
+                  type="button"
+                  onClick={() => setBirthday(undefined)}
+                  className={BUTTON.link}
+                >
+                  Undo
+                </button>
+              </p>
+            ) : (
+              <>
+                <BirthdayEditor
+                  birthday={person?.birthday ?? null}
+                  onChange={(draft, refused) => {
+                    setBirthday(draft)
+                    setBadDay(refused)
+                  }}
+                />
+                {person?.birthday && (
+                  <button
+                    type="button"
+                    onClick={() => setBirthday(null)}
+                    className={`${BUTTON.inline} self-start`}
+                  >
+                    Remove the birthday
+                  </button>
+                )}
+              </>
+            )}
+          </Block>
+
+          <Block title="Notes" icon={NoteIcon}>
+            <textarea
+              aria-label="Notes"
+              placeholder="What you want to remember"
+              value={d.note}
+              onChange={(e) => set({ note: e.target.value })}
+              rows={5}
+              className={area}
+            />
+          </Block>
+        </div>
+      </div>
+
+      {children && <div className="col-span-2 row-start-4">{children}</div>}
+
+      <div className="col-start-2 row-start-1 flex items-center gap-2 self-center">
+        <Link to={cancelTo} className={BUTTON.quiet}>
+          Cancel
+        </Link>
+        <button type="submit" disabled={busy || channels.bad || badDay} className={BUTTON.primary}>
+          <DoneIcon size={16} aria-hidden="true" />
+          {person ? 'Save' : 'Create person'}
+          <kbd className={KEY_ON_INK}>{keyLabel('Ctrl Enter')}</kbd>
+        </button>
+      </div>
+    </form>
+  )
+}
+
+/** One group of the form, a block with its icon and title (artboard 11). */
+function Block({
+  title,
+  icon: Icon,
+  tint = 'text-muted',
+  note,
+  children,
+}: {
+  title: string
+  icon: IconComponent
+  tint?: string
+  note?: string | null
+  children: ReactNode
+}) {
+  return (
+    <section
+      aria-label={title}
+      className="flex min-w-0 flex-col rounded-block border border-line bg-panel"
+    >
+      <h2 className="flex h-10 items-center gap-2 px-3 text-ui font-medium text-ink">
+        <Icon size={16} aria-hidden="true" className={tint} />
+        {title}
+        {note && <span className="text-meta font-normal text-subtle">{note}</span>}
+      </h2>
+      <div className="flex flex-col gap-3 px-3 pb-3">{children}</div>
+    </section>
+  )
+}
+
+function Text({
+  id,
+  label: name,
+  value,
+  onChange,
+  placeholder,
+  autoFocus = false,
+  invalid = false,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (next: string) => void
+  placeholder?: string
+  autoFocus?: boolean
+  invalid?: boolean
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <label htmlFor={id} className={label}>
+        {name}
+      </label>
+      <input
+        id={id}
+        value={value}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        aria-invalid={invalid || undefined}
+        onChange={(e) => onChange(e.target.value)}
+        className={field}
+      />
+    </div>
+  )
+}
+
+function Another({ onAdd, children }: { onAdd: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onAdd}
+      className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink"
+    >
+      <NewIcon size={14} aria-hidden="true" />
+      {children}
+    </button>
+  )
+}
+
+function Remove({ what, onRemove }: { what: string; onRemove: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      aria-label={`Remove ${what}`}
+      className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink"
+    >
+      <CloseIcon size={14} aria-hidden="true" />
+    </button>
+  )
+}
+
+/** One role: where, as what, from when, to when or Now (FR-047, FR-062). */
+function RoleRow({
+  at,
+  role,
+  today,
+  onChange,
+  onRemove,
+}: {
+  at: number
+  role: Role
+  today: string
+  onChange: (patch: Partial<Role>) => void
+  onRemove: () => void
+}) {
+  return (
+    <>
+      <OrganisationBox at={at} role={role} onChange={onChange} />
+      <input
+        aria-label={`Role ${at}`}
+        value={role.title}
+        onChange={(e) => onChange({ title: e.target.value })}
+        className={`${boxed} min-w-0`}
+      />
+      <DayField
+        mode="month"
+        label={`Role ${at} from`}
+        value={role.from}
+        today={today}
+        onChange={(from) => onChange({ from })}
+      />
+      {role.to === null ? (
+        <button
+          type="button"
+          aria-label={`Role ${at} to: now. Set an end`}
+          onClick={() => onChange({ to: today.slice(0, 7) })}
+          className={`${boxed} text-left text-go`}
+        >
+          Now
+        </button>
+      ) : (
+        <div className="flex min-w-0 items-center gap-1">
+          <DayField
+            mode="month"
+            label={`Role ${at} to`}
+            value={role.to}
+            today={today}
+            clearable={false}
+            onChange={(to) => onChange({ to })}
+          />
+          <button
+            type="button"
+            onClick={() => onChange({ to: null })}
+            className="shrink-0 rounded-control px-1.5 text-meta text-muted hover:bg-hover hover:text-ink"
+          >
+            Now
+          </button>
+        </div>
+      )}
+      <Remove what={`role ${at}`} onRemove={onRemove} />
+    </>
+  )
+}
+
+/** An organisation for a role: one already known, picked from a search, or a new name to add. */
+function OrganisationBox({
+  at,
+  role,
+  onChange,
+}: {
+  at: number
+  role: Role
+  onChange: (patch: Partial<Role>) => void
+}) {
+  const [typing, setTyping] = useState(false)
+  const listId = useId()
+  const asked = useDebouncedValue(role.organisationName.trim())
+  const hits = useQuery({
+    ...organisationSearchQuery(asked),
+    enabled: typing && asked.length > 0,
+    placeholderData: keepPreviousData,
+  })
+  const found = typing && asked ? (hits.data ?? []) : []
+  const exact = found.some((o) => o.name.toLowerCase() === asked.toLowerCase())
+  const open = typing && asked.length > 0 && (found.length > 0 || !exact)
+  return (
+    <div className="relative min-w-0">
+      <input
+        aria-label={`Organisation of role ${at}`}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        autoComplete="off"
+        value={role.organisationName}
+        onChange={(e) => {
+          setTyping(true)
+          onChange({ organisationName: e.target.value, organisationId: null })
+        }}
+        onBlur={() => window.setTimeout(() => setTyping(false), 120)}
+        className={`${boxed} w-full ${role.organisationId ? 'text-organisation-t' : ''}`}
+      />
+      {open && (
+        <ul
+          id={listId}
+          role="listbox"
+          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full min-w-48 overflow-y-auto rounded-block bg-float py-1 shadow-float`}
+        >
+          {found.map((o) => (
+            <li key={o.id} role="option" aria-selected={false}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  onChange({ organisationId: o.id, organisationName: o.name })
+                  setTyping(false)
+                }}
+                className="flex w-full items-center gap-2 truncate px-3 py-1.5 text-left text-ui text-ink hover:bg-hover"
+              >
+                <OrganisationIcon
+                  size={14}
+                  aria-hidden="true"
+                  className="shrink-0 text-organisation"
+                />
+                {o.name}
+              </button>
+            </li>
+          ))}
+          {!exact && (
+            <li role="option" aria-selected={false}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  setTyping(false)
+                }}
+                className="flex w-full items-center gap-2 truncate px-3 py-1.5 text-left text-ui text-muted hover:bg-hover hover:text-ink"
+              >
+                <NewIcon size={14} aria-hidden="true" className="shrink-0" />
+                Add “{asked}” as a new organisation
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/** Where they keep time: their city's zone, said so, or one chosen by hand; and their clock now. */
+function ZoneLine({
+  zone,
+  fromCity,
+  now,
+  onZone,
+}: {
+  zone: string | null
+  fromCity: boolean
+  now: Date
+  onZone: (zone: string | null) => void
+}) {
+  const [changing, setChanging] = useState(false)
+  return (
+    <div className="grid grid-cols-[6rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-control bg-hover px-3 py-2 text-ui">
+      <span className="text-meta text-muted">Time zone</span>
+      {changing ? (
+        <ZoneBox
+          zone={zone}
+          onZone={(next) => {
+            onZone(next)
+            setChanging(false)
+          }}
+        />
+      ) : (
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="truncate font-mono text-ink">{zone ?? 'Not known'}</span>
+          {fromCity && <span className="text-meta text-subtle">From Lives in</span>}
+        </span>
+      )}
+      <button type="button" onClick={() => setChanging((c) => !c)} className={BUTTON.inline}>
+        {changing ? 'Done' : 'Change'}
+      </button>
+      <span className="text-meta text-muted">Their time</span>
+      <span className="font-mono text-ink">{zone ? clockTime(now, zone) : '—'}</span>
+    </div>
+  )
+}
+
+/** The circles, any number picked, and a new one named in place (FR-062). */
+function Circles({
+  picked,
+  onPick,
+}: {
+  picked: readonly CircleId[]
+  onPick: (next: CircleId[]) => void
+}) {
+  const circles = useQuery(circlesQuery())
+  const qc = useQueryClient()
+  const [naming, setNaming] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+  const add = async () => {
+    const name = naming?.trim()
+    if (!name || !circles.data) return setNaming(null)
+    try {
+      const after = await putCircles([
+        ...circles.data.map((c) => ({ id: c.id, name: c.name })),
+        { name },
+      ])
+      qc.setQueryData(circlesQuery().queryKey, after)
+      void qc.invalidateQueries({ queryKey: peopleKeys.all })
+      const made = after.find((c) => c.name === name)
+      if (made) onPick([...picked, made.id])
+      setNaming(null)
+      setFailed(false)
+    } catch {
+      setFailed(true)
+    }
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {(circles.data ?? []).map((c) => {
+        const on = picked.includes(c.id)
+        return (
+          <button
+            key={c.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onPick(on ? picked.filter((p) => p !== c.id) : [...picked, c.id])}
+            className={`inline-flex h-7 items-center gap-1 rounded-control px-2.5 text-ui ${
+              on ? 'bg-select font-medium text-ink' : 'bg-hover text-muted hover:text-ink'
+            }`}
+          >
+            {on && <DoneIcon size={12} aria-hidden="true" />}
+            {c.name}
+          </button>
+        )
+      })}
+      {naming === null ? (
+        <button
+          type="button"
+          onClick={() => setNaming('')}
+          className="inline-flex h-7 items-center gap-1 rounded-control border border-dashed border-line-strong px-2.5 text-ui text-muted hover:text-ink"
+        >
+          <NewIcon size={12} aria-hidden="true" />
+          New circle
+        </button>
+      ) : (
+        <input
+          aria-label="New circle"
+          autoFocus
+          value={naming}
+          onChange={(e) => setNaming(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !(e.ctrlKey || e.metaKey)) {
+              e.preventDefault()
+              void add()
+            }
+            if (e.key === 'Escape') {
+              e.stopPropagation()
+              setNaming(null)
+            }
+          }}
+          onBlur={() => void add()}
+          className={`${boxed} h-7 w-36`}
+        />
+      )}
+      {failed && (
+        <span role="alert" className="text-meta text-stop-t">
+          Couldn’t add the circle. Try again.
+        </span>
+      )}
+    </div>
+  )
+}
+
+/** Every zone the browser knows, for one typed by hand. */
+const ZONES = Intl.supportedValuesOf('timeZone')
+
+/** A zone typed and picked from the browser's list; emptied, the zone is the city's again. */
+function ZoneBox({ zone, onZone }: { zone: string | null; onZone: (zone: string | null) => void }) {
+  const [typed, setTyped] = useState(zone ?? '')
+  const listId = useId()
+  const asked = typed.trim().toLowerCase().replace(/ /g, '_')
+  const found = asked ? ZONES.filter((z) => z.toLowerCase().includes(asked)).slice(0, 12) : []
+  return (
+    <div className="relative min-w-0">
+      <input
+        aria-label="Time zone"
+        role="combobox"
+        aria-expanded={found.length > 0}
+        aria-controls={listId}
+        autoComplete="off"
+        autoFocus
+        placeholder="From Lives in"
+        value={typed}
+        onChange={(e) => setTyped(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' || e.ctrlKey || e.metaKey) return
+          e.preventDefault()
+          if (!asked) onZone(null)
+          else if (found[0]) onZone(found[0])
+        }}
+        className={`${boxed} w-full font-mono`}
+      />
+      {found.length > 0 && (
+        <ul
+          id={listId}
+          role="listbox"
+          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-block bg-float py-1 shadow-float`}
+        >
+          {found.map((z) => (
+            <li key={z} role="option" aria-selected={z === zone}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  onZone(z)
+                }}
+                className="block w-full truncate px-3 py-1.5 text-left font-mono text-ui text-ink hover:bg-hover"
+              >
+                {z}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}

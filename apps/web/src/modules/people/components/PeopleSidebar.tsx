@@ -6,6 +6,7 @@ import { Avatar } from '../../../platform/ui/Avatar'
 import { CloseIcon } from '../../../platform/ui/icons'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { birthdaysQuery, circlesQuery, peopleQuery } from '../api'
+import { useNewPersonDraft } from '../logic/newPersonDraft'
 import { sortByFiled } from '../logic/peopleOrder'
 
 const ROW = ({ isActive }: { isActive: boolean }) =>
@@ -39,6 +40,10 @@ function Everyone({ circle }: { circle: string | null }) {
     const letter = /^[A-Z]$/.test(p.sortKey) ? p.sortKey : '#'
     groups.set(letter, [...(groups.get(letter) ?? []), p])
   }
+  // Someone being written down on New person has their place already, marked New (FR-062).
+  const draft = useNewPersonDraft()
+  const draftLetter = draft ? (/^[A-Z]$/.test(draft.sortKey) ? draft.sortKey : '#') : null
+  if (draftLetter && !groups.has(draftLetter)) groups.set(draftLetter, [])
   const letters = [...groups.keys()].sort((a, b) =>
     a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b),
   )
@@ -59,6 +64,15 @@ function Everyone({ circle }: { circle: string | null }) {
                 </NavLink>
               </li>
             ))}
+            {draft && draftLetter === letter && (
+              <li data-person-row="new" className="mx-1.5">
+                <span className="flex h-7.5 items-center gap-2 rounded-control bg-select px-2 text-ui font-medium text-ink">
+                  <Avatar initials={draft.initials} />
+                  <span className="flex-1 truncate">{draft.name}</span>
+                  <span className="text-meta font-normal text-subtle">New</span>
+                </span>
+              </li>
+            )}
           </ul>
         </section>
       ))}

@@ -1,30 +1,25 @@
 import type { ProjectId } from '@ctws/contracts'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PEOPLE_ID } from '../logic/id'
-import { NewPersonDialog } from './NewPersonDialog'
 
 /**
- * `N P`, a block's `+`, the sidebar's: added from People itself, their page opens; from anywhere
- * else that page stays, and its block shows them (FR-026).
+ * `N P`, a block's `+`, the sidebar's: New person is a page of its own in the main area, not a
+ * dialog (FR-062); made from a project, they are kept on it.
  */
 export function NewPerson({
   projectId,
   onClose,
-  opens,
 }: {
   projectId: ProjectId | null
   onClose: () => void
   opens: boolean
 }) {
   const navigate = useNavigate()
-  return (
-    <NewPersonDialog
-      projectId={projectId}
-      onClose={onClose}
-      onMade={(made) => {
-        onClose()
-        if (opens) navigate(`/${PEOPLE_ID}/${made.id}`)
-      }}
-    />
-  )
+  useEffect(() => {
+    onClose()
+    navigate(`/${PEOPLE_ID}/new${projectId ? `?project=${projectId}` : ''}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the press it answers.
+  }, [])
+  return null
 }

@@ -2,7 +2,10 @@ import {
   api,
   type BirthdayPreviewResponse,
   type CreatePersonBody,
+  type OrganisationId,
   type PersonResponse,
+  type PersonRoleInput,
+  type PutCirclesBody,
   type RemindLead,
   type UpdatePersonBody,
   type PersonId,
@@ -129,4 +132,27 @@ export function patchPerson(id: PersonId, body: UpdatePersonBody): Promise<Perso
 
 export function deletePerson(id: PersonId): Promise<void> {
   return call(api.people.remove, { params: { id } })
+}
+
+/** A person's roles as a whole list; the server replaces the set (FR-047). */
+export function putRoles(id: PersonId, roles: PersonRoleInput[]): Promise<PersonResponse> {
+  return call(api.people.putRoles, { params: { id }, body: { roles } })
+}
+
+/** The circles as a whole list, in order: one without an id is new. */
+export async function putCircles(circles: PutCirclesBody['circles']) {
+  return (await call(api.people.putCircles, { body: { circles } })).circles
+}
+
+/** Organisations whose name or type matches `q`, for a role's organisation. */
+export const organisationSearchQuery = (q: string) =>
+  queryOptions({
+    queryKey: ['organisations', 'search', q],
+    queryFn: async ({ signal }) =>
+      (await call(api.organisations.search, { query: { q } }, { signal })).organisations,
+  })
+
+/** A new organisation, named where a role is typed. */
+export async function createOrganisation(name: string): Promise<OrganisationId> {
+  return (await call(api.organisations.create, { body: { name } })).id
 }

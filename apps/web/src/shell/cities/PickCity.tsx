@@ -16,11 +16,14 @@ export function PickCity({
   id,
   value,
   onChange,
+  onPick,
 }: {
   label: string
   id: string
   value: string
   onChange: (next: string) => void
+  /** The city chosen from the list, with its key and zone; null once the words are typed over. */
+  onPick?: (city: City | null) => void
 }) {
   const [typing, setTyping] = useState(false)
   const listId = useId()
@@ -54,6 +57,7 @@ export function PickCity({
         onChange={(e) => {
           setTyping(true)
           onChange(e.target.value)
+          onPick?.(null)
         }}
         onBlur={() => {
           // A click on the list lands after this blur, so the list closes a beat later.
@@ -75,6 +79,7 @@ export function PickCity({
                 onMouseDown={(e) => {
                   e.preventDefault()
                   onChange(c.label)
+                  onPick?.(c)
                   setTyping(false)
                 }}
                 className="block w-full truncate px-3 py-1.5 text-left text-ui text-ink hover:bg-hover"

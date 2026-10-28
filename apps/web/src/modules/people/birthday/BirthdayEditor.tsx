@@ -16,7 +16,7 @@ import { birthdayPreviewQuery, type BirthdayDraft } from '../api'
 import { LEAD_CHOICES } from '../logic/labels'
 
 /** Where a draft starts: the editor's first state, and New person's before the editor reports. */
-export function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraft {
+function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraft {
   return {
     calendar: birthday?.calendar ?? 'solar',
     year: birthday?.year ?? null,
