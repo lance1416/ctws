@@ -1,9 +1,10 @@
 import { channelProblem, type ChannelKind, type PersonChannel } from '@ctws/contracts'
 import { useState } from 'react'
 import { boxed } from '../../../platform/ui/formStyles'
-import { CloseIcon, NewIcon } from '../../../platform/ui/icons'
-import { PickOne } from '../../../platform/ui/inline'
-import { byKind, channelPlaceholder, KIND_CHOICES } from '../logic/channels'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { CloseIcon, NewIcon, REACH_ICON } from '../../../platform/ui/icons'
+import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
+import { byKind, channelPlaceholder, KIND_CHOICES, KIND_LABEL } from '../logic/channels'
 import { usePhone } from '../hooks/usePhone'
 
 /**
@@ -93,6 +94,8 @@ export function useChannelRows(initial: () => ChannelRow[]) {
         saved: false,
       })),
     leave: (at: number) => edit(at, (row) => ({ ...row, touched: true })),
+    /** "Personal", "WeChat": said beside the value on their page (FR-062). */
+    setLabel: (at: number, label: string) => edit(at, (row) => ({ ...row, label })),
     add: () => setRows((all) => [...all, { kind: 'email', value: '', label: null }]),
     remove: (at: number) => setRows((all) => all.filter((_, i) => i !== at)),
     /** The rows worth saving, in kind order, phones as E.164. */
@@ -106,16 +109,23 @@ export function useChannelRows(initial: () => ChannelRow[]) {
   }
 }
 
+/**
+ * The ways to reach someone, as artboard 11 has them (N-02): each row its kind's icon, which picks
+ * another kind, the value, and a label of its own; "Another way" adds a row, as Another name and
+ * Another role do.
+ */
 export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useChannelRows> }) {
   return (
     <>
-      <ul className="mt-1.5 flex flex-col gap-2">
+      <ul className="flex flex-col gap-2">
         {channels.rows.map((c, i) => (
-          <li key={i} className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <PickOne
+          <li
+            key={i}
+            className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_8rem_auto] items-center gap-1.5"
+          >
+            <KindButton
               label={`Type of item ${i + 1}`}
-              value={c.kind}
-              choices={KIND_CHOICES}
+              kind={c.kind}
               onPick={(kind) => channels.setKind(i, kind)}
             />
             <input
@@ -128,18 +138,25 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
               onChange={(e) => channels.type(i, e.target.value)}
               // Judged on leaving: `+44` is not yet a number, and unfinished is not wrong.
               onBlur={() => channels.leave(i)}
-              className={`${boxed} min-w-0 flex-1 text-ui ${c.kind === 'phone' ? 'tabular-nums' : ''}`}
+              className={`${boxed} min-w-0 text-ui ${c.kind === 'phone' ? 'tabular-nums' : ''}`}
+            />
+            <input
+              aria-label={`Label for way ${i + 1}`}
+              value={c.label ?? ''}
+              placeholder="Label"
+              onChange={(e) => channels.setLabel(i, e.target.value)}
+              className={`${boxed} min-w-0 text-ui`}
             />
             <button
               type="button"
               aria-label={`Remove item ${i + 1}`}
               onClick={() => channels.remove(i)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control text-subtle hover:bg-hover hover:text-ink"
+              className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink"
             >
-              <CloseIcon size={16} className="h-3.5 w-3.5" />
+              <CloseIcon size={14} aria-hidden="true" />
             </button>
             {channels.shown[i] !== undefined && (
-              <p className="w-full text-meta text-stop-t">{channels.shown[i]}</p>
+              <p className="col-span-4 text-meta text-stop-t">{channels.shown[i]}</p>
             )}
           </li>
         ))}
@@ -147,11 +164,57 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
       <button
         type="button"
         onClick={channels.add}
-        className="mt-1.5 flex h-8 items-center gap-1.5 rounded-control border border-dashed border-line-strong px-2.5 text-ui text-muted hover:bg-hover hover:text-ink"
+        className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink"
       >
-        <NewIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
-        Add one
+        <NewIcon size={14} aria-hidden="true" />
+        Another way
       </button>
     </>
+  )
+}
+
+/** The row's kind as its icon; pressed, the kinds to change it to. */
+function KindButton({
+  label,
+  kind,
+  onPick,
+}: {
+  label: string
+  kind: ChannelKind
+  onPick: (kind: ChannelKind) => void
+}) {
+  const Icon = REACH_ICON[kind]
+  return (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger
+        aria-label={`${label}: ${KIND_LABEL[kind]}`}
+        title={KIND_LABEL[kind]}
+        className={`${boxed} inline-grid w-9 place-items-center px-0 text-muted hover:text-ink`}
+      >
+        <Icon size={14} aria-hidden="true" />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
+          {KIND_CHOICES.map((choice) => {
+            const ChoiceIcon = REACH_ICON[choice.value]
+            return (
+              <DropdownMenu.Item
+                key={choice.value}
+                onSelect={() => {
+                  if (choice.value !== kind) onPick(choice.value)
+                }}
+                className={MENU_ITEM}
+              >
+                <ChoiceIcon size={14} aria-hidden="true" className="text-muted" />
+                <span>{choice.label}</span>
+                {choice.value === kind && (
+                  <span className="ml-auto text-meta text-subtle">Current</span>
+                )}
+              </DropdownMenu.Item>
+            )
+          })}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   )
 }

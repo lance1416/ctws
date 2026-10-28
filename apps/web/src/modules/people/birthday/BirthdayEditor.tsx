@@ -43,9 +43,13 @@ export function BirthdayEditor({
 }) {
   const today = useAccountToday()
   const [draft, setDraft] = useState<BirthdayDraft>(() => birthdayDraftOf(birthday))
+  // Someone with no birthday yet has none until a day is picked: the controls are out from the
+  // start (N-01), but a calendar or a year alone is not a birthday.
+  const [picked, setPicked] = useState(birthday !== null)
   const yearOk =
     draft.year === null || (draft.year >= BIRTH_YEARS.min && draft.year <= BIRTH_YEARS.max)
 
+  // Asked before a day is picked too: its answer moves a lunar grid to the year typed.
   const preview = useQuery({ ...birthdayPreviewQuery(draft), enabled: yearOk })
 
   // A 400 or 422 says the day cannot be, so Save would fail too; a preview that merely failed to
@@ -57,22 +61,28 @@ export function BirthdayEditor({
 
   const report = useRef(onChange)
   report.current = onChange
-  // What the draft was when last reported. Mounting reports nothing: opening the controls on
-  // someone with no birthday is not choosing 1 January.
-  const reported = useRef<string | null>(null)
+  // What the draft was when last reported. Mounting reports nothing: opening the controls is not
+  // choosing 1 January. With no birthday before, the first day picked is reported at once: ''
+  // was never a draft.
+  const reported = useRef<string | null>(birthday === null ? '' : null)
   useEffect(() => {
+    if (!picked) return
     const key = `${JSON.stringify(draft)}:${refused}`
     if (reported.current === null) reported.current = key
     if (reported.current === key) return
     reported.current = key
     report.current(draft, refused)
-  }, [draft, refused])
+  }, [draft, refused, picked])
 
   return (
     <div className="flex flex-col gap-2">
       <BirthdayPicker
         value={draft}
-        onChange={(next) => setDraft({ ...draft, ...next })}
+        picked={picked}
+        onChange={(next, day) => {
+          setDraft({ ...draft, ...next })
+          if (day) setPicked(true)
+        }}
         today={today}
         solarOfPick={preview.data?.bornSolar ?? null}
         facts={

@@ -1,11 +1,17 @@
-import { MAX_TASK_DEPTH, NEW_TASK_STATUS, type ProjectId, type TaskId } from '@ctws/contracts'
+import {
+  MAX_TASK_DEPTH,
+  NEW_TASK_STATUS,
+  type ObjectType,
+  type ProjectId,
+  type TaskId,
+} from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { DayField } from '../../../shell/dates'
 import { ProjectChip, useEveryProject } from '../../../shell/projects'
-import { createTask, projectTasksQuery } from '../api'
+import { createTask, projectTasksQuery, relateTask } from '../api'
 import { dayEndIso, dayPhrase, ymd } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
 import { flatten } from '../logic/tree/flatten'
@@ -29,10 +35,13 @@ import { useNow } from '../../../platform/time/useNow'
  */
 export function CreateTaskDialog({
   projectId,
+  relatedTo = null,
   onClose,
 }: {
   /** The project the dialog opens on; still changeable inside it. */
   projectId: ProjectId
+  /** What each task made here is related to: the person whose page it was made from. */
+  relatedTo?: { type: ObjectType; id: string } | null
   onClose: () => void
 }) {
   const composing = useComposing()
@@ -80,8 +89,16 @@ export function CreateTaskDialog({
   })
 
   const create = useMutation({
-    mutationFn: (body: CreateTaskValues) => createTask(body),
-    meta: { changes: ['task'], awaits: [projectTasksQuery(project).queryKey], ownsError: true },
+    mutationFn: async (body: CreateTaskValues) => {
+      const made = await createTask(body)
+      if (relatedTo) await relateTask(made.id, relatedTo)
+      return made
+    },
+    meta: {
+      changes: relatedTo ? ['task', relatedTo.type] : ['task'],
+      awaits: [projectTasksQuery(project).queryKey],
+      ownsError: true,
+    },
   })
 
   /** `stay` is the `⌘↵` route. `handleSubmit` refuses an invalid form on both routes. */

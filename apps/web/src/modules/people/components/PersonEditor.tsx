@@ -16,7 +16,7 @@ import { keyLabel } from '../../../platform/keyboard/keys'
 import { useDebouncedValue } from '../../../platform/time/useDebouncedValue'
 import { useNow } from '../../../platform/time/useNow'
 import { Avatar } from '../../../platform/ui/Avatar'
-import { BUTTON, KEY_ON_INK } from '../../../platform/ui/buttonStyles'
+import { BUTTON, CHOSEN, KEY_ON_INK } from '../../../platform/ui/buttonStyles'
 import { area, boxed, field, label } from '../../../platform/ui/formStyles'
 import {
   CakeIcon,
@@ -185,7 +185,8 @@ export function PersonEditor({
   const [birthday, setBirthday] = useState<BirthdayDraft | null | undefined>(undefined)
   const [badDay, setBadDay] = useState(false)
   // Folded until asked for: an open grid with a day picked reads as a birthday given.
-  const [dayOpen, setDayOpen] = useState(person?.birthday != null)
+  // Bumped to start the birthday controls afresh, after a day picked on New person is cleared.
+  const [dayKey, setDayKey] = useState(0)
   const [unnamed, setUnnamed] = useState(false)
 
   const parts = {
@@ -415,7 +416,7 @@ export function PersonEditor({
             }
           >
             {d.roles.length > 0 && (
-              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8.5rem_8.5rem_auto] items-center gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(9.5rem,1fr)_7.5rem_7.5rem_auto] items-center gap-2">
                 {['Organisation', 'Role', 'From', 'To'].map((h) => (
                   <span key={h} aria-hidden="true" className={label}>
                     {h}
@@ -515,9 +516,8 @@ export function PersonEditor({
           </Block>
 
           <Block title="Birthday" icon={CakeIcon} tint="text-person">
-            {!dayOpen ? (
-              <Another onAdd={() => setDayOpen(true)}>Add a birthday</Another>
-            ) : birthday === null ? (
+            {/* Out from the start, nothing chosen until a day is picked (FR-062, N-01). */}
+            {birthday === null ? (
               <p className="flex items-center gap-2 text-ui text-muted">
                 No birthday.
                 <button
@@ -531,13 +531,14 @@ export function PersonEditor({
             ) : (
               <>
                 <BirthdayEditor
+                  key={dayKey}
                   birthday={person?.birthday ?? null}
                   onChange={(draft, refused) => {
                     setBirthday(draft)
                     setBadDay(refused)
                   }}
                 />
-                {person?.birthday && (
+                {person?.birthday ? (
                   <button
                     type="button"
                     onClick={() => setBirthday(null)}
@@ -545,6 +546,20 @@ export function PersonEditor({
                   >
                     Remove the birthday
                   </button>
+                ) : (
+                  birthday !== undefined && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBirthday(undefined)
+                        setBadDay(false)
+                        setDayKey((k) => k + 1)
+                      }}
+                      className={`${BUTTON.inline} self-start`}
+                    >
+                      Clear the birthday
+                    </button>
+                  )
                 )}
               </>
             )}
@@ -704,9 +719,11 @@ function RoleRow({
           type="button"
           aria-label={`Role ${at} to: now. Set an end`}
           onClick={() => onChange({ to: today.slice(0, 7) })}
-          className={`${boxed} text-left text-go`}
+          className="inline-flex h-7.5 items-center"
         >
-          Now
+          <span className="inline-flex h-5.5 items-center rounded-control bg-go-bg px-2 text-meta font-medium text-go-t">
+            Now
+          </span>
         </button>
       ) : (
         <div className="flex min-w-0 items-center gap-1">
@@ -743,6 +760,8 @@ function OrganisationBox({
   onChange: (patch: Partial<Role>) => void
 }) {
   const [typing, setTyping] = useState(false)
+  // One picked from the list is its tag until it is pressed to change it (N-03).
+  const [changing, setChanging] = useState(false)
   const listId = useId()
   const asked = useDebouncedValue(role.organisationName.trim())
   const hits = useQuery({
@@ -753,9 +772,24 @@ function OrganisationBox({
   const found = typing && asked ? (hits.data ?? []) : []
   const exact = found.some((o) => o.name.toLowerCase() === asked.toLowerCase())
   const open = typing && asked.length > 0 && (found.length > 0 || !exact)
+  if (role.organisationId && !changing)
+    return (
+      <button
+        type="button"
+        aria-label={`Organisation of role ${at}: ${role.organisationName}. Change it`}
+        onClick={() => setChanging(true)}
+        className={`${boxed} flex w-full min-w-0 items-center text-left`}
+      >
+        <span className="inline-flex h-5.5 min-w-0 items-center gap-1 rounded-control bg-organisation-bg px-2 text-meta font-medium text-organisation-t">
+          <OrganisationIcon size={12} aria-hidden="true" className="shrink-0" />
+          <span className="truncate">{role.organisationName}</span>
+        </span>
+      </button>
+    )
   return (
     <div className="relative min-w-0">
       <input
+        autoFocus={changing}
         aria-label={`Organisation of role ${at}`}
         role="combobox"
         aria-expanded={open}
@@ -766,7 +800,12 @@ function OrganisationBox({
           setTyping(true)
           onChange({ organisationName: e.target.value, organisationId: null })
         }}
-        onBlur={() => window.setTimeout(() => setTyping(false), 120)}
+        onBlur={() =>
+          window.setTimeout(() => {
+            setTyping(false)
+            setChanging(false)
+          }, 120)
+        }
         className={`${boxed} w-full ${role.organisationId ? 'text-organisation-t' : ''}`}
       />
       {open && (
@@ -783,6 +822,7 @@ function OrganisationBox({
                   e.preventDefault()
                   onChange({ organisationId: o.id, organisationName: o.name })
                   setTyping(false)
+                  setChanging(false)
                 }}
                 className="flex w-full items-center gap-2 truncate px-3 py-1.5 text-left text-ui text-ink hover:bg-hover"
               >
@@ -896,7 +936,7 @@ function Circles({
             aria-pressed={on}
             onClick={() => onPick(on ? picked.filter((p) => p !== c.id) : [...picked, c.id])}
             className={`inline-flex h-7 items-center gap-1 rounded-control px-2.5 text-ui ${
-              on ? 'bg-select font-medium text-ink' : 'bg-hover text-muted hover:text-ink'
+              on ? CHOSEN : 'bg-hover text-muted hover:text-ink'
             }`}
           >
             {on && <DoneIcon size={12} aria-hidden="true" />}

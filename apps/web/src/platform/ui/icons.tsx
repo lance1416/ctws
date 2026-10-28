@@ -188,6 +188,12 @@ export const PlacesIcon = MapPin
 /** An organisation's kind, beside its name (FR-065): "Law firm". */
 export const TypeIcon = Tag
 
+/** A way to reach someone (FR-062): the icon its row's kind button wears. */
+export const REACH_ICON = { email: Mail, phone: Phone, url: Link } as const satisfies Record<
+  string,
+  IconComponent
+>
+
 /** How a message went (FR-048): its channel, on the form's buttons. */
 export const CHANNEL_ICON = {
   email: Mail,

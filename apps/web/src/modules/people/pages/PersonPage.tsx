@@ -54,11 +54,9 @@ export function PersonPage({ person }: { person: PersonResponse }) {
     none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${person.givenName} yet`,
     titles: { reading: 'Recommended reading' },
     linkedRows: registry.personLinked,
-    // A meeting is made with them in it, a book as theirs to recommend (M-02); a task is linked.
-    creatorFor: (kind) =>
-      kind === 'meeting' || kind === 'reading'
-        ? (registry.creates.find((c) => c.kind === kind) ?? null)
-        : null,
+    // Each is made new from here: a meeting with them in it, a task related to them, a book as
+    // theirs to recommend (M-02, N-05).
+    creatorFor: (kind) => registry.creates.find((c) => c.kind === kind) ?? null,
     sayAdd: true,
   })
   const profiled = hasProfile(person)

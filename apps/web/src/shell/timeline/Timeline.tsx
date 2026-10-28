@@ -70,6 +70,9 @@ export function Timeline({ of, filters = false }: { of: Thing; filters?: boolean
   const entries = useQuery(timelineQuery(of, filter))
   const timeZone = useTimeZone()
   const describeChange = useRegistry().relationFor(of.type).describeChange
+  // Nothing at all to show: no head over an empty list (N-06). A tab with nothing keeps its head,
+  // so the other tabs stay in reach.
+  if (filter.id === 'all' && entries.isSuccess && entries.data.length === 0) return null
   return (
     <section aria-labelledby="timeline-head" className="flex flex-col gap-2">
       <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1">

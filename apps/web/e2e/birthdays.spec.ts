@@ -73,7 +73,6 @@ test('a lunar birthday shows its conversion and fallback as it is written', asyn
   const id = await person(page, '外婆')
   await page.goto(`/people/${id}/edit`)
   // Folded until asked for.
-  await page.getByRole('button', { name: 'Add a birthday' }).click()
   // The year moves the lunar grid to that year's months, through the server's conversion.
   await lunarYear(page, '1944')
   await pickLunarDay(page, '十二月', '三十')
@@ -92,7 +91,6 @@ test('a day that year does not have makes the preview say which part fails', asy
   await registerFreshUser(page)
   const id = await person(page, '赵姨')
   await page.goto(`/people/${id}/edit`)
-  await page.getByRole('button', { name: 'Add a birthday' }).click()
   // The grid offers only days that exist; a day can stop existing when the year changes under it.
   await lunarYear(page, '1944')
   await pickLunarDay(page, '十二月', '三十')

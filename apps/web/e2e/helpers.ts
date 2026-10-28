@@ -710,9 +710,9 @@ export async function lunarYear(page: Page, year: string) {
     .click()
   await page.getByRole('checkbox', { name: 'Year not known' }).uncheck()
   await page.getByRole('textbox', { name: 'Year' }).fill(year)
-  // The grid moves to that year's day once the server has converted it; paging before then would
-  // be undone when it does.
-  await expect(page.getByRole('button', { name: /月[初十廿二三]/, pressed: true })).toBeVisible()
+  // The grid moves to that year once the server has converted it; paging before then would be
+  // undone when it does.
+  await expect(page.locator(`[data-lunar-anchor^="${year}-"]`)).toBeVisible()
 }
 
 /**

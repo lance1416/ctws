@@ -1,19 +1,20 @@
 import { type Gender, REMIND_LEADS, type RemindLead } from '@ctws/contracts'
 import type { Choice } from '../../../platform/ui/inline'
 
+/** In the form's order (FR-062): Male, Female, Other, then Not set. */
 const GENDER_LABELS: Record<Gender, string> = {
-  female: 'Female',
   male: 'Male',
+  female: 'Female',
   other: 'Other',
 }
 
-/** In the order of `GENDER_LABELS`. */
+/** In the order of `GENDER_LABELS`, Not set last (N-04). */
 export const GENDER_CHOICES: Choice<Gender | null>[] = [
-  { value: null, label: 'Not set' },
   ...(Object.keys(GENDER_LABELS) as Gender[]).map((value) => ({
     value,
     label: GENDER_LABELS[value],
   })),
+  { value: null, label: 'Not set' },
 ]
 
 /** How early to be told of a birthday. */

@@ -21,6 +21,9 @@ export const BUTTON = {
   link: `rounded-control px-2 py-1 text-ui ${LINK} hover:bg-hover`,
 } as const
 
+/** A chip that is chosen among others (a person's circles): ink, so it parts from the rest. */
+export const CHOSEN = 'bg-ink font-medium text-on-ink'
+
 /** A key cap (tokens.md): mono 12, 5 each side, a `line-strong` edge with a 2px foot, 4 radius. */
 export const KEY =
   'inline-flex h-4.5 items-center rounded-key border border-b-2 border-line-strong px-1.25 font-mono text-meta text-muted'

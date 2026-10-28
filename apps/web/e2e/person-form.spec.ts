@@ -114,3 +114,21 @@ test('Tab runs from the first field to Create person', async ({ page }) => {
   }
   await expect(create).toBeFocused()
 })
+
+test('the birthday is out from the start, with nothing chosen until a day is (N-01)', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/people')
+  await page.goto('/people/new')
+  const block = page.getByRole('region', { name: 'Birthday' })
+  await expect(block.getByRole('radio', { name: 'Solar' })).toBeVisible()
+  await expect(block.getByRole('button', { pressed: true })).toHaveCount(0)
+  await expect(block).not.toContainText('Every year on')
+  // A name and nothing else: no birthday is sent.
+  await page.getByRole('textbox', { name: 'Given name', exact: true }).fill('No birthday')
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/people',
+  )
+  await page.getByRole('button', { name: /^Create person/ }).click()
+  expect((await made).request().postDataJSON()).not.toHaveProperty('birthday')
+})

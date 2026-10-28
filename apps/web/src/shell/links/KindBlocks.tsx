@@ -199,7 +199,11 @@ function KindBlock({
   const registry = useRegistry()
   const rows: ReactNode[] = [
     ...things.map((t) => (
-      <li key={t.id} className={`group flex min-w-0 items-center ${join ? 'pr-1.5' : ''}`}>
+      // The row's hover takes in its ✕, so the ✕ reads as the row's (N-08).
+      <li
+        key={t.id}
+        className={`group flex min-w-0 items-center ${join ? 'pr-1.5 hover:bg-hover' : ''}`}
+      >
         <ThingRow row={t} />
         {join && (
           <TakeOff
@@ -212,7 +216,7 @@ function KindBlock({
       </li>
     )),
     ...linked.map((item) => (
-      <li key={item.relationId} className="group flex min-w-0 items-center pr-1.5">
+      <li key={item.relationId} className="group flex min-w-0 items-center pr-1.5 hover:bg-hover">
         {Linked ? (
           <Link
             to={registry.relationFor(item.type).to(item.id)}

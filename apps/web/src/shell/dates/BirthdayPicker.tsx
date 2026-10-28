@@ -39,9 +39,11 @@ export function BirthdayPicker({
   today,
   facts,
   solarOfPick = null,
+  picked = true,
 }: {
   value: BirthdayPick
-  onChange: (next: BirthdayPick) => void
+  /** `day` is true when a day was pointed at, not the calendar or the year changed. */
+  onChange: (next: BirthdayPick, day: boolean) => void
   today: string
   /** The server's line about the pick: both calendars, this year's day, or why it cannot be. */
   facts?: ReactNode
@@ -50,26 +52,28 @@ export function BirthdayPicker({
    * there, so typing a year shows that year's months (the client holds no lunar tables).
    */
   solarOfPick?: string | null
+  /** False before any day is picked: nothing on the grid is chosen, and nothing is said of it. */
+  picked?: boolean
 }) {
   const yearKnown = value.year !== null
   const shownYear = value.year ?? Number(today.slice(0, 4))
   const solarDay =
     value.calendar === 'solar' ? `${shownYear}-${pad(value.month)}-${pad(value.day)}` : null
-  const [month, setMonth] = useState(solarDay ? monthOf(solarDay) : monthOf(today))
+  const [month, setMonth] = useState(solarDay && picked ? monthOf(solarDay) : monthOf(today))
   // The lunar grid is anchored on a solar day; a pick moves the anchor onto itself.
   const [anchor, setAnchor] = useState(today)
   const [lunarSolar, setLunarSolar] = useState<string | null>(null)
   const [hourOpen, setHourOpen] = useState(value.hourBranch !== null)
   useEffect(() => {
-    if (solarDay) setMonth(monthOf(solarDay))
-  }, [solarDay])
+    if (solarDay && picked) setMonth(monthOf(solarDay))
+  }, [solarDay, picked])
   useEffect(() => {
     if (value.calendar !== 'lunar' || !solarOfPick) return
     setAnchor(solarOfPick)
     setLunarSolar(solarOfPick)
   }, [value.calendar, solarOfPick])
 
-  const set = (patch: Partial<BirthdayPick>) => onChange({ ...value, ...patch })
+  const set = (patch: Partial<BirthdayPick>, day = false) => onChange({ ...value, ...patch }, day)
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -124,11 +128,11 @@ export function BirthdayPicker({
         <DayGrid
           month={month}
           setMonth={setMonth}
-          value={solarDay}
+          value={picked ? solarDay : null}
           today={today}
           onPick={(day) => {
             const [y, m, d] = day.split('-').map(Number) as [number, number, number]
-            set({ month: m, day: d, ...(yearKnown ? { year: y } : {}) })
+            set({ month: m, day: d, ...(yearKnown ? { year: y } : {}) }, true)
           }}
           accent="bg-person"
         />
@@ -136,32 +140,37 @@ export function BirthdayPicker({
         <LunarGrid
           anchor={anchor}
           setAnchor={setAnchor}
-          value={lunarSolar}
+          value={picked ? lunarSolar : null}
           today={today}
           onPick={(p) => {
             setLunarSolar(p.solar)
             setAnchor(p.solar)
-            set({
-              month: p.month,
-              day: p.day,
-              leapMonth: p.leapMonth,
-              ...(yearKnown ? { year: lunarYearOf(p.solar, p.month) } : {}),
-            })
+            set(
+              {
+                month: p.month,
+                day: p.day,
+                leapMonth: p.leapMonth,
+                ...(yearKnown ? { year: lunarYearOf(p.solar, p.month) } : {}),
+              },
+              true,
+            )
           }}
           accent="bg-person"
         />
       )}
 
-      <div className="grid grid-cols-[16px_6.5rem_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 rounded-control bg-person-bg px-2.5 py-2 text-ui">
-        <KIND_ICON.person size={16} aria-hidden="true" className="text-person-t" />
-        <span className="text-meta text-subtle">Every year on</span>
-        <span className="font-medium text-person-t">
-          {value.calendar === 'lunar'
-            ? `${value.leapMonth ? '闰' : ''}${LUNAR_MONTHS[value.month - 1]}${LUNAR_DAYS[value.day - 1]}`
-            : solarDay && sayMonthDay(solarDay)}
-        </span>
-        {facts}
-      </div>
+      {picked && (
+        <div className="grid grid-cols-[16px_6.5rem_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 rounded-control bg-person-bg px-2.5 py-2 text-ui">
+          <KIND_ICON.person size={16} aria-hidden="true" className="text-person-t" />
+          <span className="text-meta text-subtle">Every year on</span>
+          <span className="font-medium text-person-t">
+            {value.calendar === 'lunar'
+              ? `${value.leapMonth ? '闰' : ''}${LUNAR_MONTHS[value.month - 1]}${LUNAR_DAYS[value.day - 1]}`
+              : solarDay && sayMonthDay(solarDay)}
+          </span>
+          {facts}
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         {hourOpen ? (

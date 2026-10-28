@@ -290,7 +290,6 @@ test('a new person can have a birthday and a circle, sent in one request', async
   await page.goto('/people/new')
   await page.getByRole('textbox', { name: 'Given name', exact: true }).fill('外婆')
   // The birthday starts folded: a person is often just a name, and empty fields read as bad data.
-  await page.getByRole('button', { name: 'Add a birthday' }).click()
   await lunarYear(page, '1944')
   await pickLunarDay(page, '十二月', '三十')
   await page.getByRole('button', { name: 'Family' }).click()
@@ -424,7 +423,7 @@ test('a new address row is empty, with a placeholder showing its kind', async ({
   await registerFreshUser(page, '/people')
   const made = await add(page, { name: '陈颖' })
   await edit(page, made.id)
-  await page.getByRole('button', { name: 'Add one' }).click()
+  await page.getByRole('button', { name: 'Another way' }).click()
   const box = page.getByRole('textbox', { name: 'Item 1' })
   // Empty: a placeholder is not content, and only what a person types is saved.
   await expect(box).toHaveValue('')
@@ -443,7 +442,7 @@ test('a value that does not fit its kind is called out before saving', async ({ 
   const made = await add(page, { name: '陈颖' })
   await edit(page, made.id)
   const ways = page.getByRole('region', { name: 'Ways to reach them' })
-  await page.getByRole('button', { name: 'Add one' }).click()
+  await page.getByRole('button', { name: 'Another way' }).click()
   await pickOne(ways, 'Type of item 1', 'Phone')
   const box = page.getByRole('textbox', { name: 'Item 1' })
 
@@ -515,7 +514,7 @@ test('a phone number is formatted as typed, and saved in its normal form', async
   await registerFreshUser(page, '/people')
   const made = await add(page, { name: '陈颖' })
   await edit(page, made.id)
-  await page.getByRole('button', { name: 'Add one' }).click()
+  await page.getByRole('button', { name: 'Another way' }).click()
   await pickOne(page.getByRole('region', { name: 'Ways to reach them' }), 'Type of item 1', 'Phone')
 
   const box = page.getByRole('textbox', { name: 'Item 1' })
@@ -624,7 +623,6 @@ test('opening the birthday and saving it untouched writes no birthday', async ({
   await registerFreshUser(page, '/people')
   const made = await add(page, { name: '没生日' })
   await edit(page, made.id)
-  await page.getByRole('button', { name: 'Add a birthday' }).click()
   await expect(page.getByRole('radiogroup', { name: 'Which calendar' })).toBeVisible()
   const saved = patchAnswered(page, `people/${made.id}`)
   await save(page).click()

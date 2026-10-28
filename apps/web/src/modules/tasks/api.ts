@@ -1,4 +1,5 @@
 import {
+  type ObjectType,
   api,
   type ProjectId,
   type ResponseOf,
@@ -143,6 +144,11 @@ export function removeDependency(id: TaskId, blockerId: TaskId): Promise<void> {
 /** Without a `status` the server files the task under `todo`. */
 export function createTask(body: CreateTaskForm): Promise<TaskResponse> {
   return call(api.tasks.create, { body })
+}
+
+/** Relates a new task to the thing it was made from: a person, an organisation (FR-061). */
+export function relateTask(id: TaskId, to: { type: ObjectType; id: string }): Promise<unknown> {
+  return call(api.relations.create, { body: { from: { type: 'task', id }, to } })
 }
 
 export function patchTask(id: TaskId, body: UpdateTaskBody): Promise<TaskResponse> {
