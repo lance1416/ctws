@@ -8,6 +8,7 @@ import {
   startProject,
   captureBox,
   openCapture,
+  keyAsShown,
 } from './helpers'
 
 const handle = (page: Page, title: string) =>
@@ -210,7 +211,17 @@ test('the ? overlay lists the keys, closes on Escape and on a click outside', as
   await expect(dialog).toBeVisible()
   // The keys it must actually name (FR-029), each as its own cap, not merely "a dialog appeared".
   // Letters as capitals, as every other cap (artboard 24).
-  for (const key of ['Ctrl+K', 'C', '?', '[', 'L', 'Alt+Enter', 'Shift+Enter', 'S', 'X']) {
+  for (const key of [
+    await keyAsShown(page, 'Ctrl+K'),
+    'C',
+    '?',
+    '[',
+    'L',
+    'Alt+Enter',
+    'Shift+Enter',
+    'S',
+    'X',
+  ]) {
     // `.first()`: a letter is also the second cap of a jump, and in the switch's line.
     await expect(dialog.getByText(key, { exact: true }).first()).toBeVisible()
   }

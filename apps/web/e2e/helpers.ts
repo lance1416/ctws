@@ -714,3 +714,12 @@ export async function lunarYear(page: Page, year: string) {
   // be undone when it does.
   await expect(page.getByRole('button', { name: /月[初十廿二三]/, pressed: true })).toBeVisible()
 }
+
+/**
+ * A key as the help names it in this browser: an Apple keyboard says ⌘ where others say Ctrl
+ * (FR-029). Asked of the page, so the expectation follows the machine the suite runs on.
+ */
+export async function keyAsShown(page: Page, keys: string): Promise<string> {
+  const mac = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform))
+  return mac ? keys.replace(/\bCtrl\b/g, '⌘') : keys
+}
