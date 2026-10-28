@@ -1,33 +1,66 @@
 import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
+import { format } from 'date-fns'
 import { addDaysYmd, dayOffset, weekdayFrom } from './days'
-import {
-  accountZone,
-  apiPost,
-  editDetail,
-  pickOne,
-  registerFreshUser,
-  WEB,
-  navLink,
-} from './helpers'
+import { accountZone, apiPost, navLink, pickOne, registerFreshUser, WEB } from './helpers'
 
 /**
- * MEETINGS -- the module's own destination, and the form that fills one in once.
+ * MEETINGS (FR-066, FR-067, FR-068) -- the module's own destination: an overview, a page for each
+ * occurrence, and an edit page that reaches as far as was chosen when Edit was pressed.
  *
- * A meeting is a kind of thing with a page of its own, reached from the icon bar, and MADE there rather
- * than by clicking a square on a lens.
+ * A meeting is MADE here, in one form, rather than by clicking a square on a lens. The answers
+ * that turn on what day it is are in meetings.pinned.spec.ts.
  */
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
-const pane = (page: Page) => page.getByRole('dialog', { name: 'Meetings' })
+const title = (page: Page) => page.getByRole('main').getByRole('heading', { level: 1 })
+const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Meetings' })
+const when = (page: Page) =>
+  page.getByRole('complementary', { name: 'Profile' }).getByRole('region', { name: 'When' })
+
+/** `BYDAY`'s code for the weekday `day` falls on. */
+const weekdayCode = (day: string) =>
+  ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][new Date(`${day}T12:00:00Z`).getUTCDay()]!
+
+/** A meeting on the account's own clock, so the page's times are the times it was made at. */
+async function meeting(page: Page, data: Record<string, unknown>) {
+  return apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', {
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    ...data,
+  })
+}
+
+/** Every occurrence on `day`, as [title, start]. */
+async function heldOn(page: Page, day: string) {
+  const res = await page.request.get(`/api/v1/meetings?from=${day}&to=${day}`, { headers: WEB })
+  return ((await res.json()) as { meetings: { title: string; startsLocal: string }[] }).meetings
+    .map((m) => [m.title, m.startsLocal])
+    .sort()
+}
+
+/** Presses Edit at the page's head, answering "Change which?" when the meeting repeats. */
+async function editFromPage(page: Page, which?: string) {
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: 'Edit', exact: true })
+    .or(page.getByRole('main').getByRole('link', { name: 'Edit', exact: true }))
+    .click()
+  if (which) {
+    const ask = page.getByRole('dialog', { name: 'This meeting repeats. Change which?' })
+    await ask.getByRole('radio', { name: which }).check()
+    await ask.getByRole('button', { name: 'Edit', exact: true }).click()
+  }
+  await expect(title(page)).toHaveText(/^Edit /)
+}
 
 test('the icon bar reaches meetings, and the page says when there are none', async ({ page }) => {
-  // Every kind has its place on the icon bar (FR-019).
+  // Every kind has its place on the icon bar (FR-019); an empty one says so (FR-030).
   await registerFreshUser(page)
   await navLink(page, 'Meetings').click()
   await expect(page).toHaveURL(/\/meetings$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeVisible()
-  await expect(page.getByText('Nothing in the next month')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeAttached()
+  await expect(page.getByRole('heading', { name: 'No meetings yet' })).toBeVisible()
 })
 
 test('a meeting is filled in once: title, time, zone, repeat and the people', async ({ page }) => {
@@ -37,11 +70,7 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await apiPost(page, '/people', { name: 'Ying Chen' })
 
   await page.goto('/meetings')
-  await page
-    .getByRole('main')
-    .getByRole('button', { name: /^New meeting/ })
-    .first()
-    .click()
+  await page.getByRole('main').getByRole('button', { name: 'New meeting' }).click()
 
   await dialog(page).getByLabel('Title').fill('Second interview')
   await dialog(page).getByLabel('Date').fill(dayOffset(1))
@@ -59,7 +88,7 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await dialog(page).getByRole('button', { name: 'Create' }).click()
   const body = (await made).request().postDataJSON() as Record<string, unknown>
 
-  // ONE REQUEST carries the whole meeting, rather than an empty one filled in from the pane.
+  // ONE REQUEST carries the whole meeting, rather than an empty one filled in afterwards.
   expect(body).toMatchObject({
     title: 'Second interview',
     startsLocal: `${dayOffset(1)}T21:00`,
@@ -70,86 +99,33 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   })
   expect((body.attendeeIds as string[]).length).toBe(1)
 
-  // And it opens on the thing that was just made, where a note or a place is added.
-  await expect(pane(page)).toBeVisible()
-  await expect(pane(page)).toContainText('Second interview')
+  // And it opens on the page of the thing just made, where its notes are written.
+  await expect(dialog(page)).toHaveCount(0)
+  await expect(page).toHaveURL(/\/meetings\/[0-9a-f-]{36}\?at=/)
+  await expect(title(page)).toHaveText('Second interview')
+  await expect(page.getByRole('main')).toContainText('Job hunt')
 })
 
-/**
- * THE AGREED ZONE IS THE HALF THAT IS NOT YOUR CLOCK, so the row carries it only when the
- * meeting's zone is not the account's, and the account's zone is the runner's (see `days.ts`).
- * Both halves are seeded: one meeting agreed HERE, one agreed where the runner is not, whatever
- * zone the runner is in.
- */
-const HERE = Intl.DateTimeFormat().resolvedOptions().timeZone
-const ELSEWHERE = ['America/Toronto', 'Asia/Tokyo'].find((z) => z !== HERE)!
-/** The half of an IANA name a reader knows, the way `zoneLabel` prints it. */
-const ELSEWHERE_CITY = ELSEWHERE.slice(ELSEWHERE.indexOf('/') + 1).replace(/_/g, ' ')
-
-test('the list is grouped by day, and says what was agreed when that is not your clock', async ({
+test('a repeating meeting is one row in the sidebar, and its page says how it repeats', async ({
   page,
 }) => {
+  // A daily standup has twenty-three occurrences in a month. A sidebar that listed them all would
+  // BE the standup: it answers which meetings there are, the calendar answers which day.
   await registerFreshUser(page)
-  for (const [title, day, zone] of [
-    ['Standup', dayOffset(0), HERE],
-    ['Second interview', dayOffset(2), ELSEWHERE],
-  ]) {
-    await apiPost(page, '/meetings', {
-      title,
-      startsLocal: `${day}T14:00`,
-      timeZone: zone,
-      durationMinutes: 60,
-    })
-  }
-
-  await page.goto('/meetings')
-  const coming = page.getByRole('region', { name: 'Coming up' })
-  await expect(coming).toBeVisible()
-  // The nearest day is named Today; the rest carry their date. Each day is a section of the page.
-  await expect(coming.getByRole('heading', { level: 2 }).first()).toHaveText('Today')
-  // The row leads with YOUR clock, and then says what was agreed -- when that is somewhere else.
-  const row = (title: string) => coming.locator('[data-meeting-row]').filter({ hasText: title })
-  await expect(row('Second interview').locator('[data-meeting-zone]')).toContainText(
-    `14:00 ${ELSEWHERE_CITY}`,
-  )
-  // And says nothing twice: a meeting agreed in your own zone is the clock already on the row.
-  await expect(row('Standup').locator('[data-meeting-zone]')).toHaveCount(0)
-  await expect(coming.locator('[data-meeting-row]')).toHaveCount(2)
-})
-
-test('a repeating meeting is one row, not one row per occurrence', async ({ page }) => {
-  // A daily standup has twenty-three occurrences in a month. A page that listed them all would
-  // BE the standup: the list answers which meetings there are, the calendar answers which day.
-  await registerFreshUser(page)
-  await apiPost(page, '/meetings', {
+  await meeting(page, {
     title: 'Standup',
-    startsLocal: `${dayOffset(0)}T09:30`,
-    timeZone: 'UTC',
+    startsLocal: `${dayOffset(1)}T09:30`,
     durationMinutes: 15,
     rrule: 'FREQ=DAILY',
   })
 
   await page.goto('/meetings')
-  await expect(page.locator('[data-meeting-row]')).toHaveCount(1)
-  // And it says that it repeats, in the words the picker offers.
-  await expect(page.getByRole('region', { name: 'Coming up' })).toContainText('Daily')
-})
-
-test('what has already happened is behind a toggle, not in front of you', async ({ page }) => {
-  await registerFreshUser(page)
-  await apiPost(page, '/meetings', {
-    title: 'Last week one-to-one',
-    startsLocal: `${dayOffset(-7)}T14:00`,
-    timeZone: 'UTC',
-    durationMinutes: 30,
-  })
-
-  await page.goto('/meetings')
-  await expect(page.getByText('Last week one-to-one')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Earlier' }).click()
-  await expect(page.getByText('Last week one-to-one')).toBeVisible()
-  await page.getByRole('button', { name: 'Hide earlier' }).click()
-  await expect(page.getByText('Last week one-to-one')).toHaveCount(0)
+  const coming = sidebar(page).getByRole('region', { name: 'Coming' })
+  await expect(coming.locator('[data-meeting-row]')).toHaveCount(1)
+  await coming.getByRole('link', { name: /Standup/ }).click()
+  // It says that it repeats, in the words the picker offers.
+  await expect(title(page)).toHaveText('Standup')
+  await expect(page.getByRole('main')).toContainText('Daily')
 })
 
 test('a repeat can be given an end date, and the series really stops there', async ({ page }) => {
@@ -157,11 +133,7 @@ test('a repeat can be given an end date, and the series really stops there', asy
   const first = weekdayFrom(2, 7) // a Tuesday
   const last = addDaysYmd(first, 14)
   await page.goto('/meetings')
-  await page
-    .getByRole('main')
-    .getByRole('button', { name: /^New meeting/ })
-    .first()
-    .click()
+  await page.getByRole('main').getByRole('button', { name: 'New meeting' }).click()
 
   const form = dialog(page)
   await form.getByLabel('Title').fill('Weekly sync')
@@ -191,174 +163,120 @@ test('a repeat can be given an end date, and the series really stops there', asy
   expect(days).toEqual([first, addDaysYmd(first, 7), last])
 })
 
-test('a meeting with a link can be joined from the list', async ({ page }) => {
-  await registerFreshUser(page)
-  await apiPost(page, '/meetings', {
-    title: 'Standup',
-    startsLocal: `${dayOffset(1)}T09:30`,
-    timeZone: 'UTC',
-    durationMinutes: 15,
-    location: 'https://meet.example.test/standup',
-  })
-  await apiPost(page, '/meetings', {
-    title: 'In the room',
-    startsLocal: `${dayOffset(1)}T14:00`,
-    timeZone: 'UTC',
-    durationMinutes: 30,
-    location: 'Acme HQ, 3F',
-  })
-
-  await page.goto('/meetings')
-  const join = page.getByRole('link', { name: 'Join' })
-  await expect(join).toHaveCount(1)
-  await expect(join).toHaveAttribute('href', 'https://meet.example.test/standup')
-  // A room is not a link. Guessing would send you to a site that may be somebody else's.
-  await expect(page.getByText('In the room')).toBeVisible()
-})
-
-/** A meeting pane is laid out like a person's. */
-test("a meeting pane stacks its labels over its values, at the meeting's own address", async ({
+test('a meeting with a link can be joined from its page; one in a room cannot', async ({
   page,
 }) => {
   await registerFreshUser(page)
-  await apiPost(page, '/meetings', {
-    title: '周会',
-    startsLocal: `${dayOffset(5)}T09:00`,
-    timeZone: 'America/Toronto',
-    durationMinutes: 30,
+  const online = await meeting(page, {
+    title: 'Standup',
+    startsLocal: `${dayOffset(1)}T09:30`,
+    location: 'https://meet.example.test/standup',
   })
+  const room = await meeting(page, {
+    title: 'In the room',
+    startsLocal: `${dayOffset(1)}T14:00`,
+    location: 'Acme HQ, 3F',
+  })
+
+  await page.goto(`/meetings/${online.meetingId}`)
+  const join = page.getByRole('main').getByRole('link', { name: 'Join' })
+  await expect(join).toHaveAttribute('href', 'https://meet.example.test/standup')
+
+  // A room is not a link. Guessing would send you to a site that may be somebody else's.
+  await page.goto(`/meetings/${room.meetingId}`)
+  await expect(title(page)).toHaveText('In the room')
+  const where = page.getByRole('complementary', { name: 'Profile' }).getByRole('region', {
+    name: 'Where',
+  })
+  await expect(where).toContainText('Acme HQ, 3F')
+  await expect(page.getByRole('main').getByRole('link', { name: 'Join' })).toHaveCount(0)
+})
+
+test("a meeting opens on a page of its own, at the occurrence's own address", async ({ page }) => {
+  await registerFreshUser(page)
+  await meeting(page, { title: '周会', startsLocal: `${dayOffset(5)}T09:00` })
 
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/meetings')
-  await page.getByRole('button', { name: /周会/ }).first().click()
-  const pane = page.getByRole('dialog', { name: 'Meetings' })
-  await expect(pane).toBeVisible()
-
-  // The label's bottom is above the value's top. Read, a value is text, so that line is measured.
-  const stacked = await pane.evaluate(() => {
-    const label = [...document.querySelectorAll('span')].find((s) => s.textContent === 'Length')
-    const value = label?.parentElement?.querySelector('span:last-child')
-    if (!label || !value || label === value) return null
-    return label.getBoundingClientRect().bottom <= value.getBoundingClientRect().top + 1
-  })
-  expect(stacked).toBe(true)
-
+  await sidebar(page).getByRole('link', { name: /周会/ }).click()
   await expect(page).toHaveURL(new RegExp('/meetings/[0-9a-f-]{36}\\?at='))
+  await expect(title(page)).toHaveText('周会')
+  // A page, not a layer over a list.
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  // Each fact under its heading: the heading's bottom above the value's top.
+  const heading = when(page).getByRole('heading', { name: 'When' })
+  const value = when(page).getByText('09:00 to 09:30')
+  expect(
+    (await heading.boundingBox())!.y + (await heading.boundingBox())!.height,
+  ).toBeLessThanOrEqual((await value.boundingBox())!.y + 1)
 })
 
 /**
- * A MEETING'S ROW IS THE APP'S ROW: the time on your own clock in the margin, the thread in its
- * project's colour, then the title and a line that says the rest -- the project BY NAME, who is in
- * it. The days are sections whose headings hang where the threads do, as the page's title does.
+ * THE NEXT SEVEN DAYS ARE ON YOUR CLOCK: the weekday, the time here, the title, and the project
+ * the meeting is in -- named on the meeting's own page, so its colour is never alone.
  */
-test('meetings hang on the margin: the time, the thread, then the meeting', async ({ page }) => {
+test('the overview lists what is coming on your clock, and a meeting names its project', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const project = await apiPost(page, '/projects', { name: '找工作' })
-  const projectId = project.id
-  const { meetingId } = await apiPost<{ meetingId: string }>(page, '/meetings', {
+  const made = await meeting(page, {
     title: 'Second interview',
     startsLocal: `${dayOffset(1)}T14:00`,
-    // Agreed on the account's own clock, so the margin's 14:00 is the time agreed.
-    timeZone: await accountZone(page),
     durationMinutes: 60,
-    projectId,
-  })
-  await apiPost(page, '/meetings', {
-    title: 'Standup',
-    startsLocal: `${dayOffset(2)}T09:30`,
-    timeZone: 'UTC',
-    durationMinutes: 15,
+    projectId: project.id,
   })
   await page.goto('/meetings')
-
-  const row = page.locator(`[data-meeting-row="${meetingId}"]`)
-  await expect(row.locator('[data-row-lead-text]')).toHaveText('14:00')
-  await expect(row.locator('[data-project-rail]')).toHaveAttribute('data-project-rail', projectId)
-  // The colour is never alone: the project is named on the row.
-  await expect(row).toContainText('找工作')
-  await expect(
-    page.getByRole('region', { name: 'Coming up' }).getByRole('heading', { level: 2 }).first(),
-  ).toHaveText('Tomorrow')
-
-  // ONE x for the threads, and the page's title and the days' headings hang on it.
-  const threads = await page
-    .locator('[data-meeting-row] [data-thread]')
-    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
-  expect(threads).toHaveLength(2)
-  expect(new Set(threads).size).toBe(1)
-  const h1 = (await page.getByRole('heading', { level: 1, name: 'Meetings' }).boundingBox())!
-  expect(Math.round(h1.x)).toBe(threads[0])
-  const day = (await page.getByRole('heading', { level: 2, name: 'Tomorrow' }).boundingBox())!
-  expect(Math.round(day.x)).toBe(threads[0])
+  const next = page.getByRole('region', { name: 'The next 7 days' })
+  const row = next.locator('[data-next-meeting]').filter({ hasText: 'Second interview' })
+  await expect(row).toContainText('14:00')
+  await row.click()
+  await expect(page).toHaveURL(new RegExp(`/meetings/${made.meetingId}\\?at=`))
+  await expect(page.getByRole('main').getByRole('link', { name: '找工作' })).toHaveAttribute(
+    'href',
+    `/projects/${project.id}`,
+  )
 })
 
-/**
- * A SERIES' ROW CARRIES ITS NEXT TIME. At 15:00 a daily 09:00 standup's next one is tomorrow's,
- * not this morning's, which is over; the row sits under Tomorrow. The clock is the test's own.
- */
-test('a repeating meeting shows its next occurrence, not one already over', async ({ page }) => {
+test('backing out of "Change which?" or the edit page saves nothing', async ({ page }) => {
   await registerFreshUser(page)
-  const zone = await accountZone(page)
-  await apiPost(page, '/meetings', {
-    title: 'Standup',
-    startsLocal: `${dayOffset(0)}T09:00`,
-    timeZone: zone,
-    durationMinutes: 15,
-    rrule: 'FREQ=DAILY',
-  })
-  const [y, m, d] = dayOffset(0).split('-').map(Number) as [number, number, number]
-  await page.clock.install({ time: new TZDate(y, m - 1, d, 15, 0, 0, 0, zone) })
-  await page.goto('/meetings')
-  const tomorrow = page.getByRole('region', { name: 'Tomorrow' })
-  await expect(tomorrow.locator('[data-meeting-row]')).toHaveCount(1)
-  await expect(page.getByRole('region', { name: 'Today' })).toHaveCount(0)
-})
-
-/** `BYDAY`'s code for the weekday `day` falls on. */
-const weekdayCode = (day: string) =>
-  ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][new Date(`${day}T12:00:00Z`).getUTCDay()]!
-
-test('backing out of the scope question saves nothing from that edit', async ({ page }) => {
-  await registerFreshUser(page)
-  const today = dayOffset(0)
-  const made = await apiPost(page, '/meetings', {
+  const day = dayOffset(1)
+  const made = await meeting(page, {
     title: 'Weekly sync',
-    startsLocal: `${today}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
-    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(today)}`,
+    startsLocal: `${day}T09:00`,
+    rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
   })
-  await page.goto(`/meetings/${made.meetingId}`)
-  await editDetail(page)
-  await pane(page).getByLabel('Title').fill('Renamed sync')
-  await pane(page).getByLabel('Start').fill(`${today}T10:00`)
-  await pane(page).getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('alertdialog', { name: 'This meeting repeats' })).toBeVisible()
-  await page.getByRole('button', { name: 'Keep editing' }).click()
-  // Nothing in flight: a write sent before the question would still hold Save down.
-  await expect(pane(page).getByRole('button', { name: 'Save' })).toBeEnabled()
-  await pane(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() !== 'GET') writes.push(`${r.method()} ${new URL(r.url()).pathname}`)
+  })
+  await page.goto(`/meetings/${made.meetingId}?at=${day}T09:00`)
+  await page.getByRole('main').getByRole('button', { name: 'Edit', exact: true }).click()
+  const ask = page.getByRole('dialog', { name: 'This meeting repeats. Change which?' })
+  await ask.getByRole('button', { name: 'Cancel' }).click()
+  await expect(ask).toHaveCount(0)
+  await expect(title(page)).toHaveText('Weekly sync')
 
-  const res = await page.request.get(`/api/v1/meetings?from=${today}&to=${today}`, {
-    headers: WEB,
-  })
-  const held = ((await res.json()) as { meetings: { title: string; startsLocal: string }[] })
-    .meetings
-  expect(held.map((m) => [m.title, m.startsLocal])).toEqual([['Weekly sync', `${today}T09:00`]])
+  await editFromPage(page, 'Only this one')
+  await page.getByLabel('Title', { exact: true }).fill('Renamed sync')
+  await page.getByLabel('Start', { exact: true }).fill(`${day}T10:00`)
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  // What was typed is asked about first (FR-063's guard), then let go.
+  await page.getByRole('button', { name: 'Discard changes' }).click()
+  await expect(title(page)).toHaveText('Weekly sync')
+
+  expect(writes).toEqual([])
+  expect(await heldOn(page, day)).toEqual([['Weekly sync', `${day}T09:00`]])
 })
 
 test('a meeting edit the server refuses stays open and says why', async ({ page }) => {
   await registerFreshUser(page)
-  const made = await apiPost(page, '/meetings', {
-    title: 'Refused sync',
-    startsLocal: `${dayOffset(1)}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
-  })
+  const made = await meeting(page, { title: 'Refused sync', startsLocal: `${dayOffset(1)}T09:00` })
   await page.goto(`/meetings/${made.meetingId}`)
-  await editDetail(page)
-  await pane(page).getByLabel('Title').fill('Refused again')
+  await editFromPage(page)
+  await page.getByLabel('Title', { exact: true }).fill('Refused again')
   await page.route(`**/api/v1/meetings/${made.meetingId}`, (r) =>
     r.request().method() === 'PATCH'
       ? r.fulfill({
@@ -373,109 +291,90 @@ test('a meeting edit the server refuses stays open and says why', async ({ page 
         })
       : r.continue(),
   )
-  await pane(page).getByRole('button', { name: 'Save' }).click()
-  await expect(pane(page).getByRole('alert')).toContainText('That title is too long')
-  await expect(pane(page).getByLabel('Title')).toHaveValue('Refused again')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('That title is too long')
+  await expect(page).toHaveURL(new RegExp(`/meetings/${made.meetingId}/edit`))
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Refused again')
 })
 
-/** Moves the open meeting's start to `at` from its pane, answering the scope question if asked. */
-async function moveOpenMeeting(page: Page, at: string, scope?: 'This and all later') {
-  await editDetail(page)
-  await pane(page).getByLabel('Start').fill(at)
-  await pane(page).getByRole('button', { name: 'Save' }).click()
-  if (scope) await page.getByRole('button', { name: scope }).click()
-}
-
-test('a one-off meeting moved from its pane stays open at its new time', async ({ page }) => {
+test('a one-off meeting moved on its edit page opens at its new time', async ({ page }) => {
   await registerFreshUser(page)
   const day = dayOffset(1)
-  await apiPost(page, '/meetings', {
-    title: 'One-off',
-    startsLocal: `${day}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
-  })
-  await page.goto('/meetings')
-  await page.getByRole('button', { name: 'One-off' }).click()
-  await moveOpenMeeting(page, `${day}T11:00`)
-  await expect(page).toHaveURL(new RegExp(`at=${day}T11(%3A|:)00`))
-  await expect(pane(page)).toContainText('11:00')
+  const made = await meeting(page, { title: 'One-off', startsLocal: `${day}T09:00` })
+  await page.goto(`/meetings/${made.meetingId}`)
+  await editFromPage(page)
+  // A one-off is changed whole: nothing to ask, and nothing said about which.
+  await expect(page.getByText(/^Changing:/)).toHaveCount(0)
+  await page.getByLabel('Start', { exact: true }).fill(`${day}T11:00`)
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`/meetings/${made.meetingId}\\?at=${day}T11(%3A|:)00`))
+  await expect(when(page)).toContainText('11:00 to 11:30')
   await expect(page.getByText(/^This meeting was deleted/)).toHaveCount(0)
 })
 
-test('this and all later, moved from the pane, stays open on the new series', async ({ page }) => {
+test('this one and every one after, moved, opens on the new series', async ({ page }) => {
   await registerFreshUser(page)
   const start = dayOffset(-7)
-  await apiPost(page, '/meetings', {
+  const made = await meeting(page, {
     title: 'Weekly',
     startsLocal: `${start}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
     rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(start)}`,
   })
   const next = dayOffset(7)
-  await page.goto('/meetings')
-  await page
-    .getByRole('region', { name: 'Coming up' })
-    .getByRole('button', { name: 'Weekly' })
-    .click()
-  await moveOpenMeeting(page, `${next}T10:00`, 'This and all later')
+  await page.goto(`/meetings/${made.meetingId}?at=${next}T09:00`)
+  await editFromPage(page, 'This one and every one after')
+  await expect(page.getByText('Changing: This one and every one after')).toBeVisible()
+  await page.getByLabel('Start', { exact: true }).fill(`${next}T10:00`)
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page).toHaveURL(new RegExp(`at=${next}T10(%3A|:)00`))
-  await expect(pane(page)).toContainText('10:00')
+  await expect(when(page)).toContainText('10:00 to 10:30')
   await expect(page.getByText(/^This meeting was deleted/)).toHaveCount(0)
 })
 
-test('an occurrence that ends while its pane is open keeps the edit in it', async ({ page }) => {
+test('an occurrence that ends while it is being edited keeps the edit', async ({ page }) => {
   await registerFreshUser(page)
-  const today = dayOffset(0)
-  await apiPost(page, '/meetings', {
-    title: 'Standup',
-    startsLocal: `${today}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
-    rrule: 'FREQ=DAILY',
-  })
-  // The runner's day is the account's, so a local 09:10 is during the 09:00 standup.
-  await page.clock.install({ time: new Date(`${today}T09:10:00`) })
-  await page.goto('/meetings')
-  await page.getByRole('button', { name: 'Standup' }).click()
-  await editDetail(page)
-  await pane(page).getByLabel('Notes').fill('half a thought')
-  // Past its end, the list's row for the series becomes tomorrow's.
+  const zone = await accountZone(page)
+  // Begun ten minutes ago on the account's clock: under way while it is edited, over 25 minutes on.
+  const startsLocal = format(new TZDate(Date.now() - 10 * 60_000, zone), "yyyy-MM-dd'T'HH:mm")
+  const made = await meeting(page, { title: 'Standup', startsLocal, rrule: 'FREQ=DAILY' })
+  await page.clock.install()
+  await page.goto(`/meetings/${made.meetingId}?at=${startsLocal}`)
+  await editFromPage(page, 'Only this one')
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('half a thought')
+  // Past its end, the sidebar's row for the series becomes tomorrow's.
   await page.clock.fastForward('25:00')
-  await expect(pane(page).getByLabel('Notes')).toHaveValue('half a thought')
+  await expect(title(page)).toHaveText('Edit Standup')
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
+    'half a thought',
+  )
 })
 
-test('a held Enter on Cancel meeting does not also cancel a repeating one', async ({ page }) => {
+test('a held Enter on Delete this meeting does not also delete a repeating one', async ({
+  page,
+}) => {
   await registerFreshUser(page)
   const day = dayOffset(1)
-  const made = await apiPost(page, '/meetings', {
+  const made = await meeting(page, {
     title: 'Keep me',
     startsLocal: `${day}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
     rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
   })
-  await page.goto(`/meetings/${made.meetingId}`)
-  await pane(page).getByRole('button', { name: 'Cancel meeting' }).focus()
+  await page.goto(`/meetings/${made.meetingId}/edit?at=${day}T09:00&scope=all`)
+  await page.getByRole('button', { name: 'Delete this meeting' }).focus()
   // Key repeat: the second Enter lands on whatever took focus when the question opened.
   await page.keyboard.press('Enter')
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('alertdialog')).toHaveCount(0)
-  const res = await page.request.get(`/api/v1/meetings?from=${day}&to=${day}`, { headers: WEB })
-  const titles = ((await res.json()) as { meetings: { title: string }[] }).meetings
-  expect(titles.map((m) => m.title)).toEqual(['Keep me'])
+  await expect(page).toHaveURL(new RegExp(`/meetings/${made.meetingId}/edit`))
+  expect(await heldOn(page, day)).toEqual([['Keep me', `${day}T09:00`]])
 })
 
 test('renaming a series keeps the week that was moved on its own', async ({ page }) => {
   await registerFreshUser(page)
   const day = dayOffset(1)
   const later = addDaysYmd(day, 7)
-  const made = await apiPost(page, '/meetings', {
+  const made = await meeting(page, {
     title: 'Sync',
     startsLocal: `${day}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
     rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
   })
   const moved = await page.request.patch(
@@ -484,18 +383,13 @@ test('renaming a series keeps the week that was moved on its own', async ({ page
   )
   expect(moved.ok(), await moved.text()).toBe(true)
 
-  await page.goto(`/meetings/${made.meetingId}`)
-  await editDetail(page)
-  await pane(page).getByLabel('Title').fill('Sync, renamed')
-  await pane(page).getByRole('button', { name: 'Save' }).click()
-  await expect(pane(page).getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+  await page.goto(`/meetings/${made.meetingId}?at=${day}T09:00`)
+  await editFromPage(page, 'The whole series')
+  await page.getByLabel('Title', { exact: true }).fill('Sync, renamed')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(title(page)).toHaveText('Sync, renamed')
 
-  const res = await page.request.get(`/api/v1/meetings?from=${later}&to=${later}`, {
-    headers: WEB,
-  })
-  const held = ((await res.json()) as { meetings: { title: string; startsLocal: string }[] })
-    .meetings
-  expect(held.map((m) => [m.title, m.startsLocal])).toEqual([['Sync, renamed', `${later}T15:00`]])
+  expect(await heldOn(page, later)).toEqual([['Sync, renamed', `${later}T15:00`]])
 })
 
 test('renaming the first half of a split series keeps its moved week and its end', async ({
@@ -505,11 +399,9 @@ test('renaming the first half of a split series keeps its moved week and its end
   const day = dayOffset(1)
   const moved = addDaysYmd(day, 7)
   const split = addDaysYmd(day, 14)
-  const made = await apiPost(page, '/meetings', {
+  const made = await meeting(page, {
     title: 'Sync',
     startsLocal: `${day}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
     rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(day)}`,
   })
   const edit = async (method: 'PATCH' | 'POST', path: string, data: object) => {
@@ -523,46 +415,26 @@ test('renaming the first half of a split series keeps its moved week and its end
   await edit('PATCH', `/occurrences/${moved}T09:00`, { startsLocal: `${moved}T15:00` })
   await edit('POST', '/successors', { from: `${split}T09:00`, title: 'Sync, later' })
 
-  await page.goto(`/meetings/${made.meetingId}`)
-  await editDetail(page)
-  await pane(page).getByLabel('Title').fill('Sync, renamed')
-  await pane(page).getByRole('button', { name: 'Save' }).click()
-  await expect(pane(page).getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+  await page.goto(`/meetings/${made.meetingId}?at=${day}T09:00`)
+  await editFromPage(page, 'The whole series')
+  await page.getByLabel('Title', { exact: true }).fill('Sync, renamed')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(title(page)).toHaveText('Sync, renamed')
 
-  const on = async (d: string) => {
-    const res = await page.request.get(`/api/v1/meetings?from=${d}&to=${d}`, { headers: WEB })
-    return ((await res.json()) as { meetings: { title: string; startsLocal: string }[] }).meetings
-      .map((m) => [m.title, m.startsLocal])
-      .sort()
-  }
-  expect(await on(moved)).toEqual([['Sync, renamed', `${moved}T15:00`]])
-  expect(await on(split)).toEqual([['Sync, later', `${split}T09:00`]])
+  expect(await heldOn(page, moved)).toEqual([['Sync, renamed', `${moved}T15:00`]])
+  expect(await heldOn(page, split)).toEqual([['Sync, later', `${split}T09:00`]])
 })
 
-test('jumping to a meeting outside the list does not leave the last one in the pane', async ({
-  page,
-}) => {
+test('going from one meeting to another does not leave the first on the page', async ({ page }) => {
   await registerFreshUser(page)
-  const zone = await accountZone(page)
   const day = dayOffset(1)
   const far = addDaysYmd(day, 60)
-  await apiPost(page, '/meetings', {
-    title: 'Alpha',
-    startsLocal: `${day}T09:00`,
-    timeZone: zone,
-    durationMinutes: 30,
-  })
-  const bravo = await apiPost(page, '/meetings', {
-    title: 'Bravo',
-    startsLocal: `${far}T09:00`,
-    timeZone: zone,
-    durationMinutes: 30,
-  })
-  await page.goto('/meetings')
-  await page.getByRole('button', { name: 'Alpha' }).click()
-  await expect(pane(page)).toContainText('Alpha')
+  const alpha = await meeting(page, { title: 'Alpha', startsLocal: `${day}T09:00` })
+  const bravo = await meeting(page, { title: 'Bravo', startsLocal: `${far}T09:00` })
+  await page.goto(`/meetings/${alpha.meetingId}`)
+  await expect(title(page)).toHaveText('Alpha')
 
-  // Bravo is past the list's month, so it is looked up on its own; hold that lookup.
+  // Hold the read of Bravo's occurrence.
   let release = () => {}
   const held = new Promise<void>((r) => (release = r))
   await page.route(
@@ -577,49 +449,41 @@ test('jumping to a meeting outside the list does not leave the last one in the p
     dispatchEvent(new PopStateEvent('popstate'))
   }, `/meetings/${bravo.meetingId}?at=${far}T09:00`)
   await expect(page).toHaveURL(new RegExp(`/meetings/${bravo.meetingId}`))
-  await expect(pane(page).getByText('Alpha')).toHaveCount(0)
+  await expect(page.getByRole('main').getByRole('heading', { name: 'Alpha' })).toHaveCount(0)
   release()
-  await expect(pane(page)).toContainText('Bravo')
+  await expect(title(page)).toHaveText('Bravo')
 })
 
 test('a meeting with no start cannot be saved', async ({ page }) => {
   await registerFreshUser(page)
-  const made = await apiPost(page, '/meetings', {
-    title: 'Somewhen',
-    startsLocal: `${dayOffset(1)}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
-  })
+  const made = await meeting(page, { title: 'Somewhen', startsLocal: `${dayOffset(1)}T09:00` })
   await page.goto(`/meetings/${made.meetingId}`)
-  await editDetail(page)
-  await pane(page).getByLabel('Start').fill('')
-  await expect(pane(page).getByRole('button', { name: 'Save' })).toBeDisabled()
+  await editFromPage(page)
+  await page.getByLabel('Start', { exact: true }).fill('')
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
 })
 
-test('this and all later is one write, and leaves the earlier meetings as they were', async ({
+test('this one and every one after is one write, and leaves the earlier ones as they were', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const start = dayOffset(-7)
-  const made = await apiPost(page, '/meetings', {
+  const made = await meeting(page, {
     title: 'Weekly',
     startsLocal: `${start}T09:00`,
-    timeZone: await accountZone(page),
-    durationMinutes: 30,
     rrule: `FREQ=WEEKLY;BYDAY=${weekdayCode(start)}`,
   })
   const later = dayOffset(7)
   await page.goto(`/meetings/${made.meetingId}?at=${later}T09:00`)
+  await editFromPage(page, 'This one and every one after')
   const writes: string[] = []
   page.on('request', (r) => {
     if (r.method() !== 'GET') writes.push(`${r.method()} ${new URL(r.url()).pathname}`)
   })
-  await editDetail(page)
-  await pane(page).getByLabel('Title').fill('Weekly, later')
-  await pane(page).getByLabel('Start').fill(`${later}T10:00`)
-  await pane(page).getByRole('button', { name: 'Save' }).click()
-  await page.getByRole('button', { name: 'This and all later' }).click()
-  await expect(pane(page)).toContainText('Weekly, later')
+  await page.getByLabel('Title', { exact: true }).fill('Weekly, later')
+  await page.getByLabel('Start', { exact: true }).fill(`${later}T10:00`)
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page).not.toHaveURL(/\/edit/)
 
   expect(writes).toEqual([`POST /api/v1/meetings/${made.meetingId}/successors`])
   const first = await page.request.get(
@@ -627,4 +491,26 @@ test('this and all later is one write, and leaves the earlier meetings as they w
     { headers: WEB },
   )
   expect(((await first.json()) as { title: string }).title).toBe('Weekly')
+  // And the page is on the new series' first.
+  await expect(title(page)).toHaveText('Weekly, later')
+})
+
+test('a task made from a meeting is under Tasks from these meetings', async ({ page }) => {
+  // FR-067: what came of the meetings, beside their notes.
+  await registerFreshUser(page)
+  const project = await apiPost(page, '/projects', { name: 'Launch' })
+  const made = await meeting(page, { title: 'Planning', startsLocal: `${dayOffset(1)}T09:00` })
+  const task = await apiPost(page, '/tasks', {
+    projectId: project.id,
+    title: 'Send the launch brief',
+    parentId: null,
+  })
+  await apiPost(page, '/relations', {
+    from: { type: 'task', id: task.id },
+    to: { type: 'meeting', id: made.meetingId },
+  })
+  await page.goto(`/meetings/${made.meetingId}`)
+  await expect(page.getByRole('region', { name: 'Tasks from these meetings' })).toContainText(
+    'Send the launch brief',
+  )
 })

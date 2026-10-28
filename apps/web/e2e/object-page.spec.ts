@@ -41,8 +41,8 @@ async function world(page: Page) {
 }
 
 /**
- * A meeting opens as a layer over its list; a person has a page of their own (FR-061). The module draws
- * the fields and the shell draws the links. A project keeps a whole page.
+ * A meeting and a person each have a page of their own (FR-061, FR-067). The module draws the
+ * fields and the shell draws the links. A project keeps a whole page.
  */
 test('a person’s page shows the module’s fields and what they are in', async ({ page }) => {
   const { person } = await world(page)
@@ -58,7 +58,7 @@ test('a person’s page shows the module’s fields and what they are in', async
   await expect(page.getByRole('link', { name: 'Job hunt' })).toBeVisible()
 })
 
-test('following a link from a person to a meeting lands on the meeting’s layer', async ({
+test('following a link from a person to a meeting lands on the meeting’s page', async ({
   page,
 }) => {
   const { person, meeting } = await world(page)
@@ -66,9 +66,13 @@ test('following a link from a person to a meeting lands on the meeting’s layer
   await page.getByRole('link', { name: /Second interview/ }).click()
 
   await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}(\\?|$)`))
-  await expect(page.getByRole('dialog', { name: 'Meetings' })).toContainText('Second interview')
-  // The list stays behind the layer: after following a link, the next step is likely in it.
-  await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toHaveText(
+    'Second interview',
+  )
+  // And the way back: the person is among those attending, a link to their page.
+  await expect(
+    page.getByRole('complementary', { name: 'Profile' }).getByRole('link', { name: /Ying Chen/ }),
+  ).toHaveAttribute('href', `/people/${person.id}`)
 })
 
 test('the address of a person who is gone says so instead of showing nothing', async ({ page }) => {

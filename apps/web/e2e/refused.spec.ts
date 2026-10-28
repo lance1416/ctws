@@ -40,22 +40,40 @@ test('a project delete the server refuses says so, and the page stays', async ({
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}/edit$`))
 })
 
-test('a meeting cancel the server refuses says so', async ({ page }) => {
+test('a meeting cancel the server refuses says so, and the page stays', async ({ page }) => {
   await registerFreshUser(page)
-  const m = await apiPost(page, '/meetings', {
+  const m = await apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', {
+    title: 'Weekly',
+    startsLocal: `${dayOffset(5)}T18:00`,
+    timeZone: 'America/Toronto',
+    durationMinutes: 60,
+    rrule: 'FREQ=WEEKLY',
+  })
+  await page.goto(`/meetings/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`)
+  await refuse(page, `**/api/v1/meetings/${m.meetingId}/occurrences/**`, 'DELETE')
+  await page.getByRole('main').getByRole('button', { name: 'More' }).click()
+  await page.getByRole('menuitem', { name: 'Cancel this one' }).click()
+  await expect(said(page)).toBeVisible()
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toHaveText('Weekly')
+})
+
+test('a meeting delete the server refuses says so, and the edit page stays', async ({ page }) => {
+  await registerFreshUser(page)
+  const m = await apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', {
     title: 'Weekly',
     startsLocal: `${dayOffset(5)}T18:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
   })
-  await page.goto(`/meetings/${m.meetingId}`)
-  const pane = page.getByRole('dialog', { name: 'Meetings' })
+  await page.goto(
+    `/meetings/${m.meetingId}/edit?${new URLSearchParams({ at: m.recurrenceId, scope: 'all' })}`,
+  )
   await refuse(page, `**/api/v1/meetings/${m.meetingId}`, 'DELETE')
-  await pane.getByRole('button', { name: 'Cancel meeting' }).click()
-  // The question is its own small dialog over the pane (FR-035).
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel meeting' }).click()
+  await page.getByRole('button', { name: 'Delete this meeting' }).click()
+  // The question is its own small dialog (FR-035).
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete this meeting' }).click()
   await expect(said(page)).toBeVisible()
-  await expect(pane).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/meetings/${m.meetingId}/edit`))
 })
 
 test('a reading row whose move the server refuses says so', async ({ page }) => {

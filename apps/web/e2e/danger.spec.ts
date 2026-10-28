@@ -35,26 +35,30 @@ function measure(zone: Locator, surface: string) {
 
 const CLEAR = 'rgba(0, 0, 0, 0)'
 
-test('in a short panel, Cancel meeting sits at the bottom on the same background as the panel', async ({
+test('on a meeting’s edit page, Delete this meeting comes after the last field, unfilled', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
-  const meeting = await apiPost(page, '/meetings', {
+  const meeting = await apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', {
     title: 'Weekly',
     startsLocal: `${dayOffset(5)}T18:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
   })
-  await page.goto(`/meetings/${meeting.meetingId}`)
-  const zone = page.getByRole('dialog', { name: 'Meetings' }).locator('[data-stop-zone]')
-  await expect(zone.getByRole('button', { name: 'Cancel meeting' })).toBeVisible()
+  await page.goto(
+    `/meetings/${meeting.meetingId}/edit?${new URLSearchParams({ at: meeting.recurrenceId, scope: 'all' })}`,
+  )
+  const zone = page.locator('main [data-stop-zone]')
+  await expect(zone.getByRole('button', { name: 'Delete this meeting' })).toBeVisible()
 
-  const m = await measure(zone, '[role="dialog"]')
-  // Pushed down to the panel's floor, not hanging under Linked.
-  expect(Math.abs(m.floor - m.bottom)).toBeLessThanOrEqual(1)
+  const m = await measure(zone, 'main')
+  const viewport = await page.evaluate(() => window.innerHeight)
+  // On the floor of the main area, inside its own 20px of padding, as a project's edit page has it.
+  expect(viewport - m.bottom).toBeLessThanOrEqual(21)
+  // Last: everything on the page is above it.
   expect(m.contentBottom).toBeLessThanOrEqual(m.top + 0.5)
-  // No fill of its own: it belongs to the panel, and the rule sets it apart from the content.
+  // No fill of its own: it belongs to the page, and the rule sets it apart from the form.
   expect(m.fills).toEqual([CLEAR, CLEAR])
   expect(m.rule).toBeGreaterThan(0)
 })

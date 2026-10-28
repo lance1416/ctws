@@ -61,23 +61,31 @@ test('a person whose phone is stored in an older spelling is left untouched with
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
 })
 
-test('Escape on an edited meeting asks before throwing the edit away', async ({ page }) => {
+test('leaving an edited meeting asks, and Keep editing keeps the edit', async ({ page }) => {
+  // A meeting is edited on a page (FR-068), guarded as a person's is.
   await registerFreshUser(page)
-  const m = await apiPost(page, '/meetings', {
+  const m = await apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', {
     title: 'Weekly',
     startsLocal: `${dayOffset(5)}T18:00`,
     timeZone: 'America/Toronto',
     durationMinutes: 60,
   })
-  await page.goto(`/meetings/${m.meetingId}`)
-  const pane = page.getByRole('dialog', { name: 'Meetings' })
-  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
-  const title = pane.getByLabel('Title', { exact: true })
+  const occurrence = new URLSearchParams({ at: m.recurrenceId })
+  await page.goto(`/meetings/${m.meetingId}/edit?${occurrence}&scope=all`)
+  const main = page.getByRole('main')
+  const title = page.getByLabel('Title', { exact: true })
   await title.fill('Weekly sync')
-  await title.press('Escape')
+  await main.getByRole('button', { name: 'Cancel', exact: true }).click()
 
-  await expect(asked(pane)).toBeVisible()
+  await expect(asked(main)).toBeVisible()
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  await expect(page).toHaveURL(new RegExp(`/meetings/${m.meetingId}/edit`))
   await expect(title).toHaveValue('Weekly sync')
+
+  // And Discard is the way out when that is what was meant.
+  await main.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.getByRole('button', { name: 'Discard changes' }).click()
+  await expect(main.getByRole('heading', { level: 1 })).toHaveText('Weekly')
 })
 
 test('the scrim on an edited reading item asks before throwing the edit away', async ({ page }) => {
