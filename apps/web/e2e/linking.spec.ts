@@ -350,3 +350,21 @@ test('a project’s Organisations + writes a new one down on it, and Remove take
   await block.getByRole('button', { name: 'Remove Stripe from project' }).click()
   await expect(block).not.toContainText('Stripe')
 })
+
+test('choosing an organisation in the block puts it on the project, with no why (BUG-049)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await apiPost(page, '/organisations', { name: 'Morrow Legal' })
+  const pid = await makeProject(page, 'Find a lawyer')
+  await page.goto(`/projects/${pid}`)
+  const block = page.getByRole('region', { name: 'Organisations' })
+  await block.getByRole('button', { name: 'Add an organisation' }).click()
+  await picker(page).getByRole('combobox').fill('Morrow')
+  await picker(page)
+    .getByRole('option', { name: /Morrow Legal/ })
+    .click()
+  await expect(picker(page)).toHaveCount(0)
+  await expect(page.getByRole('textbox', { name: 'Why' })).toHaveCount(0)
+  await expect(block).toContainText('Morrow Legal')
+})

@@ -24,7 +24,11 @@ export function LinkDialog({
   of: Endpoint & { title?: string }
   /** Offer things of this one kind: the `+` on a kind's own block relates one of that kind. */
   only?: ObjectType | undefined
-  /** The last row makes one under the words typed (FR-055): "New organisation". */
+  /**
+   * The last row makes one under the words typed (FR-055): "New organisation". A block with one
+   * puts a thing on its subject as the People block does: choosing it is the whole act, with no
+   * line of why (BUG-049).
+   */
   makes?: Makes | undefined
   onClose: () => void
 }) {
@@ -48,6 +52,7 @@ export function LinkDialog({
         title: of.title ? `Link to ${of.title}` : 'Link to',
         only,
         onPick: (to, why) => make.mutate({ to, why }),
+        ...(makes ? { asksWhy: false } : {}),
         busy: make.isPending,
         // Never the server's own words: they name fields, not what happened (BUG-016).
         error: make.isError ? 'Couldn’t link those. Try again.' : null,
