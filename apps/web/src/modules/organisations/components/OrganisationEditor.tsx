@@ -111,7 +111,7 @@ export function OrganisationEditor({
       className="grid min-h-full shrink-0 grid-cols-[minmax(0,1fr)_auto] content-start gap-x-3 gap-y-4"
     >
       <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
-        <OrganisationMark name={d.name.trim() || '?'} size={56} />
+        <OrganisationMark name={d.name} size={56} />
         <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
           {organisation ? `Edit ${organisation.name}` : 'New organisation'}
         </h1>

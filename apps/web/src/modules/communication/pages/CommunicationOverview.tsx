@@ -172,12 +172,14 @@ function With({ row }: { row: AwaitingRow }) {
       </span>
     )
   const known = people.data?.find((p) => p.id === person.id)
+  // Where they work now, under the name (C-01), when the message does not name it itself.
+  const works = org?.name ?? known?.roles.find((r) => r.to === null)?.organisationName
   return (
     <Link to={`/people/${person.id}`} className="flex min-w-0 items-center gap-2.5 hover:underline">
       <Avatar initials={known ? avatarInitials(known) : ([...person.name][0] ?? '')} />
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-ui text-ink">{person.name}</span>
-        {org && <span className="truncate text-meta text-muted">{org.name}</span>}
+        {works && <span className="truncate text-meta text-muted">{works}</span>}
       </span>
     </Link>
   )

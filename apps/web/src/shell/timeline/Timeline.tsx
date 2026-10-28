@@ -124,7 +124,7 @@ export function Timeline({
       {entries.isError ? (
         <BlockFailed what="timeline" onRetry={() => void entries.refetch()} />
       ) : (
-        <ol className="flex flex-col gap-3">
+        <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
           {(entries.data ?? []).map((entry, i) => {
             const line = lineOf(entry, describeChange, timeZone)
             if (!line) return null
@@ -132,8 +132,13 @@ export function Timeline({
               <li
                 key={i}
                 data-timeline-entry={entry.kind}
-                className="grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
+                className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
               >
+                {/* The thread from one mark to the next (artboard 14); the last has none. */}
+                <span
+                  aria-hidden="true"
+                  className="thread absolute top-7 -bottom-2.5 left-[calc(52px+0.625rem+11.5px)] w-px bg-line"
+                />
                 <time
                   dateTime={entry.at}
                   className="pt-1 font-mono text-meta text-muted tabular-nums"

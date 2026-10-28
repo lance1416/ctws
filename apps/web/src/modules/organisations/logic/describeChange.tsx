@@ -1,5 +1,7 @@
 import { EditIcon, InStageIcon, NewIcon } from '../../../platform/ui/icons'
+import { StageLabel } from '../../../platform/ui/StageLabel'
 import type { ChangeLine } from '../../../shell/contract'
+import { ProjectById } from '../components/Standing'
 
 const text = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null)
 /** One field of a logged payload, whatever shape the payload has. */
@@ -35,9 +37,21 @@ export function describeOrganisationChange(event: {
       const stage = text(now)
       const project = text(field(event.payload, 'projectName'))
       if (!project) return null
+      // The stage as its label, the project by its square (G-02); said whole for a reader.
       return {
         mark: <InStageIcon size={16} />,
-        text: stage ? `Stage set to ${stage} in ${project}` : `Stage cleared in ${project}`,
+        text: (
+          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            {stage ? (
+              <>
+                Stage set to <StageLabel name={stage} quiet={false} />
+              </>
+            ) : (
+              'Stage cleared'
+            )}{' '}
+            in <ProjectById id={text(field(event.payload, 'projectId'))} name={project} />
+          </span>
+        ),
       }
     }
     case 'field_changed': {

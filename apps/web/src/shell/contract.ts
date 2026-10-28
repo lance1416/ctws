@@ -208,7 +208,7 @@ export type RelationContribution = {
 }
 
 /** One change on a timeline, in its module's words. */
-export type ChangeLine = { mark: ReactNode; text: string }
+export type ChangeLine = { mark: ReactNode; text: ReactNode }
 
 /** A calendar entry with its times said on the account's clock, as every reader of one draws it. */
 export type SaidEntry = CalendarEntry & {

@@ -66,6 +66,7 @@ export const relatedStageChanges = (registry: LinkRegistry): TimelineSource => (
               ...payload,
               taskId: task.id,
               taskTitle: task.title,
+              projectId: task.projectId,
               projectName: task.projectName,
             },
           },

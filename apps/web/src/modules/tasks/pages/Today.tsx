@@ -23,6 +23,7 @@ import { DayPickButton } from '../../../shell/dates'
 import { useRegistry } from '../../../shell/registry'
 import { dueTodayAt } from '../../../shell/rows'
 import { readyQuery, todayQuery } from '../api'
+import { StatusMark } from '../components/StatusMark'
 import { TaskDetail } from '../components/TaskDetail'
 import { useTaskParam } from '../components/tree/useTreeParams'
 import { useSavedFlash } from '../components/useSavedFlash'
@@ -268,7 +269,8 @@ function PlannedBlock({
             .slice(0, OVERDUE_SHOWN)
             .map((t) => (
               <li key={t.id} data-plan-row={t.id} className={LINE}>
-                <PLACE_ICON.calendar size={16} aria-hidden="true" className="text-subtle" />
+                {/* Its status, as every task row starts (C-04). */}
+                <StatusMark status={t.status} size={16} />
                 <span className="truncate text-ui text-ink">{t.title}</span>
                 <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
                 <span className="max-lg:hidden" />

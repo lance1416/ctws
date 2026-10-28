@@ -10,13 +10,10 @@ const ROW = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-select font-medium text-ink' : 'text-ink'
   }`
 
-/** The sidebar offers this many types beside All; the overview offers every one (FR-064). */
-const TYPES_SHOWN = 2
-
 /**
  * The Organisations sidebar's list (FR-020, artboard 14): every organisation, grouped A to Z, and
- * above it All and the types used most. A type (`?type=`) narrows the list, and the overview's
- * table with it.
+ * above it All and every type used, as the overview has them (G-03). A type (`?type=`) narrows
+ * the list, and the overview's table with it.
  */
 export function OrganisationsSidebar() {
   const organisations = useQuery(organisationsQuery())
@@ -32,9 +29,10 @@ export function OrganisationsSidebar() {
   const letters = [...groups.keys()].sort((a, b) =>
     a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b),
   )
-  // The types used most, and the one picked from the overview when it is not among them.
-  const offered = (overview.data?.types ?? []).slice(0, TYPES_SHOWN).map((t) => t.type)
-  if (type && !offered.includes(type)) offered.push(type)
+  const offered = [
+    ...(overview.data?.types ?? []).map((t) => t.type),
+    ...(overview.data?.untyped ? [OTHER] : []),
+  ]
   return (
     <nav aria-label="Organisations" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
       <div role="group" aria-label="Type" className="flex flex-wrap gap-0.5 px-2.5 pb-1.5">

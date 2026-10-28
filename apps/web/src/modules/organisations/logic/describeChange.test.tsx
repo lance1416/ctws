@@ -1,7 +1,23 @@
+import { isValidElement, type ReactNode } from 'react'
 import { describe, expect, it } from 'vitest'
 import { describeOrganisationChange } from './describeChange'
 
-const said = (type: string, payload: unknown) => describeOrganisationChange({ type, payload })?.text
+/**
+ * What a line says, read off its elements without drawing them: a label or a project is said by
+ * its `name`, as a screen reader hears it.
+ */
+function words(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(words).join('')
+  if (!isValidElement(node)) return ''
+  const props = node.props as { name?: string; children?: ReactNode }
+  return props.name ?? words(props.children)
+}
+
+const said = (type: string, payload: unknown) => {
+  const line = describeOrganisationChange({ type, payload })
+  return line ? words(line.text).replace(/\s+/g, ' ').trim() : undefined
+}
 
 describe('describeOrganisationChange', () => {
   it('says what happened to the organisation itself', () => {

@@ -9,7 +9,7 @@ import { useTimeZone } from '../../../shell/auth'
 import { OrganisationMark } from '../../organisations'
 import { usePeople } from '../../people'
 import { followUpsQuery } from '../api'
-import { dueLine, followUpTone } from '../logic/followUp'
+import { dueLine } from '../logic/followUp'
 import { AwaitingActions } from './AwaitingActions'
 
 /**
@@ -55,22 +55,19 @@ export function FollowUpsToday({ today }: { today: string }) {
                 ) : (
                   <OrganisationMark name={org?.name ?? '?'} />
                 )}
-                <span className="flex min-w-0 flex-col">
+                <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-ui text-ink">{m.subject ?? 'No subject'}</span>
                   <span className="flex flex-wrap gap-x-2.5 text-meta text-muted">
                     {who && <span>{who.name}</span>}
                     <span>Sent {shortDay(sent, today)}</span>
-                    {m.followUpOn && (
-                      <span
-                        className={
-                          followUpTone(m.followUpOn, today) === 'late' ? 'text-stop-t' : ''
-                        }
-                      >
-                        {dueLine(m.followUpOn, today)}
-                      </span>
-                    )}
                   </span>
                 </span>
+                {/* When it fell due, as its own tag on the right (C-03). */}
+                {m.followUpOn && (
+                  <span className="inline-flex h-5.5 shrink-0 items-center rounded-control bg-warn-bg px-2 text-meta font-medium text-warn-t">
+                    {dueLine(m.followUpOn, today)}
+                  </span>
+                )}
               </Link>
               <AwaitingActions message={m} later="monday" />
             </li>

@@ -423,11 +423,14 @@ export function LogMessage({
         {!reply && (
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Project">
-              <ProjectPicker
-                value={d.projectId}
-                onPick={(projectId) => set({ projectId })}
-                none="No project"
-              />
+              {/* Framed as a field (C-02), like Follow up on beside it. */}
+              <div className={`${boxed} flex items-center px-2`}>
+                <ProjectPicker
+                  value={d.projectId}
+                  onPick={(projectId) => set({ projectId })}
+                  none="No project"
+                />
+              </div>
             </Field>
             {waits && (
               <div className="flex min-w-0 flex-col gap-1">

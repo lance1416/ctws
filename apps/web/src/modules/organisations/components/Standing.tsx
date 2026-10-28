@@ -17,6 +17,21 @@ export function ProjectNamed({ standing }: { standing: ProjectStanding }) {
   )
 }
 
+/** A project named on a timeline line: its square and name, linking to it. */
+export function ProjectById({ id, name }: { id: string | null; name: string }) {
+  const project = useEveryProject().data?.find((p) => p.id === id)
+  if (!project) return <span>{name}</span>
+  return (
+    <Link
+      to={`/projects/${project.id}`}
+      className="inline-flex min-w-0 items-center gap-1.5 text-ink hover:underline"
+    >
+      <ProjectSquare project={project} />
+      <span className="truncate">{name}</span>
+    </Link>
+  )
+}
+
 /** The stage of the node there related to it, or nothing when it has none. */
 export function StageOf({ standing }: { standing: ProjectStanding | null }) {
   return standing?.stage ? <StageLabel name={standing.stage} quiet={false} /> : null
