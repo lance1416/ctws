@@ -44,7 +44,7 @@ export function OccurrenceNotes({
       kind="note"
       title="Notes"
       count={
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 whitespace-nowrap">
           <span>
             {weekdayOf(day, true)}, {shortDay(day, today)}
           </span>
@@ -52,22 +52,25 @@ export function OccurrenceNotes({
         </span>
       }
       actions={
-        <span className="flex items-center gap-1">
-          {!writing &&
-            heads.map((h) => (
-              <button
-                key={h}
-                type="button"
-                onClick={() =>
-                  [...(body.current?.querySelectorAll('h1, h2, h3') ?? [])]
-                    .find((el) => el.textContent?.trim() === h)
-                    ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-                }
-                className="inline-flex h-6 items-center rounded-control bg-hover px-2 text-meta text-muted hover:text-ink"
-              >
-                {h}
-              </button>
-            ))}
+        // The contents give way first when the page is narrow: Edit stays in reach.
+        <span className="flex min-w-0 items-center gap-1">
+          <span className="flex min-w-0 items-center gap-1 overflow-hidden">
+            {!writing &&
+              heads.map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() =>
+                    [...(body.current?.querySelectorAll('h1, h2, h3') ?? [])]
+                      .find((el) => el.textContent?.trim() === h)
+                      ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+                  }
+                  className="inline-flex h-6 items-center rounded-control bg-hover px-2 text-meta text-muted hover:text-ink"
+                >
+                  {h}
+                </button>
+              ))}
+          </span>
           {!writing && (
             <button
               type="button"
