@@ -10,6 +10,7 @@ import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind
 import { useInboxCapture, useTaskEntries } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
 import { revealHref } from './logic/crumb'
+import { todayLists } from './components/TodayLists'
 import { describeTaskChange } from './logic/describeChange'
 import { TASK_KEYS } from './logic/keys'
 import { TaskFact, TaskMark } from './components/TaskFacts'
@@ -113,6 +114,7 @@ export const taskModule: WorkspaceModule = {
     { id: 'ready', order: 20, Block: ReadyBlock },
     { id: 'week', order: 30, Block: WeekBlock },
   ],
+  lists: todayLists,
   relations: [
     {
       type: 'task',

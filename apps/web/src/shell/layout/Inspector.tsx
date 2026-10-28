@@ -1,10 +1,26 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BUTTON, ICON_BUTTON } from '../../platform/ui/buttonStyles'
-import { BackIcon, CloseIcon, EditIcon, KIND_ICON, OpenFullIcon } from '../../platform/ui/icons'
+import {
+  BackIcon,
+  CloseIcon,
+  EditIcon,
+  KIND_ICON,
+  OpenFullIcon,
+  type IconComponent,
+} from '../../platform/ui/icons'
 import { KIND_TEXT } from '../../platform/ui/kinds'
 import { InspectorContext } from '../inspector/narrow'
-import { useRegistry } from '../registry'
+import { LINKED_LIST, LinkedList } from '../inspector/LinkedList'
+import { useRegistry, type RegisteredRelation, type Registry } from '../registry'
 import { formatInspect, useInspector, type Inspected } from './inspectorAddress'
 
 /** One thing gone back past: what it was, its name, and where its page was scrolled to. */
@@ -56,9 +72,8 @@ export function Inspector() {
   )
 
   if (!open) return null
-  const relation = registry.relationFor(open.type)
-  const Narrow = relation.Narrow
-  const Icon = KIND_ICON[open.type as keyof typeof KIND_ICON]
+  const view = viewOf(registry, open)
+  const { relation, Narrow, Icon } = view
   const last = behind.at(-1)
   const back = () => {
     if (!last) return
@@ -70,9 +85,9 @@ export function Inspector() {
   }
   const openFull = () => {
     close()
-    navigate(relation.to(open.id))
+    if (relation) navigate(relation.to(open.id))
   }
-  const edit = relation.edit
+  const edit = relation?.edit
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowLeft' && e.altKey && last) {
       e.preventDefault()
@@ -89,7 +104,7 @@ export function Inspector() {
       onKeyDown={onKeyDown}
       className="flex w-inspector shrink-0 flex-col bg-float shadow-float max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-lg:inset-x-0 max-lg:w-auto"
     >
-      {relation.ownHead ? (
+      {relation?.ownHead ? (
         // A narrow page with a head of its own keeps only the way back here.
         <div
           ref={head}
@@ -133,18 +148,21 @@ export function Inspector() {
                   className={KIND_TEXT[open.type as keyof typeof KIND_TEXT] ?? ''}
                 />
               )}
-              <span className="truncate">{relation.plural}</span>
+              <span className="truncate">{view.label}</span>
             </span>
           )}
-          <button
-            type="button"
-            onClick={openFull}
-            aria-label="Open full page"
-            title="Open full page"
-            className={ICON_BUTTON}
-          >
-            <OpenFullIcon size={16} aria-hidden="true" />
-          </button>
+          {/* A list is the rest of a block on the page under it: there is no page of its own. */}
+          {relation && (
+            <button
+              type="button"
+              onClick={openFull}
+              aria-label="Open full page"
+              title="Open full page"
+              className={ICON_BUTTON}
+            >
+              <OpenFullIcon size={16} aria-hidden="true" />
+            </button>
+          )}
           {edit && (
             <button
               type="button"
@@ -171,13 +189,19 @@ export function Inspector() {
         </div>
       )}
       <div ref={body} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        {Narrow ? (
+        {Narrow || view.list ? (
           <InspectorContext.Provider value={context}>
-            <Narrow key={shown} id={open.id} at={open.at} />
+            {Narrow ? (
+              <Narrow key={shown} id={open.id} at={open.at} />
+            ) : (
+              <div key={shown} className="contents">
+                {view.list}
+              </div>
+            )}
           </InspectorContext.Provider>
         ) : (
           <div className="flex flex-col gap-4 p-4">
-            <h2 className="text-subject text-ink">{relation.kind}</h2>
+            <h2 className="text-subject text-ink">{relation?.kind ?? view.label}</h2>
             <button type="button" onClick={openFull} className={`self-start ${BUTTON.secondary}`}>
               Open full page
             </button>
@@ -186,4 +210,39 @@ export function Inspector() {
       </div>
     </aside>
   )
+}
+
+/**
+ * What the inspector shows for an address: a thing's narrow page, by its kind's module; or a full
+ * list (`list:<name>.<arg>`), the linked things of one kind by the shell, the rest by a module.
+ */
+function viewOf(
+  registry: Registry,
+  open: Inspected,
+): {
+  relation: RegisteredRelation | null
+  label: string
+  Icon: IconComponent | undefined
+  Narrow: ComponentType<{ id: string; at?: string | undefined }> | undefined
+  list: ReactNode
+} {
+  if (open.type !== 'list') {
+    const relation = registry.relationFor(open.type)
+    return {
+      relation,
+      label: relation.plural,
+      Icon: KIND_ICON[open.type as keyof typeof KIND_ICON],
+      Narrow: relation.Narrow,
+      list: null,
+    }
+  }
+  const dot = open.id.indexOf('.')
+  const name = dot < 0 ? open.id : open.id.slice(0, dot)
+  const arg = dot < 0 ? '' : open.id.slice(dot + 1)
+  const none = { relation: null, Narrow: undefined }
+  if (name === LINKED_LIST)
+    return { ...none, label: 'Linked', Icon: undefined, list: <LinkedList arg={arg} /> }
+  const list = registry.listFor(name)
+  if (!list) return { ...none, label: 'Not here any more', Icon: undefined, list: null }
+  return { ...none, label: list.label, Icon: list.icon, list: <list.Body arg={arg} /> }
 }

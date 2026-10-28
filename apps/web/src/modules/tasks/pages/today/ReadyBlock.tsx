@@ -6,8 +6,10 @@ import { ToDoIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, useEveryProject } from '../../../../shell/projects'
 import { readyQuery, todayQuery } from '../../api'
 import { useTaskActions } from '../../hooks/useTaskActions'
+import { ALL_ROW, TODAY_LISTS } from '../../components/TodayLists'
+import { AllInInspector } from '../../../../shell/inspector'
 
-/** How many leaves the block offers; more is a list, not a nudge. */
+/** How many leaves the block offers; the rest are its "All N", beside it (FR-011). */
 const SHOWN = 5
 
 /**
@@ -67,6 +69,9 @@ export function ReadyBlock({ today }: { today: string }) {
           )
         })}
       </ul>
+      {offered.length > SHOWN && (
+        <AllInInspector list={TODAY_LISTS.ready} count={offered.length} className={ALL_ROW} />
+      )}
       {error && (
         <p role="alert" className="px-3 pb-2.5 text-ui text-stop-t">
           {error}

@@ -14,6 +14,7 @@ import type {
   CaptureContribution,
   Chord,
   Creator,
+  InspectorList,
   KindEntry,
   ModulePage,
   PersonContribution,
@@ -84,7 +85,7 @@ export type ShellConfig = {
 type PinnedPage = ModulePage & { key: string }
 /** `moduleId` is null for the shell's own entries. */
 type RegisteredKind = KindEntry & { moduleId: string | null }
-type RegisteredRelation = RelationContribution & { moduleId: string | null }
+export type RegisteredRelation = RelationContribution & { moduleId: string | null }
 type RegisteredWidget = Widget & { moduleId: string }
 type CalendarProvider = {
   moduleId: string
@@ -164,6 +165,8 @@ export type Registry = {
   weekCounts: WeekCount[]
   relations: RegisteredRelation[]
   relationFor: (type: ObjectType) => RegisteredRelation
+  /** The modules' full lists for the inspector, by name; none when no module has it. */
+  listFor: (name: string) => InspectorList | null
   projectMain: RegisteredProjectMain | null
   /** Each module's own things in a project, by the kind they are. */
   projectThings: (NonNullable<ProjectContribution['Things']> & { moduleId: string })[]
@@ -256,6 +259,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     ),
     weekCounts: modules.flatMap((m) => m.weekCounts ?? []).sort((a, b) => a.order - b.order),
     relations,
+    listFor: (name) => modules.flatMap((m) => m.lists ?? []).find((l) => l.name === name) ?? null,
     relationFor: (type) => {
       const found = relations.find((r) => r.type === type)
       if (!found) throw new Error(`no module says where a ${type} lives`)

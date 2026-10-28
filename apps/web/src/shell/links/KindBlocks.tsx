@@ -11,7 +11,8 @@ import { SearchDialog } from '../search/SearchDialog'
 import { KIND_WORDS } from '../search/view'
 import type { Makes } from './LinkDialog'
 import { LinkedRow } from './LinkedRow'
-import { atOf, OpensBeside } from '../inspector/narrow'
+import { linkedListOf } from '../inspector/LinkedList'
+import { AllInInspector, atOf, OpensBeside } from '../inspector/narrow'
 import { type Item, useLinked } from './useLinked'
 
 /** "an organisation", "a note": one of a kind, as a button's name says it. */
@@ -36,6 +37,8 @@ type Row = {
 }
 
 type KindBlockProps = {
+  /** Whose block it is, for its full list. */
+  of: { type: ObjectType; id: string }
   /** What an empty block says. */
   none: string
   kind: Kind
@@ -115,6 +118,7 @@ export function useKindBlocks({
     const join = mine?.join
     const adds = join !== undefined || makesFor(kind) !== undefined
     return {
+      of,
       kind,
       title: titles[kind] ?? where.plural,
       none: none(kind),
@@ -179,6 +183,7 @@ export function useKindBlocks({
 }
 
 function KindBlock({
+  of,
   kind,
   title,
   none,
@@ -195,7 +200,6 @@ function KindBlock({
   join,
   removeFrom,
 }: KindBlockProps) {
-  const [all, setAll] = useState(false)
   const registry = useRegistry()
   const rows: ReactNode[] = [
     ...things.map((t) => (
@@ -242,8 +246,7 @@ function KindBlock({
       </li>
     )),
   ]
-  const shown = all ? rows : rows.slice(0, SHOWN)
-  const more = rows.length - shown.length
+  const shown = rows.slice(0, SHOWN)
   return (
     <Block
       kind={kind}
@@ -284,14 +287,13 @@ function KindBlock({
           {join.error}
         </p>
       )}
-      {more > 0 && (
-        <button
-          type="button"
-          onClick={() => setAll(true)}
+      {/* The rest in the inspector, the page staying put (FR-011 rule 3). */}
+      {rows.length > SHOWN && (
+        <AllInInspector
+          list={linkedListOf(kind, of)}
+          count={rows.length}
           className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
-        >
-          {more} more
-        </button>
+        />
       )}
     </Block>
   )

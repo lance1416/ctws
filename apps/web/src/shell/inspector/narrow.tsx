@@ -6,7 +6,7 @@ import { useInspector } from '../layout/inspectorAddress'
 import { useRegistry } from '../registry'
 
 /** A thing a narrow page opens: its kind and id. */
-export type Inspectable = { type: ObjectType; id: string; at?: string }
+export type Inspectable = { type: ObjectType | 'list'; id: string; at?: string }
 
 /**
  * What a narrow page may ask of the inspector it is in: open a linked thing in its place (FR-022),
@@ -219,7 +219,7 @@ export function OpensBeside({
   children: ReactNode
 } & Record<`data-${string}`, string>) {
   const inside = useContext(InspectorContext)
-  const narrow = useRegistry().relationFor(thing.type).Narrow
+  const narrow = useNarrowFor(thing)
   const { show } = useInspector()
   if (inside)
     return (
@@ -243,8 +243,35 @@ export function OpensBeside({
   )
 }
 
+/** Whether the inspector can show it: a full list, or a thing whose kind has a narrow page. */
+function useNarrowFor(thing: Inspectable): boolean {
+  const registry = useRegistry()
+  return thing.type === 'list' || !!registry.relationFor(thing.type).Narrow
+}
+
 /** The occurrence an address names (`?at=`), for a row that links one meeting's day. */
 export function atOf(to: string): string | undefined {
   const query = to.split('?')[1]
   return query ? (new URLSearchParams(query).get('at') ?? undefined) : undefined
+}
+
+/**
+ * A block's "All N" (FR-011 rule 3, FR-015): its full list, opened in the inspector beside the
+ * page, which stays put. `list` is its name in the address (`?inspect=list:<list>`).
+ */
+export function AllInInspector({
+  list,
+  count,
+  className,
+}: {
+  list: string
+  count: number
+  className: string
+}) {
+  const { show } = useInspector()
+  return (
+    <button type="button" onClick={() => show({ type: 'list', id: list })} className={className}>
+      All {count}
+    </button>
+  )
 }

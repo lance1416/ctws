@@ -55,6 +55,8 @@ export type WorkspaceModule = {
   today?: readonly TodayBlock[]
   /** Where this module's things live, for the shell's edge table and backlinks. */
   relations?: readonly RelationContribution[]
+  /** Full lists a block's "All N" opens in the inspector (FR-011, FR-015). */
+  lists?: readonly InspectorList[]
   /** What it counts of a week, for the review (FR-081). */
   weekCounts?: readonly WeekCount[]
   /**
@@ -440,3 +442,16 @@ export type Chord = {
 }
 
 type ChordContext = { queryClient: QueryClient }
+
+/**
+ * A full list in the inspector (FR-011 rule 3, FR-015): the rest of a block that shows five,
+ * opened by its "All N" beside the page, which stays put. Named in the address as
+ * `?inspect=list:<name>`, or `list:<name>.<arg>` for one that needs to know whose it is.
+ */
+export type InspectorList = {
+  name: string
+  /** The inspector's eyebrow while it is open: where the list is from ("Today"). */
+  label: string
+  icon: IconComponent
+  Body: ComponentType<{ arg: string }>
+}

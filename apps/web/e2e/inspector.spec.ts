@@ -140,3 +140,29 @@ test('/meetings/new names no meeting, and goes to the meetings', async ({ page }
   await registerFreshUser(page, '/meetings/new')
   await expect(page).toHaveURL(/\/meetings$/)
 })
+
+test('a block past five says All N, which lists the whole of it beside the page', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/')
+  const mira = await apiPost(page, '/people', { givenName: 'Mira', familyName: 'Chen' })
+  for (let i = 1; i <= 7; i++)
+    await apiPost(page, '/meetings', {
+      title: `Catch-up ${i}`,
+      startsLocal: `${dayOffset(i)}T10:00`,
+      timeZone: 'Europe/London',
+      durationMinutes: 30,
+      attendeeIds: [mira.id],
+    })
+  await page.goto(`/people/${mira.id}`)
+  const meetings = page.getByRole('region', { name: 'Meetings' })
+  await expect(meetings.getByRole('link', { name: /Catch-up/ })).toHaveCount(5)
+  await meetings.getByRole('button', { name: 'All 7' }).click()
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector.getByRole('heading', { name: 'Meetings' })).toBeVisible()
+  await expect(inspector.getByRole('listitem')).toHaveCount(7)
+  await expect(page).toHaveURL(new RegExp(`/people/${mira.id}\\?inspect=list`))
+  // Reloaded, it is still the list.
+  await page.reload()
+  await expect(inspector.getByRole('listitem')).toHaveCount(7)
+})

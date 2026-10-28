@@ -33,9 +33,11 @@ import { DoneButton, LINE, TaskLine, TaskPath } from './today/TaskLine'
 import { Timeline } from './today/Timeline'
 import { minutesOf, type TimedItem } from './today/dayLine'
 import { useOthersToday, useTodayRows } from './today/useTodayRows'
+import { ALL_ROW, TODAY_LISTS } from '../components/TodayLists'
+import { AllInInspector } from '../../../shell/inspector'
 
-/** Overdue shows this many before its "All 12" (FR-079). */
-const OVERDUE_SHOWN = 5
+/** A block shows this many before its "All 12", which opens the rest beside it (FR-011). */
+const SHOWN = 5
 
 /**
  * TODAY (FR-079, artboard 12): what to move next. The day on one timeline across the top; then, on
@@ -175,17 +177,26 @@ export function Today() {
                   count={inProgress.length}
                 >
                   <ul className="p-1.5">
-                    {inProgress.map((t) =>
-                      line(
-                        t,
-                        <DoneButton
-                          id={t.id}
-                          title={t.title}
-                          onDone={() => setStatus(t.id, 'done')}
-                        />,
-                      ),
-                    )}
+                    {inProgress
+                      .slice(0, SHOWN)
+                      .map((t) =>
+                        line(
+                          t,
+                          <DoneButton
+                            id={t.id}
+                            title={t.title}
+                            onDone={() => setStatus(t.id, 'done')}
+                          />,
+                        ),
+                      )}
                   </ul>
+                  {inProgress.length > SHOWN && (
+                    <AllInInspector
+                      list={TODAY_LISTS.inProgress}
+                      count={inProgress.length}
+                      className={ALL_ROW}
+                    />
+                  )}
                 </Block>
               )}
 
@@ -266,7 +277,7 @@ function PlannedBlock({
         <ul className="p-1.5">
           {(ready.data ?? [])
             .filter((t) => !listed.some((l) => l.id === t.id))
-            .slice(0, OVERDUE_SHOWN)
+            .slice(0, SHOWN)
             .map((t) => (
               <li key={t.id} data-plan-row={t.id} className={LINE}>
                 {/* Its status, as every task row starts (C-04). */}
@@ -328,21 +339,20 @@ function OverdueBlock({
   line: Line
   onMove: (id: TaskId, to: string) => void
 }) {
-  const [all, setAll] = useState(false)
   const monday = nextMonday(day)
   const days = [
     { label: 'Today', to: day },
     { label: 'Tomorrow', to: addDays(day, 1) },
     { label: 'Mon', to: monday },
   ]
-  const shown = all ? overdue : overdue.slice(0, OVERDUE_SHOWN)
+  const shown = overdue.slice(0, SHOWN)
   return (
     <Block
       badge={{ icon: FlagIcon, tint: 'bg-stop-bg text-stop' }}
       title="Overdue"
       count={overdue.length}
       actions={
-        overdue.length > OVERDUE_SHOWN && (
+        overdue.length > SHOWN && (
           <DropdownMenu.Root>
             <DropdownMenu.Trigger className={`${BUTTON.quiet} h-7 px-2.5 text-meta`}>
               Move all to…
@@ -392,14 +402,8 @@ function OverdueBlock({
           ),
         )}
       </ul>
-      {overdue.length > OVERDUE_SHOWN && (
-        <button
-          type="button"
-          onClick={() => setAll(!all)}
-          className="flex h-9 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink"
-        >
-          {all ? 'Fewer' : `All ${overdue.length}`}
-        </button>
+      {overdue.length > SHOWN && (
+        <AllInInspector list={TODAY_LISTS.overdue} count={overdue.length} className={ALL_ROW} />
       )}
     </Block>
   )

@@ -25,6 +25,7 @@ export function useNarrowKindBlocks({
   titles = {},
   none = () => 'None yet',
   linkedRows = [],
+  shown = SHOWN,
 }: {
   of: { type: ObjectType; id: string }
   kinds: readonly ObjectType[]
@@ -38,6 +39,8 @@ export function useNarrowKindBlocks({
     Row: ComponentType<{ thing: LinkCandidate }>
     count?: (things: readonly LinkCandidate[]) => ReactNode
   }[]
+  /** Rows before "All N"; a full list shows them all. */
+  shown?: number
 }): NarrowBlockOf[] {
   const registry = useRegistry()
   const links = useQuery(linksQuery(of, kinds))
@@ -95,10 +98,10 @@ export function useNarrowKindBlocks({
       count,
       empty: rows.length === 0 && !(mine?.isPending || links.isPending) ? none(kind) : null,
       all:
-        rows.length > SHOWN
+        rows.length > shown
           ? { label: `All ${rows.length} ${where.plural.toLocaleLowerCase()}`, to: fullPage }
           : null,
-      body: <ul className="flex flex-col">{rows.slice(0, SHOWN)}</ul>,
+      body: <ul className="flex flex-col">{rows.slice(0, shown)}</ul>,
     }
   })
 }

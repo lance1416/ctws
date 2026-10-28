@@ -174,8 +174,13 @@ test('past five overdue, the head moves them all, and All N shows the rest', asy
   await page.reload()
   const overdue = block(page, 'Overdue')
   await expect(overdue.locator('[data-today-row]')).toHaveCount(5)
+  // The rest beside the page, which stays put (FR-011 rule 3).
   await overdue.getByRole('button', { name: 'All 7' }).click()
-  await expect(overdue.locator('[data-today-row]')).toHaveCount(7)
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector.getByRole('heading', { name: 'Overdue' })).toBeVisible()
+  await expect(inspector.getByRole('listitem')).toHaveCount(7)
+  await expect(page).toHaveURL(/\/today\?inspect=list/)
+  await page.keyboard.press('Escape')
   await overdue.getByRole('button', { name: /^Move all to/ }).click()
   await page.getByRole('menuitem', { name: 'Tomorrow' }).click()
   await expect(overdue).toHaveCount(0)
@@ -453,4 +458,31 @@ test('a birthday whose reminder has come round is listed', async ({ page }) => {
   })
   await page.reload()
   await expect(block(page, 'Birthdays').locator('[data-birthday-row]')).toContainText('外婆')
+})
+
+test('in progress and ready to start show five, and All N opens the rest beside Today', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '很多')
+  for (let i = 1; i <= 7; i++) await makeTask(page, pid, `在做${i}`, { status: 'in_progress' })
+  for (let i = 1; i <= 6; i++) await makeTask(page, pid, `可以开始${i}`)
+  await page.reload()
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+
+  const doing = block(page, 'In progress')
+  await expect(doing.locator('[data-today-row]')).toHaveCount(5)
+  await doing.getByRole('button', { name: 'All 7' }).click()
+  await expect(inspector.getByRole('heading', { name: 'In progress' })).toBeVisible()
+  await expect(inspector.getByRole('listitem')).toHaveCount(7)
+  // A row opens that task in its place, with the way back to the list.
+  await inspector.getByRole('button', { name: /在做3/ }).click()
+  await expect(inspector.getByRole('button', { name: /In progress/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  const ready = block(page, 'Ready to start')
+  await expect(ready.locator('[data-ready-row]')).toHaveCount(5)
+  await ready.getByRole('button', { name: 'All 6' }).click()
+  await expect(inspector.getByRole('heading', { name: 'Ready to start' })).toBeVisible()
+  await expect(inspector.getByRole('listitem')).toHaveCount(6)
 })

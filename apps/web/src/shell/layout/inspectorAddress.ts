@@ -4,11 +4,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 /**
  * THE INSPECTOR'S ADDRESS (FR-022): `?inspect=<type>:<id>` on whatever page is open, so a reload
  * brings it back and the page under it stays; `<type>:<id>@<when>` for one occurrence of a series
- * (a meeting's, FR-067). Any other search parameter is left alone.
+ * (a meeting's, FR-067); `list:<name>` for a block's full list (FR-011). Any other search
+ * parameter is left alone.
  */
 const INSPECT = 'inspect'
 
-export type Inspected = { type: ObjectType; id: string; at?: string }
+export type Inspected = { type: ObjectType | 'list'; id: string; at?: string }
 
 export function parseInspect(value: string | null): Inspected | null {
   if (!value) return null
@@ -16,8 +17,9 @@ export function parseInspect(value: string | null): Inspected | null {
   if (colon < 1) return null
   const type = value.slice(0, colon)
   const [id, at] = value.slice(colon + 1).split('@') as [string, string | undefined]
-  if (!id || !(OBJECT_TYPES as readonly string[]).includes(type)) return null
-  return at ? { type: type as ObjectType, id, at } : { type: type as ObjectType, id }
+  if (!id || !(type === 'list' || (OBJECT_TYPES as readonly string[]).includes(type))) return null
+  const kind = type as Inspected['type']
+  return at ? { type: kind, id, at } : { type: kind, id }
 }
 
 export const formatInspect = ({ type, id, at }: Inspected): string =>
