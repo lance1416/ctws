@@ -57,9 +57,8 @@ export function Review() {
 }
 
 function Week() {
-  const { week, monday, thisMonday, show } = useReviewWeek()
-  const range = week ? { from: week, to: addDays(week, 6) } : null
-  const review = useQuery(reviewQuery(range))
+  const { monday, thisMonday, show } = useReviewWeek()
+  const review = useQuery(reviewQuery({ from: monday, to: addDays(monday, 6) }))
   const data = review.data
   const live = useProjects()
   const total = data?.projects.reduce((n, p) => n + p.finished.length, 0) ?? 0
@@ -90,7 +89,9 @@ function Week() {
         {data && (
           <p data-review-total className="ml-auto flex items-center gap-2">
             <span className="text-hero tracking-[-0.02em] text-ink tabular-nums">{total}</span>
-            <span className="w-[70px] text-ui text-muted">finished this week</span>
+            <span className="w-[70px] text-ui text-muted">
+              {monday === thisMonday ? 'finished so far' : 'finished this week'}
+            </span>
           </p>
         )}
       </div>

@@ -200,7 +200,7 @@ describe('the weekly review', () => {
 })
 
 describe('the weeks under review', () => {
-  it('counts what each of the last twelve weeks finished, newest first, empty weeks too', async () => {
+  it('counts what each week since the first change finished, newest first, empty weeks too', async () => {
     // The clock moves as the weeks are lived; the eleven-pm finish is Sunday's in London.
     let now = new Date('2026-10-07T10:00:00Z')
     const clocked = await appWithUser(undefined, { timezone: 'Europe/London', clock: () => now })
@@ -228,12 +228,11 @@ describe('the weeks under review', () => {
     })
     expect(res.statusCode, res.body).toBe(200)
     const { weeks } = res.json() as { weeks: { from: string; finished: number }[] }
-    expect(weeks).toHaveLength(12)
-    expect(weeks.slice(0, 4)).toEqual([
+    // The project was made in the week of Oct 5: the list starts there.
+    expect(weeks).toEqual([
       { from: '2026-10-19', finished: 1 },
       { from: '2026-10-12', finished: 2 },
       { from: '2026-10-05', finished: 1 },
-      { from: '2026-09-28', finished: 0 },
     ])
   })
 })

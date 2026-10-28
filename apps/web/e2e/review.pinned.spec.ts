@@ -30,7 +30,7 @@ test('beside the table: the stages that moved and what else the week held', asyn
     timeZone: 'Europe/London',
     durationMinutes: 30,
   })
-  await page.goto('/review')
+  await page.goto('/review?week=2026-10-19')
 
   const brief = page.getByRole('complementary', { name: 'This week in brief' })
   const stagesMoved = brief.getByRole('region', { name: 'Stages moved' })
@@ -57,11 +57,14 @@ test('the weeks are under their months, every bar on one scale', async ({ page }
   await expect(
     weeks.getByRole('region', { name: 'October' }).getByRole('button').first(),
   ).toHaveText(/Oct 19, so far\s*2/)
-  await expect(weeks.getByRole('region', { name: 'September' })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Week of October 19')
-  await expect(page.locator('[data-review-total]')).toHaveText(/2\s*finished this week/)
-
-  await weeks.getByRole('button', { name: /Oct 12/ }).click()
-  await expect(page).toHaveURL(/week=2026-10-12/)
+  // From the first change, here this week, but last week at least.
+  await expect(weeks.getByRole('button')).toHaveText([/Oct 19, so far\s*2/, /Oct 12\s*0/, 'Done'])
+  // It opens on last week, the one a review is of; this week is there, so far.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Week of October 12')
+  await expect(page.locator('[data-review-total]')).toHaveText(/0\s*finished this week/)
+
+  await weeks.getByRole('button', { name: /Oct 19, so far/ }).click()
+  await expect(page).toHaveURL(/week=2026-10-19/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Week of October 19')
+  await expect(page.locator('[data-review-total]')).toHaveText(/2\s*finished so far/)
 })

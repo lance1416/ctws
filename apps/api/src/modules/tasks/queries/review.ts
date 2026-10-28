@@ -2,7 +2,6 @@ import {
   calendarDate,
   projectId,
   REVIEW_TRANSITIONS,
-  REVIEW_WEEKS,
   taskId,
   type ReviewList,
   type ReviewResponse,
@@ -182,9 +181,10 @@ export async function listReview(
 const weekRow = z.object({ week: calendarDate, finished: z.coerce.number().int() })
 
 /**
- * The last `REVIEW_WEEKS` weeks, this one first, each by its Monday in the account's zone with how
- * many leaves it finished: the review's list of weeks, a week with nothing finished included.
- * Counted as the review counts, once per task in its week.
+ * Every week from the one the workspace's first change is in, or last week if that is later, to
+ * this one, newest first, each by
+ * its Monday in the account's zone with how many leaves it finished: the review's list of weeks,
+ * a week with nothing finished included. Counted as the review counts, once per task in its week.
  */
 export async function listReviewWeeks(
   q: Queryable,
@@ -194,12 +194,18 @@ export async function listReviewWeeks(
 ): Promise<{ from: string; finished: number }[]> {
   const local = localNow(now, timezone)
   const result = await q.execute(sql`
-    with weeks as (
-      select generate_series(
-        date_trunc('week', ${local}) - (${REVIEW_WEEKS - 1} * interval '1 week'),
-        date_trunc('week', ${local}),
-        interval '1 week'
+    with first as (
+      -- Last week at least: it is the one the review opens on.
+      select least(
+        date_trunc('week', min(ev.occurred_at at time zone ${timezone})),
+        date_trunc('week', ${local}) - interval '1 week'
       ) as monday
+      from events ev
+      where ${scoped(events, workspaceId, 'ev')}
+    ),
+    weeks as (
+      select generate_series(first.monday, date_trunc('week', ${local}), interval '1 week') as monday
+      from first
     ),
     finished as (
       select date_trunc('week', ev.occurred_at at time zone ${timezone}) as monday, ev.object_id
@@ -211,8 +217,6 @@ export async function listReviewWeeks(
         and ev.type = 'status_changed'
         and ev.payload ->> 'to' = 'done'
         and not coalesce((ev.payload ->> 'derived')::boolean, false)
-        and ev.occurred_at >= (date_trunc('week', ${local})
-          - (${REVIEW_WEEKS - 1} * interval '1 week')) at time zone ${timezone}
         and ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
     )
     select w.monday::date as week, count(distinct f.object_id) as finished

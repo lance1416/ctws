@@ -244,10 +244,10 @@ export const reviewResponse = z.object({
 })
 export type ReviewResponse = z.infer<typeof reviewResponse>
 
-/** How many weeks the review's list goes back, this one included. */
-export const REVIEW_WEEKS = 12
-
-/** The weeks under review, newest first: each by its Monday, with how many leaves it finished. */
+/**
+ * The weeks under review, newest first, back to the one the workspace's first change is in: each
+ * by its Monday, with how many leaves it finished.
+ */
 export const reviewWeeksResponse = z.object({
   weeks: z.array(z.object({ from: calendarDate, finished: z.number().int() })),
 })

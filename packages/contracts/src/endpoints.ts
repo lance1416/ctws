@@ -528,7 +528,7 @@ export const api = {
     reviewWeeks: endpoint({
       method: 'GET',
       path: '/tasks',
-      summary: 'The recent weeks and how many leaves each finished (view=review-weeks).',
+      summary: 'Every week so far and how many leaves each finished (view=review-weeks).',
       query: viewQuery('review-weeks'),
       ok: 200,
       response: reviewWeeksResponse,

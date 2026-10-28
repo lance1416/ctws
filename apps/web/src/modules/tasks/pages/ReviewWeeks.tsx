@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import type { KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { monthDay } from '../../../platform/time/dates'
 import { useAccountToday } from '../../../shell/auth'
@@ -23,6 +24,18 @@ export function ReviewWeeks() {
   const [params, setParams] = useSearchParams()
   const done = params.get('view') === 'done'
   if (!weeks.data) return null
+  const order = weeks.data.map((w) => w.from)
+  // A list like the others: ↑ and ↓ step to the newer and older week.
+  const step = (e: KeyboardEvent, from: string) => {
+    const by = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
+    const to = order[order.indexOf(from) + by]
+    if (!by || !to) return
+    e.preventDefault()
+    show(to)
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>(`[data-review-week="${to}"]`)?.focus(),
+    )
+  }
   const most = Math.max(0, ...weeks.data.map((w) => w.finished))
   return (
     <nav aria-label="Weeks" className="flex min-h-0 flex-col overflow-y-auto pb-3">
@@ -36,8 +49,10 @@ export function ReviewWeeks() {
                 <li key={w.from}>
                   <button
                     type="button"
+                    data-review-week={w.from}
                     aria-current={on ? 'true' : undefined}
                     onClick={() => show(w.from)}
+                    onKeyDown={(e) => step(e, w.from)}
                     className={`mx-1.5 grid min-h-9 w-[calc(100%-0.75rem)] grid-cols-[minmax(0,1fr)_28px] items-center gap-x-2 rounded-control px-2.5 text-left text-ui text-ink ${
                       on ? 'bg-select' : 'hover:bg-hover'
                     }`}

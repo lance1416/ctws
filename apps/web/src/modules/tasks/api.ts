@@ -37,8 +37,7 @@ export const taskKeys = {
   search: (q: string) => ['tasks', 'search', q] as const,
   calendar: (range: Range) => ['tasks', 'calendar', range.from, range.to] as const,
   reviewWeeks: (today: string) => ['tasks', 'review-weeks', today] as const,
-  review: (range: Range | null) =>
-    ['tasks', 'review', range?.from ?? 'week', range?.to ?? ''] as const,
+  review: (range: Range) => ['tasks', 'review', range.from, range.to] as const,
   dependencies: (id: TaskId) => ['tasks', 'dependencies', id] as const,
 }
 
@@ -115,11 +114,8 @@ export const taskCalendarQuery = (range: Range) =>
         .entries,
   })
 
-/**
- * The week under review, or `range` when one is chosen. The server picks the week in the
- * account's zone and reports the bounds it used.
- */
-export const reviewQuery = (range: Range | null) =>
+/** What happened in a week under review, read from the change log; the server says its bounds. */
+export const reviewQuery = (range: Range) =>
   queryOptions({
     queryKey: taskKeys.review(range),
     queryFn: ({ signal }) =>

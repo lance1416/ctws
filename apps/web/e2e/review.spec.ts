@@ -7,6 +7,15 @@ import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
  * pinned clock, is `review.pinned.spec.ts`.
  */
 
+/** Review opens on last week; what the seeds did happened this week, so far. */
+const thisWeek = async (page: Page) => {
+  await page
+    .getByRole('navigation', { name: 'Weeks' })
+    .getByRole('button', { name: /so far/ })
+    .click()
+  await expect(page.locator('[data-review-total]')).toContainText('finished so far')
+}
+
 const lane = (page: Page, name: string) => page.locator(`[data-review-lane="${name}"]`)
 const cell = (page: Page, name: string, list: string) =>
   lane(page, name).locator(`[data-review-cell="${list}"]`)
@@ -36,6 +45,7 @@ test('the review is a destination: each line of work a row, split by what happen
     .getByRole('link', { name: 'Review' })
     .click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Week of [A-Z][a-z]+ \d+$/)
+  await thisWeek(page)
 
   await expect(cell(page, 'Job hunt', 'finished').getByRole('link')).toHaveText([
     'Apply to Acme',
@@ -60,6 +70,7 @@ test('it shows work that was finished and then reopened, which Done does not', a
   // THE CASE THE VIEW EXISTS FOR. Finishing something on Tuesday is work done even if it came
   // back on Thursday.
   await page.goto('/review')
+  await thisWeek(page)
   await expect(cell(page, 'CTWS', 'finished')).toContainText('写迁移')
 
   await page
@@ -75,30 +86,28 @@ test('a week with nothing in it says so', async ({ page }) => {
   await expect(page.getByText('Nothing happened this week')).toBeVisible()
 })
 
-test('the weeks step back, forward stops at this one, and the sidebar follows', async ({
-  page,
-}) => {
+test('it opens on last week; forward reaches this one and stops there', async ({ page }) => {
   await registerFreshUser(page)
   await seed(page)
   await page.goto('/review')
 
   const forward = page.getByRole('button', { name: 'Next week' })
-  const back = page.getByRole('button', { name: 'Previous week' })
   const weeks = page.getByRole('navigation', { name: 'Weeks' })
-  // Nothing has happened next week, so the only thing this step could show is an empty page.
-  await expect(forward).toBeDisabled()
-  await expect(weeks.locator('[aria-current="true"]')).toContainText('so far')
-  await expect(weeks.locator('[aria-current="true"]')).toContainText('2')
-
-  await back.click()
-  await expect(page).toHaveURL(/week=\d{4}-\d{2}-\d{2}/)
+  // Last week: the seed happened this week, so here nothing did.
+  await expect(page).not.toHaveURL(/week=/)
   await expect(page.getByText('Nothing happened this week')).toBeVisible()
   await expect(weeks.locator('[aria-current="true"]')).not.toContainText('so far')
 
   await forward.click()
+  await expect(page).toHaveURL(/week=\d{4}-\d{2}-\d{2}/)
   await expect(forward).toBeDisabled()
-  await expect(page).not.toHaveURL(/week=/)
+  await expect(weeks.locator('[aria-current="true"]')).toContainText('so far')
   await expect(cell(page, 'Job hunt', 'finished')).toContainText('Rewrite the CV')
+
+  // The weeks are a list: ↓ steps back to the older one.
+  await weeks.locator('[aria-current="true"]').press('ArrowDown')
+  await expect(page).not.toHaveURL(/week=/)
+  await expect(page.getByRole('button', { name: 'Previous week' })).toBeEnabled()
 })
 
 test('the leaves of one parent are one line, opened to show them', async ({ page }) => {
@@ -109,6 +118,7 @@ test('the leaves of one parent are one line, opened to show them', async ({ page
     await makeTask(page, pid, title, { status: 'done' }, parent)
   await makeTask(page, pid, 'Release', { status: 'done' })
   await page.goto('/review')
+  await thisWeek(page)
 
   const finished = cell(page, 'CTWS', 'finished')
   const redesign = finished.getByRole('button', { name: /Redesign/ })
