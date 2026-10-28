@@ -483,8 +483,8 @@ test('search counts every match, shows five a kind, and reads a kind on as it is
   await query(page, 'zeta')
   const dialog = page.getByRole('dialog', { name: 'Search' })
   // The tabs carry the server's totals, not the rows drawn.
-  await expect(dialog.getByRole('tab', { name: /^All\s*40$/ })).toBeVisible()
-  await expect(dialog.getByRole('tab', { name: /^Tasks\s*40$/ })).toBeVisible()
+  await expect(dialog.getByRole('tab', { name: 'All, 40' })).toBeVisible()
+  await expect(dialog.getByRole('tab', { name: 'Tasks, 40' })).toBeVisible()
   // Five of the kind under All, then the rest of it as one row.
   await expect(dialog.getByRole('option').filter({ hasText: 'Zeta' })).toHaveCount(5)
   const rest = dialog.getByRole('option', { name: 'All 40 tasks' })
@@ -493,7 +493,7 @@ test('search counts every match, shows five a kind, and reads a kind on as it is
   await expect(dialog.getByRole('tab', { name: /^Tasks/ })).toHaveAttribute('aria-selected', 'true')
   // A page at a time: the first thirty, then the rest at the list's end.
   await expect(dialog.getByRole('option')).toHaveCount(30)
-  await dialog.getByRole('listbox', { name: 'Search results' }).evaluate((l) => {
+  await dialog.getByRole('listbox', { name: /^Results/ }).evaluate((l) => {
     l.scrollTop = l.scrollHeight
     l.dispatchEvent(new Event('scroll'))
   })
@@ -514,4 +514,36 @@ test('a kind picked with the pointer keeps the typing in the box (BUG-062)', asy
   await page.keyboard.type('ledgr')
   await expect(box).toHaveValue('ledgr')
   await expect(result(page, 'Ledgr')).toBeVisible()
+})
+
+test('what a screen reader hears: the list named by its tab, rows by their columns, the count', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/')
+  const project = await apiPost(page, '/projects', { name: 'Ledgr' })
+  await seedTasks(
+    page,
+    project.id,
+    Array.from({ length: 7 }, (_, i) => [`Ledgr task ${i + 1}`, null]),
+  )
+  await page.keyboard.press('Control+k')
+  await query(page, 'ledgr')
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  await expect(dialog.getByRole('listbox', { name: 'Results, all kinds' })).toBeVisible()
+  // A group per kind, named by its head.
+  await expect(dialog.getByRole('group', { name: 'Tasks' })).toBeVisible()
+  await expect(dialog.getByRole('tab', { name: 'Tasks, 7' })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: 'All 7 tasks, switch to Tasks' })).toBeVisible()
+  await expect(dialog.getByRole('option', { name: 'Ledgr task 7, Ledgr, Task' })).toBeVisible()
+  // What matched, marked in the title (S-01).
+  await expect(dialog.getByRole('option', { name: /^Ledgr task 7,/ }).locator('mark')).toHaveText(
+    'Ledgr',
+  )
+  // The count, said once the typing stops.
+  await expect(dialog.locator('[aria-live="polite"]')).toHaveText('8 results')
+  await dialog.getByRole('tab', { name: 'Tasks, 7' }).click()
+  await expect(dialog.getByRole('listbox', { name: 'Results, tasks' })).toBeVisible()
+  await expect(dialog.locator('[aria-live="polite"]')).toHaveText('7 results')
+  await query(page, 'zzzz')
+  await expect(dialog.locator('[aria-live="polite"]')).toHaveText('No tasks match “zzzz”.')
 })

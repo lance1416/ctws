@@ -1,6 +1,14 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import {
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
 import { useComposing } from '../../platform/keyboard/composition'
@@ -312,7 +320,19 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   }, [chosen])
 
   const settled = typing === debounced
+  // How many match, said once the typing stops (DES-001, search's last rule): the server's totals.
+  const matched = pick
+    ? hits.length
+    : kindView
+      ? (oneKind.data?.pages[0]?.groups[0]?.total ?? 0)
+      : [...totals.values()].reduce((a, b) => a + b, 0)
   const nothing = debounced.length > 0 && !scoping && results.isSuccess && hits.length === 0
+  // With nothing, what the page says: that nothing matches.
+  const said = !(settled && debounced.length > 0 && !scoping && results.isSuccess)
+    ? ''
+    : nothing
+      ? `No ${view === 'all' ? 'results' : KIND_WORDS[view].many.toLocaleLowerCase()} match “${debounced}”.`
+      : `${matched} ${matched === 1 ? 'result' : 'results'}`
   // What a New from an empty result makes: the scoped kind, else a task (FR-024 "Empty").
   const newKind: ObjectType = scope ?? 'task'
   const creator = registry.creates.find((c) => c.kind === newKind)
@@ -487,6 +507,8 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                 key={t}
                 type="button"
                 role="tab"
+                // Read as "Tasks, 12" (DES-001): the name and its total, one phrase.
+                aria-label={`${t === 'all' ? 'All' : KIND_WORDS[t].many}, ${n > 999 ? '999+' : n}`}
                 aria-selected={view === t}
                 tabIndex={-1}
                 onClick={() => showTab(t)}
@@ -550,12 +572,15 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         </div>
       )}
 
+      <p className="sr-only" aria-live="polite">
+        {said}
+      </p>
       {/* The options are not buttons: focus stays in the box, and `aria-activedescendant` walks
           the list without adding a tab stop per result. */}
       <ul
         id={listId}
         role="listbox"
-        aria-label="Search results"
+        aria-label={`Results, ${view === 'all' ? 'all kinds' : KIND_WORDS[view].many.toLocaleLowerCase()}`}
         onScroll={(e) => {
           const list = e.currentTarget
           if (list.scrollHeight - list.scrollTop - list.clientHeight < 80) readOn()
@@ -567,6 +592,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             <SearchRow
               key={row.key}
               row={row}
+              words={debounced}
               id={optionId(run.start + j)}
               selected={chosen ? row.kind === 'hit' && row.id === chosen.id : run.start + j === at}
               compact={pick !== undefined}
@@ -734,6 +760,7 @@ function runLabel(run: Run, view: Tab, scope: ObjectType | null): string | null 
 
 function SearchRow({
   row,
+  words,
   id,
   selected,
   compact,
@@ -742,12 +769,24 @@ function SearchRow({
 }: {
   row: Row
   id: string
+  /** What was typed, marked where a title matches it (S-01). */
+  words: string
   selected: boolean
   /** The picker's 380: no word column, the fact at its own width. */
   compact: boolean
   onChoose: () => void
   onHover: () => void
 }) {
+  // Read as "name, fact, kind" (DES-001), from the columns as drawn: the fact is a module's own
+  // component, so its words are only known once it is on the page.
+  const said = useRef<HTMLLIElement>(null)
+  const [label, setLabel] = useState<string | undefined>(undefined)
+  useLayoutEffect(() => {
+    const parts = [...(said.current?.querySelectorAll('[data-said]') ?? [])]
+      .map(spoken)
+      .filter((t) => t.length > 0)
+    setLabel(parts.length > 0 ? parts.join(', ') : undefined)
+  }, [row, words])
   const shared = `grid min-h-10 cursor-pointer items-center gap-x-3 px-4 text-ui text-ink ${
     selected ? 'bg-select' : ''
   }`
@@ -803,6 +842,7 @@ function SearchRow({
       <li
         id={id}
         role="option"
+        aria-label={`${row.title}, switch to ${KIND_WORDS[row.type].many}`}
         aria-selected={selected}
         data-search-all={row.type}
         onClick={onChoose}
@@ -824,14 +864,18 @@ function SearchRow({
         className={`${shared} grid-cols-[24px_minmax(0,1fr)_92px]`}
       >
         <KindBadge type={row.type} />
-        <span className="truncate">{row.title}</span>
+        <span className="truncate">
+          <Matched text={row.title} words={words} />
+        </span>
         <span className="text-meta text-subtle">{KIND_WORDS[row.type].one}</span>
       </li>
     )
   return (
     <li
+      ref={said}
       id={id}
       role="option"
+      aria-label={label}
       data-search-result={row.id}
       aria-selected={selected}
       onClick={onChoose}
@@ -845,14 +889,61 @@ function SearchRow({
       <span className="inline-grid size-6 place-items-center">
         {row.mark ?? <KindBadge type={row.type} />}
       </span>
-      <span className={`truncate ${selected && compact ? 'font-medium' : ''}`}>{row.title}</span>
-      <span className={`min-w-0 truncate text-muted ${compact ? 'max-w-40' : ''}`}>{row.meta}</span>
+      <span data-said className="truncate">
+        <Matched text={row.title} words={words} />
+      </span>
+      <span data-said className={`min-w-0 truncate text-muted ${compact ? 'max-w-40' : ''}`}>
+        {row.meta}
+      </span>
       {/* The picker has no room for the word; its icon is aria-hidden, so the word is still said. */}
       {compact ? (
-        <span className="sr-only">{row.word}</span>
+        <span data-said className="sr-only">
+          {row.word}
+        </span>
       ) : (
-        <span className="text-meta text-subtle">{row.word}</span>
+        <span data-said className="text-meta text-subtle">
+          {row.word}
+        </span>
       )}
     </li>
   )
+}
+
+/**
+ * A title with what was typed marked in it (S-01): each word typed, wherever it falls, in the
+ * row's 500 weight; the rest as it is.
+ */
+function Matched({ text, words }: { text: string; words: string }) {
+  const typed = words
+    .toLocaleLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 0)
+  if (typed.length === 0) return text
+  const lower = text.toLocaleLowerCase()
+  const marked = new Array<boolean>(text.length).fill(false)
+  for (const word of typed)
+    for (let from = lower.indexOf(word); from >= 0; from = lower.indexOf(word, from + 1))
+      marked.fill(true, from, from + word.length)
+  const parts: { text: string; marked: boolean }[] = []
+  for (let i = 0; i < text.length; i++) {
+    const last = parts.at(-1)
+    if (last && last.marked === marked[i]) last.text += text[i]
+    else parts.push({ text: text[i]!, marked: marked[i]! })
+  }
+  return parts.map((p, i) =>
+    p.marked ? (
+      <mark key={i} className="bg-transparent font-medium text-ink">
+        {p.text}
+      </mark>
+    ) : (
+      p.text
+    ),
+  )
+}
+
+/** An element's words as a screen reader has them: what is aria-hidden left out. */
+function spoken(el: Element): string {
+  const copy = el.cloneNode(true) as Element
+  for (const hidden of copy.querySelectorAll('[aria-hidden="true"]')) hidden.remove()
+  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim()
 }

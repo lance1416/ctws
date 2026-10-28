@@ -77,7 +77,11 @@ test('a search with no match says so, and offers to make it a task (FR-024)', as
   const missed = page.waitForResponse((r) => r.url().includes('/api/v1/search?q=') && r.ok())
   await box.fill('绝不存在的词')
   await missed
-  await expect(page.getByText('No results match “绝不存在的词”.')).toBeVisible()
+  // Said on the page, and once to a screen reader by the live region beside it.
+  await expect(
+    page.getByText('No results match “绝不存在的词”.').and(page.locator(':not([aria-live])')),
+  ).toBeVisible()
+  await expect(page.locator('[aria-live="polite"]')).toHaveText('No results match “绝不存在的词”.')
   await expect(page.locator('[data-search-result]')).toHaveCount(0)
 
   // The next move: Enter makes it a task, in the inbox, and opens it there (FR-026).
