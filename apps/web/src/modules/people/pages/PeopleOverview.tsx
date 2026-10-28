@@ -57,7 +57,7 @@ export function PeopleOverview() {
           </button>
         )}
       </div>
-      <div className="grid items-stretch gap-3 lg:grid-cols-2">
+      <div className="grid items-start gap-3 lg:grid-cols-2">
         <Birthdays />
         <InTouch byId={byId} />
         <OutOfTouch byId={byId} />
