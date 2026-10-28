@@ -1,3 +1,4 @@
+import { isReadingUrl } from '../logic/readingUrl'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
@@ -20,7 +21,11 @@ export function useReadingCapture(): CaptureTargetState {
       name: 'To read',
       to: `/${READING_ID}`,
       submit: async (line: string, { projectId, date }) => {
-        const made = await createReadingItem({ kind: 'link', url: line.trim() })
+        // A link is a link; anything else typed with Reading chosen is a book's title (FR-072).
+        const text = line.trim()
+        const made = await createReadingItem(
+          isReadingUrl(text) ? { kind: 'link', url: text } : { kind: 'book', title: text },
+        )
         if (projectId || date)
           await patchReadingItem(made.id, {
             ...(projectId ? { projectId } : {}),

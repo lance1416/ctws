@@ -57,10 +57,22 @@ export function NoteEditor({
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a save per pause in the typing.
   }, [title, body])
-  // Leaving with the last words still resting: they are saved on the way out.
+  // Leaving with the last words still resting: they are saved on the way out, not dropped with
+  // the timer that was to save them.
+  const latest = useRef({ title, body })
+  latest.current = { title, body }
   useEffect(
     () => () => {
-      void qc.invalidateQueries({ queryKey: noteKeys.all })
+      const { title: t, body: b } = latest.current
+      const was = made.current
+      const fields = { title: t.trim() || null, body: b }
+      const pending = was
+        ? was.body !== b || (was.title ?? '') !== t
+        : b.trim() !== '' || t.trim() !== ''
+      const out = pending
+        ? (was ? patchNote(was.id, fields) : createNote(fields)).catch(() => undefined)
+        : Promise.resolve()
+      void out.then(() => qc.invalidateQueries({ queryKey: noteKeys.all }))
     },
     [qc],
   )

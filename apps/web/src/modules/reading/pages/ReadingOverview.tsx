@@ -101,7 +101,7 @@ function ToRead() {
               <Link
                 to={`/reading/${i.id}`}
                 data-to-read={i.id}
-                className="grid min-h-9 grid-cols-[16px_minmax(0,1fr)_minmax(0,14rem)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
+                className="grid min-h-9 grid-cols-[16px_minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
               >
                 <Icon size={16} aria-hidden="true" className="text-reading" />
                 <span className="truncate text-ink">{readingLabel(i)}</span>

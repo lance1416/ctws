@@ -124,8 +124,8 @@ function ReadingHead({ item }: { item: ReadingItemResponse }) {
               label="Status"
               value={item.status}
               choices={STATUS_CHOICES}
+              // Not disabled while it saves: the menu hands focus back to it as it closes.
               onPick={(to) => status.mutate(to)}
-              disabled={status.isPending}
             />
           </span>
         </div>

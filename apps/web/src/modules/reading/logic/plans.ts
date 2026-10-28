@@ -4,7 +4,7 @@ import { dayPhrase, nextMonday } from '../../../platform/time/dates'
 /** When to finish something, as named days rather than a date picker. */
 export type PlanDay = 'today' | 'tomorrow' | 'thisWeek' | 'nextWeek'
 
-export const PLAN_DAYS: readonly { id: PlanDay; day: (today: string) => string }[] = [
+const PLAN_DAYS: readonly { id: PlanDay; day: (today: string) => string }[] = [
   { id: 'today', day: (t) => t },
   { id: 'tomorrow', day: (t) => addDays(t, 1) },
   // The Sunday that ends this week.

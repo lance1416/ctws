@@ -49,7 +49,7 @@ export function NotesOverview() {
                 <Link
                   to={`/${NOTES_ID}/${n.id}`}
                   data-note-row={n.id}
-                  className="grid min-h-9 grid-cols-[minmax(0,1fr)_minmax(0,14rem)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
+                  className="grid min-h-9 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
                 >
                   <span className="truncate text-ink">{noteTitle(n)}</span>
                   <Anchor note={n} />

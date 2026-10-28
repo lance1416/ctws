@@ -10,13 +10,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { BUTTON, ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { area } from '../../../platform/ui/formStyles'
-import {
-  CollapseIcon,
-  ExpandIcon,
-  KIND_ICON,
-  MoreIcon,
-  OpenFullIcon,
-} from '../../../platform/ui/icons'
+import { CollapseIcon, ExpandIcon, MoreIcon, OpenFullIcon } from '../../../platform/ui/icons'
 import { useAccountToday } from '../../../shell/auth'
 import { meetingKeys, rewriteNote, seriesNotesQuery, writeOccurrenceNote } from '../api'
 import { headingsOf } from '../logic/headings'
@@ -255,11 +249,6 @@ function Writer({
           {problemText(save.error)}
         </p>
       )}
-      <p className="flex items-start gap-2 rounded-control bg-hover px-3 py-2 text-meta text-muted">
-        <KIND_ICON.note size={14} aria-hidden="true" className="mt-0.5 shrink-0" />
-        The full note editor arrives with the Notes module. Until then this is the Markdown editor
-        you have today.
-      </p>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import type { ReadingItemResponse, ReadingStatus } from '@ctws/contracts'
+import type { ReadingItemResponse } from '@ctws/contracts'
 
 /** Where a link is from, as a person says it: `w3.org`, not the whole URL. Null without one. */
 export function hostOf(url: string | null): string | null {
@@ -39,50 +39,6 @@ export function KindGlyph({ kind }: { kind: ReadingItemResponse['kind'] }) {
       strokeLinecap="round"
     >
       <path d="M8.6 11.4l2.8-2.8M7.4 9.2L5.8 10.8a2.4 2.4 0 0 0 3.4 3.4l1.6-1.6M12.6 10.8l1.6-1.6a2.4 2.4 0 0 0-3.4-3.4L9.2 7.4" />
-    </svg>
-  )
-}
-
-const TONE: Record<ReadingStatus, string> = {
-  todo: 'text-muted',
-  reading: 'text-ink',
-  done: 'text-subtle',
-  dropped: 'text-subtle',
-}
-
-/** The list row's mark, toned by status; decoration, since the line below says the kind. */
-export function StatusMark({ item }: { item: Pick<ReadingItemResponse, 'kind' | 'status'> }) {
-  return (
-    <span aria-hidden="true" className={`flex h-6 shrink-0 items-center ${TONE[item.status]}`}>
-      {item.kind === 'book' ? <BookMark /> : <LinkMark />}
-    </span>
-  )
-}
-
-function BookMark() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4">
-      <path
-        d="M8 4.2C6.8 3.4 5.4 3.2 3.5 3.3v8c1.9-.1 3.3.1 4.5.9 1.2-.8 2.6-1 4.5-.9v-8c-1.9-.1-3.3.1-4.5.9Zm0 0v9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function LinkMark() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4">
-      <path
-        d="M6.5 9.5a2.8 2.8 0 0 0 4 0l2-2a2.8 2.8 0 0 0-4-4l-.8.8M9.5 6.5a2.8 2.8 0 0 0-4 0l-2 2a2.8 2.8 0 0 0 4 4l.8-.8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
     </svg>
   )
 }
