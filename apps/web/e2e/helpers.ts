@@ -712,7 +712,7 @@ export async function lunarYear(page: Page, year: string) {
   await page.getByRole('textbox', { name: 'Year' }).fill(year)
   // The grid moves to that year once the server has converted it; paging before then would be
   // undone when it does.
-  await expect(page.locator(`[data-lunar-anchor^="${year}-"]`)).toBeVisible()
+  await expect(page.locator(`[data-lunar-month^="${year}-"]`)).toBeVisible()
 }
 
 /**

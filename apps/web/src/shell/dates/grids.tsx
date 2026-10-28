@@ -229,8 +229,9 @@ export function LunarGrid({
     LUNAR_MONTHS.indexOf(month.name.replace(/^闰/, '') as (typeof LUNAR_MONTHS)[number]) + 1
   const lead = weekdayOf(month.days[0]!.solar)
   return (
-    // Where the grid is anchored, for a test to wait on a move it cannot see in the names.
-    <div data-lunar-anchor={anchor} className="flex flex-col gap-1">
+    // The first solar day of the month drawn, which may still be the last one while the next
+    // loads: a test waits on this, not on where the grid was asked to go.
+    <div data-lunar-month={month.days[0]!.solar} className="flex flex-col gap-1">
       <Head
         title={month.name}
         onPrev={() => setAnchor(addDays(month.days[0]!.solar, -1))}
