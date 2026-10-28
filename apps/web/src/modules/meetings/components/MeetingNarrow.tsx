@@ -190,6 +190,7 @@ export function MeetingNarrow({ id, at }: { id: string; at?: string | undefined 
           {
             key: 'timeline',
             title: 'Timeline',
+            last: true,
             body: (
               <Timeline
                 of={{ type: 'meeting', id: m.meetingId }}

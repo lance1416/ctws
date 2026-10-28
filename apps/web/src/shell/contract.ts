@@ -155,6 +155,8 @@ type OwnThing = {
   to?: string
   /** A word or two in the row's first column: "Thu 14:00". */
   lead?: string | null
+  /** Its `lead` is a time still to come: a narrow page says it in the kind's colour (I-06). */
+  upcoming?: boolean
   /** A person's initials: their avatar stands in the first column instead (FR-049). */
   initials?: string | null
   /** A word or two at the row's end. */

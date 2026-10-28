@@ -1,7 +1,7 @@
 import { idFrom, communicationId, type CommunicationResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { problemText } from '../../../platform/http/api'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { fullDay, ymd } from '../../../platform/time/dates'
@@ -54,7 +54,22 @@ export function Message() {
 function MessagePage({ message: m }: { message: CommunicationResponse }) {
   const today = useAccountToday()
   const timeZone = useTimeZone()
-  const [editing, setEditing] = useState(false)
+  // Edited where it is shown: open, or asked for by the inspector's Edit (`?edit=1`, I-05).
+  const [params, setParams] = useSearchParams()
+  const [asked, setAsked] = useState(false)
+  const editing = asked || params.get('edit') === '1'
+  const setEditing = (on: boolean) => {
+    setAsked(on)
+    if (!on && params.has('edit'))
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('edit')
+          return next
+        },
+        { replace: true },
+      )
+  }
   const project = useEveryProject().data?.find((p) => p.id === m.projectId)
   const Way = m.direction === 'sent' ? SentIcon : ReceivedIcon
   const Channel = CHANNEL_ICON[m.channel]

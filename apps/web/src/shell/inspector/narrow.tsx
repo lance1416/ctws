@@ -120,39 +120,43 @@ export type NarrowBlockOf = {
   empty?: string | null
   /** Its "All N", opening the full page at this block; when it holds more than it shows. */
   all?: { label: string; to: string } | null
+  /** Under every other block, the empty ones too: the timeline, as on the full page (I-02). */
+  last?: boolean
   body: ReactNode
 }
 
 /**
  * A narrow page's blocks (artboard 33): no card borders, a rule between one and the next, a head
- * of its name and count; the empty ones last, a line each.
+ * of its name and count; the empty ones after, a line each; the timeline under them all.
  */
 export function NarrowBlocks({ blocks }: { blocks: readonly (NarrowBlockOf | null | false)[] }) {
   const shown = blocks.filter((b): b is NarrowBlockOf => !!b)
-  const full = shown.filter((b) => !b.empty)
+  const full = shown.filter((b) => !b.empty && !b.last)
   const empty = shown.filter((b) => b.empty)
+  const last = shown.filter((b) => b.last && !b.empty)
+  const block = (b: NarrowBlockOf) => (
+    <section
+      key={b.key}
+      aria-label={b.title}
+      className="flex flex-col gap-1.5 border-t border-line px-4 py-3"
+    >
+      <h3 className="flex items-center gap-2 text-ui font-medium text-ink">
+        {b.title}
+        {b.count !== undefined && (
+          <span className="text-meta font-normal text-muted tabular-nums">{b.count}</span>
+        )}
+      </h3>
+      {b.body}
+      {b.all && (
+        <Link to={b.all.to} className="pl-7 text-meta text-muted hover:text-ink">
+          {b.all.label}
+        </Link>
+      )}
+    </section>
+  )
   return (
     <div className="flex flex-col">
-      {full.map((b) => (
-        <section
-          key={b.key}
-          aria-label={b.title}
-          className="flex flex-col gap-1.5 border-t border-line px-4 py-3"
-        >
-          <h3 className="flex items-center gap-2 text-ui font-medium text-ink">
-            {b.title}
-            {b.count !== undefined && (
-              <span className="text-meta font-normal text-muted tabular-nums">{b.count}</span>
-            )}
-          </h3>
-          {b.body}
-          {b.all && (
-            <Link to={b.all.to} className="pl-7 text-meta text-muted hover:text-ink">
-              {b.all.label}
-            </Link>
-          )}
-        </section>
-      ))}
+      {full.map(block)}
       {empty.map((b) => (
         <section
           key={b.key}
@@ -163,6 +167,7 @@ export function NarrowBlocks({ blocks }: { blocks: readonly (NarrowBlockOf | nul
           <span className="text-meta text-subtle">{b.empty}</span>
         </section>
       ))}
+      {last.map(block)}
     </div>
   )
 }
@@ -210,6 +215,7 @@ export function OpensBeside({
   thing: Inspectable
   to: string
   className?: string
+  title?: string
   children: ReactNode
 } & Record<`data-${string}`, string>) {
   const inside = useContext(InspectorContext)

@@ -74,3 +74,69 @@ test('Esc closes it and focus goes back to what opened it', async ({ page }) => 
   await expect(inspector).toHaveCount(0)
   await expect(row).toBeFocused()
 })
+
+test('the workbench opens a meeting beside it, as the occurrence; its notes are said by name', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/')
+  const m = await apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', {
+    title: 'Stripe: first screen',
+    startsLocal: `${dayOffset(1)}T14:00`,
+    timeZone: 'Europe/London',
+    durationMinutes: 45,
+  })
+  await apiPost(page, '/notes', {
+    body: '## Updates\n- Billing service in staging.',
+    anchor: { type: 'meeting', id: m.meetingId, occurrenceId: m.recurrenceId },
+  })
+  await page.reload()
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  const at = new RegExp(`\\?inspect=meeting(:|%3A)${m.meetingId}(@|%40)`)
+
+  // Next meetings: the page stays the workbench (FR-022).
+  await page
+    .locator('[data-next-meeting-card]')
+    .getByRole('link', { name: 'Stripe: first screen' })
+    .click()
+  await expect(inspector.getByRole('heading', { name: 'Stripe: first screen' })).toBeVisible()
+  await expect(page).toHaveURL(at)
+  // A note in the timeline by its name, not its markdown (I-01).
+  const timeline = inspector.getByRole('region', { name: 'Timeline' }).first()
+  await expect(timeline).toContainText('Wrote notes')
+  await expect(timeline).toContainText('Updates')
+  await expect(timeline).not.toContainText('##')
+  await page.keyboard.press('Escape')
+  await expect(inspector).toHaveCount(0)
+
+  // Next seven days, the same.
+  await page.locator('[data-week-entry="occurrence"]').first().click()
+  await expect(inspector.getByRole('heading', { name: 'Stripe: first screen' })).toBeVisible()
+  await expect(page).toHaveURL(at)
+})
+
+test('a message’s Edit takes it to its page with the editor open', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const priya = await apiPost(page, '/people', { givenName: 'Priya', familyName: 'Nair' })
+  const message = await apiPost(page, '/communication', {
+    parties: [{ type: 'person', id: priya.id }],
+    direction: 'sent',
+    channel: 'email',
+    subject: 'Enquiry',
+    occurredAt: new Date().toISOString(),
+  })
+  await page.goto(`/?inspect=communication:${message.id}`)
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector.getByRole('heading', { name: 'Enquiry' })).toBeVisible()
+  await inspector.getByRole('button', { name: 'Edit' }).click()
+  await expect(page).toHaveURL(new RegExp(`/communication/${message.id}\\?edit=1$`))
+  await expect(inspector).toHaveCount(0)
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page).toHaveURL(new RegExp(`/communication/${message.id}$`))
+})
+
+test('/meetings/new names no meeting, and goes to the meetings', async ({ page }) => {
+  await registerFreshUser(page, '/meetings/new')
+  await expect(page).toHaveURL(/\/meetings$/)
+})

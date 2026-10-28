@@ -54,11 +54,12 @@ export const meetingModule: WorkspaceModule = {
     label: 'Meetings',
     useEntries: useMeetingEntries,
     // A meeting agreed elsewhere says where, and its time on that clock.
+    // Its page is the occurrence's; clicked, it opens there in the inspector (FR-022).
     show: (e) => ({
-      to: '/calendar',
+      to: `/${MEETINGS_ID}/${e.id}${e.recurrenceId ? `?${new URLSearchParams({ at: e.recurrenceId })}` : ''}`,
       label: e.zone ? `meeting · ${e.zone} ${e.zoneTime}` : 'Meetings',
     }),
-    // Clicked, it opens in a pane over the grid, named in the address like the Meetings page's.
+    // The pane over the grid, for an address that still names one; nothing in the app links it.
     opens: {
       params: (e) => ({ meeting: e.id, at: e.recurrenceId ?? '' }),
       Pane: CalendarOccurrence,

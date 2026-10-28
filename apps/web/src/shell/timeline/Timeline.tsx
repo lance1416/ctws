@@ -2,12 +2,13 @@ import { api, type ObjectType, type TimelineEntry, type TimelineKind } from '@ct
 import { linkWords } from '@ctws/core'
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { useContext, useState, type ReactNode } from 'react'
+import { useContext, useId, useState, type ReactNode } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { NewContext } from '../creates'
 import { call } from '../../platform/http/api'
 import { monthDay, ymd } from '../../platform/time/dates'
 import { BlockFailed } from '../../platform/ui/Block'
+import { tabKeys } from '../../platform/ui/choiceKeys'
 import {
   DoneIcon,
   DurationIcon,
@@ -89,6 +90,7 @@ export function Timeline({
   const openNew = useContext(NewContext)
   const log = useRegistry().creates.find((c) => c.kind === 'communication')
   const [filter, setFilter] = useState<Filter>(FILTERS[0])
+  const shown = useId()
   const entries = useQuery(timelineQuery(of, filter))
   const timeZone = useTimeZone()
   const describeChange = useRegistry().relationFor(of.type).describeChange
@@ -116,14 +118,23 @@ export function Timeline({
           </button>
         )}
         {filters && (
-          <div role="group" aria-label="Show" className="flex flex-wrap gap-0.5">
+          // Views of the entries below: tabs, one Tab stop, the arrows switching (DES-001 section 4).
+          <div
+            role="tablist"
+            aria-label="Show"
+            onKeyDown={tabKeys}
+            className="flex flex-wrap gap-0.5"
+          >
             {FILTERS.map((f) => (
               <button
                 key={f.id}
                 type="button"
-                aria-pressed={filter.id === f.id}
+                role="tab"
+                aria-selected={filter.id === f.id}
+                aria-controls={shown}
+                tabIndex={filter.id === f.id ? 0 : -1}
                 onClick={() => setFilter(f)}
-                className="inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium text-muted hover:bg-hover hover:text-ink aria-pressed:bg-select aria-pressed:text-ink"
+                className="inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium text-muted hover:bg-hover hover:text-ink aria-selected:bg-select aria-selected:text-ink"
               >
                 {f.id !== 'all' && f.id !== 'change' && <FilterIcon kind={f.id} />}
                 {f.label}
@@ -132,45 +143,47 @@ export function Timeline({
           </div>
         )}
       </div>
-      {entries.isError ? (
-        <BlockFailed what="timeline" onRetry={() => void entries.refetch()} />
-      ) : (
-        <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
-          {(last ? (entries.data ?? []).slice(0, last) : (entries.data ?? [])).map((entry, i) => {
-            const line = lineOf(entry, describeChange, timeZone)
-            if (!line) return null
-            return (
-              <li
-                key={i}
-                data-timeline-entry={entry.kind}
-                className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
-              >
-                {/* The thread from one mark to the next (artboard 14); the last has none. */}
-                <span
-                  aria-hidden="true"
-                  className="thread absolute top-7 -bottom-2.5 left-[calc(52px+0.625rem+11.5px)] w-px bg-line"
-                />
-                <time
-                  dateTime={entry.at}
-                  className="pt-1 font-mono text-meta text-muted tabular-nums"
+      <div id={shown} className="contents">
+        {entries.isError ? (
+          <BlockFailed what="timeline" onRetry={() => void entries.refetch()} />
+        ) : (
+          <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
+            {(last ? (entries.data ?? []).slice(0, last) : (entries.data ?? [])).map((entry, i) => {
+              const line = lineOf(entry, describeChange, timeZone)
+              if (!line) return null
+              return (
+                <li
+                  key={i}
+                  data-timeline-entry={entry.kind}
+                  className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
                 >
-                  {monthDay(ymd(new Date(entry.at), timeZone))}
-                </time>
-                <span
-                  aria-hidden="true"
-                  className={`inline-grid size-6 place-items-center rounded-control ${line.tint ?? 'text-muted'}`}
-                >
-                  {line.mark}
-                </span>
-                <div className="flex min-w-0 flex-col gap-1 pt-0.5">
-                  <span className="min-w-0 text-ink">{line.text}</span>
-                  {line.more}
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-      )}
+                  {/* The thread from one mark to the next (artboard 14); the last has none. */}
+                  <span
+                    aria-hidden="true"
+                    className="thread absolute top-7 -bottom-2.5 left-[calc(52px+0.625rem+11.5px)] w-px bg-line"
+                  />
+                  <time
+                    dateTime={entry.at}
+                    className="pt-1 font-mono text-meta text-muted tabular-nums"
+                  >
+                    {monthDay(ymd(new Date(entry.at), timeZone))}
+                  </time>
+                  <span
+                    aria-hidden="true"
+                    className={`inline-grid size-6 place-items-center rounded-control ${line.tint ?? 'text-muted'}`}
+                  >
+                    {line.mark}
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-1 pt-0.5">
+                    <span className="min-w-0 text-ink">{line.text}</span>
+                    {line.more}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        )}
+      </div>
       {everything && (
         <Link
           to={everything.to}
@@ -235,6 +248,14 @@ const CHANNEL_WORDS: Record<string, string> = {
 
 /** A mention as notes store it, `[@Mira Chen](ctws://person/…)`: its name is what is shown. */
 const MENTION = /\[@([^\]\n]+)\]\(ctws:\/\/[^)\s]*\)/g
+
+/** A note's first line as words: no heading or list marks, links by their words. */
+const firstLine = (markdown: string) =>
+  linkWords(
+    (markdown.split('\n').find((l) => l.trim()) ?? '')
+      .replace(/^\s*(#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s*)/, '')
+      .trim(),
+  )
 
 /** One line: its mark (on `tint`, when it has one), what it says, and what follows under it. */
 type Line = { mark: ReactNode; tint?: string; text: ReactNode; more?: ReactNode }
@@ -335,10 +356,13 @@ function lineOf(
       }
     }
     case 'note': {
+      // What was written, by its name, not its markdown (I-01): its title, or its first line.
       const Icon = KIND_ICON.note
+      const name = entry.note.title ?? firstLine(entry.note.excerpt)
       return {
         mark: <Icon size={16} />,
-        text: entry.note.title ?? linkWords(entry.note.excerpt),
+        text: 'Wrote notes',
+        ...(name ? { more: <span className="text-muted">{name}</span> } : {}),
       }
     }
     case 'mention': {

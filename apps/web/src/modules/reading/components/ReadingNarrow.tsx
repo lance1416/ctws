@@ -84,6 +84,7 @@ export function ReadingNarrow({ id }: { id: string }) {
           {
             key: 'timeline',
             title: 'Timeline',
+            last: true,
             body: (
               <Timeline
                 of={{ type: 'reading', id }}

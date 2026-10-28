@@ -62,7 +62,7 @@ export function PersonNarrow({ id }: { id: string }) {
   return (
     <>
       <NarrowHead
-        mark={<Avatar initials={avatarInitials(person)} size={32} />}
+        mark={<Avatar initials={avatarInitials(person)} size={40} />}
         title={person.name}
         tags={
           <>
@@ -111,6 +111,7 @@ export function PersonNarrow({ id }: { id: string }) {
           {
             key: 'timeline',
             title: 'Timeline',
+            last: true,
             body: (
               <Timeline
                 of={{ type: 'person', id }}

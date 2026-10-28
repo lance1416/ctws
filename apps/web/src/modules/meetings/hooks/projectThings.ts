@@ -34,6 +34,7 @@ export function useProjectMeetings(projectId: ProjectId): OwnThings {
         title: m.title,
         to: `/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`,
         lead: `${said} ${clockTime(at, timeZone)}`,
+        upcoming: true,
       }
     }),
     isPending: coming.isPending,

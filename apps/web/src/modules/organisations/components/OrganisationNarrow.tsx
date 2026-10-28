@@ -28,7 +28,7 @@ export function OrganisationNarrow({ id }: { id: string }) {
   return (
     <>
       <NarrowHead
-        mark={<OrganisationMark name={o.name} />}
+        mark={<OrganisationMark name={o.name} size={40} />}
         title={o.name}
         tags={
           <>
@@ -100,6 +100,7 @@ export function OrganisationNarrow({ id }: { id: string }) {
           {
             key: 'timeline',
             title: 'Timeline',
+            last: true,
             body: (
               <Timeline
                 of={{ type: 'organisation', id: o.id }}

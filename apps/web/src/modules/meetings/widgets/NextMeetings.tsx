@@ -11,6 +11,7 @@ import { JoinIcon, KIND_ICON, PlacesIcon } from '../../../platform/ui/icons'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { useRowsThatFit } from '../../../shell/workbench'
 import { meetingsQuery } from '../api'
+import { OpensBeside } from '../../../shell/inspector'
 import { occurrenceTo } from '../components/EarlierInSeries'
 import { joinLink } from '../logic/meetingPlace'
 
@@ -59,7 +60,8 @@ export function NextMeetings() {
               const w = when(m)
               return (
                 <li key={`${m.meetingId}@${m.recurrenceId}`}>
-                  <Link
+                  <OpensBeside
+                    thing={{ type: 'meeting', id: m.meetingId, at: m.recurrenceId }}
                     to={occurrenceTo(m)}
                     data-next-meeting={m.meetingId}
                     className="grid h-7.5 grid-cols-[36px_44px_minmax(0,1fr)] items-center gap-x-2.5 rounded-control px-2.5 hover:bg-hover"
@@ -67,7 +69,7 @@ export function NextMeetings() {
                     <span className="font-mono text-meta text-muted">{w.day}</span>
                     <span className="font-mono text-meta text-muted">{w.time}</span>
                     <span className="truncate text-ui text-ink">{m.title}</span>
-                  </Link>
+                  </OpensBeside>
                 </li>
               )
             })}
@@ -97,12 +99,13 @@ function NextOne({
         <span>{when.time}</span>
       </span>
       <span className="flex min-w-0 flex-col">
-        <Link
+        <OpensBeside
+          thing={{ type: 'meeting', id: m.meetingId, at: m.recurrenceId }}
           to={occurrenceTo(m)}
           className="truncate text-ui font-medium text-ink hover:underline"
         >
           {m.title}
-        </Link>
+        </OpensBeside>
         {m.location && !join?.startsWith(m.location) && (
           <span className="inline-flex min-w-0 items-center gap-1 text-meta text-muted">
             <PlacesIcon size={12} aria-hidden="true" className="shrink-0" />

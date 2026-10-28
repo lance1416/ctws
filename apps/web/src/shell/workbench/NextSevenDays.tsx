@@ -6,6 +6,7 @@ import { FlagIcon, GoOnIcon, KIND_ICON, PLACE_ICON } from '../../platform/ui/ico
 import { KIND_ON_TINT, KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 import { useAccountToday } from '../auth'
 import type { ShownEntry } from '../contract'
+import { OpensBeside } from '../inspector'
 import { useRegistry } from '../registry'
 
 /** What the week shows of the calendar (FR-076): deadlines, follow-ups and meetings. */
@@ -26,16 +27,22 @@ const byDay = (a: ShownEntry, b: ShownEntry) =>
 export function NextSevenDays() {
   const today = useAccountToday()
   const range = { from: today, to: addDays(today, 6) }
-  const providers = useRegistry().calendar
+  const registry = useRegistry()
+  const providers = registry.calendar
   // The registry is fixed for the app's life: each provider's hook is called in the same order.
   const results = providers.map((p) => ({ ...p.useEntries(range), opens: p.opens }))
   const failed = results.find((r) => r.isError)
-  // One that opens over the calendar's grid opens there; the rest go where their module says.
+  // What has a narrow page opens in the inspector, a meeting as that occurrence (FR-022); one that
+  // opens over the calendar's grid opens there; the rest go where their module says.
   const entries = results.flatMap(({ entries, opens }) =>
     entries
       // A deadline met is the calendar's to keep, not the week's to do.
       .filter((e) => (SHOWN_KINDS as readonly string[]).includes(e.kind) && !e.done)
-      .map((e) => (opens ? { ...e, to: `/calendar?${new URLSearchParams(opens.params(e))}` } : e)),
+      .map((e) =>
+        opens && !registry.relationFor(e.type).Narrow
+          ? { ...e, to: `/calendar?${new URLSearchParams(opens.params(e))}` }
+          : e,
+      ),
   )
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i))
   return (
@@ -114,7 +121,8 @@ function Chip({ entry: e, soon }: { entry: ShownEntry; soon: boolean }) {
             text: e.title,
           }
   return (
-    <Link
+    <OpensBeside
+      thing={{ type: e.type, id: e.id, ...(e.recurrenceId ? { at: e.recurrenceId } : {}) }}
       to={e.to}
       title={e.title}
       data-week-entry={e.kind}
@@ -122,6 +130,6 @@ function Chip({ entry: e, soon }: { entry: ShownEntry; soon: boolean }) {
     >
       {look.icon}
       <span className="truncate">{look.text}</span>
-    </Link>
+    </OpensBeside>
   )
 }

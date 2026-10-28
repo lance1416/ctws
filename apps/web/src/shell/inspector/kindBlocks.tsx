@@ -60,7 +60,18 @@ export function useNarrowKindBlocks({
           thing={{ type: kind, id: t.id, ...(t.to && atOf(t.to) ? { at: atOf(t.to)! } : {}) }}
           to={t.to ?? where.to(t.id)}
           title={t.title}
-          fact={t.lead ?? t.fact}
+          fact={
+            t.lead ? (
+              // A time, in figures that line up; one still to come in the kind's colour (I-06).
+              <span
+                className={`font-mono tabular-nums ${t.upcoming ? KIND_TEXT[kind as Kind] : ''}`}
+              >
+                {t.lead}
+              </span>
+            ) : (
+              t.fact
+            )
+          }
         />
       )),
       ...linked.map((item) => {

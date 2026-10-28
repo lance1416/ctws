@@ -70,6 +70,8 @@ export const communicationModule: WorkspaceModule = {
       Mark: MessageMark,
       Fact: MessageFact,
       Narrow: MessageNarrow,
+      // Edited in place on its page: Edit takes it there with the editor open (I-05).
+      edit: (id) => `/${COMMUNICATION_ID}/${id}?edit=1`,
     },
   ],
   // Who it was with, and what they are called, and where it is filed.

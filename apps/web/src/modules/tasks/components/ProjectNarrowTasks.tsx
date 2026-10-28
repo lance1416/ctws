@@ -6,7 +6,9 @@ import { StatusMark } from '../../../platform/ui/StatusMark'
 import { NarrowRow } from '../../../shell/inspector'
 import { useEveryProject } from '../../../shell/projects'
 import { projectTasksQuery } from '../api'
+import { ProgressSquare } from './ProgressSquare'
 import { revealHref } from '../logic/crumb'
+import { leafCounts } from '../logic/tree/leafCounts'
 import { isFinished } from '../logic/status'
 
 /** Top-level rows before the way to the whole tree (FR-011). */
@@ -20,6 +22,8 @@ export function ProjectNarrowTasks({ projectId }: { projectId: ProjectId }) {
   const tasks = useQuery(projectTasksQuery(projectId)).data?.tasks ?? []
   const top = tasks.filter((t) => t.parentId === null && !isFinished(t.status))
   const open = tasks.filter((t) => !isFinished(t.status)).length
+  // A parent shows its progress, a leaf its status (I-04, DES-001 "进度方块").
+  const counts = leafCounts(tasks)
   const project = useEveryProject().data?.find((p) => p.id === projectId)
   const stageOf = (id: string | null) => project?.stages.find((s) => s.id === id)?.name
   return (
@@ -35,7 +39,13 @@ export function ProjectNarrowTasks({ projectId }: { projectId: ProjectId }) {
           {top.slice(0, SHOWN).map((t) => (
             <NarrowRow
               key={t.id}
-              mark={<StatusMark status={t.status} size={14} />}
+              mark={
+                counts.has(t.id) ? (
+                  <ProgressSquare status={t.status} children={counts.get(t.id)!} />
+                ) : (
+                  <StatusMark status={t.status} size={14} />
+                )
+              }
               thing={{ type: 'task', id: t.id }}
               to={revealHref(projectId, t.id)}
               title={t.title}

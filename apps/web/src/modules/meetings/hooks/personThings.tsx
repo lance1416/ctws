@@ -70,6 +70,7 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
       title: m.title,
       to: `/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`,
       lead: said(m),
+      upcoming: !over(m),
       sub: m.location && (
         <span className="inline-flex min-w-0 items-center gap-1">
           <PlacesIcon size={12} aria-hidden="true" className="shrink-0" />

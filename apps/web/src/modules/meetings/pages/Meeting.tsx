@@ -2,7 +2,7 @@ import { idFrom, meetingId, type MeetingOccurrence, type UpdateSeriesBody } from
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
 import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { problemText } from '../../../platform/http/api'
@@ -35,16 +35,19 @@ function useAddressed() {
   const { id = '' } = useParams()
   const [params] = useSearchParams()
   const today = useAccountToday()
+  // Only an id is asked about: `/meetings/new` names no meeting (a new one is made in a dialog).
+  const isId = meetingId.safeParse(id).success
   const series = idFrom(meetingId, id)
   const at = params.get('at')
-  const one = useQuery({ ...occurrenceQuery(series, at ?? ''), enabled: at !== null })
-  const next = useQuery({ ...seriesQuery(series, today), enabled: at === null })
+  const one = useQuery({ ...occurrenceQuery(series, at ?? ''), enabled: isId && at !== null })
+  const next = useQuery({ ...seriesQuery(series, today), enabled: isId && at === null })
   const read = at === null ? next : one
   const gone = read.isSuccess && !read.data
   // Not there: cancelled from its More menu, it can be taken back (FR-068), by its own address too.
   const cancelled = useQuery({ ...cancelledQuery(series, at ?? ''), enabled: gone && at !== null })
   return {
     id,
+    isId,
     at,
     meeting: read.data ?? null,
     gone,
@@ -57,7 +60,7 @@ function useAddressed() {
 
 /** `/meetings/:id`: one occurrence's page (FR-067), or what happened to it. */
 export function Meeting() {
-  const { id, at, meeting: m, gone, cancelled, settled, params } = useAddressed()
+  const { id, isId, at, meeting: m, gone, cancelled, settled, params } = useAddressed()
   useForgetWhenGone('meeting', id, gone && at === null)
   useSubjectOf(m ? { type: 'meeting', id: m.meetingId, title: m.title } : null)
   useRecordRecent(
@@ -71,6 +74,7 @@ export function Meeting() {
         }
       : null,
   )
+  if (!isId) return <Navigate to={`/${MEETINGS_ID}`} replace />
   // Cancelled from its More menu, it can be taken back from here (FR-068).
   if (!settled) return null
   if (cancelled && at) return <Cancelled id={id} at={at} />
@@ -130,10 +134,11 @@ const SCOPES: readonly EditScope[] = ['one', 'following', 'all']
  * deleting the whole series at its foot (FR-035).
  */
 export function MeetingEdit() {
-  const { id, meeting: m, gone, params } = useAddressed()
+  const { id, isId, meeting: m, gone, params } = useAddressed()
   const navigate = useNavigate()
   const asked = params.get('scope') as EditScope | null
   const scope: EditScope = m?.rrule && asked && SCOPES.includes(asked) ? asked : 'all'
+  if (!isId) return <Navigate to={`/${MEETINGS_ID}`} replace />
   if (gone) return <DeletedNotice type="meeting" id={id} />
   if (!m) return null
   return <EditForm key={m.recurrenceId} meeting={m} scope={scope} navigate={navigate} />
