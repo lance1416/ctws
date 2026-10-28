@@ -64,12 +64,12 @@ test('a deadline met stays on its day, struck through', async ({ page }) => {
 
   await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { status: 'done' } })
   await page.reload()
-  await expect(square(page, dayOffset(1)).getByRole('link', { name: /做完的/ })).toHaveClass(
-    /line-through/,
-  )
+  await expect(
+    square(page, dayOffset(1)).locator('[data-entry]').filter({ hasText: '做完的' }),
+  ).toHaveClass(/line-through/)
 })
 
-test('a birthday sits on the day the server gives, and clicking it opens the person', async ({
+test('a birthday sits on the day the server gives, and clicking it opens the person beside', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -83,8 +83,12 @@ test('a birthday sits on the day the server gives, and clicking it opens the per
 
   await page.goto('/calendar')
   await expect(square(page, dayOffset(0))).toContainText('周楠')
-  await square(page, dayOffset(0)).getByRole('link', { name: /周楠/ }).click()
-  await expect(page.getByRole('heading', { level: 1, name: '周楠' })).toBeVisible()
+  await square(page, dayOffset(0)).locator('[data-entry]').filter({ hasText: '周楠' }).click()
+  // In the inspector, the calendar staying put (FR-022).
+  await expect(
+    page.getByRole('complementary', { name: 'Inspector' }).getByRole('heading', { name: '周楠' }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/calendar\?.*inspect=person/)
 })
 
 /**
@@ -128,7 +132,7 @@ test('the calendar grid keeps to the type scale', async ({ page }) => {
   ).toBe(true)
   expect(found.faded).toEqual([])
   await expect(
-    page.locator('[data-day]').getByRole('link', { name: /交材料/ }),
+    page.locator('[data-day] [data-entry]').filter({ hasText: '交材料' }),
   ).toHaveAccessibleName(/找工作/)
 })
 
@@ -146,16 +150,15 @@ test('an open calendar moves today past midnight', async ({ page }) => {
   await expect(mark(today)).toHaveCount(0)
 })
 
-test('clicking a deadline on the grid opens its task', async ({ page }) => {
+test('clicking a deadline on the grid opens its task beside the grid', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'CTWS')
   const today = dayInZone(await accountZone(page))
   const task = await makeTask(page, pid, '配色重做', { dueAt: `${today}T12:00:00.000Z` })
   await page.goto('/calendar')
 
-  await square(page, today)
-    .getByRole('link', { name: /配色重做/ })
-    .click()
-  await expect(page).toHaveURL(`/projects/${pid}?task=${task}`)
-  await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText('配色重做')
+  await square(page, today).locator('[data-entry]').filter({ hasText: '配色重做' }).click()
+  await expect(page.getByRole('complementary', { name: 'Inspector' })).toContainText('配色重做')
+  await expect(page).toHaveURL(new RegExp(`/calendar\\?.*inspect=task%3A${task}`))
+  void pid
 })

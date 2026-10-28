@@ -25,6 +25,7 @@ import { KIND_ON_TINT, KIND_TINT } from '../../platform/ui/kinds'
 import { useTimeZone } from '../auth/useMe'
 import { useEveryProject } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
+import { useInspector } from '../layout/inspectorAddress'
 import { useRegistry } from '../registry'
 import { lunarWindowQuery } from './api'
 import { DayPanel } from './DayPanel'
@@ -101,7 +102,9 @@ export function Calendar() {
       { replace: true },
     )
 
-  const providers = useRegistry().calendar
+  const registry = useRegistry()
+  const providers = registry.calendar
+  const inspector = useInspector()
   const range = monthRange(cursor)
   // Like every module's entries, the month stepped away from stays drawn until the next one is in;
   // a square whose lunar name failed to load simply has none.
@@ -120,15 +123,19 @@ export function Calendar() {
     }
 
   // An entry whose module opens it over the grid names it in the address; the rest are links.
+  // A meeting opens its own occurrence over the grid; anything else with a narrow page opens in
+  // the inspector (FR-022, DES-001 "日历"); the rest are links to their pages.
   const opener = (entry: Placed) => {
     const opens = providers.find((p) => p.moduleId === entry.moduleId)?.opens
-    if (!opens) return null
-    return () =>
-      setParams((prev) => {
-        const next = new URLSearchParams(prev)
-        for (const [k, v] of Object.entries(opens.params(entry))) next.set(k, v)
-        return next
-      })
+    if (opens)
+      return () =>
+        setParams((prev) => {
+          const next = new URLSearchParams(prev)
+          for (const [k, v] of Object.entries(opens.params(entry))) next.set(k, v)
+          return next
+        })
+    if (!registry.relationFor(entry.type).Narrow) return null
+    return () => inspector.show({ type: entry.type, id: entry.id })
   }
 
   const squares = monthSquares(cursor)
