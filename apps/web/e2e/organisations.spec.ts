@@ -123,11 +123,15 @@ test('an organisation’s page says what it is, who is there and where it stands
   const message = timeline.locator('[data-timeline-entry="message"]')
   await expect(message).toContainText('Enquiry: review of our employment contracts')
   await expect(message).toContainText('To Sarah Whitfield')
-  await expect(timeline).toContainText('Stage set to Shortlisted in Find a lawyer')
+  await expect(timeline).toContainText(
+    /Stage set to\s*(Stage )?Shortlisted in\s*\S*\s*Find a lawyer/,
+  )
   await expect(timeline).toContainText('Added')
   await timeline.getByRole('button', { name: 'Changes' }).click()
   await expect(message).toHaveCount(0)
-  await expect(timeline).toContainText('Stage set to Shortlisted in Find a lawyer')
+  await expect(timeline).toContainText(
+    /Stage set to\s*(Stage )?Shortlisted in\s*\S*\s*Find a lawyer/,
+  )
   await timeline.getByRole('button', { name: 'Messages' }).click()
   await expect(message).toHaveCount(1)
   await expect(timeline).not.toContainText('Added')

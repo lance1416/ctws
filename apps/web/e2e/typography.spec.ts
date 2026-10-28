@@ -129,6 +129,14 @@ test('every page names itself at one step', async ({ page }) => {
   // Not empty: an empty module's page is its New alone, with no heading on screen (FR-030).
   await apiPost(page, '/people', { name: '韩梅梅' })
   await apiPost(page, '/reading', { kind: 'book', title: '设计心理学' })
+  await apiPost(page, '/meetings', {
+    title: '周会',
+    // Weekly since January 2026: always one within the overview's half year, whenever this runs.
+    startsLocal: '2026-01-05T10:00',
+    timeZone: 'Europe/London',
+    durationMinutes: 30,
+    rrule: 'FREQ=WEEKLY',
+  })
   for (const path of [
     '/today',
     '/projects',
