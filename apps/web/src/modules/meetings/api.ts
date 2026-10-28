@@ -8,7 +8,10 @@ import {
   ruleEndingAt,
   type UpdateSeriesBody,
   type MeetingId,
+  type NoteId,
+  type NoteResponse,
 } from '@ctws/contracts'
+import { addDays } from '@ctws/core/day'
 import { queryOptions, skipToken } from '@tanstack/react-query'
 import { ApiError, call, everyPage } from '../../platform/http/api'
 import { shortDay } from '../../platform/time/dates'
@@ -42,6 +45,67 @@ export const meetingKeys = {
     ['meetings', 'series', meetingId, today] as const,
   calendar: (range: DayRange) => ['meetings', 'calendar', range.from, range.to] as const,
   heldWith: (personId: PersonId) => ['meetings', 'held-with', personId] as const,
+  before: (meetingId: MeetingId, day: string) => ['meetings', 'before', meetingId, day] as const,
+  notes: (meetingId: MeetingId) => ['meetings', 'notes', meetingId] as const,
+}
+
+/**
+ * A series' occurrences before a day, the latest first: "Earlier in this series" (FR-067), all of
+ * them, however far back the series goes.
+ */
+export const earlierQuery = (meetingId: MeetingId, day: string) =>
+  queryOptions({
+    queryKey: meetingKeys.before(meetingId, day),
+    queryFn: async ({ signal }) => {
+      const pages = await everyPage(
+        (cursor) =>
+          call(
+            api.meetings.occurrences,
+            { params: { id: meetingId }, query: { to: addDays(day, -1), order: 'desc', cursor } },
+            { signal },
+          ),
+        signal,
+      )
+      return pages.flatMap((p) => p.occurrences)
+    },
+  })
+
+/** The notes hung on a series, each on its occurrence (FR-050, FR-067). */
+export const seriesNotesQuery = (meetingId: MeetingId) =>
+  queryOptions({
+    queryKey: meetingKeys.notes(meetingId),
+    queryFn: async ({ signal }) => {
+      const pages = await everyPage(
+        (cursor) =>
+          call(api.notes.list, { query: { anchor: `meeting:${meetingId}`, cursor } }, { signal }),
+        signal,
+      )
+      return pages.flatMap((p) => p.notes)
+    },
+  })
+
+/** An occurrence's notes, written for the first time: hung on it (FR-067). */
+export function writeOccurrenceNote(
+  meetingId: MeetingId,
+  occurrenceId: string,
+  body: string,
+): Promise<NoteResponse> {
+  return call(api.notes.create, {
+    body: { body, anchor: { type: 'meeting', id: meetingId, occurrenceId } },
+  })
+}
+
+/** The rest of what is written, as it is typed. */
+export function rewriteNote(id: NoteId, body: string): Promise<NoteResponse> {
+  return call(api.notes.update, { params: { id }, body: { body } })
+}
+
+/** Takes back one occurrence cancelled from its More menu (FR-068). */
+export function restoreOccurrence(
+  meetingId: MeetingId,
+  recurrenceId: string,
+): Promise<MeetingOccurrence> {
+  return call(api.meetings.restoreOccurrence, { params: { id: meetingId, recurrenceId } })
 }
 
 /**

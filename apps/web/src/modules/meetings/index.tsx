@@ -10,7 +10,9 @@ import { useMeetingEntries } from './hooks/contributions'
 import { MEETINGS_ID } from './logic/id'
 import { MeetingFact } from './components/MeetingFact'
 import { NewMeeting } from './components/NewMeeting'
-import { Meetings } from './pages/Meetings'
+import { MeetingsSidebar } from './components/MeetingsSidebar'
+import { Meeting, MeetingEdit } from './pages/Meeting'
+import { MeetingsOverview } from './pages/MeetingsOverview'
 
 /**
  * Meetings: a page of its own, timed calendar entries, and a Workbench card for today. No search
@@ -26,13 +28,15 @@ export const meetingModule: WorkspaceModule = {
     label: 'Meetings',
     to: `/${MEETINGS_ID}`,
     Status: NextMeetingLine,
+    List: MeetingsSidebar,
     chord: 'meetings',
     order: 30,
   },
   routes: [
-    { index: true, element: <Meetings />, handle: PAGE },
-    // A meeting has no page of its own: this is the list with its pane open.
-    { path: ':id', element: <Meetings />, handle: PAGE },
+    { index: true, element: <MeetingsOverview />, handle: PAGE },
+    // One occurrence's page, `?at=` naming which; the series' next one without it (FR-067).
+    { path: ':id', element: <Meeting />, handle: PAGE },
+    { path: ':id/edit', element: <MeetingEdit />, handle: PAGE },
   ],
   creates: [{ kind: 'meeting', key: 'm', label: 'Meeting', Dialog: NewMeeting }],
   chords: [

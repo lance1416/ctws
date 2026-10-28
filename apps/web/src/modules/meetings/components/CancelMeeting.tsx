@@ -9,9 +9,12 @@ import { CancelScopeAsk } from './ScopeAsk'
 /** A repeating meeting asks which occurrences to cancel; a one-off gets the plain question. */
 export function CancelMeeting({
   meeting,
+  whole = false,
   onCancelled,
 }: {
   meeting: MeetingOccurrence
+  /** The whole series and nothing less, as the edit page's foot deletes it (FR-068, FR-035). */
+  whole?: boolean
   onCancelled: () => void
 }) {
   const forget = useForgetRecent()
@@ -27,16 +30,20 @@ export function CancelMeeting({
   return (
     <>
       <DangerAction
-        label="Cancel meeting"
-        confirmLabel="Confirm cancelling this meeting"
-        message={`Cancel “${meeting.title}”? This cannot be undone.`}
+        label={whole ? 'Delete this meeting' : 'Cancel meeting'}
+        confirmLabel={whole ? 'Confirm deleting this meeting' : 'Confirm cancelling this meeting'}
+        message={
+          whole
+            ? `Delete “${meeting.title}”${meeting.rrule ? ', every occurrence of it' : ''}? Its notes stay in Notes, and the tasks made from it stay.`
+            : `Cancel “${meeting.title}”? This cannot be undone.`
+        }
         // A way out called "Cancel" would say the opposite of what it does here.
-        confirm="Cancel meeting"
+        confirm={whole ? 'Delete this meeting' : 'Cancel meeting'}
         back="Keep it"
         busy={drop.isPending}
         onConfirm={() => drop.mutate('all')}
       >
-        {meeting.rrule
+        {meeting.rrule && !whole
           ? (close) => (
               <CancelScopeAsk
                 what={`Cancel which occurrences of “${meeting.title}”?`}

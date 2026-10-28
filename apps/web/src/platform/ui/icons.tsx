@@ -66,6 +66,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  Repeat,
   RotateCcwClock,
   RotateCw,
   Search,
@@ -187,6 +188,8 @@ export const ContactIcon = Mail
 export const PlacesIcon = MapPin
 /** An organisation's kind, beside its name (FR-065): "Law firm". */
 export const TypeIcon = Tag
+/** A meeting that repeats: its rule's tag, and its earlier occurrences (FR-067). */
+export const RepeatIcon = Repeat
 
 /** A way to reach someone (FR-062): the icon its row's kind button wears. */
 export const REACH_ICON = { email: Mail, phone: Phone, url: Link } as const satisfies Record<
