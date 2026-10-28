@@ -131,7 +131,6 @@ test('the inspector has its own address, survives a reload and closes on Esc', a
 test('the modules still to come keep their place on the bar (EPIC-12)', async ({ page }) => {
   await registerFreshUser(page)
   for (const [name, url] of [
-    ['Organisations', /\/organisations$/],
     ['Communication', /\/communication$/],
     ['Notes', /\/notes$/],
   ] as const) {

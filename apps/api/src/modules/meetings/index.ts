@@ -7,5 +7,5 @@ export const meetingsModule = fixedModule({
   id: 'meetings',
   routes: meetingRoutes,
   linkable: meetingLinkable,
-  timelineSources: [meetingSource],
+  timelineSources: () => [meetingSource],
 })

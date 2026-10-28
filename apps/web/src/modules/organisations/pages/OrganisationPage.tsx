@@ -25,6 +25,19 @@ const TAG =
 const siteWords = (url: string) => url.replace(/^https?:\/\//i, '').replace(/\/$/, '')
 
 /**
+ * Where the website link may go: an http(s) address only. The server refuses any other on write,
+ * but a row from before that rule is drawn as words, never as a link that could run script.
+ */
+function safeHref(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * AN ORGANISATION'S PAGE (FR-065, artboard 14): what it is and where at the head, with Log a
  * message; down the left what it is, who is there and which projects it is in; beside it the
  * timeline of what was said and done with it.
@@ -42,7 +55,7 @@ export function OrganisationPage({ organisation: o }: { organisation: Organisati
       >
         {profiled && <Profile organisation={o} />}
         <div className="min-w-0 rounded-block border border-line bg-panel p-4">
-          <Timeline of={{ type: 'organisation', id: o.id }} />
+          <Timeline of={{ type: 'organisation', id: o.id }} filters />
         </div>
       </div>
     </div>
@@ -101,18 +114,10 @@ function Profile({ organisation: o }: { organisation: OrganisationResponse }) {
     >
       {(o.website || o.city) && (
         <Section title="About" icon={KIND_ICON.organisation}>
-          <dl className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 pl-6 text-ui">
+          <dl className="grid grid-cols-[4rem_minmax(0,1fr)] gap-x-3 gap-y-2 pl-6 text-ui">
             {o.website && (
               <Fact name="Website">
-                <a
-                  href={o.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={o.website}
-                  className="block truncate text-ink hover:underline"
-                >
-                  {siteWords(o.website)}
-                </a>
+                <Website url={o.website} />
               </Fact>
             )}
             {o.city && <Fact name="City">{o.city}</Fact>}
@@ -185,6 +190,22 @@ function Section({
       </h2>
       {children}
     </section>
+  )
+}
+
+function Website({ url }: { url: string }) {
+  const href = safeHref(url)
+  if (!href) return <span className="block truncate">{url}</span>
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={url}
+      className="block truncate text-ink hover:underline"
+    >
+      {siteWords(url)}
+    </a>
   )
 }
 

@@ -106,7 +106,7 @@ export async function buildApp(opts: {
   const registry = linkRegistry([...modules.map((m) => m.linkable), projectLinkable])
   const columns = Object.assign({}, ...modules.map((m) => m.projectColumns ?? {}))
   const sources = [
-    ...modules.flatMap((m) => m.timelineSources ?? []),
+    ...modules.flatMap((m) => m.timelineSources?.(registry) ?? []),
     mentionSource(registry),
     relatedStageChanges(registry),
   ]

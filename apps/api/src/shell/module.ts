@@ -33,8 +33,11 @@ export type ApiModule = {
   routes: FastifyPluginAsyncZod<{ registry: LinkRegistry }>
   linkable: Linkable
   projectColumns?: ProjectColumns
-  /** The kinds of timeline entry this module keeps about other things. */
-  timelineSources?: readonly TimelineSource[]
+  /**
+   * The kinds of timeline entry this module keeps about other things; given the registry, so an
+   * entry can name another module's things.
+   */
+  timelineSources?: (registry: LinkRegistry) => readonly TimelineSource[]
   /** What of this module's goes with a project when the project is deleted: the tasks in it. */
   projectGraves?: ProjectGraves
 }

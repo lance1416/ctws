@@ -174,8 +174,13 @@ function InTouchRow({ row }: { row: OrganisationInTouch }) {
           {day === today ? 'Today' : shortDay(day, today)}
         </span>
       </span>
+      {/* With the organisation itself, no one in it: nothing to count. */}
       <span className="text-meta text-muted">
-        {row.peopleCount === 1 ? '1 person' : `${row.peopleCount} people`}
+        {row.peopleCount === 0
+          ? ''
+          : row.peopleCount === 1
+            ? '1 person'
+            : `${row.peopleCount} people`}
       </span>
     </li>
   )

@@ -14,6 +14,7 @@ import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
 import { standingOf, type LinkRegistry } from '../../shell/links'
 import { daysBetween } from './days'
+import { partyNames } from './names'
 import {
   type CommunicationRow,
   getCommunication,
@@ -23,23 +24,14 @@ import {
 } from './queries'
 import { createCommunication, deleteCommunication, logReply, updateCommunication } from './service'
 
-/** Names every party of these rows through the registry, one lookup per kind. */
+/** Names every party of these rows through the registry. */
 async function named(
   registry: LinkRegistry,
   q: Queryable,
   workspaceId: WorkspaceId,
   rows: readonly CommunicationRow[],
 ): Promise<CommunicationResponse[]> {
-  const names = new Map<string, string>()
-  for (const type of ['person', 'organisation'] as const) {
-    const ids = [
-      ...new Set(rows.flatMap((r) => r.parties.filter((p) => p.type === type).map((p) => p.id))),
-    ]
-    if (ids.length === 0) continue
-    for (const thing of await registry.of(type).rows(q, workspaceId, { ids, limit: ids.length })) {
-      names.set(`${type}:${thing.id}`, thing.title)
-    }
-  }
+  const names = await partyNames(registry, q, workspaceId, rows)
   return rows.map((r) => ({
     id: r.id,
     direction: r.direction,

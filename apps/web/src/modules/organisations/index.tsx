@@ -7,6 +7,7 @@ import {
   OrganisationsCount,
 } from './components/OrganisationFacts'
 import { OrganisationsSidebar } from './components/OrganisationsSidebar'
+import { describeOrganisationChange } from './logic/describeChange'
 import { ORGANISATIONS_ID } from './logic/id'
 import { Organisation, OrganisationEdit, OrganisationNew } from './pages/Organisation'
 import { OrganisationsOverview } from './pages/OrganisationsOverview'
@@ -55,6 +56,7 @@ export const organisationModule: WorkspaceModule = {
       to: (id) => `/${ORGANISATIONS_ID}/${id}`,
       Mark: OrganisationListMark,
       Fact: OrganisationFact,
+      describeChange: describeOrganisationChange,
     },
   ],
   // Who works there, what was said with it, and where it stands in projects.

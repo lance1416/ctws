@@ -30,8 +30,14 @@ const messageEntry = z.object({
     subject: z.string().nullable(),
     /** The first of the body, for the row. */
     excerpt: z.string().nullable(),
-    parties: z.array(z.object({ type: z.enum(['person', 'organisation']), id: objectId })),
+    /** Named by their modules; one the workspace can no longer see is left out. */
+    parties: z.array(
+      z.object({ type: z.enum(['person', 'organisation']), id: objectId, name: z.string() }),
+    ),
+    attachments: z.array(z.string()),
     repliedBy: objectId.nullable(),
+    /** When the reply that closed it came: "Replied Oct 15" (FR-065). */
+    repliedAt: instant.nullable(),
   }),
 })
 

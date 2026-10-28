@@ -196,7 +196,13 @@ export async function organisationsInTouch(
   return rowsOf(result, inTouchRow)
 }
 
-/** The communications naming a person or organisation, newest first, for a timeline. */
+/**
+ * The communications naming a person or organisation, newest first, for a timeline. An
+ * organisation's are those naming it, and those naming someone who held a role there that month,
+ * as its meetings count (FR-065): the first and last months of a role count whole. The month is
+ * read in UTC, the timeline's clock having no zone; only an exchange in the last hours of a
+ * month's last day can fall the other side.
+ */
 export async function communicationsWith(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -209,37 +215,60 @@ export async function communicationsWith(
   })
   const limit = span.limit
   const rows =
-    party.type === 'project'
+    party.type === 'organisation'
       ? await q
           .select()
           .from(communications)
           .where(
             within(
               scoped(communications, workspaceId),
-              and(eq(communications.projectId, idFrom(projectId, party.id)), upTo),
+              sql`exists (
+                select 1 from communication_parties cp
+                where cp.communication_id = ${communications.id}
+                  and ((cp.party_type = 'organisation' and cp.party_id = ${party.id})
+                    or (cp.party_type = 'person' and exists (
+                      select 1 from person_roles r
+                      where r.person_id = cp.party_id and r.organisation_id = ${party.id}
+                        and (r.from_month is null
+                          or date_trunc('month', ${communications.occurredAt} at time zone 'UTC')::date >= r.from_month)
+                        and (r.to_month is null
+                          or date_trunc('month', ${communications.occurredAt} at time zone 'UTC')::date <= r.to_month)))))`,
+              upTo,
             ),
           )
           .orderBy(desc(communications.occurredAt), desc(communications.id))
           .limit(limit)
-      : await q
-          .select({ c: communications })
-          .from(communications)
-          .innerJoin(
-            communicationParties,
-            eq(communicationParties.communicationId, communications.id),
-          )
-          .where(
-            within(
-              scoped(communications, workspaceId),
-              and(
-                eq(communicationParties.partyType, party.type),
-                eq(communicationParties.partyId, party.id),
-                upTo,
+      : party.type === 'project'
+        ? await q
+            .select()
+            .from(communications)
+            .where(
+              within(
+                scoped(communications, workspaceId),
+                and(eq(communications.projectId, idFrom(projectId, party.id)), upTo),
               ),
-            ),
-          )
-          .orderBy(desc(communications.occurredAt), desc(communications.id))
-          .limit(limit)
-          .then((rows) => rows.map((r) => r.c))
+            )
+            .orderBy(desc(communications.occurredAt), desc(communications.id))
+            .limit(limit)
+        : await q
+            .select({ c: communications })
+            .from(communications)
+            .innerJoin(
+              communicationParties,
+              eq(communicationParties.communicationId, communications.id),
+            )
+            .where(
+              within(
+                scoped(communications, workspaceId),
+                and(
+                  eq(communicationParties.partyType, party.type),
+                  eq(communicationParties.partyId, party.id),
+                  upTo,
+                ),
+              ),
+            )
+            .orderBy(desc(communications.occurredAt), desc(communications.id))
+            .limit(limit)
+            .then((rows) => rows.map((r) => r.c))
   return hydrate(q, workspaceId, rows)
 }
