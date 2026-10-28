@@ -1,15 +1,16 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   apiPost,
+  captureBox,
   holdFirstRead,
   makeProject,
   makeReading,
   makeTask,
+  openCapture,
+  patchAnswered,
   registerFreshUser,
   slowReads,
   WEB,
-  captureBox,
-  openCapture,
 } from './helpers'
 
 /**
@@ -22,8 +23,21 @@ import {
  */
 
 const capture = (page: Page) => captureBox(page)
-const rowOf = (page: Page, text: string) =>
-  page.getByRole('listitem').filter({ hasText: text }).first()
+/** The overview's To read block (FR-072). */
+const toRead = (page: Page) => page.getByRole('main').getByRole('region', { name: 'To read' })
+/** One part of the Reading sidebar's list: Reading, To read, Finished or Dropped. */
+const sidebarPart = (page: Page, name: string) =>
+  page.getByRole('navigation', { name: 'Reading' }).getByRole('region', { name })
+/**
+ * Picks a status on an item's page, which saves it there and then (FR-073), and waits for the
+ * server's answer and the picker saying the new one.
+ */
+async function setStatus(page: Page, label: string) {
+  const main = page.getByRole('main')
+  await main.getByRole('button', { name: /^Status: / }).click()
+  await page.getByRole('menuitem', { name: new RegExp(`^${label}`) }).click()
+  await expect(main.getByRole('button', { name: `Status: ${label}` })).toBeEnabled()
+}
 
 async function captureLine(page: Page, line: string) {
   const posted = page.waitForResponse(
@@ -52,26 +66,29 @@ test('a pasted link goes to Reading; a sentence still goes to the inbox', async 
 })
 
 /**
- * Added while the list's first read is still out: it is on the list when that read lands. The
- * refetch after the write must not be handed the read that left before it.
+ * Added while the overview's first read is still out: it is on the overview when that read lands.
+ * The refetch after the write must not be handed the read that left before it.
  */
-test('a book added while the list is still loading is on the list', async ({ page }) => {
+test('a link added while the overview is still loading is on it', async ({ page }) => {
   await registerFreshUser(page, '/')
   const release = await holdFirstRead(page, '**/api/v1/reading')
   await page.goto('/reading')
   const made = page.waitForResponse(
     (r) => r.request().method() === 'POST' && /\/api\/v1\/reading$/.test(r.url()),
   )
-  await page.getByLabel('Add to the reading list').fill('The Elements of Typographic Style')
-  await page.getByLabel('Add to the reading list').press('Enter')
+  await page.getByRole('button', { name: 'Add reading' }).click()
+  await capture(page).fill('https://typography.invalid/elements')
+  await capture(page).press('Enter')
   await made
   release()
-  await expect(page.getByRole('main')).toContainText('The Elements of Typographic Style')
+  await expect(toRead(page)).toContainText('typography.invalid/elements')
 })
 
-test('an untitled link is listed by host and path', async ({ page }) => {
+test('an untitled link is named by host and path, and its page opens it away from the app', async ({
+  page,
+}) => {
   await registerFreshUser(page)
-  await apiPost(page, '/reading', {
+  const item = await apiPost(page, '/reading', {
     kind: 'link',
     url: 'https://www.linear.invalid/now/how-we-redesigned-issues',
   })
@@ -79,42 +96,50 @@ test('an untitled link is listed by host and path', async ({ page }) => {
 
   // A pasted link shows its HOST AND PATH -- the host alone ("x.com", "github.com") does not
   // say which tweet or which repo, so a row of it carries no information at all.
-  const row = rowOf(page, 'linear.invalid/now/how-we-redesigned-issues')
-  await expect(row.getByRole('link')).toHaveText('linear.invalid/now/how-we-redesigned-issues')
-  // And the line under it does not repeat what the line above already says.
-  await expect(row.getByText('linear.invalid', { exact: true })).toHaveCount(0)
-  await expect(row.getByRole('link')).toHaveAttribute(
+  const row = page.locator(`[data-to-read="${item.id}"]`)
+  await expect(row).toContainText('linear.invalid/now/how-we-redesigned-issues')
+  await row.click()
+  await expect(page).toHaveURL(new RegExp(`/reading/${item.id}$`))
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'linear.invalid/now/how-we-redesigned-issues',
+  )
+  const open = page.getByRole('main').getByRole('link', { name: 'Open link' })
+  await expect(open).toHaveAttribute(
     'href',
     'https://www.linear.invalid/now/how-we-redesigned-issues',
   )
   // And it opens away from the workspace, so a half-read list is not lost.
-  await expect(row.getByRole('link')).toHaveAttribute('target', '_blank')
+  await expect(open).toHaveAttribute('target', '_blank')
 })
 
-test('a book moves to read → reading → finished, and the finished pile folds away', async ({
+test('a book moves to read → reading → finished, and the finished pile is one link away', async ({
   page,
 }) => {
   await registerFreshUser(page)
-  await makeReading(page, { kind: 'book', title: '设计心理学' }, { author: 'Don Norman' })
+  const id = await makeReading(
+    page,
+    { kind: 'book', title: '设计心理学' },
+    { author: 'Don Norman' },
+  )
   await page.goto('/reading')
+  await expect(toRead(page)).toContainText('设计心理学')
+  await expect(page.locator('[data-reading-card]')).toHaveCount(0)
 
-  const section = (name: string) => page.getByRole('region', { name })
-  await expect(section('To read').getByText('设计心理学')).toBeVisible()
+  await page.locator(`[data-to-read="${id}"]`).click()
+  await setStatus(page, 'Reading')
+  await page.goto('/reading')
+  await expect(page.locator(`[data-reading-card="${id}"]`)).toContainText('设计心理学')
+  await expect(toRead(page)).not.toContainText('设计心理学')
 
-  await rowOf(page, '设计心理学').getByRole('button', { name: 'Start reading' }).click()
-  await expect(section('Reading now').getByText('设计心理学')).toBeVisible()
-  // The row's button is its own action: pressing it does not also open the row's pane.
-  await expect(page.getByRole('dialog', { name: 'Reading' })).toHaveCount(0)
-
-  await rowOf(page, '设计心理学').getByRole('button', { name: 'Finished' }).click()
-  // Gone from both open sections, and not gone from the app: the count is the way back, which is
+  await page.locator(`[data-reading-card="${id}"]`).click()
+  await setStatus(page, 'Finished')
+  await page.goto('/reading')
+  // Gone from both open parts, and not gone from the app: the count is the way back, which is
   // the rule the task tree already keeps about finished work.
-  await expect(section('Reading now')).toHaveCount(0)
-  await expect(section('To read')).toHaveCount(0)
-  const toggle = page.getByRole('button', { name: 'Finished 1' })
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
-  await toggle.click()
-  await expect(rowOf(page, '设计心理学')).toBeVisible()
+  await expect(page.locator('[data-reading-card]')).toHaveCount(0)
+  await expect(toRead(page)).not.toContainText('设计心理学')
+  await page.getByRole('main').getByRole('link', { name: '1 finished' }).click()
+  await expect(sidebarPart(page, 'Finished')).toContainText('设计心理学')
 })
 
 test('search reaches both modules from one box', async ({ page }) => {
@@ -161,66 +186,65 @@ test('a project page carries both modules, each with its own block and numbers',
   )
 })
 
-test('a reading item is deleted from the bottom of its layer, after one question', async ({
+test('a reading item is deleted from the foot of its edit page, after one question', async ({
   page,
 }) => {
   await registerFreshUser(page)
-  await makeReading(page, { kind: 'book', title: '设计心理学' }, { author: 'Don Norman' })
-  await page.goto('/reading')
+  const id = await makeReading(
+    page,
+    { kind: 'book', title: '设计心理学' },
+    { author: 'Don Norman' },
+  )
+  await page.goto(`/reading/${id}`)
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
-  await page.getByRole('button', { name: '设计心理学', exact: true }).click()
-  const layer = page.getByRole('dialog', { name: 'Reading' })
-  await expect(layer).toBeVisible()
-  await expect(page).toHaveURL(new RegExp('/reading/[0-9a-f-]{36}$'))
+  await page.getByRole('main').getByRole('link', { name: 'Edit', exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`/reading/${id}/edit$`))
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Edit 设计心理学')
 
-  const remove = layer.getByRole('button', { name: 'Delete item' })
-  // The last thing in the layer: Linked is above it.
-  const [box, linked] = await Promise.all([
+  const remove = page.getByRole('button', { name: 'Delete item' })
+  // The last thing on the page: the form, and its Save, are above it.
+  const [box, save] = await Promise.all([
     remove.boundingBox(),
-    layer.getByText('Linked', { exact: true }).boundingBox(),
+    page.getByRole('button', { name: 'Save', exact: true }).boundingBox(),
   ])
-  expect(box!.y).toBeGreaterThan(linked!.y)
+  expect(box!.y).toBeGreaterThan(save!.y)
 
   await remove.click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this item' })
   await expect(ask).toContainText('Delete “设计心理学”?')
   expect(deletes).toHaveLength(0)
   await ask.getByRole('button', { name: /^Delete/ }).click()
+  await expect(page).toHaveURL(/\/reading$/)
   await expect(page.getByText('设计心理学')).toHaveCount(0)
   expect(deletes).toHaveLength(1)
 })
 
-test('a reading item is edited in its layer, not in a dropdown menu', async ({ page }) => {
+test('a reading item is edited on its edit page and its page says the new title', async ({
+  page,
+}) => {
   await registerFreshUser(page)
-  await apiPost(page, '/reading', {
+  const item = await apiPost(page, '/reading', {
     kind: 'link',
     url: 'https://www.linear.invalid/now/how-we-redesigned-issues',
   })
-  await page.goto('/reading')
+  await page.goto(`/reading/${item.id}`)
 
-  // The title is the link that opens the article in a new tab; the rest of the row opens the layer.
-  await rowOf(page, 'linear.invalid/now/how-we-redesigned-issues')
-    .getByText(/^Added/)
-    .click()
-  const layer = page.getByRole('dialog', { name: 'Reading' })
-  await layer.getByRole('button', { name: 'Edit', exact: true }).click()
-  await layer.getByLabel('Title').fill('Linear 怎么重做 issue')
-  await layer.getByRole('button', { name: 'Save' }).click()
+  await page.getByRole('main').getByRole('link', { name: 'Edit', exact: true }).click()
+  await page.getByLabel('Title', { exact: true }).fill('Linear 怎么重做 issue')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
 
-  await expect(layer.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
-  await expect(page.getByText('Linear 怎么重做 issue').first()).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/reading/${item.id}$`))
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Linear 怎么重做 issue')
 })
 
 test('a reading edit the server refuses stays open and says why', async ({ page }) => {
   await registerFreshUser(page)
   const made = await apiPost(page, '/reading', { kind: 'book', title: 'Refused book' })
   const id = made.id
-  await page.goto(`/reading/${id}`)
-  const layer = page.getByRole('dialog', { name: 'Reading' })
-  await layer.getByRole('button', { name: 'Edit', exact: true }).click()
-  await layer.getByLabel('Title').fill('Refused again')
+  await page.goto(`/reading/${id}/edit`)
+  await page.getByLabel('Title', { exact: true }).fill('Refused again')
   await page.route(`**/api/v1/reading/${id}`, (r) =>
     r.request().method() === 'PATCH'
       ? r.fulfill({
@@ -235,71 +259,230 @@ test('a reading edit the server refuses stays open and says why', async ({ page 
         })
       : r.continue(),
   )
-  await layer.getByRole('button', { name: 'Save' }).click()
-  await expect(layer.getByRole('alert')).toContainText('That title is too long')
-  await expect(layer.getByLabel('Title')).toHaveValue('Refused again')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  const form = page.getByRole('form', { name: 'Edit reading item' })
+  await expect(form.getByRole('alert')).toContainText('That title is too long')
+  await expect(page).toHaveURL(new RegExp(`/reading/${id}/edit$`))
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Refused again')
 })
 
 /**
- * A READING ROW IS THE APP'S ROW: the day you mean to finish it in the margin (a plan, so no flag),
- * its project's colour as the thread, then the kind, the title and a line naming the project. The
- * sections are headed where the threads hang, as the page's title is.
+ * Added from a person's page, the overview has its own add line saying whose recommendation it
+ * is. It is empty for the next title as soon as the server has the last, not when the list is
+ * read again.
  */
-test('the reading list hangs on the margin: the plan, the thread, then the item', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await registerFreshUser(page)
-  const project = await apiPost(page, '/projects', { name: 'CTWS' })
-  const projectId = project.id
-  const id = await makeReading(
-    page,
-    { kind: 'book', title: 'The Elements of Typographic Style' },
-    { projectId },
-  )
-  // A fixed day years out, so the margin's word does not depend on today: its date.
-  const planOn = '2030-05-28'
-  const planned = await page.request.patch(`/api/v1/reading/${id}`, {
-    headers: WEB,
-    data: { planOn },
-  })
-  expect(planned.ok(), await planned.text()).toBe(true)
-  await apiPost(page, '/reading', { kind: 'book', title: 'Designing Data-Intensive Applications' })
-  await page.goto('/reading')
-
-  const row = page.locator(`[data-reading-row="${id}"]`)
-  await expect(row.locator('[data-row-lead-text]')).toHaveText('May 28')
-  await expect(row.locator('[data-row-lead]')).toHaveAttribute('data-row-lead', 'plan')
-  await expect(row.locator('[data-project-rail]')).toHaveAttribute('data-project-rail', projectId)
-  await expect(row).toContainText('CTWS')
-
-  // ONE x for the threads; the title and the section's heading hang on it.
-  const threads = await page
-    .locator('[data-reading-row] [data-thread]')
-    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().x)))
-  expect(threads).toHaveLength(2)
-  expect(new Set(threads).size).toBe(1)
-  const h1 = (await page.getByRole('heading', { level: 1, name: 'Reading' }).boundingBox())!
-  expect(Math.round(h1.x)).toBe(threads[0])
-  const section = (await page.getByRole('heading', { level: 2, name: 'To read' }).boundingBox())!
-  expect(Math.round(section.x)).toBe(threads[0])
-})
-
 test('the add box is empty for the next title once the server has the last', async ({ page }) => {
   await registerFreshUser(page)
-  // Something already there: an empty Reading page is only its New reading (FR-030).
-  await apiPost(page, '/reading', { kind: 'book', title: '设计心理学' })
-  await page.goto('/reading')
+  const person = await apiPost(page, '/people', { name: 'Ying Chen' })
+  await page.goto(`/reading?${new URLSearchParams({ recommendedBy: person.id, by: 'Ying Chen' })}`)
   const box = page.getByLabel('Add to the reading list')
   await box.waitFor()
+  await expect(page.getByRole('main')).toContainText('Recommended by Ying Chen')
   // The list read after the save is slow; the box must not wait for it.
   await slowReads(page, '**/api/v1/reading*')
-  const posted = page.waitForResponse(
-    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/reading',
+  // Theirs: made, then marked as recommended by them; the server has it once both are answered.
+  const marked = page.waitForResponse(
+    (r) => r.request().method() === 'PATCH' && /\/api\/v1\/reading\/[^/]+$/.test(r.url()),
   )
   await box.fill('A first book')
   await box.press('Enter')
-  await posted
+  await marked
   await box.pressSequentially('A second', { delay: 20 })
   await expect(box).toHaveValue('A second')
+  // And what was added is theirs.
+  await expect(page.locator('[data-to-read]').filter({ hasText: 'A first book' })).toContainText(
+    'A first book',
+  )
+  const items = await (await page.request.get('/api/v1/reading', { headers: WEB })).json()
+  const first = (
+    items.reading as { title: string | null; recommendedBy: { name: string } | null }[]
+  ).find((i) => i.title === 'A first book')
+  expect(first?.recommendedBy?.name).toBe('Ying Chen')
+})
+
+// ------------------------------------------------------------------ the overview (FR-072)
+
+test('the overview has a card for each item being read: who recommended it or its project', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const person = await apiPost(page, '/people', { name: 'Ying Chen' })
+  const projectId = await makeProject(page, 'CTWS')
+  const fromYing = await makeReading(
+    page,
+    { kind: 'book', title: 'Thinking in Systems' },
+    { author: 'Donella Meadows', status: 'reading', recommendedById: person.id },
+  )
+  const forCtws = await makeReading(
+    page,
+    { kind: 'link', url: 'https://www.linear.invalid/now/how-we-redesigned-issues' },
+    { status: 'reading', projectId },
+  )
+  await makeReading(page, { kind: 'book', title: 'Waiting book' })
+  await page.goto('/reading')
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Reading' })).toBeVisible()
+  await expect(page.locator('[data-reading-card]')).toHaveCount(2)
+  const ying = page.locator(`[data-reading-card="${fromYing}"]`)
+  await expect(ying).toContainText('Thinking in Systems')
+  await expect(ying).toContainText('Donella Meadows')
+  await expect(ying).toContainText('Reading')
+  await expect(ying).toContainText('Recommended by Ying Chen')
+  const ctws = page.locator(`[data-reading-card="${forCtws}"]`)
+  await expect(ctws).toContainText('linear.invalid/now/how-we-redesigned-issues')
+  await expect(ctws).toContainText('In CTWS')
+  // What is waiting is not a card; it is a row under To read.
+  await expect(toRead(page)).toContainText('Waiting book')
+  // A card is the way to its page.
+  await ying.click()
+  await expect(page).toHaveURL(new RegExp(`/reading/${fromYing}$`))
+})
+
+test('To read has the latest added first, five of them, then All N', async ({ page }) => {
+  await registerFreshUser(page)
+  const titles = ['Book 1', 'Book 2', 'Book 3', 'Book 4', 'Book 5', 'Book 6', 'Book 7']
+  // One after another, so each is added after the last.
+  for (const title of titles) await makeReading(page, { kind: 'book', title })
+  await page.goto('/reading')
+
+  const rows = page.locator('[data-to-read]')
+  await expect(rows).toHaveText([/Book 7/, /Book 6/, /Book 5/, /Book 4/, /Book 3/])
+  await expect(toRead(page)).toContainText('7')
+  await page.getByRole('button', { name: 'All 7' }).click()
+  await expect(rows).toHaveText([...titles].reverse().map((t) => new RegExp(t)))
+  await expect(page.getByRole('button', { name: /^All / })).toHaveCount(0)
+})
+
+test('N finished opens the sidebar on what is finished, with what was dropped apart', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await makeReading(page, { kind: 'book', title: 'Finished book' }, { status: 'done' })
+  await makeReading(page, { kind: 'book', title: 'Dropped book' }, { status: 'dropped' })
+  await makeReading(page, { kind: 'book', title: 'Waiting book' })
+  await page.goto('/reading')
+  await expect(sidebarPart(page, 'To read')).toContainText('Waiting book')
+
+  await page.getByRole('main').getByRole('link', { name: '2 finished' }).click()
+  await expect(page).toHaveURL(/\/reading\?list=finished$/)
+  await expect(sidebarPart(page, 'Finished')).toContainText('Finished book')
+  await expect(sidebarPart(page, 'Finished')).not.toContainText('Dropped book')
+  await expect(sidebarPart(page, 'Dropped')).toContainText('Dropped book')
+  await expect(sidebarPart(page, 'To read')).toHaveCount(0)
+  // And the way back to what is being read.
+  await page.getByRole('link', { name: 'Back to what is being read' }).click()
+  await expect(page).toHaveURL(/\/reading$/)
+  await expect(sidebarPart(page, 'To read')).toContainText('Waiting book')
+})
+
+test('Add reading opens the capture box on Reading', async ({ page }) => {
+  await registerFreshUser(page)
+  await makeReading(page, { kind: 'book', title: 'Something already there' })
+  await page.goto('/reading')
+  await page.getByRole('button', { name: 'Add reading' }).click()
+  await expect(capture(page)).toBeFocused()
+  await expect(page.getByRole('radio', { name: 'Reading' })).toHaveAttribute('aria-checked', 'true')
+  // A link pasted there is on the list.
+  await capture(page).fill('https://typography.invalid/elements')
+  await capture(page).press('Enter')
+  await expect(toRead(page)).toContainText('typography.invalid/elements')
+})
+
+test('a book title typed in the capture box on Reading is a book to read', async ({ page }) => {
+  // "Add reading" is the overview's only way to add (FR-072), and a book has no link to paste.
+  await registerFreshUser(page)
+  await makeReading(page, { kind: 'book', title: 'Something already there' })
+  await page.goto('/reading')
+  await page.getByRole('button', { name: 'Add reading' }).click()
+  const posted = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/reading',
+  )
+  await capture(page).fill('The Elements of Typographic Style')
+  await capture(page).press('Enter')
+  const answer = await posted
+  expect(answer.ok(), `the book is accepted: ${await answer.text()}`).toBe(true)
+  await expect(toRead(page)).toContainText('The Elements of Typographic Style')
+})
+
+test('an empty Reading is the module empty state, whose button opens the capture box', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/reading')
+  await expect(page.getByRole('heading', { level: 2, name: 'No reading yet' })).toBeVisible()
+  await page.getByRole('main').getByRole('button', { name: /^New / }).click()
+  await expect(capture(page)).toBeFocused()
+  await expect(page.getByRole('radio', { name: 'Reading' })).toHaveAttribute('aria-checked', 'true')
+})
+
+// ------------------------------------------------------------------ an item's page (FR-073)
+
+test('a reading item’s page says its status, who recommended it and its project; Open link is for a link', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const person = await apiPost(page, '/people', { name: 'Ying Chen' })
+  const projectId = await makeProject(page, 'CTWS')
+  const link = await makeReading(
+    page,
+    { kind: 'link', url: 'https://martinfowler.invalid/articles/refactoring' },
+    {
+      title: 'Refactoring notes',
+      status: 'reading',
+      recommendedById: person.id,
+      projectId,
+      // A day years out, so its words do not depend on today: its date with its year.
+      planOn: '2030-05-28',
+    },
+  )
+  await page.goto(`/reading/${link}`)
+  const main = page.getByRole('main')
+  await expect(main.getByRole('heading', { level: 1 })).toHaveText('Refactoring notes')
+  await expect(main).toContainText('martinfowler.invalid')
+  await expect(main.getByRole('button', { name: 'Status: Reading' })).toBeVisible()
+  await expect(main.getByRole('link', { name: 'Open link' })).toHaveAttribute(
+    'href',
+    'https://martinfowler.invalid/articles/refactoring',
+  )
+  const profile = page.getByRole('complementary', { name: 'Profile' })
+  await expect(profile.getByRole('region', { name: 'About' })).toContainText('Finish by')
+  await expect(profile.getByRole('region', { name: 'About' })).toContainText('May 28, 2030')
+  await expect(profile.getByRole('region', { name: 'About' })).toContainText('Started')
+  const recommended = profile.getByRole('region', { name: 'Recommended by' })
+  await expect(recommended.getByRole('link', { name: 'Ying Chen' })).toHaveAttribute(
+    'href',
+    `/people/${person.id}`,
+  )
+  const inProject = profile.getByRole('region', { name: 'In project' })
+  await expect(inProject.getByRole('link', { name: /CTWS/ })).toHaveAttribute(
+    'href',
+    `/projects/${projectId}`,
+  )
+
+  // A book has nowhere to open: no Open link, and its author where a link has its address.
+  const book = await makeReading(
+    page,
+    { kind: 'book', title: 'Thinking in Systems' },
+    { author: 'Donella Meadows' },
+  )
+  await page.goto(`/reading/${book}`)
+  await expect(main.getByRole('heading', { level: 1 })).toHaveText('Thinking in Systems')
+  await expect(main.getByRole('button', { name: 'Status: To read' })).toBeVisible()
+  await expect(main.getByRole('link', { name: 'Open link' })).toHaveCount(0)
+  await expect(profile.getByRole('region', { name: 'About' })).toContainText('Donella Meadows')
+  await expect(profile.getByRole('region', { name: 'Recommended by' })).toHaveCount(0)
+  await expect(profile.getByRole('region', { name: 'In project' })).toHaveCount(0)
+})
+
+test('starting a book from its page puts Started reading on its timeline', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await makeReading(page, { kind: 'book', title: 'Thinking in Systems' })
+  await page.goto(`/reading/${id}`)
+  const timeline = page.getByRole('region', { name: 'Timeline' })
+  await expect(timeline).toContainText('Added')
+  await expect(timeline).not.toContainText('Started reading')
+
+  const patched = patchAnswered(page, `reading/${id}`)
+  await setStatus(page, 'Reading')
+  expect((await patched).ok()).toBe(true)
+  await expect(timeline).toContainText('Started reading')
 })

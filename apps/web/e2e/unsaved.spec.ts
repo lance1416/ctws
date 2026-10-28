@@ -12,8 +12,9 @@ import {
 import { dayOffset } from './days'
 
 /**
- * AN EDIT IS NOT THROWN AWAY BY A STRAY KEY. Escape, the scrim and the close button all ask first
- * when a person, a meeting or a reading item has unsaved changes, as a task's pane always has.
+ * AN EDIT IS NOT THROWN AWAY BY A STRAY KEY. Escape, the scrim, the close button and leaving the
+ * page all ask first when a person, a meeting or a reading item has unsaved changes, as a task's
+ * pane always has.
  */
 
 const asked = (pane: Locator) => pane.getByRole('alert').filter({ hasText: 'unsaved changes' })
@@ -88,20 +89,42 @@ test('leaving an edited meeting asks, and Keep editing keeps the edit', async ({
   await expect(main.getByRole('heading', { level: 1 })).toHaveText('Weekly')
 })
 
-test('the scrim on an edited reading item asks before throwing the edit away', async ({ page }) => {
-  // Below 1280 the pane is an overlay with a scrim.
-  await page.setViewportSize({ width: 1024, height: 800 })
+test('leaving an edited reading item asks, and Keep editing keeps the edit', async ({ page }) => {
+  // A reading item is edited on a page (FR-073), guarded as a person's is.
   await registerFreshUser(page)
   const item = await apiPost(page, '/reading', { kind: 'book', title: 'The C book' })
-  await page.goto(`/reading/${item.id}`)
-  const pane = page.getByRole('dialog', { name: 'Reading' })
-  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
-  const title = pane.getByLabel('Title', { exact: true })
+  await page.goto(`/reading/${item.id}/edit`)
+  const main = page.getByRole('main')
+  const title = page.getByLabel('Title', { exact: true })
   await title.fill('The C Programming Language')
-  await page.locator('[data-detail-backdrop]').click({ position: { x: 10, y: 10 } })
+  await main.getByRole('button', { name: 'Cancel', exact: true }).click()
 
-  await expect(asked(pane)).toBeVisible()
+  await expect(asked(main)).toBeVisible()
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  await expect(page).toHaveURL(new RegExp(`/reading/${item.id}/edit$`))
   await expect(title).toHaveValue('The C Programming Language')
+
+  // Away by the icon bar, the same question.
+  await page
+    .getByRole('navigation', { name: 'Modules' })
+    .getByRole('link', { name: 'Today' })
+    .click()
+  await expect(asked(main)).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/reading/${item.id}/edit$`))
+
+  // And Discard is the way out when that is what was meant.
+  await page.getByRole('button', { name: 'Discard changes' }).click()
+  await expect(page).toHaveURL(/\/today$/)
+  await page.goto(`/reading/${item.id}`)
+  await expect(main.getByRole('heading', { level: 1 })).toHaveText('The C book')
+})
+
+test('leaving a reading edit with nothing changed just goes', async ({ page }) => {
+  await registerFreshUser(page)
+  const item = await apiPost(page, '/reading', { kind: 'book', title: 'The C book' })
+  await page.goto(`/reading/${item.id}/edit`)
+  await page.getByRole('main').getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`/reading/${item.id}$`))
 })
 
 for (const where of ['Today', 'Done'] as const) {

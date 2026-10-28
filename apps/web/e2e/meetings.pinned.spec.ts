@@ -397,12 +397,19 @@ test('a long note folds to its first screen, and Read all unfolds it', async ({ 
     '2026-10-20T10:00',
     ['# Decisions', ...Array.from({ length: 12 }, () => paragraph)].join('\n\n'),
   )
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/meetings/${m.meetingId}?at=2026-10-20T10:00`)
   const notes = page.getByRole('region', { name: 'Notes', exact: true })
   const body = notes.locator('[data-note-body]')
   await expect(body).toContainText('launch plan')
-  // Its headings are a little contents at the block's head.
+  // Its headings are a little contents at the block's head; a narrower block keeps them in a
+  // menu, so the head stays one line (K-04).
   await expect(notes.getByRole('button', { name: 'Decisions' })).toBeVisible()
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await expect(notes.getByRole('button', { name: 'Decisions' })).toBeHidden()
+  await notes.getByRole('button', { name: 'Go to a heading' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Decisions' })).toBeVisible()
+  await page.keyboard.press('Escape')
   expect((await body.boundingBox())!.height).toBeLessThanOrEqual(301)
   await notes.getByRole('button', { name: 'Read all' }).click()
   await expect(notes.getByRole('button', { name: 'Fold' })).toBeVisible()

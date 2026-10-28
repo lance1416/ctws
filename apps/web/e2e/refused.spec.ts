@@ -76,18 +76,21 @@ test('a meeting delete the server refuses says so, and the edit page stays', asy
   await expect(page).toHaveURL(new RegExp(`/meetings/${m.meetingId}/edit`))
 })
 
-test('a reading row whose move the server refuses says so', async ({ page }) => {
+test('a reading status change the server refuses says so', async ({ page }) => {
   await registerFreshUser(page)
   const item = await apiPost(page, '/reading', { kind: 'book', title: '设计心理学' })
-  await page.goto('/reading')
+  await page.goto(`/reading/${item.id}`)
   await refuse(page, `**/api/v1/reading/${item.id}`, 'PATCH')
+  // The status is changed on the item's page, there and then (FR-073).
   await page
-    .getByRole('listitem')
-    .filter({ hasText: '设计心理学' })
-    .first()
-    .getByRole('button', { name: 'Start reading' })
+    .getByRole('main')
+    .getByRole('button', { name: /^Status: / })
     .click()
+  await page.getByRole('menuitem', { name: /^Reading/ }).click()
   await expect(said(page)).toBeVisible()
+  await expect(
+    page.getByRole('main').getByRole('button', { name: 'Status: To read' }),
+  ).toBeVisible()
 })
 
 test('a person delete the server refuses says so, and the page stays', async ({ page }) => {
@@ -104,19 +107,18 @@ test('a person delete the server refuses says so, and the page stays', async ({ 
   await expect(page).toHaveURL(new RegExp(`/people/${person.id}/edit$`))
 })
 
-test('a reading delete the server refuses says so, and the pane stays', async ({ page }) => {
+test('a reading delete the server refuses says so, and the edit page stays', async ({ page }) => {
   await registerFreshUser(page)
   const item = await apiPost(page, '/reading', { kind: 'book', title: 'The C book' })
-  await page.goto(`/reading/${item.id}`)
-  const pane = page.getByRole('dialog', { name: 'Reading' })
+  await page.goto(`/reading/${item.id}/edit`)
   await refuse(page, `**/api/v1/reading/${item.id}`, 'DELETE')
-  await pane.getByRole('button', { name: 'Delete item' }).click()
+  await page.getByRole('button', { name: 'Delete item' }).click()
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: /^Delete/ })
     .click()
   await expect(said(page)).toBeVisible()
-  await expect(pane).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/reading/${item.id}/edit$`))
 })
 
 test('an unlink the server refuses says so, and the link stays', async ({ page }) => {

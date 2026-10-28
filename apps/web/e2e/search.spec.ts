@@ -341,7 +341,7 @@ test('choosing a reading item in search opens that item', async ({ page }) => {
   await query(page, 'Searchable')
   await result(page, 'Searchable book').click()
   await expect(page).toHaveURL(new RegExp(`/reading/${id}$`))
-  await expect(page.getByRole('dialog', { name: 'Reading' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Searchable book' })).toBeVisible()
 })
 
 test('Enter straight after typing goes where the typing points', async ({ page }) => {

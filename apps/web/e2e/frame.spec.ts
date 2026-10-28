@@ -128,12 +128,19 @@ test('the inspector has its own address, survives a reload and closes on Esc', a
   await expect(page).toHaveURL(/\/people$/)
 })
 
-test('the modules still to come keep their place on the bar (EPIC-12)', async ({ page }) => {
+test('every place on the bar opens a page of its own, none of them a placeholder', async ({
+  page,
+}) => {
   await registerFreshUser(page)
-  for (const [name, url] of [['Notes', /\/notes$/]] as const) {
-    await page.getByRole('navigation', { name: 'Modules' }).getByRole('link', { name }).click()
-    await expect(page).toHaveURL(url)
-    await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
-    await expect(page.getByText('Coming later.')).toBeVisible()
+  const bar = page.getByRole('navigation', { name: 'Modules' })
+  for (const name of PLACES) {
+    const link = bar.getByRole('link', { name, exact: true })
+    const to = (await link.getAttribute('href'))!
+    await link.click()
+    await expect(page).toHaveURL(new URL(to, page.url()).href)
+    await expect(link).toHaveAttribute('aria-current', 'page')
+    // Each names itself once, even empty (FR-030); none is waiting for a later batch.
+    await expect(page.getByRole('main').getByRole('heading', { level: 1 }), name).toHaveCount(1)
+    await expect(page.getByText('Coming later.')).toHaveCount(0)
   }
 })

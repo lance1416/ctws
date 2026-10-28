@@ -18,7 +18,7 @@ test('the icon bar leads to the paths the modules registered', async ({ page }) 
 
 test('a path no module registered lands on the workbench', async ({ page }) => {
   await registerFreshUser(page)
-  await page.goto('/notes/recent')
+  await page.goto('/nowhere/recent')
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Workbench' })).toBeVisible()
 })

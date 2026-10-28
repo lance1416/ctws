@@ -32,7 +32,7 @@ async function panes(page: Page) {
 const overCalendar = (m: { meetingId: string; recurrenceId: string }) =>
   `/calendar?${new URLSearchParams({ meeting: m.meetingId, at: m.recurrenceId })}`
 
-test('in every pane, Linked lines up on the left with the other labels (a person has a page)', async ({
+test('in every pane, Linked lines up on the left with the other labels (a person and a reading item have pages)', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -40,7 +40,6 @@ test('in every pane, Linked lines up on the left with the other labels (a person
   // The task's inspector has its own Linked, chips under a head with its +; checked below.
   const open: [string, () => Promise<unknown>, string][] = [
     ['Meetings', () => page.goto(overCalendar(w.meeting)), 'Notes'],
-    ['Reading', () => page.goto(`/reading/${w.book.id}`), 'Status'],
   ]
   for (const [name, go, other] of open) {
     await go()
@@ -103,7 +102,6 @@ test('every edit has Cancel left, Save right, both at the top', async ({ page })
         await page.getByRole('listitem').filter({ hasText: 'Ship the importer' }).first().click()
       },
     ],
-    ['Reading', () => page.goto(`/reading/${w.book.id}`)],
   ]
   for (const [name, go] of open) {
     await go()
@@ -137,6 +135,14 @@ test('every edit has Cancel left, Save right, both at the top', async ({ page })
   await leftOf(main.getByRole('button', { name: 'Cancel', exact: true }), saveMeeting)
   expect((await saveMeeting.boundingBox())!.y, 'Meetings: Save above the fields').toBeLessThan(
     (await main.locator('input, textarea').first().boundingBox())!.y,
+  )
+  // And a reading item (FR-073).
+  await page.goto(`/reading/${w.book.id}/edit`)
+  const saveReading = main.getByRole('button', { name: 'Save', exact: true })
+  await expect(saveReading).toBeVisible()
+  await leftOf(main.getByRole('button', { name: 'Cancel', exact: true }), saveReading)
+  expect((await saveReading.boundingBox())!.y, 'Reading: Save above the fields').toBeLessThan(
+    (await main.getByLabel('Title', { exact: true }).boundingBox())!.y,
   )
 })
 

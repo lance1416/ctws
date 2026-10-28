@@ -286,5 +286,5 @@ test('clicking a task or a reading item on the grid opens that one', async ({ pa
     .getByRole('link', { name: /设计心理学/ })
     .click()
   await expect(page).toHaveURL(`/reading/${item}`)
-  await expect(page.getByRole('dialog', { name: 'Reading' })).toContainText('设计心理学')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('设计心理学')
 })

@@ -39,6 +39,18 @@ async function seed(page: Page) {
     { kind: 'book', title: 'Cracking the Coding Interview' },
     { projectId: pid, planOn: dayOffset(1) },
   )
+  // Being read: a card, with its project and since when (FR-072).
+  await makeReading(
+    page,
+    { kind: 'book', title: 'Designing Data-Intensive Applications' },
+    { author: 'Martin Kleppmann', projectId: pid, status: 'reading' },
+  )
+  // A note hung on the project: its row names what it hangs on (FR-074).
+  await apiPost(page, '/notes', {
+    title: 'Questions to ask the interviewer',
+    body: '- What does a first week look like?',
+    anchor: { type: 'project', id: pid },
+  })
   await apiPost(page, '/people', {
     name: '陈颖',
     birthday: { calendar: 'solar', month: 5, day: 28 },
@@ -77,7 +89,10 @@ for (const width of [320, 375]) {
     for (const [path, shown] of [
       ['/projects', '找工作'],
       ['/meetings', 'Second interview'],
+      // The overviews: a card for what is being read, a row for what is waiting (FR-072, FR-074).
+      ['/reading', 'Designing Data-Intensive Applications'],
       ['/reading', 'Cracking the Coding Interview'],
+      ['/notes', 'Questions to ask the interviewer'],
       ['/review', 'Done one'],
       ['/review?view=done', 'Done one'],
       // The overview: its blocks are what must fit (FR-060).
