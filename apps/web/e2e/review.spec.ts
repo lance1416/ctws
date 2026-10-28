@@ -13,7 +13,7 @@ const thisWeek = async (page: Page) => {
     .getByRole('navigation', { name: 'Weeks' })
     .getByRole('button', { name: /so far/ })
     .click()
-  await expect(page.locator('[data-review-total]')).toContainText('finished so far')
+  await expect(page.locator('[data-review-total]')).toContainText(/finished\s*so far/)
 }
 
 const lane = (page: Page, name: string) => page.locator(`[data-review-lane="${name}"]`)

@@ -15,6 +15,7 @@ const meeting = (startsAt: string, endsAt: string): CalendarEntry => ({
   turns: null,
   joinUrl: null,
   done: false,
+  repeats: false,
   projectId: null,
   projectName: null,
 })

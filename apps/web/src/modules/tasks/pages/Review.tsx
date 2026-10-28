@@ -89,8 +89,10 @@ function Week() {
         {data && (
           <p data-review-total className="ml-auto flex items-center gap-2">
             <span className="text-hero tracking-[-0.02em] text-ink tabular-nums">{total}</span>
-            <span className="w-[70px] text-ui text-muted">
-              {monday === thisMonday ? 'finished so far' : 'finished this week'}
+            {/* Two lines beside the number, however short the words (RV-02). */}
+            <span className="flex w-[70px] flex-col text-ui text-muted">
+              <span>finished</span>
+              <span>{monday === thisMonday ? 'so far' : 'this week'}</span>
             </span>
           </p>
         )}

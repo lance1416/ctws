@@ -19,6 +19,7 @@ import {
   FlagIcon,
   ForwardIcon,
   KIND_ICON,
+  RepeatIcon,
 } from '../../platform/ui/icons'
 import { KIND_ON_TINT, KIND_TINT } from '../../platform/ui/kinds'
 import { useTimeZone } from '../auth/useMe'
@@ -149,12 +150,21 @@ export function Calendar() {
       document.querySelector<HTMLElement>(`[data-day="${next}"] [data-day-number]`)?.focus(),
     )
   }
+  // Over the grid, closing hands focus back to the square that opened it (CA-01).
+  const closeDay = () => {
+    const was = chosen
+    setDay(null)
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>(`[data-day="${was}"] [data-day-number]`)?.focus(),
+    )
+  }
   const panel = chosen && (
     <DayPanel
       day={chosen}
       today={today}
       parts={dayParts(byDay.get(chosen) ?? [])}
       opener={opener}
+      {...(resident ? {} : { onClose: closeDay })}
     />
   )
 
@@ -275,7 +285,7 @@ export function Calendar() {
       </div>
 
       {!resident && panel && (
-        <DetailPane label={longDay(chosen)} onClose={() => setDay(null)}>
+        <DetailPane label={longDay(chosen)} onClose={closeDay}>
           {panel}
         </DetailPane>
       )}
@@ -383,7 +393,7 @@ function lineLook(entry: Placed, today: string): { tone: string; icon: ReactNode
     case 'occurrence':
       return {
         tone: `${KIND_TINT.meeting} ${KIND_ON_TINT.meeting}`,
-        icon: icon(KIND_ICON.meeting),
+        icon: icon(entry.repeats ? RepeatIcon : KIND_ICON.meeting),
       }
     case 'follow-up':
       return {

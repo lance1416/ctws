@@ -29,7 +29,7 @@ export function AwaitingReply() {
     <Block
       kind="communication"
       title="Awaiting reply"
-      count={rows.length}
+      count={rows.length > 0 ? rows.length : undefined}
       empty={due.isSuccess && rows.length === 0 ? 'Nobody to follow up with.' : null}
       keepsSize
     >

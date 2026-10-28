@@ -78,6 +78,8 @@ const calendarEntry = z.object({
   joinUrl: z.string().nullable(),
   /** A deadline met: the calendar keeps it, struck through (FR-080). */
   done: z.boolean(),
+  /** One meeting of a series, drawn with the repeat mark (artboard 13). */
+  repeats: z.boolean(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
 })

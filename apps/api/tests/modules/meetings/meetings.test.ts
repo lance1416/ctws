@@ -177,6 +177,15 @@ describe('a recurring meeting on the calendar', () => {
       ['occurrence', '2026-11-03T09:00'],
       ['occurrence', '2026-11-10T09:00'],
     ])
+    // Each says it is one of a series, for the calendar's repeat mark (CA-03).
+    expect(got.every((e) => e.repeats)).toBe(true)
+  })
+
+  it('says a one-off is not one of a series', async () => {
+    const ctx = await setup()
+    await arrange(ctx, { ...WEEKLY, rrule: null })
+    const got = await entries(ctx, '2026-10-20', '2026-10-20')
+    expect(got.map((e) => e.repeats)).toEqual([false])
   })
 
   it('holds 09:00 in Toronto across the DST change, and says which zone that is', async () => {

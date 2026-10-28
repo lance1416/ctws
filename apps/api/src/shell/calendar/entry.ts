@@ -4,12 +4,13 @@ import type { CalendarEntry } from '@ctws/contracts'
 export function dayEntry(
   e: Omit<
     CalendarEntry,
-    'startsAt' | 'endsAt' | 'timeZone' | 'turns' | 'recurrenceId' | 'joinUrl' | 'done'
+    'startsAt' | 'endsAt' | 'timeZone' | 'turns' | 'recurrenceId' | 'joinUrl' | 'done' | 'repeats'
   > & { done?: boolean },
 ): CalendarEntry {
   return {
     ...e,
     done: e.done ?? false,
+    repeats: false,
     recurrenceId: null,
     startsAt: null,
     endsAt: null,

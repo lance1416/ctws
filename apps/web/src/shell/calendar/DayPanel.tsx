@@ -2,9 +2,10 @@ import type { ComponentType, ReactNode } from 'react'
 import { useContext } from 'react'
 import { Link } from 'react-router-dom'
 import { longDay, nearDay } from '../../platform/time/dates'
-import { BUTTON } from '../../platform/ui/buttonStyles'
+import { BUTTON, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import {
   CakeIcon,
+  CloseIcon,
   DoneIcon,
   FlagIcon,
   JoinIcon,
@@ -29,11 +30,14 @@ export function DayPanel({
   today,
   parts,
   opener,
+  onClose,
 }: {
   day: string
   today: string
   parts: DayParts
   opener: (entry: Placed) => (() => void) | null
+  /** Over the grid, a way to close it (CA-01). */
+  onClose?: () => void
 }) {
   const lunar = useLunarName(day)
   const { creates } = useRegistry()
@@ -56,6 +60,17 @@ export function DayPanel({
       <div className="flex flex-col gap-0.5 p-4">
         <div className="flex flex-wrap items-center gap-2.5">
           <h2 className="text-subject text-ink">{longDay(day)}</h2>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              title="Close  Esc"
+              className={`${ICON_BUTTON} order-last ml-auto`}
+            >
+              <CloseIcon size={16} aria-hidden="true" />
+            </button>
+          )}
           {lunar && (
             <span className="inline-flex h-5.5 items-center rounded-key bg-hover px-2 text-meta text-muted">
               {lunar}

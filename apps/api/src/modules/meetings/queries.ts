@@ -282,6 +282,7 @@ export async function meetingEntries(
     turns: null,
     joinUrl: m.joinUrl,
     done: false,
+    repeats: m.rrule !== null,
     projectId: m.projectId,
     projectName: m.projectName,
   }))

@@ -26,6 +26,7 @@ export function useFollowUpEntries(range: { from: string; to: string }) {
             turns: null,
             joinUrl: null,
             done: false,
+            repeats: false,
             projectId: m.projectId,
             projectName: m.projectName,
           },

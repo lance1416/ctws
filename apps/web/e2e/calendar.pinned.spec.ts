@@ -169,4 +169,11 @@ test('on a MacBook Air the chosen day opens over the grid and closes with Esc', 
   await page.keyboard.press('Escape')
   await expect(pane).toHaveCount(0)
   await expect(page).not.toHaveURL(/day=/)
+
+  // Its × closes it too, and focus goes back to the square that opened it (CA-01).
+  const thursday = page.getByRole('button', { name: 'Thursday, October 22' })
+  await thursday.click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click()
+  await expect(pane).toHaveCount(0)
+  await expect(thursday).toBeFocused()
 })
