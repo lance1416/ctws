@@ -6,7 +6,7 @@ import {
   type PersonResponse,
 } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { problemText } from '../../../platform/http/api'
 import { DangerZone } from '../../../platform/ui/DangerZone'
 import { DeletedNotice } from '../../../shell/detail'
@@ -50,8 +50,11 @@ export function Person() {
   return <PersonPage key={person.id} person={person} />
 }
 
-/** Writes a person, then their roles as a list of their own (FR-047), then opens their page. */
-function useWritePerson(person: PersonResponse | null) {
+/**
+ * Writes a person, then their roles as a list of their own (FR-047), then opens their page; or,
+ * written down from a project, goes back to it (FR-026, FR-055).
+ */
+function useWritePerson(person: PersonResponse | null, back: string | null = null) {
   const navigate = useNavigate()
   return useMutation({
     mutationFn: async (write: PersonWrite) => {
@@ -62,7 +65,7 @@ function useWritePerson(person: PersonResponse | null) {
       return saved
     },
     meta: { changes: ['person', 'organisation'], awaits: [peopleKeys.all], ownsError: true },
-    onSuccess: (saved) => navigate(`/people/${saved.id}`),
+    onSuccess: (saved) => navigate(back ?? `/people/${saved.id}`),
   })
 }
 
@@ -70,11 +73,14 @@ function useWritePerson(person: PersonResponse | null) {
 export function PersonNew() {
   const [params] = useSearchParams()
   const project = params.get('project')
-  const write = useWritePerson(null)
+  // The name typed in a project's picker, carried in the history entry rather than the address.
+  const named = (useLocation().state as { name?: unknown } | null)?.name
+  const write = useWritePerson(null, project ? `/projects/${project}` : null)
   return (
     <PersonEditor
       person={null}
       projectId={project ? idFrom(projectId, project) : null}
+      typedName={typeof named === 'string' ? named : null}
       busy={write.isPending}
       error={write.isError ? problemText(write.error) : null}
       cancelTo={project ? `/projects/${project}` : '/people'}

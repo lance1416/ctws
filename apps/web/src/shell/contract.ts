@@ -166,6 +166,20 @@ export type OwnThings = {
   isPending: boolean
   isError: boolean
   retry: () => void
+  /**
+   * Things that join a project rather than being made in it (FR-055): the block's + finds one to
+   * `add`, or `make`s one under the name typed; each row can `remove` it from the project.
+   */
+  join?: Join
+}
+
+export type Join = {
+  add: (id: string) => void
+  remove: (id: string) => void
+  make: (name: string) => void
+  busy: boolean
+  /** Why the last add or remove did not take. */
+  error: string | null
 }
 
 export type RelationContribution = {

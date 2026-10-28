@@ -130,11 +130,15 @@ test('a project’s blocks: what is in it first, the empty ones as their heads, 
   await expect(reading).toContainText('None yet')
   expect(names.indexOf('Reading')).toBeGreaterThan(1)
 
-  // A block whose + links rather than makes names one of its kind (BUG-037).
+  // A block whose + links rather than makes names one of its kind (BUG-037); people and
+  // organisations are found first and put on the project (FR-055).
   await expect(
     page.getByRole('region', { name: 'Organisations' }).getByRole('button', {
-      name: 'Link an organisation',
+      name: 'Add an organisation',
     }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'People' }).getByRole('button', { name: 'Add a person' }),
   ).toBeVisible()
   await expect(
     page.getByRole('region', { name: 'Notes' }).getByRole('button', { name: 'Link a note' }),
@@ -165,7 +169,7 @@ test('a project’s blocks: what is in it first, the empty ones as their heads, 
   await page.getByLabel('Given name', { exact: true }).fill('Priya')
   await page.getByLabel('Family name', { exact: true }).fill('Nair')
   await page.getByRole('button', { name: /^Create person/ }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Priya Nair' })).toBeVisible()
-  await page.goto(`/projects/${project.id as string}`)
+  // Made from the project, it goes back there (FR-026).
+  await expect(page).toHaveURL(new RegExp(`/projects/${project.id as string}$`))
   await expect(page.getByRole('region', { name: 'People' })).toContainText('Priya Nair')
 })

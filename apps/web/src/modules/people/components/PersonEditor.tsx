@@ -8,7 +8,7 @@ import {
   type ProjectId,
   type UpdatePersonBody,
 } from '@ctws/contracts'
-import { avatarInitials, clockTime, displayName, sortKey } from '@ctws/core'
+import { avatarInitials, clockTime, displayName, sortKey, splitName } from '@ctws/core'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -118,6 +118,16 @@ function draftOf(person: PersonResponse | null): Draft {
   }
 }
 
+/** A name typed as one string, in the form's three boxes. */
+function namedParts(name: string): Pick<Draft, 'givenName' | 'middleName' | 'familyName'> {
+  const parts = splitName(name)
+  return {
+    givenName: parts.givenName,
+    middleName: parts.middleName ?? '',
+    familyName: parts.familyName ?? '',
+  }
+}
+
 const text = (v: string) => (v.trim() === '' ? null : v.trim())
 
 /** Who is written down, as Create or Save sends it; roles go after, as their own list. */
@@ -136,6 +146,7 @@ export type PersonWrite = {
 export function PersonEditor({
   person,
   projectId = null,
+  typedName = null,
   busy,
   error,
   cancelTo,
@@ -146,6 +157,8 @@ export function PersonEditor({
   person: PersonResponse | null
   /** The project New person was asked for from, kept on them (FR-055). */
   projectId?: ProjectId | null
+  /** The words New person was asked for under (a project's picker): split into the name's parts. */
+  typedName?: string | null
   busy: boolean
   error: string | null
   cancelTo: string
@@ -158,7 +171,10 @@ export function PersonEditor({
   const today = useAccountToday()
   const now = useNow()
   const [opened] = useState(() => draftOf(person))
-  const [d, setDraft] = useState(opened)
+  // What was typed counts as written: leaving asks, as it would had it been typed here.
+  const [d, setDraft] = useState(() =>
+    typedName ? { ...opened, ...namedParts(typedName) } : opened,
+  )
   const set = (patch: Partial<Draft>) => setDraft((was) => ({ ...was, ...patch }))
   const channels = useChannelRows(() =>
     person

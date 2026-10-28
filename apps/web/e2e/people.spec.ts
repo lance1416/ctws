@@ -136,23 +136,58 @@ test('a project page carries its people, in its People block (FR-055)', async ({
   await expect(people.locator('[data-linked]').first()).toContainText('某')
 })
 
-test('a person made from a project page is on that project', async ({ page }) => {
+test('a project’s People + puts someone on it, and Remove takes them off', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  const pid = await makeProject(page, 'Job hunt')
+  const priya = await add(page, { name: 'Priya Nair' })
+  await page.goto(`/projects/${pid}`)
+  const people = page.getByRole('region', { name: 'People' })
+
+  // FR-055: the + finds someone already written down, and choosing them is the whole act.
+  await people.getByRole('button', { name: 'Add a person' }).click()
+  const picker = page.getByRole('dialog', { name: 'Add a person' })
+  await picker.getByRole('combobox').fill('priya')
+  await picker.getByRole('option').filter({ hasText: 'Priya Nair' }).click()
+  await expect(picker).toHaveCount(0)
+  await expect(people).toContainText('Priya Nair')
+
+  // Their page's head shows the project, and only shows it.
+  await page.goto(`/people/${priya.id as string}`)
+  await expect(page.getByRole('main').locator(`a[href="/projects/${pid}"]`)).toBeVisible()
+
+  // Taken off the project, they are still written down.
+  await page.goto(`/projects/${pid}`)
+  await people.getByRole('button', { name: 'Remove Priya Nair from project' }).click()
+  await expect(people).not.toContainText('Priya Nair')
+  await page.goto(`/people/${priya.id as string}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Priya Nair' })).toBeVisible()
+  await expect(page.getByRole('main').locator(`a[href="/projects/${pid}"]`)).toHaveCount(0)
+})
+
+test('the picker’s last row writes someone new down, on the project', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, '找工作')
   await page.goto(`/projects/${pid}`)
   await page
     .getByRole('region', { name: 'People' })
-    .getByRole('button', { name: 'New person' })
+    .getByRole('button', { name: 'Add a person' })
     .click()
+  const picker = page.getByRole('dialog', { name: 'Add a person' })
+  await picker.getByRole('combobox').fill('李雯')
+  await picker.getByRole('option', { name: 'New person “李雯”' }).click()
+
+  // New person is its own page, the name typed already in its parts.
   await expect(page).toHaveURL(new RegExp(`/people/new\\?project=${pid}$`))
-  await page.getByRole('textbox', { name: 'Given name', exact: true }).fill('某招聘')
+  await expect(page.getByRole('textbox', { name: 'Family name', exact: true })).toHaveValue('李')
+  await expect(page.getByRole('textbox', { name: 'Given name', exact: true })).toHaveValue('雯')
   const made = page.waitForResponse(
     (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/people',
   )
   await page.getByRole('button', { name: /^Create person/ }).click()
   expect((await made).request().postDataJSON()).toMatchObject({ projectIds: [pid] })
-  await page.goto(`/projects/${pid}`)
-  await expect(page.getByRole('region', { name: 'People' })).toContainText('某招聘')
+  // Made from the project, it goes back there (FR-026).
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
+  await expect(page.getByRole('region', { name: 'People' })).toContainText('李雯')
 })
 
 test('search reaches a person by their address, from the shell box', async ({ page }) => {

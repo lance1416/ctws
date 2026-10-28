@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { problemText } from '../../platform/http/api'
 import { Button } from '../../platform/ui/Button'
 import { PanelEmpty } from '../../platform/ui/Panel'
-import { LinkDialog } from './LinkDialog'
+import { LinkDialog, type Makes } from './LinkDialog'
 import { deleteLink, linkKeys, linksQuery, type Endpoint } from './api'
 
 export type Linked = {
@@ -18,7 +18,12 @@ export type Linked = {
  * Everything one thing is related to, grouped by kind, and the way to relate more. The relations
  * are the shell's; where another module's thing lives comes from the registry's `relations`.
  */
-export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined) {
+export function useLinked(
+  of: Endpoint,
+  types: readonly ObjectType[] | undefined,
+  /** How a block's + makes a new one of its kind, where it can (FR-055). */
+  makesFor: (kind: ObjectType) => Makes | undefined = () => undefined,
+) {
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.
   const [adding, setAdding] = useState<ObjectType | 'any' | null>(null)
   const links = useQuery(linksQuery(of, types))
@@ -40,6 +45,7 @@ export function useLinked(of: Endpoint, types: readonly ObjectType[] | undefined
         <LinkDialog
           of={of}
           only={adding === 'any' ? undefined : adding}
+          makes={adding === 'any' ? undefined : makesFor(adding)}
           onClose={() => setAdding(null)}
         />
       )}

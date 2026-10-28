@@ -47,6 +47,7 @@ type Row =
   | { kind: 'recent'; key: string; type: ObjectType; id: string; to: string; title: string }
   | { kind: 'place'; key: string; to: string; title: string; hint: string; icon: ReactNode }
   | { kind: 'scope'; key: string; type: ObjectType }
+  | { kind: 'new'; key: string; title: string; label: string }
 
 /** Any modifier, or none: the box's keys mean the same with any held. */
 const ANY = { either: ['Ctrl', 'Meta', 'Alt', 'Shift'] } as const
@@ -122,6 +123,8 @@ export type Pick = {
   asksWhy?: boolean
   /** Things not to offer, though they would match: where it already is. */
   leaveOut?: readonly string[]
+  /** The list's last row makes one under the words typed: "New person “priya”" (FR-055). */
+  makes?: { label: string; run: (name: string) => void }
 }
 
 export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pick }) {
@@ -267,6 +270,9 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               }
             }),
           ),
+          ...(pick?.makes && typing.length > 0 && !scoping
+            ? [{ kind: 'new' as const, key: 'new', title: typing, label: pick.makes.label }]
+            : []),
         ]
   // The debounced hits landing later keep it, or a row the keyboard already moved to would be lost
   // under the Enter about to choose it. A shorter result set must not leave it past the end.
@@ -311,6 +317,10 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const open = (row: Row, beside: boolean, typed = false) => {
     if (row.kind === 'scope') return scopeTo(row.type)
     if (row.kind === 'hit' && typed && !settled) return
+    if (row.kind === 'new') {
+      if (!pick?.busy) pick?.makes?.run(row.title)
+      return
+    }
     if (pick) {
       if (row.kind !== 'hit') return
       if (pick.asksWhy === false) {
@@ -334,11 +344,13 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       'Enter',
       current.kind === 'scope'
         ? 'Scope to it'
-        : pick
-          ? 'Choose'
-          : current.kind === 'place'
-            ? 'Go'
-            : 'Open',
+        : current.kind === 'new'
+          ? (pick?.makes?.label ?? '')
+          : pick
+            ? 'Choose'
+            : current.kind === 'place'
+              ? 'Go'
+              : 'Open',
     ])
     if (!pick && (current.kind === 'hit' || current.kind === 'recent'))
       legends.push([keyLabel('Ctrl Enter'), 'Open beside'])
@@ -720,6 +732,24 @@ function SearchRow({
         <span className="inline-grid size-6 place-items-center text-muted">{row.icon}</span>
         <span className="truncate">{row.title}</span>
         <kbd className={KEY}>{row.hint}</kbd>
+      </li>
+    )
+  if (row.kind === 'new')
+    return (
+      <li
+        id={id}
+        role="option"
+        aria-selected={selected}
+        onClick={onChoose}
+        onMouseEnter={onHover}
+        className={`${shared} grid-cols-[24px_minmax(0,1fr)]`}
+      >
+        <span aria-hidden="true" className="inline-grid size-6 place-items-center text-muted">
+          <NewIcon size={16} />
+        </span>
+        <span className="truncate">
+          {row.label} “{row.title}”
+        </span>
       </li>
     )
   if (row.kind === 'recent')

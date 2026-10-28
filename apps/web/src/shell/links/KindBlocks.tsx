@@ -5,10 +5,12 @@ import { Avatar } from '../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../platform/ui/Block'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { CloseIcon, NewIcon, type Kind } from '../../platform/ui/icons'
-import type { Creator, OwnThings } from '../contract'
+import type { Creator, Join, OwnThings } from '../contract'
 import { NewContext } from '../creates'
 import { useRegistry } from '../registry'
+import { SearchDialog } from '../search/SearchDialog'
 import { KIND_WORDS } from '../search/view'
+import type { Makes } from './LinkDialog'
 import { LinkedRow } from './LinkedRow'
 import { type Item, useLinked } from './useLinked'
 
@@ -52,6 +54,10 @@ type KindBlockProps = {
   count?: ReactNode
   /** An empty block's + says what it makes ("+ Meeting"), rather than an icon (FR-061). */
   addSays?: string
+  /** Its own things join the page's subject: each row takes one off it (FR-055). */
+  join?: Join
+  /** What a row is taken off, in place of unlinking it: "project" (Remove from project). */
+  removeFrom?: string
 }
 
 /**
@@ -72,6 +78,7 @@ export function useKindBlocks({
   titles = {},
   linkedRows = [],
   sayAdd = false,
+  makesFor = () => undefined,
 }: {
   of: { type: ObjectType; id: string }
   kinds: readonly ObjectType[]
@@ -85,10 +92,15 @@ export function useKindBlocks({
     count?: (things: readonly LinkCandidate[]) => ReactNode
   }[]
   sayAdd?: boolean
+  /** How a kind that is only linked makes a new one from its + (FR-055). */
+  makesFor?: (kind: ObjectType) => Makes | undefined
 }): { blocks: ReactNode[]; full: number; picker: ReactNode } {
   const registry = useRegistry()
   const openNew = useContext(NewContext)
-  const { links, groups, unlink, setAdding, picker } = useLinked(of, kinds)
+  const { links, groups, unlink, setAdding, picker } = useLinked(of, kinds, makesFor)
+  // The kind whose + is finding one to join the subject (FR-055).
+  const [joining, setJoining] = useState<ObjectType | null>(null)
+  const removeFrom = KIND_WORDS[of.type].one.toLocaleLowerCase()
   const linkedOf = new Map(groups.map((g) => [g.type, g.items]))
 
   const blocks: KindBlockProps[] = kinds.map((kind) => {
@@ -100,6 +112,8 @@ export function useKindBlocks({
     )
     const creator = creatorFor(kind)
     const own = linkedRows.find((r) => r.kind === kind)
+    const join = mine?.join
+    const adds = join !== undefined || makesFor(kind) !== undefined
     return {
       kind,
       title: titles[kind] ?? where.plural,
@@ -111,16 +125,21 @@ export function useKindBlocks({
         mine?.retry()
         void links.refetch()
       },
-      add: creator
-        ? { label: `New ${creator.label.toLocaleLowerCase()}`, run: () => openNew(creator) }
-        : { label: `Link ${aOne(kind)}`, run: () => setAdding(kind) },
+      add: join
+        ? { label: `Add ${aOne(kind)}`, run: () => setJoining(kind) }
+        : creator
+          ? { label: `New ${creator.label.toLocaleLowerCase()}`, run: () => openNew(creator) }
+          : { label: `${adds ? 'Add' : 'Link'} ${aOne(kind)}`, run: () => setAdding(kind) },
       onUnlink: (id) => unlink.mutate(id),
       unlinking: unlink.isPending,
       ...(own ? { Linked: own.Row } : {}),
       ...(own?.count ? { count: own.count(linked) } : {}),
       ...(sayAdd ? { addSays: creator ? creator.label : 'Link' } : {}),
+      ...(join ? { join } : {}),
+      ...(adds ? { removeFrom } : {}),
     }
   })
+  const joinOf = joining ? blocks.find((b) => b.kind === joining) : undefined
   const size = (b: KindBlockProps) => b.things.length + b.linked.length
   const full = blocks.filter((b) => size(b) > 0)
   return {
@@ -128,7 +147,34 @@ export function useKindBlocks({
       <KindBlock key={b.kind} {...b} />
     )),
     full: full.length,
-    picker,
+    picker: (
+      <>
+        {picker}
+        {joinOf?.join && (
+          <SearchDialog
+            onClose={() => setJoining(null)}
+            pick={{
+              of,
+              title: joinOf.add.label,
+              only: joinOf.kind,
+              asksWhy: false,
+              leaveOut: joinOf.things.map((t) => t.id),
+              onPick: (thing) => {
+                joinOf.join!.add(thing.id)
+                setJoining(null)
+              },
+              makes: {
+                label: `New ${KIND_WORDS[joinOf.kind].one.toLocaleLowerCase()}`,
+                run: (name) => {
+                  setJoining(null)
+                  joinOf.join!.make(name)
+                },
+              },
+            }}
+          />
+        )}
+      </>
+    ),
   }
 }
 
@@ -146,13 +192,23 @@ function KindBlock({
   Linked,
   count,
   addSays,
+  join,
+  removeFrom,
 }: KindBlockProps) {
   const [all, setAll] = useState(false)
   const registry = useRegistry()
   const rows: ReactNode[] = [
     ...things.map((t) => (
-      <li key={t.id} className="flex min-w-0">
+      <li key={t.id} className={`group flex min-w-0 items-center ${join ? 'pr-1.5' : ''}`}>
         <ThingRow row={t} />
+        {join && (
+          <TakeOff
+            label={`Remove ${t.title} from ${removeFrom}`}
+            title={`Remove from ${removeFrom}`}
+            disabled={join.busy}
+            onClick={() => join.remove(t.id)}
+          />
+        )}
       </li>
     )),
     ...linked.map((item) => (
@@ -170,15 +226,12 @@ function KindBlock({
         )}
         {/* A mention goes with its sentence; only a relation made by hand unlinks here. */}
         {item.origin === 'manual' && (
-          <button
-            type="button"
+          <TakeOff
+            label={removeFrom ? `Remove ${item.title} from ${removeFrom}` : `Unlink ${item.title}`}
+            title={removeFrom ? `Remove from ${removeFrom}` : undefined}
             disabled={unlinking}
             onClick={() => onUnlink(item.relationId)}
-            aria-label={`Unlink ${item.title}`}
-            className={`${ICON_BUTTON} opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100`}
-          >
-            <CloseIcon size={14} aria-hidden="true" />
-          </button>
+          />
         )}
       </li>
     )),
@@ -220,6 +273,11 @@ function KindBlock({
       ) : (
         <ul className="flex flex-col py-1.5">{shown}</ul>
       )}
+      {join?.error && (
+        <p role="alert" className="px-3 pb-2 text-ui text-stop-t">
+          {join.error}
+        </p>
+      )}
       {more > 0 && (
         <button
           type="button"
@@ -230,6 +288,32 @@ function KindBlock({
         </button>
       )}
     </Block>
+  )
+}
+
+/** A row's way off the block, shown on hover: unlink it, or take it off the project. */
+function TakeOff({
+  label,
+  title,
+  disabled,
+  onClick,
+}: {
+  label: string
+  title?: string | undefined
+  disabled: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={label}
+      title={title}
+      className={`${ICON_BUTTON} opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100`}
+    >
+      <CloseIcon size={14} aria-hidden="true" />
+    </button>
   )
 }
 

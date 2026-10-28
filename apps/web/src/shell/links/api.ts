@@ -55,3 +55,8 @@ export const candidatesQuery = (of: Endpoint | null, q: string, kinds?: readonly
         )
       ).candidates,
   })
+
+/** An organisation by name alone, for a project's + (FR-055); the shell answers for its kind. */
+export async function createOrganisation(name: string): Promise<string> {
+  return (await call(api.organisations.create, { body: { name } })).id
+}

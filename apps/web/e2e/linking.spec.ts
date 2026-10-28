@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { apiPost, registerFreshUser } from './helpers'
+import { apiPost, makeProject, registerFreshUser } from './helpers'
 import { dayOffset } from './days'
 
 /**
@@ -324,4 +324,23 @@ test('the task pages still answer on their own addresses', async ({ page }) => {
   await expect(page.locator('#today-heading')).toBeVisible()
   await page.goto('/review')
   await expect(page.getByRole('heading', { level: 1, name: 'Review' })).toBeVisible()
+})
+
+test('a project’s Organisations + writes a new one down on it, and Remove takes it off', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  await page.goto(`/projects/${pid}`)
+  const block = page.getByRole('region', { name: 'Organisations' })
+
+  // FR-055: the list ends with a row that writes one down under the words typed, and links it.
+  await block.getByRole('button', { name: 'Add an organisation' }).click()
+  await picker(page).getByRole('combobox').fill('Stripe')
+  await picker(page).getByRole('option', { name: 'New organisation “Stripe”' }).click()
+  await expect(picker(page)).toHaveCount(0)
+  await expect(block).toContainText('Stripe')
+
+  await block.getByRole('button', { name: 'Remove Stripe from project' }).click()
+  await expect(block).not.toContainText('Stripe')
 })

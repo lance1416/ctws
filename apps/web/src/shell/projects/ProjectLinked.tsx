@@ -1,5 +1,6 @@
 import type { ObjectType, ProjectId } from '@ctws/contracts'
 import { inColumns } from '../../platform/ui/columns'
+import { createOrganisation } from '../links/api'
 import { useKindBlocks } from '../links/KindBlocks'
 import { useRegistry } from '../registry'
 
@@ -18,7 +19,8 @@ const ORDER: readonly ObjectType[] = [
  * reply, its people, its organisations, its reading and its notes, a block each. Beside the tree
  * when the page has columns to spare, one block a column; under it otherwise, two across. A block
  * with nothing in it is its head, after the full ones; its + makes a new thing in the project, or
- * links one where its kind does not belong to a project.
+ * links one where its kind does not belong to a project. People and organisations are found
+ * first: the + puts one already written down on the project, and the last row writes one new.
  */
 export function ProjectLinked({
   projectId,
@@ -42,6 +44,9 @@ export function ProjectLinked({
       owned.some((o) => o.kind === kind)
         ? (registry.creates.find((c) => c.kind === kind) ?? null)
         : null,
+    // An organisation is linked, not owned; its + can still write a new one down (FR-055).
+    makesFor: (kind) =>
+      kind === 'organisation' ? { label: 'New organisation', run: createOrganisation } : undefined,
   })
 
   return (
