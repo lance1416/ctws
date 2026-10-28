@@ -54,3 +54,32 @@ test('the overview says who you were in touch with lately, and with whom it has 
   await quiet.getByRole('link', { name: /Tom Okafor/ }).click()
   await expect(page).toHaveURL(new RegExp(`/people/${tom.id}$`))
 })
+
+test('their Meetings block has what is coming, then what was held, however long ago (BUG-046)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const mira = await apiPost(page, '/people', { name: 'Mira Chen' })
+  const meeting = (title: string, startsLocal: string, rule?: string) =>
+    apiPost(page, '/meetings', {
+      title,
+      startsLocal,
+      timeZone: 'Europe/London',
+      durationMinutes: 30,
+      attendeeIds: [mira.id],
+      ...(rule ? { rrule: rule } : {}),
+    })
+  // Weekly on Fridays since October 2: held on the 16th, next on the 23rd.
+  await meeting('rust-analyzer sync', '2026-10-02T10:30', 'FREQ=WEEKLY')
+  await meeting('Payments platform review', '2022-03-03T14:00')
+  await meeting('Stripe phone screen', '2026-10-22T14:00')
+  await page.goto(`/people/${mira.id as string}`)
+
+  const rows = page.getByRole('region', { name: 'Meetings' }).locator('[data-linked]')
+  await expect(rows).toHaveText([
+    /Thu 14:00\s*Stripe phone screen/,
+    /Fri 10:30\s*rust-analyzer sync/,
+    /Fri 10:30\s*rust-analyzer sync/,
+    /Mar 3, 2022 14:00\s*Payments platform review/,
+  ])
+})

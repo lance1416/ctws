@@ -1,4 +1,5 @@
 import {
+  type PersonId,
   api,
   type CreateMeetingBody,
   type MeetingOccurrence,
@@ -40,7 +41,32 @@ export const meetingKeys = {
   series: (meetingId: MeetingId | null, today: string) =>
     ['meetings', 'series', meetingId, today] as const,
   calendar: (range: DayRange) => ['meetings', 'calendar', range.from, range.to] as const,
+  heldWith: (personId: PersonId) => ['meetings', 'held-with', personId] as const,
 }
+
+/**
+ * The meetings a person was in, newest first, each series once at the last time it was held: from
+ * their timeline, which the server reads back as far as it goes (FR-061, BUG-046).
+ */
+export const heldWithQuery = (personId: PersonId) =>
+  queryOptions({
+    queryKey: meetingKeys.heldWith(personId),
+    queryFn: async ({ signal }) => {
+      const { entries } = await call(
+        api.timeline.of,
+        { query: { type: 'person', id: personId, kinds: 'meeting' } },
+        { signal },
+      )
+      const seen = new Set<string>()
+      return entries.flatMap((e) => {
+        if (e.kind !== 'meeting' || seen.has(e.meeting.meetingId)) return []
+        seen.add(e.meeting.meetingId)
+        return [
+          { meetingId: e.meeting.meetingId as MeetingId, recurrenceId: e.meeting.recurrenceId },
+        ]
+      })
+    },
+  })
 
 /** The occurrences in a range of days, in time order. */
 export const meetingsQuery = (range: DayRange) =>

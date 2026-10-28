@@ -1,20 +1,22 @@
 import type { MeetingOccurrence, PersonId } from '@ctws/contracts'
 import { clockTime } from '@ctws/core/clock'
 import { addDays } from '@ctws/core/day'
-import { useQuery } from '@tanstack/react-query'
-import { monthDay, weekdayOf, ymd } from '../../../platform/time/dates'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { shortDay, weekdayOf, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth'
 import type { OwnThings } from '../../../shell/contract'
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { DurationIcon, PlacesIcon } from '../../../platform/ui/icons'
-import { meetingsQuery } from '../api'
+import { heldWithQuery, meetingsQuery, occurrenceQuery } from '../api'
 import { MEETINGS_ID } from '../logic/id'
 import { nextOfEach } from '../logic/nextOfEach'
 
-/** How far each way a person's page looks for the meetings they are in. */
+/** How far ahead a person's page looks for the meetings they are in. */
 const AHEAD_DAYS = 60
-const BACK_DAYS = 180
+
+/** How many series held with them are read in full; the block shows five before "N more". */
+const HELD = 12
 
 /**
  * The meetings a person is in (FR-061): those still to come first, each series once at its next
@@ -25,23 +27,22 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
   const timeZone = useTimeZone()
   const now = useNow()
   const today = ymd(now, timeZone)
-  const window = useQuery(
-    meetingsQuery({ from: addDays(today, -BACK_DAYS), to: addDays(today, AHEAD_DAYS) }),
-  )
+  const window = useQuery(meetingsQuery({ from: today, to: addDays(today, AHEAD_DAYS) }))
   const theirs = (window.data ?? []).filter((m) => m.attendees.some((a) => a.id === personId))
   const over = (m: MeetingOccurrence) => new Date(m.endsAt).getTime() <= now.getTime()
   const coming = nextOfEach(
     theirs.filter((m) => !over(m)),
     now,
   )
-  const latest = new Map<string, MeetingOccurrence>()
-  for (const m of theirs.filter(over)) {
-    const held = latest.get(m.meetingId)
-    if (!held || held.startsAt < m.startsAt) latest.set(m.meetingId, m)
-  }
-  const held = [...latest.values()]
-    .filter((m) => !coming.some((c) => c.meetingId === m.meetingId))
-    .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+  // Those held, however long ago (BUG-046): a series that meets again is here twice, at its next
+  // and at its last, since "when did we last meet" is the question the block answers too.
+  const heldWith = useQuery(heldWithQuery(personId))
+  const occurrences = useQueries({
+    queries: (heldWith.data ?? [])
+      .slice(0, HELD)
+      .map((h) => occurrenceQuery(h.meetingId, h.recurrenceId)),
+  })
+  const held = occurrences.flatMap((o) => (o.data ? [o.data] : []))
   const projects = useEveryProject()
   const projectOf = (id: string | null) => {
     const p = id ? projects.data?.find((x) => x.id === id) : undefined
@@ -51,11 +52,21 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
     const at = new Date(m.startsAt)
     const day = ymd(at, timeZone)
     const near = day >= addDays(today, -6) && day <= addDays(today, 6)
-    return `${near ? weekdayOf(day, true) : monthDay(day)} ${clockTime(at, timeZone)}`
+    // Another year's says its year: a meeting from 2022 is not this March's.
+    return `${near ? weekdayOf(day, true) : shortDay(day, today)} ${clockTime(at, timeZone)}`
   }
   return {
-    things: [...coming, ...held].map((m) => ({
-      id: m.meetingId,
+    things: [
+      ...coming.map((m) => ({ m, id: m.meetingId as string })),
+      // A series already listed as coming is told apart by the occurrence.
+      ...held.map((m) => ({
+        m,
+        id: coming.some((c) => c.meetingId === m.meetingId)
+          ? `${m.meetingId}@${m.recurrenceId}`
+          : m.meetingId,
+      })),
+    ].map(({ m, id }) => ({
+      id,
       title: m.title,
       to: `/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`,
       lead: said(m),
@@ -75,9 +86,12 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
         </span>
       ),
     })),
-    isPending: window.isPending,
-    isError: window.isError,
-    retry: () => void window.refetch(),
+    isPending: window.isPending || heldWith.isPending,
+    isError: window.isError || heldWith.isError,
+    retry: () => {
+      void window.refetch()
+      void heldWith.refetch()
+    },
   }
 }
 
