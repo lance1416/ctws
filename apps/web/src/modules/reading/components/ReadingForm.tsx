@@ -3,27 +3,25 @@ import {
   type ReadingStatus,
   type UpdateReadingItemBody,
 } from '@ctws/contracts'
-import { useMutation } from '@tanstack/react-query'
 import { problemText } from '../../../platform/http/api'
-import { deleteReadingItem, patchReadingItem, readingKeys } from '../api'
-import { READING_STATUS_LABEL, readingLabel, recentEntry } from '../logic/item'
-import { ProjectChip, ProjectPicker } from '../../../shell/projects'
-import { dayPhrase, ymd } from '../../../platform/time/dates'
+import { deleteReadingItem, readingKeys } from '../api'
+import { READING_STATUS_LABEL, readingLabel } from '../logic/item'
+import { ProjectPicker } from '../../../shell/projects'
+import { ymd } from '../../../platform/time/dates'
 import { planChoices, type PlanDay } from '../logic/plans'
 import { useTimeZone } from '../../../shell/auth'
-import { Button } from '../../../platform/ui/Button'
 import { DangerAction } from '../../../platform/ui/DangerZone'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { readingDefaults, readingForm, type ReadingForm } from '../logic/readingForm'
-import { FormBar, ItemPane, useDestroy, useItemPane } from '../../../shell/detail'
+import { FormBar, useDestroy } from '../../../shell/detail'
 import { Field } from '../../../platform/ui/Field'
-import { CHIP, field, label } from '../../../platform/ui/formStyles'
+import { field, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
 
-const STATUS_CHOICES = (Object.keys(READING_STATUS_LABEL) as ReadingStatus[]).map((s) => ({
+export const STATUS_CHOICES = (Object.keys(READING_STATUS_LABEL) as ReadingStatus[]).map((s) => ({
   value: s,
   label: READING_STATUS_LABEL[s],
 }))
@@ -35,119 +33,8 @@ const PLAN_LABELS: Record<PlanDay, string> = {
   nextWeek: 'Next week',
 }
 
-export function ReadingDetail({
-  item,
-  onClose,
-}: {
-  item: ReadingItemResponse
-  onClose: () => void
-}) {
-  const pane = useItemPane(onClose)
-  return (
-    <ItemPane
-      pane={pane}
-      label="Reading"
-      back="/reading"
-      recent={recentEntry(item)}
-      linked={{ of: { type: 'reading', id: item.id } }}
-      danger={<DeleteReading item={item} onDeleted={onClose} />}
-    >
-      <ReadingFields item={item} pane={pane} />
-    </ItemPane>
-  )
-}
-
-function ReadingFields({
-  item,
-  pane,
-}: {
-  item: ReadingItemResponse
-  pane: Pick<ReturnType<typeof useItemPane>, 'editing' | 'setEditing' | 'onUnsaved'>
-}) {
-  const timeZone = useTimeZone()
-  const today = ymd(useNow(), timeZone)
-
-  // Waits for the list, so the reading that replaces the form already shows the edit.
-  const save = useMutation({
-    mutationFn: (patch: Parameters<typeof patchReadingItem>[1]) => patchReadingItem(item.id, patch),
-    meta: { changes: ['reading'], awaits: [readingKeys.all], ownsError: true },
-  })
-
-  if (pane.editing) {
-    return (
-      <ReadingForm
-        item={item}
-        busy={save.isPending}
-        error={problemText(save.error)}
-        onCancel={() => {
-          save.reset()
-          pane.setEditing(false)
-        }}
-        onSave={(patch) => save.mutate(patch, { onSuccess: () => pane.setEditing(false) })}
-        onUnsaved={pane.onUnsaved}
-      />
-    )
-  }
-
-  return (
-    <>
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          {item.url ? (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="block truncate text-subject text-ink hover:underline"
-            >
-              {readingLabel(item)}
-            </a>
-          ) : (
-            <h2 className="truncate text-subject text-ink">{readingLabel(item)}</h2>
-          )}
-          <p className="truncate text-ui text-muted">
-            {item.kind === 'book' ? (item.author ?? 'Book') : (item.url ?? 'Link')}
-          </p>
-        </div>
-        <Button look="secondary" onClick={() => pane.setEditing(true)}>
-          Edit
-        </Button>
-      </div>
-
-      {item.fetchedSummary && !item.title && (
-        <p className="max-w-reading text-ui text-muted">{item.fetchedSummary}</p>
-      )}
-
-      <div className="@container">
-        <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
-          <Field label="Status">
-            <span className="text-ui text-ink">{READING_STATUS_LABEL[item.status]}</span>
-          </Field>
-          <Field label="Finish by">
-            <span className={`text-ui ${item.planOn ? 'text-ink' : 'text-subtle'}`}>
-              {item.planOn ? dayPhrase(item.planOn, today) : 'Not set'}
-            </span>
-          </Field>
-          <Field label="Projects">
-            {item.projectId && item.projectName ? (
-              <span className="flex">
-                <span className={CHIP}>
-                  <ProjectChip projectId={item.projectId} />
-                  <span className="truncate">{item.projectName}</span>
-                </span>
-              </span>
-            ) : (
-              <span className="text-ui text-subtle">Not on any project</span>
-            )}
-          </Field>
-        </div>
-      </div>
-    </>
-  )
-}
-
 /** The edit form. The kind is not editable: a link never becomes a book. */
-function ReadingForm({
+export function ReadingForm({
   item,
   busy,
   error,
@@ -161,7 +48,7 @@ function ReadingForm({
   error: string | null
   onCancel: () => void
   onSave: (patch: UpdateReadingItemBody) => void
-  /** Whether anything differs from what the form opened on, for the pane's leave guard. */
+  /** Whether anything differs from what the form opened on, for the page's leave guard. */
   onUnsaved: (unsaved: boolean) => void
 }) {
   const form = useForm<ReadingForm, unknown, UpdateReadingItemBody>({
@@ -249,7 +136,13 @@ function ReadingForm({
   )
 }
 
-function DeleteReading({ item, onDeleted }: { item: ReadingItemResponse; onDeleted: () => void }) {
+export function DeleteReading({
+  item,
+  onDeleted,
+}: {
+  item: ReadingItemResponse
+  onDeleted: () => void
+}) {
   const drop = useDestroy({
     type: 'reading',
     id: item.id,

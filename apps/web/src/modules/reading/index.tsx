@@ -7,9 +7,12 @@ import { UnfiledLine } from './components/ReadingKind'
 import { ReadingAside, ReadingWidget } from './components/ReadingWidget'
 import { useReadingCapture, useReadingEntries, useReadingHits } from './hooks/contributions'
 import { ReadingFact } from './components/ReadingFact'
+import { describeReadingChange } from './logic/describeChange'
 import { READING_ID } from './logic/id'
 import { isReadingUrl } from './logic/readingUrl'
-import { Reading } from './pages/Reading'
+import { ReadingSidebar } from './components/ReadingSidebar'
+import { ReadingEdit, ReadingItem } from './pages/ReadingItem'
+import { ReadingOverview } from './pages/ReadingOverview'
 
 const PAGE = topPage('Reading')
 
@@ -20,13 +23,15 @@ export const readingModule: WorkspaceModule = {
     label: 'Reading',
     to: `/${READING_ID}`,
     Status: UnfiledLine,
+    List: ReadingSidebar,
     chord: 'reading',
     order: 40,
   },
   routes: [
-    { index: true, element: <Reading />, handle: PAGE },
-    // An item has no page of its own: this is the list with its pane open.
-    { path: ':id', element: <Reading />, handle: PAGE },
+    { index: true, element: <ReadingOverview />, handle: PAGE },
+    // One item's page (FR-073), and its form.
+    { path: ':id', element: <ReadingItem />, handle: PAGE },
+    { path: ':id/edit', element: <ReadingEdit />, handle: PAGE },
   ],
   capture: { kind: 'reading', useTarget: useReadingCapture, accepts: isReadingUrl },
   search: { useHits: useReadingHits },
@@ -78,6 +83,7 @@ export const readingModule: WorkspaceModule = {
       plural: 'Reading',
       to: (id) => `/${READING_ID}/${id}`,
       Fact: ReadingFact,
+      describeChange: describeReadingChange,
     },
   ],
   // An item names its project.

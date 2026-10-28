@@ -27,6 +27,14 @@ import { DayField } from '../dates'
 
 type Kind = 'task' | 'reading'
 
+/** The event a page's own Add sends to open the box on one kind: "Add reading" (FR-072). */
+const OPEN = 'ctws:capture'
+
+/** Opens the capture box with this kind chosen, from a page's own button. */
+export function openCapture(kind: Kind): void {
+  window.dispatchEvent(new CustomEvent<Kind>(OPEN, { detail: kind }))
+}
+
 /**
  * THE CAPTURE BOX (FR-025, artboard 27): on every page, under the top bar, opened with C or the
  * button. The kind is picked from the line (a link becomes reading, a sentence a task) until it
@@ -77,6 +85,15 @@ export function Capture() {
   useEffect(() => {
     if (open) box.current?.focus()
   }, [open])
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      setSwitched((e as CustomEvent<Kind>).detail)
+      setOpen(true)
+      box.current?.focus()
+    }
+    window.addEventListener(OPEN, onOpen)
+    return () => window.removeEventListener(OPEN, onOpen)
+  }, [])
 
   const add = useMutation({
     mutationFn: async (sent: string) => {
