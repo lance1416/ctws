@@ -34,7 +34,6 @@ export const taskKeys = {
   completed: (day: string) => ['tasks', 'completed', day] as const,
   movement: (day: string) => ['tasks', 'movement', day] as const,
   ready: (day: string) => ['tasks', 'ready', day] as const,
-  search: (q: string) => ['tasks', 'search', q] as const,
   calendar: (range: Range) => ['tasks', 'calendar', range.from, range.to] as const,
   reviewWeeks: (today: string) => ['tasks', 'review-weeks', today] as const,
   review: (range: Range) => ['tasks', 'review', range.from, range.to] as const,
@@ -99,13 +98,6 @@ export const readyQuery = (day: string) =>
   })
 
 // The server owns the matching and the order; nothing here re-ranks or re-filters.
-export const taskSearchQuery = (q: string) =>
-  queryOptions({
-    queryKey: taskKeys.search(q),
-    queryFn: async ({ signal }) =>
-      (await call(api.tasks.search, { query: { q } }, { signal })).tasks,
-  })
-
 export const taskCalendarQuery = (range: Range) =>
   queryOptions({
     queryKey: taskKeys.calendar(range),

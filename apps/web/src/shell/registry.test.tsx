@@ -19,7 +19,6 @@ const notes: WorkspaceModule = {
   kind: { label: 'Notes', to: '/notes/all', order: 25 },
   routes: [{ path: 'recent' }, { path: 'all' }],
   capture: { kind: 'task', useTarget: () => ({ target: null }) },
-  search: { useHits: () => ({ hits: [], isError: false, isSuccess: true }) },
   chords: [
     { id: 'recent', key: 'q', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
   ],
@@ -154,15 +153,6 @@ describe('the capture destination', () => {
       'capture module "files" is not registered',
     )
     expect(() => build([], { captureModuleId: 'notes' })).toThrow(/not registered/)
-  })
-})
-
-describe('search providers', () => {
-  it('collects every searchable module, with its own name for itself', () => {
-    const providers = build([notes, files]).search
-    // `files` contributes no search provider, so it is absent rather than empty.
-    expect(providers.map((p) => p.moduleId)).toEqual(['notes'])
-    expect(providers.map((p) => p.moduleLabel)).toEqual(['Notes'])
   })
 })
 

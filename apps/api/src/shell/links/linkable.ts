@@ -8,7 +8,7 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { asc, inArray, sql, type SQL } from 'drizzle-orm'
-import type { AnyPgColumn } from 'drizzle-orm/pg-core'
+import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
 
@@ -24,6 +24,8 @@ export type Linkable = {
    * What the workspace cannot see is left out, and the shell drops the edges that pointed at it.
    */
   rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<LinkCandidate[]>
+  /** How many of them a text matches, as `rows` would find them all: search's totals (FR-024). */
+  count: (q: Queryable, workspaceId: WorkspaceId, text: string) => Promise<number>
   /**
    * For a module with things still to come, its part of what comes next about each of these other
    * things, by their id (FR-058): a meeting's next occurrence, a reply's follow-up day. What is
@@ -65,7 +67,8 @@ export type NextAt = { now: Date; projectId: ProjectId }
  * These ids, at most `limit` of them by title, or a text match with the likely few first; empty
  * text asks for those alone.
  */
-export type Want = { ids: readonly string[]; limit: number } | { text: string; limit: number }
+export type Want =
+  { ids: readonly string[]; limit: number } | { text: string; limit: number; offset?: number }
 
 /** A module's columns, as a `Want` reads them. */
 type Columns = {
@@ -90,17 +93,36 @@ export function wanted(
   want: Want,
   columns: Columns,
   likely: readonly SQL[],
-): { where: SQL | undefined; orderBy: SQL[]; limit: number } {
+): { where: SQL | undefined; orderBy: SQL[]; limit: number; offset: number } {
   if ('ids' in want) {
     return {
       where: inArray(columns.id, [...want.ids]),
       orderBy: byTitle(columns.title, columns.id),
       limit: want.limit,
+      offset: 0,
     }
   }
   return {
-    where: want.text === '' ? undefined : textMatches(columns.text, want.text),
+    where: matching(columns.text, want.text),
     orderBy: [...likely],
     limit: want.limit,
+    offset: want.offset ?? 0,
   }
+}
+
+/** What a text matches in these columns: everything for no text. `count` and `rows` share it. */
+export const matching = (text: readonly string[], words: string): SQL | undefined =>
+  words === '' ? undefined : textMatches(text, words)
+
+/** How many rows of `from` meet `where`: a kind's total for search (FR-024). */
+export async function countWhere(
+  q: Queryable,
+  from: PgTable,
+  where: SQL | undefined,
+): Promise<number> {
+  const [row] = await q
+    .select({ n: sql<number>`count(*)::int` })
+    .from(from)
+    .where(where)
+  return row?.n ?? 0
 }

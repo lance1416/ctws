@@ -88,5 +88,9 @@ test('after a session ends, signing in again goes back to the page, and shows no
   await expect(page.getByTestId('current-user')).toHaveAccessibleName(`Account: ${other}`)
   await expect(page).toHaveURL(`/projects/${mine}`)
   await expect(page.getByText('Only mine')).toHaveCount(0)
+  // The held read, the old session's, lands before the test ends, and still shows nothing of it.
+  const stale = page.waitForResponse('**/api/v1/projects')
   release()
+  await stale
+  await expect(page.getByText('Only mine')).toHaveCount(0)
 })

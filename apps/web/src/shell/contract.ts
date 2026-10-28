@@ -30,7 +30,6 @@ export type WorkspaceModule = {
   /** Pages across kinds this module defines (Today, Review), mounted at the root (FR-019). */
   places?: RouteObject[]
   capture?: CaptureContribution
-  search?: SearchContribution
   chords?: Chord[]
   /** What this module can make from anywhere: `N` then the creator's key, and the New menu. */
   creates?: readonly Creator[]
@@ -195,6 +194,8 @@ export type RelationContribution = {
   /** Several of them: the heading where they are listed together. */
   plural: string
   to: (id: string) => string
+  /** Where search takes one, when not to `to`: a task to its row in its project's tree. */
+  found?: (thing: LinkCandidate) => string
   /**
    * The row's first column where things of every kind are listed (DES-001 section 4): a status, an
    * avatar. Without it the kind's icon on its tint stands there.
@@ -373,11 +374,6 @@ export type CaptureTarget = {
 
 /** What the box lets the person choose beside the line (FR-025). */
 type CaptureWhere = { projectId: ProjectId | null; date: string | null }
-
-type SearchContribution = {
-  /** A hook: this module's hits for `query`. An empty query means idle, not "match everything". */
-  useHits: (query: string) => { hits: SearchHit[]; isError: boolean; isSuccess: boolean }
-}
 
 /** One search result. The module decides what it says; the shell lays it out so modules line up. */
 export type SearchHit = {

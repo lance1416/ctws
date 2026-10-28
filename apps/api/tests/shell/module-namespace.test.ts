@@ -50,8 +50,12 @@ describe('the OpenAPI document describes the namespaced API', () => {
     const paths = Object.keys(doc.paths)
     expect(paths).toContain('/api/v1/tasks')
     expect(paths).toContain('/api/v1/tasks/{id}')
-    // A view of a collection is a query on its path, not a path of its own.
-    expect(paths.filter((p) => /\/(today|search|calendar|completed|movement)$/.test(p))).toEqual([])
+    // A view of a collection is a query on its path, not a path of its own; `/search` is the
+    // shell's, across every collection, and no collection's view.
+    expect(
+      paths.filter((p) => /\/v1\/.+\/(today|search|calendar|completed|movement)$/.test(p)),
+    ).toEqual([])
+    expect(paths).toContain('/api/v1/search')
     // The shell's own surface, still flat.
     expect(paths).toContain('/api/v1/projects')
   })

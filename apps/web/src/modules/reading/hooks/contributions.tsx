@@ -1,17 +1,9 @@
 import { isReadingUrl } from '../logic/readingUrl'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
+import type { CaptureTargetState } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
-import {
-  createReadingItem,
-  patchReadingItem,
-  readingCalendarQuery,
-  readingKeys,
-  readingSearchQuery,
-} from '../api'
-import { ReadingFact } from '../components/ReadingFact'
+import { createReadingItem, patchReadingItem, readingCalendarQuery, readingKeys } from '../api'
 import { READING_ID } from '../logic/id'
-import { readingLabel } from '../logic/item'
 
 /** A pasted url lands here instead of the inbox; nothing is fetched, so it is always there. */
 export function useReadingCapture(): CaptureTargetState {
@@ -37,24 +29,6 @@ export function useReadingCapture(): CaptureTargetState {
       },
     },
   }
-}
-
-export function useReadingHits(query: string) {
-  const results = useQuery({ ...readingSearchQuery(query), enabled: query.length > 0 })
-  const hits: SearchHit[] = (results.data ?? []).map((item) => ({
-    id: item.id,
-    type: 'reading',
-    // Its pane, not its url: a search result should not take the person out of the app.
-    to: `/${READING_ID}/${item.id}`,
-    title: readingLabel(item),
-    meta: (
-      <ReadingFact
-        thing={{ type: 'reading', id: item.id, title: readingLabel(item), author: item.author }}
-      />
-    ),
-    mark: null,
-  }))
-  return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }
 
 /** Finish-by days, already in the account's zone. */

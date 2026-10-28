@@ -1,10 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import type { CaptureTargetState, SearchHit } from '../../../shell/contract'
+import type { CaptureTargetState } from '../../../shell/contract'
 import { useRefresh } from '../../../shell/registry'
 import { inboxOf, useProjects } from '../../../shell/projects'
-import { createTask, taskCalendarQuery, taskKeys, taskSearchQuery } from '../api'
-import { TaskFact, TaskMark } from '../components/TaskFacts'
-import { openHref, revealHref } from '../logic/crumb'
+import { createTask, taskCalendarQuery, taskKeys } from '../api'
+import { openHref } from '../logic/crumb'
 
 /** This module's dated things: a plan day and a deadline day, both decided by the server. */
 export function useTaskEntries(range: { from: string; to: string }) {
@@ -45,37 +44,4 @@ export function useInboxCapture(): CaptureTargetState {
     missing: projects.isSuccess && !inbox ? 'No inbox to capture into' : null,
     unavailable: projects.isError ? 'Inbox unavailable' : null,
   }
-}
-
-/** This module's half of federated search: titles and notes, across every project. */
-export function useTaskHits(query: string) {
-  const results = useQuery({
-    ...taskSearchQuery(query),
-    enabled: query.length > 0,
-  })
-  const rows = results.data ?? []
-  const hits: SearchHit[] = rows.map((t) => {
-    // Drawn as the link picker draws a task, so the two lists cannot disagree (DES-001 section 4).
-    const thing = {
-      type: 'task' as const,
-      id: t.id,
-      title: t.title,
-      status: t.status,
-      projectId: t.projectId,
-      projectName: t.projectName,
-      parentTitle: t.parentTitle,
-      dueAt: t.dueAt,
-      scheduledOn: t.scheduledOn,
-    }
-    return {
-      id: t.id,
-      type: 'task',
-      // `?reveal=` makes `TaskTree` unfold the ancestors and focus the row, which may be folded away.
-      to: revealHref(t.projectId, t.id),
-      title: t.title,
-      meta: <TaskFact thing={thing} />,
-      mark: <TaskMark thing={thing} />,
-    }
-  })
-  return { hits, isError: results.isError, isSuccess: results.isSuccess }
 }

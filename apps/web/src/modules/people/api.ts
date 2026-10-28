@@ -62,7 +62,6 @@ export const peopleKeys = {
   circles: ['people', 'circles'] as const,
   calendar: (range: { from: string; to: string }) =>
     ['people', 'calendar', range.from, range.to] as const,
-  search: (q: string) => ['people', 'search', q] as const,
   birthdayPreview: (draft: BirthdayDraft) =>
     [
       'people',
@@ -107,13 +106,6 @@ export const birthdayCalendarQuery = (range: { from: string; to: string }) =>
     queryFn: async ({ signal }) =>
       (await call(api.people.calendar, { query: { view: 'calendar', ...range } }, { signal }))
         .entries,
-  })
-
-export const personSearchQuery = (q: string) =>
-  queryOptions({
-    queryKey: peopleKeys.search(q),
-    queryFn: async ({ signal }) =>
-      (await call(api.people.search, { query: { q } }, { signal })).people,
   })
 
 export const birthdayPreviewQuery = (draft: BirthdayDraft) =>

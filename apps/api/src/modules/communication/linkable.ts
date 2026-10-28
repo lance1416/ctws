@@ -1,18 +1,27 @@
 import { desc } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
-import { wanted, type Linkable } from '../../shell/links'
+import { countWhere, matching, wanted, type Linkable } from '../../shell/links'
 import { lastMessageWith, nextFollowUpAbout } from './next'
 import { communications } from './tables'
 
+/** What a text is looked for in. */
+const TEXT = ['communications.subject', 'communications.body']
+
 export const communicationLinkable: Linkable = {
   type: 'communication',
+  count: (q, workspaceId, text) =>
+    countWhere(
+      q,
+      communications,
+      within(scoped(communications, workspaceId), matching(TEXT, text)),
+    ),
   rows: async (q, workspaceId, want) => {
-    const { where, orderBy, limit } = wanted(
+    const { where, orderBy, limit, offset } = wanted(
       want,
       {
         id: communications.id,
         title: communications.subject,
-        text: ['communications.subject', 'communications.body'],
+        text: TEXT,
       },
       [desc(communications.occurredAt), desc(communications.id)],
     )
@@ -27,6 +36,7 @@ export const communicationLinkable: Linkable = {
       .where(within(scoped(communications, workspaceId), where))
       .orderBy(...orderBy)
       .limit(limit)
+      .offset(offset)
     return found.map((r) => ({
       type: 'communication',
       id: r.id,

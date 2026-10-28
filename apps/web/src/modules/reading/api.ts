@@ -12,7 +12,6 @@ import { call, everyPage } from '../../platform/http/api'
 export const readingKeys = {
   all: ['reading'] as const,
   list: (unfiled: boolean) => ['reading', 'list', unfiled ? 'unfiled' : 'all'] as const,
-  search: (q: string) => ['reading', 'search', q] as const,
   calendar: (range: { from: string; to: string }) =>
     ['reading', 'calendar', range.from, range.to] as const,
 }
@@ -33,13 +32,6 @@ export const readingQuery = ({ unfiled = false }: { unfiled?: boolean } = {}) =>
           signal,
         )
       ).flatMap((p) => p.reading),
-  })
-
-export const readingSearchQuery = (q: string) =>
-  queryOptions({
-    queryKey: readingKeys.search(q),
-    queryFn: async ({ signal }) =>
-      (await call(api.reading.search, { query: { q } }, { signal })).reading,
   })
 
 /** Calendar entries; the day is the server's, in the account's zone. */

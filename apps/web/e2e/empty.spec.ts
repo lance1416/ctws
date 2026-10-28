@@ -74,7 +74,7 @@ test('a search with no match says so, and offers to make it a task (FR-024)', as
   await expect(box).toBeFocused()
 
   // A query that really has no match.
-  const missed = page.waitForResponse((r) => r.url().includes('/api/v1/tasks?q=') && r.ok())
+  const missed = page.waitForResponse((r) => r.url().includes('/api/v1/search?q=') && r.ok())
   await box.fill('绝不存在的词')
   await missed
   await expect(page.getByText('No results match “绝不存在的词”.')).toBeVisible()

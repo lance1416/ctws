@@ -86,9 +86,6 @@ type PinnedPage = ModulePage & { key: string }
 type RegisteredKind = KindEntry & { moduleId: string | null }
 type RegisteredRelation = RelationContribution & { moduleId: string | null }
 type RegisteredWidget = Widget & { moduleId: string }
-type SearchProvider = { moduleId: string; moduleLabel: string } & NonNullable<
-  WorkspaceModule['search']
->
 type CalendarProvider = {
   moduleId: string
   label: string
@@ -156,7 +153,6 @@ export type Registry = {
   creatorFor: (key: string) => Creator | null
   captures: { moduleId: string; capture: CaptureContribution }[]
   captureModuleId: string
-  search: SearchProvider[]
   calendar: CalendarProvider[]
   /** What fills each of the workbench's places, by the module that fills it (FR-076). */
   widgets: Partial<Record<WorkbenchPlace, RegisteredWidget>>
@@ -250,9 +246,6 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     creatorFor: (key) => creates.find((c) => c.key === key) ?? null,
     captures,
     captureModuleId: config.captureModuleId,
-    search: modules.flatMap((m) =>
-      m.search ? [{ moduleId: m.id, moduleLabel: m.label, useHits: m.search.useHits }] : [],
-    ),
     calendar: modules.flatMap((m) => (m.calendar ? [calendarProvider(m.id, m.calendar)] : [])),
     widgets: placed(modules),
     todayBlocks: modules

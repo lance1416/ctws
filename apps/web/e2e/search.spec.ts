@@ -11,7 +11,7 @@ const searchBox = (page: Page) => page.getByRole('combobox', { name: 'Search' })
 
 /** Types into the search box and waits for the server's answer, so no assertion races the fetch. */
 async function query(page: Page, text: string) {
-  const answered = page.waitForResponse((r) => r.url().includes('/api/v1/tasks?q=') && r.ok(), {
+  const answered = page.waitForResponse((r) => r.url().includes('/api/v1/search?q=') && r.ok(), {
     timeout: 15_000,
   })
   await searchBox(page).fill(text)
@@ -418,7 +418,7 @@ test('a project deleted elsewhere leaves Recent once its page finds it gone', as
 test('results landing do not pull the highlight back to the first row', async ({ page }) => {
   await registerFreshUser(page, '/')
   await apiPost(page, '/reading', { kind: 'book', title: 'Peopleware' })
-  // The module hits arrive late, after the places have been walked.
+  // The hits arrive late, after the places have been walked.
   let release = () => {}
   const held = new Promise<void>((resolve) => (release = resolve))
   await page.route(/\/api\/v1\/.*[?&]q=/, async (r) => {
@@ -437,7 +437,7 @@ test('results landing do not pull the highlight back to the first row', async ({
   const second = await box.getAttribute('aria-activedescendant')
   expect(second).toMatch(/-option-1$/)
 
-  const landed = page.waitForResponse((r) => r.url().includes('/api/v1/reading?q='))
+  const landed = page.waitForResponse((r) => r.url().includes('/api/v1/search?q='))
   release()
   await landed
   await expect(result(page, 'Peopleware')).toBeVisible()
@@ -467,4 +467,35 @@ test('search finds every kind, the ones no module searches included (BUG-015)', 
   await search.getByRole('combobox').press('Enter')
   await search.getByRole('combobox').fill('ledgr')
   await expect(search.getByRole('option', { name: /Ledgr standup/ })).toBeVisible()
+})
+
+test('search counts every match, shows five a kind, and reads a kind on as it is scrolled', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/')
+  const project = await apiPost(page, '/projects', { name: 'Many' })
+  await seedTasks(
+    page,
+    project.id,
+    Array.from({ length: 40 }, (_, i) => [`Zeta ${String(i + 1).padStart(2, '0')}`, null]),
+  )
+  await page.keyboard.press('Control+k')
+  await query(page, 'zeta')
+  const dialog = page.getByRole('dialog', { name: 'Search' })
+  // The tabs carry the server's totals, not the rows drawn.
+  await expect(dialog.getByRole('tab', { name: /^All\s*40$/ })).toBeVisible()
+  await expect(dialog.getByRole('tab', { name: /^Tasks\s*40$/ })).toBeVisible()
+  // Five of the kind under All, then the rest of it as one row.
+  await expect(dialog.getByRole('option').filter({ hasText: 'Zeta' })).toHaveCount(5)
+  const rest = dialog.getByRole('option', { name: 'All 40 tasks' })
+  await expect(rest).toBeVisible()
+  await rest.click()
+  await expect(dialog.getByRole('tab', { name: /^Tasks/ })).toHaveAttribute('aria-selected', 'true')
+  // A page at a time: the first thirty, then the rest at the list's end.
+  await expect(dialog.getByRole('option')).toHaveCount(30)
+  await dialog.getByRole('listbox', { name: 'Search results' }).evaluate((l) => {
+    l.scrollTop = l.scrollHeight
+    l.dispatchEvent(new Event('scroll'))
+  })
+  await expect(dialog.getByRole('option')).toHaveCount(40)
 })

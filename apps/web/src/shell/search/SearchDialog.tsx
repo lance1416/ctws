@@ -1,5 +1,5 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDebouncedValue } from '../../platform/time/useDebouncedValue'
@@ -17,7 +17,7 @@ import { PLACES } from '../layout/places'
 import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 import type { SearchHit } from '../contract'
 import { useRegistry } from '../registry'
-import { federate, type ProviderResult } from './federate'
+import { everythingQuery, kindQuery } from './api'
 import { candidatesQuery, type Endpoint } from '../links/api'
 import { recentList } from './recent'
 import {
@@ -48,6 +48,7 @@ type Row =
   | { kind: 'place'; key: string; to: string; title: string; hint: string; icon: ReactNode }
   | { kind: 'scope'; key: string; type: ObjectType }
   | { kind: 'new'; key: string; title: string; label: string }
+  | { kind: 'all'; key: string; type: ObjectType; title: string }
 
 /** Any modifier, or none: the box's keys mean the same with any held. */
 const ANY = { either: ['Ctrl', 'Meta', 'Alt', 'Shift'] } as const
@@ -148,7 +149,6 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const listId = `${base}-results`
   const optionId = (i: number) => `${base}-option-${i}`
 
-  // One hook per provider; the registry's list is fixed, so the hook order is too.
   const registry = useRegistry()
   // A thing as a row: the kind's own mark and fact, the components its module's rows use too.
   const thingHit = (c: LinkCandidate): SearchHit => {
@@ -157,40 +157,40 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       id: c.id,
       type: c.type,
       title: c.title,
-      to: relation.to(c.id),
+      to: relation.found ? relation.found(c) : relation.to(c.id),
       meta: relation.Fact ? <relation.Fact thing={c} /> : null,
       mark: relation.Mark ? <relation.Mark thing={c} /> : null,
     }
   }
-  const parts: ProviderResult[] = registry.search.map((p) => ({
-    moduleId: p.moduleId,
-    moduleLabel: p.moduleLabel,
-    ...p.useHits(debounced),
-  }))
-  // The kinds no module searches more closely come from the shell's search across every module
-  // (BUG-015): organisations, meetings, communication, notes, projects.
-  const searched = new Set(
-    registry.relations
-      .filter((r) => registry.search.some((p) => p.moduleId === r.moduleId))
-      .map((r) => r.type),
-  )
-  const others = KIND_ORDER.filter((k) => !searched.has(k))
-  const rest = useQuery({
-    ...candidatesQuery(null, debounced, others),
-    enabled: !pick && debounced.length > 0 && others.length > 0,
+  // Every kind from one question (FR-024, `GET /search`): All, and the counts on the tabs; a kind
+  // looked at alone is read a page at a time as the list is scrolled.
+  const kindView: ObjectType | null = pick ? null : (scope ?? (tab === 'all' ? null : tab))
+  const everything = useQuery({
+    ...everythingQuery(debounced),
+    enabled: !pick && debounced.length > 0 && scope === null,
+    // While the words change, the last answer stays until the next is in (DES-001).
     placeholderData: keepPreviousData,
   })
-  const restRows = (rest.data ?? []).map((c) => thingHit(c))
-  const found = federate([
-    ...parts,
-    {
-      moduleId: 'shell',
-      moduleLabel: '',
-      hits: restRows,
-      isError: rest.isError,
-      isSuccess: others.length === 0 || (rest.isSuccess && !rest.isPlaceholderData),
-    },
-  ])
+  const oneKind = useInfiniteQuery({
+    ...kindQuery(debounced, kindView ?? 'task'),
+    enabled: !pick && debounced.length > 0 && kindView !== null,
+    placeholderData: keepPreviousData,
+  })
+  const kindItems = (oneKind.data?.pages ?? []).flatMap((p) => p.groups[0]?.items ?? [])
+  const totals = new Map((everything.data?.groups ?? []).map((g) => [g.type, g.total]))
+  // A kind alone reads on as its end comes near, by scrolling or by the keyboard (DES-001).
+  const readOn = () => {
+    if (kindView && oneKind.hasNextPage && !oneKind.isFetchingNextPage) void oneKind.fetchNextPage()
+  }
+  const served: LinkCandidate[] = kindView
+    ? kindItems
+    : (everything.data?.groups ?? []).flatMap((g) => g.items)
+  const asked = kindView ? oneKind : everything
+  const found = {
+    rows: served.map((c) => ({ ...thingHit(c), moduleId: '', moduleLabel: '' })),
+    isError: asked.isError,
+    isSuccess: asked.isSuccess && !asked.isPlaceholderData,
+  }
   // As a picker (FR-027) the server's candidates are the hits: every kind, the likely few first.
   const candidates = useQuery({
     ...candidatesQuery(pick?.of ?? { type: 'project', id: '' }, debounced),
@@ -208,9 +208,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         isSuccess: candidates.isSuccess && !candidates.isPlaceholderData,
       }
     : found
-  const hitsById = new Map(
-    (pick ? (candidates.data ?? []) : (rest.data ?? [])).map((c) => [c.id, c]),
-  )
+  const hitsById = new Map((pick ? (candidates.data ?? []) : served).map((c) => [c.id, c]))
   // A task made from here goes to the inbox, as a captured line does.
   const capture = registry.captures.find((c) => c.moduleId === registry.captureModuleId)!
   const inbox = capture.capture.useTarget()
@@ -225,8 +223,20 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     (h) => ((scope ?? 'all') === 'all' || h.type === scope) && !pick?.leaveOut?.includes(h.id),
   )
   const view: Tab = pick ? 'all' : (scope ?? tab)
-  const tabs: Tab[] = ['all', ...kindsWithHits(hits).map((k) => k.type)]
-  const groups = grouped(hits, view)
+  const tabs: Tab[] = pick
+    ? ['all', ...kindsWithHits(hits).map((k) => k.type)]
+    : ['all', ...(everything.data?.groups ?? []).map((g) => g.type)]
+  // The server's groups: All's first five a kind and how many more; a kind alone, all read so far.
+  const groups = pick
+    ? grouped(hits, view)
+    : kindView
+      ? [{ type: kindView, rows: hits, more: 0 }]
+      : KIND_ORDER.flatMap((type) => {
+          const rows = hits.filter((h) => h.type === type)
+          return rows.length > 0
+            ? [{ type, rows, more: (totals.get(type) ?? 0) - rows.length }]
+            : []
+        })
 
   const rows: Row[] = scoping
     ? scopesMatching(query.slice(1)).map((type) => ({ kind: 'scope', key: `scope:${type}`, type }))
@@ -249,8 +259,8 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                 placeRow,
               )
             : []),
-          ...groups.flatMap((g) =>
-            g.rows.map((hit) => {
+          ...groups.flatMap((g) => [
+            ...g.rows.map((hit) => {
               const thing = hitsById.get(hit.id)
               return {
                 kind: 'hit' as const,
@@ -269,7 +279,18 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                     : KIND_WORDS[hit.type].one,
               }
             }),
-          ),
+            // "All 23 people": the rest of a kind, its tab (DES-001 section 4).
+            ...(g.more > 0 && view === 'all'
+              ? [
+                  {
+                    kind: 'all' as const,
+                    key: `all:${g.type}`,
+                    type: g.type,
+                    title: `All ${g.rows.length + g.more} ${KIND_WORDS[g.type].many.toLocaleLowerCase()}`,
+                  },
+                ]
+              : []),
+          ]),
           ...(pick?.makes && typing.length > 0 && !scoping
             ? [{ kind: 'new' as const, key: 'new', title: typing, label: pick.makes.label }]
             : []),
@@ -278,7 +299,10 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   // under the Enter about to choose it. A shorter result set must not leave it past the end.
   const active = picked.under === `${view}:${query}` ? picked.at : 0
   const at = Math.min(active, Math.max(rows.length - 1, 0))
-  const setActive = (next: number) => setPicked({ at: next, under: `${view}:${query}` })
+  const setActive = (next: number) => {
+    setPicked({ at: next, under: `${view}:${query}` })
+    if (next >= rows.length - 3) readOn()
+  }
   useEffect(() => {
     document.getElementById(optionId(at))?.scrollIntoView({ block: 'nearest' })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- optionId is fixed by useId; only a move of the selection scrolls.
@@ -316,6 +340,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   // a pointer chooses what it can see.
   const open = (row: Row, beside: boolean, typed = false) => {
     if (row.kind === 'scope') return scopeTo(row.type)
+    if (row.kind === 'all') return setTab(row.type)
     if (row.kind === 'hit' && typed && !settled) return
     if (row.kind === 'new') {
       if (!pick?.busy) pick?.makes?.run(row.title)
@@ -442,14 +467,15 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         {!pick && <kbd className={KEY}>Esc</kbd>}
       </div>
 
-      {hits.length > 0 && scope === null && !scoping && !pick && (
+      {totals.size > 0 && scope === null && !scoping && !pick && (
         <div
           role="tablist"
           className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5"
         >
           {tabs.map((t) => {
+            // Totals, from the server (FR-024); a big one is said as 999+.
             const n =
-              t === 'all' ? hits.length : (kindsWithHits(hits).find((k) => k.type === t)?.n ?? 0)
+              t === 'all' ? [...totals.values()].reduce((a, b) => a + b, 0) : (totals.get(t) ?? 0)
             return (
               <button
                 key={t}
@@ -464,7 +490,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               >
                 {t !== 'all' && <ScopeIcon type={t} size={14} />}
                 {t === 'all' ? 'All' : KIND_WORDS[t].many}
-                <span className="font-normal text-subtle tabular-nums">{n}</span>
+                <span className="font-normal text-subtle tabular-nums">{n > 999 ? '999+' : n}</span>
               </button>
             )
           })}
@@ -521,6 +547,10 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         id={listId}
         role="listbox"
         aria-label="Search results"
+        onScroll={(e) => {
+          const list = e.currentTarget
+          if (list.scrollHeight - list.scrollTop - list.clientHeight < 80) readOn()
+        }}
         className="max-h-[52vh] overflow-y-auto pb-1.5"
       >
         {runs(rows).map((run) => {
@@ -554,6 +584,12 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             </li>
           )
         })}
+        {/* Two grey rows while the next page of a kind is on its way. */}
+        {kindView && oneKind.isFetchingNextPage && (
+          <li role="presentation" aria-hidden="true" className="px-1">
+            <SkeletonRows rows={2} />
+          </li>
+        )}
       </ul>
 
       {pick && chosen ? (
@@ -669,11 +705,12 @@ type Run = {
 function runs(rows: Row[]): Run[] {
   const out: Run[] = []
   rows.forEach((row, i) => {
-    const type = row.kind === 'hit' ? row.type : undefined
-    const key = row.kind === 'hit' ? `hit:${row.type}` : row.kind
+    const type = row.kind === 'hit' || row.kind === 'all' ? row.type : undefined
+    const key = type ? `hit:${type}` : row.kind
     const last = out[out.length - 1]
     if (last && last.key === key) last.rows.push(row)
-    else out.push({ key, group: row.kind, type, start: i, rows: [row] })
+    else
+      out.push({ key, group: row.kind === 'all' ? 'hit' : row.kind, type, start: i, rows: [row] })
   })
   return out
 }
@@ -750,6 +787,21 @@ function SearchRow({
         <span className="truncate">
           {row.label} “{row.title}”
         </span>
+      </li>
+    )
+  if (row.kind === 'all')
+    return (
+      <li
+        id={id}
+        role="option"
+        aria-selected={selected}
+        data-search-all={row.type}
+        onClick={onChoose}
+        onMouseEnter={onHover}
+        className={`${shared} grid-cols-[24px_minmax(0,1fr)] text-muted`}
+      >
+        <span />
+        <span className="text-meta">{row.title}</span>
       </li>
     )
   if (row.kind === 'recent')

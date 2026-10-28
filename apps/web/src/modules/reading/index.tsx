@@ -7,7 +7,7 @@ import { useProjectReading } from './hooks/projectThings'
 import { readingKeys } from './api'
 import { UnfiledLine } from './components/ReadingKind'
 import { ReadingNow } from './widgets/ReadingNow'
-import { useReadingCapture, useReadingEntries, useReadingHits } from './hooks/contributions'
+import { useReadingCapture, useReadingEntries } from './hooks/contributions'
 import { ReadingFact } from './components/ReadingFact'
 import { describeReadingChange } from './logic/describeChange'
 import { READING_ID } from './logic/id'
@@ -36,7 +36,6 @@ export const readingModule: WorkspaceModule = {
     { path: ':id/edit', element: <ReadingEdit />, handle: PAGE },
   ],
   capture: { kind: 'reading', useTarget: useReadingCapture, accepts: isReadingUrl },
-  search: { useHits: useReadingHits },
   creates: [
     {
       kind: 'reading',

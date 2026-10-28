@@ -1,4 +1,4 @@
-import type { TaskId } from '@ctws/contracts'
+import { idFrom, projectId, taskId, type TaskId } from '@ctws/contracts'
 import type { WorkspaceModule } from '../../shell/contract'
 import { topPage } from '../../shell/layout'
 import { patchTask, projectTasksQuery, taskKeys } from './api'
@@ -7,8 +7,9 @@ import { openOf, PersonTaskRow } from './components/PersonTaskRow'
 import { ProjectOutline } from './components/ProjectOutline'
 import { ProjectCardFacts, ProjectMoved, useProjectOrder } from './components/ProjectFacts'
 import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind'
-import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
+import { useInboxCapture, useTaskEntries } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
+import { revealHref } from './logic/crumb'
 import { describeTaskChange } from './logic/describeChange'
 import { TASK_KEYS } from './logic/keys'
 import { TaskFact, TaskMark } from './components/TaskFacts'
@@ -71,7 +72,6 @@ export const taskModule: WorkspaceModule = {
   routes: [{ path: ':id', element: <OpenTask /> }],
   capture: { kind: 'task', useTarget: useInboxCapture },
   creates: [{ kind: 'task', key: 't', label: 'Task', Dialog: NewTask }],
-  search: { useHits: useTaskHits },
   chords: [
     { id: 'today', key: 't', label: 'Today', resolve: () => '/today', order: 10 },
     {
@@ -119,6 +119,11 @@ export const taskModule: WorkspaceModule = {
       kind: 'Task',
       plural: 'Tasks',
       to: taskPage,
+      // `?reveal=` makes `TaskTree` unfold the ancestors and focus the row, which may be folded away.
+      found: (t) =>
+        t.type === 'task'
+          ? revealHref(idFrom(projectId, t.projectId), idFrom(taskId, t.id))
+          : taskPage(t.id),
       Mark: TaskMark,
       Fact: TaskFact,
       describeChange: describeTaskChange,

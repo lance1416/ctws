@@ -72,7 +72,7 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
   ])
 
 /** Something that could go at the other end, while its name is being typed. */
-const linkCandidate = thingWith({})
+export const linkCandidate = thingWith({})
 export type LinkCandidate = z.infer<typeof linkCandidate>
 
 /** Kinds of thing as one query parameter, comma separated: `task,person`. */

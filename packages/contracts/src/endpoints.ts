@@ -127,7 +127,12 @@ import {
   organisationTypesResponse,
   updateOrganisationBody,
 } from './organisation'
-import { SEARCH_LIMIT, searchQueryOf } from './search'
+import {
+  SEARCH_LIMIT,
+  searchEverythingQuery,
+  searchEverythingResponse,
+  searchQueryOf,
+} from './search'
 import { timelineQuery, timelineResponse } from './timeline'
 import {
   completedQuery,
@@ -489,6 +494,18 @@ export const api = {
       query: lunarDaysQuery,
       ok: 200,
       response: calendarDaysResponse,
+    }),
+  },
+
+  search: {
+    everything: endpoint({
+      method: 'GET',
+      path: '/search',
+      summary:
+        "Every kind's matches, the first few each with its total; or one kind, a page at a time.",
+      query: searchEverythingQuery,
+      ok: 200,
+      response: searchEverythingResponse,
     }),
   },
 

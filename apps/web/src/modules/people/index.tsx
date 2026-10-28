@@ -10,7 +10,7 @@ import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
 import { BirthdaysToday } from './components/BirthdaysToday'
 import { NewPerson } from './components/NewPerson'
 import { PersonFact, PersonMark } from './components/PersonFacts'
-import { useBirthdayEntries, usePeopleHits } from './hooks/contributions'
+import { useBirthdayEntries } from './hooks/contributions'
 import { describePersonChange } from './logic/describeChange'
 import { PEOPLE_ID } from './logic/id'
 import { PeopleSidebar } from './components/PeopleSidebar'
@@ -49,7 +49,6 @@ export const peopleModule: WorkspaceModule = {
     { path: ':id', element: <Person />, handle: PAGE },
     { path: ':id/edit', element: <PersonEdit />, handle: PAGE },
   ],
-  search: { useHits: usePeopleHits },
   calendar: {
     label: 'Birthdays',
     useEntries: useBirthdayEntries,

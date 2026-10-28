@@ -11,7 +11,7 @@ import { z } from 'zod'
 import type { Queryable } from '../../platform/db/client'
 import { rowsOf } from '../../platform/db/raw'
 import { within } from '../../platform/db/scope'
-import { wanted, type Linkable } from '../../shell/links'
+import { matching, wanted, type Linkable } from '../../shell/links'
 import { visibleTasks } from './queries'
 import { tasks } from './tables'
 
@@ -64,11 +64,29 @@ const COLUMNS = { id: tasks.id, title: tasks.title, text: ['tasks.title'] }
 /** Tasks by id or by title, each with the project it is in. */
 export const taskLinkable: Linkable = {
   type: 'task',
+  // Counted as `taskRows` finds them: visible in a visible project.
+  count: async (q, workspaceId, text) => {
+    const [row] = await q
+      .select({ n: sql<number>`count(*)::int` })
+      .from(tasks)
+      .innerJoin(sql`projects p`, sql`p.id = ${tasks.projectId}`)
+      .where(
+        within(
+          visibleTasks(workspaceId, { task: 'tasks', project: 'p' }),
+          matching(COLUMNS.text, text),
+        ),
+      )
+    return row?.n ?? 0
+  },
   rows: async (q, workspaceId, want) => {
-    const { where, orderBy, limit } = wanted(want, COLUMNS, [desc(tasks.createdAt), desc(tasks.id)])
+    const { where, orderBy, limit, offset } = wanted(want, COLUMNS, [
+      desc(tasks.createdAt),
+      desc(tasks.id),
+    ])
     const found = await taskRows(q, workspaceId, where)
       .orderBy(...orderBy)
       .limit(limit)
+      .offset(offset)
     return found.map(named)
   },
   standingOf,
