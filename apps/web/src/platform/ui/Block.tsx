@@ -59,9 +59,10 @@ export function Block({
             <Icon size={14} />
           </span>
         )}
-        <h2 className="text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
+        <h2 className="shrink-0 text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
         {emptyInHead ? (
-          <span className="text-meta text-subtle">{empty}</span>
+          // One line beside the name, cut short rather than wrapped (M-07).
+          <span className="min-w-0 truncate text-meta text-subtle">{empty}</span>
         ) : (
           count !== undefined && (
             <span data-count className="text-meta text-subtle tabular-nums">
