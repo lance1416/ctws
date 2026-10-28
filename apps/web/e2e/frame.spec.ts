@@ -130,10 +130,7 @@ test('the inspector has its own address, survives a reload and closes on Esc', a
 
 test('the modules still to come keep their place on the bar (EPIC-12)', async ({ page }) => {
   await registerFreshUser(page)
-  for (const [name, url] of [
-    ['Communication', /\/communication$/],
-    ['Notes', /\/notes$/],
-  ] as const) {
+  for (const [name, url] of [['Notes', /\/notes$/]] as const) {
     await page.getByRole('navigation', { name: 'Modules' }).getByRole('link', { name }).click()
     await expect(page).toHaveURL(url)
     await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()

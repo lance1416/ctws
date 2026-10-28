@@ -154,7 +154,12 @@ export function LogMessage({
 
   const save = useMutation({
     mutationFn: async (draft: Draft) => {
-      const occurredAt = fromDayTimeInput(draft.when, zone) ?? undefined
+      // Left at now, the server's now is sent: the box holds minutes, and a message logged now
+      // must sort after what happened earlier in the same minute.
+      const occurredAt =
+        what.kind !== 'edit' && draft.when === opened.when
+          ? undefined
+          : (fromDayTimeInput(draft.when, zone) ?? undefined)
       const said = {
         channel: draft.channel,
         ...(occurredAt ? { occurredAt } : {}),
