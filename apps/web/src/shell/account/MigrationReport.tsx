@@ -11,7 +11,7 @@ import {
 import { displayName } from '@ctws/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { call } from '../../platform/http/api'
 import { monthDay } from '../../platform/time/dates'
 import { BUTTON } from '../../platform/ui/buttonStyles'
@@ -122,6 +122,8 @@ export function MigrationReport() {
     return <p className="text-ui text-muted">There is no report of a move to show.</p>
   const data = report.data
   if (!data) return null
+  // Done is done: no way back to it, read only or otherwise (product, 2026-10-19; BUG-060).
+  if (data.doneAt) return <Navigate to="/account" replace />
   const of = (s: Section) => data.items.filter((i) => i.section === s)
 
   // A part chosen in the sidebar is the one shown as chosen; the first until one is.
@@ -452,7 +454,16 @@ function NameRow({ item }: { item: MigrationItem }) {
       data-report-name={item.key}
       className={`${NAME_GRID} min-h-11 border-b border-line py-1.5 last:border-b-0`}
     >
-      <span className="truncate font-mono text-meta text-muted">{item.was}</span>
+      {/* To the person's page, to see them whole (BUG-059, MR-06). */}
+      <Link
+        to={`/people/${item.id}`}
+        className="truncate font-mono text-meta text-muted hover:text-ink hover:underline"
+      >
+        {item.was}
+        <span aria-hidden="true" className="ml-1">
+          ↗
+        </span>
+      </Link>
       {field('givenName', 'Given name')}
       {field('middleName', 'Middle name')}
       {field('familyName', 'Family name')}
@@ -515,10 +526,14 @@ function MergeRow({ item }: { item: MigrationItem }) {
     >
       {group.map((g) => (
         <span key={g.id} className="flex items-center gap-1.5">
-          <span className="inline-flex h-6 items-center gap-1.5 rounded-key bg-organisation-bg px-2 text-meta font-medium text-organisation-t">
+          <Link
+            to={`/organisations/${g.id}`}
+            className="inline-flex h-6 items-center gap-1.5 rounded-key bg-organisation-bg px-2 text-meta font-medium text-organisation-t hover:underline"
+          >
             <KIND_ICON.organisation size={12} aria-hidden="true" />
             {g.name}
-          </span>
+            <span aria-hidden="true">↗</span>
+          </Link>
           <span className="text-meta text-muted">
             {g.people === 1 ? '1 person' : `${g.people} people`}
           </span>
