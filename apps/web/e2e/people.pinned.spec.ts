@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { apiPost, registerFreshUser } from './helpers'
+import { apiPost, pickLunarDay, registerFreshUser } from './helpers'
 
 /**
  * WHO YOU WERE IN TOUCH WITH (FR-060, artboard 18), on the server pinned at Thursday, October 22,
@@ -81,5 +81,46 @@ test('their Meetings block has what is coming, then what was held, however long 
     /Fri 10:30\s*rust-analyzer sync/,
     /Fri 10:30\s*rust-analyzer sync/,
     /Mar 3, 2022 14:00\s*Payments platform review/,
+  ])
+
+  // Side by side, the full blocks are as tall as each other (FR-011 rule 1, BUG-047).
+  const project = await apiPost(page, '/projects', { name: 'Job hunt' })
+  const task = await apiPost(page, '/tasks', { projectId: project.id, title: 'Send the CV' })
+  await apiPost(page, '/relations', {
+    from: { type: 'task', id: task.id },
+    to: { type: 'person', id: mira.id },
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.reload()
+  const tasks = page.getByRole('region', { name: 'Tasks' })
+  await expect(tasks).toContainText('Send the CV')
+  const meetingsBox = await page.getByRole('region', { name: 'Meetings' }).boundingBox()
+  const tasksBox = await tasks.boundingBox()
+  expect(tasksBox!.y).toBe(meetingsBox!.y)
+  expect(tasksBox!.height).toBe(meetingsBox!.height)
+})
+
+test('a birthday picked says this year’s day by its weekday, and when the reminder comes (BUG-050)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto('/people/new')
+  await page
+    .getByRole('radiogroup', { name: 'Which calendar' })
+    .getByRole('radio', { name: 'Lunar' })
+    .click()
+  await pickLunarDay(page, '九月', '廿六')
+  const block = page.getByRole('region', { name: 'Birthday' })
+  await expect(block).toContainText('Every year on九月廿六')
+  // Thursday the 22nd: this year's 九月廿六 is Wednesday, November 4 (FR-062).
+  await expect(page.getByTestId('birthday-preview')).toContainText('Wednesday, Nov 4')
+  await expect(block.getByRole('button', { name: /^Tell me/ })).toBeVisible()
+  await expect(block).toContainText('At 00:00 their time')
+  await block.getByRole('button', { name: /^Tell me/ }).click()
+  await expect(page.getByRole('menuitem')).toHaveText([
+    /On the day/,
+    /A day before/,
+    /3 days before/,
+    /A week before/,
   ])
 })

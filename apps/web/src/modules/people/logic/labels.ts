@@ -17,12 +17,15 @@ export const GENDER_CHOICES: Choice<Gender | null>[] = [
   { value: null, label: 'Not set' },
 ]
 
-/** How early to be told of a birthday. */
+/** How early to be told of a birthday, as FR-062 words it. */
 export const LEAD_LABELS: Record<RemindLead, string> = {
-  7: '1 week before',
-  3: '3 days before',
-  1: '1 day before',
   0: 'On the day',
+  1: 'A day before',
+  3: '3 days before',
+  7: 'A week before',
 }
 
-export const LEAD_CHOICES = REMIND_LEADS.map((n) => ({ value: String(n), label: LEAD_LABELS[n] }))
+/** The nearest first, as the form offers them (FR-062). */
+export const LEAD_CHOICES = [...REMIND_LEADS]
+  .sort((a, b) => a - b)
+  .map((n) => ({ value: String(n), label: LEAD_LABELS[n] }))

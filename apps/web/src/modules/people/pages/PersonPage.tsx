@@ -69,12 +69,16 @@ export function PersonPage({ person }: { person: PersonResponse }) {
       >
         {profiled && <Profile person={person} />}
         <div className="flex min-w-0 flex-col gap-4">
-          {/* Two across; an odd last full block takes the row, and the empty ones follow it. */}
-          <div className="grid items-start gap-3 xl:grid-cols-2">
+          {/* Two across; an odd last full block takes the row, and the empty ones follow it. Full
+              blocks side by side are as tall as each other (FR-011 rule 1, BUG-047); an empty one
+              keeps the height of its head. */}
+          <div className="grid gap-3 xl:grid-cols-2">
             {blocks.map((block, i) => (
               <div
                 key={i}
-                className={`min-w-0 ${full % 2 === 1 && i === full - 1 ? 'xl:col-span-2' : ''}`}
+                className={`min-w-0 ${
+                  i < full ? 'flex flex-col *:flex-1' : 'self-start'
+                } ${full % 2 === 1 && i === full - 1 ? 'xl:col-span-2' : ''}`}
               >
                 {block}
               </div>

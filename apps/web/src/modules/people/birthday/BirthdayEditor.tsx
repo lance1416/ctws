@@ -8,7 +8,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../../../platform/http/api'
-import { fullDay } from '../../../platform/time/dates'
+import { fullDay, shortDay, weekdayOf } from '../../../platform/time/dates'
 import { PickOne } from '../../../platform/ui/inline'
 import { useAccountToday } from '../../../shell/auth'
 import { BirthdayPicker } from '../../../shell/dates'
@@ -87,7 +87,7 @@ export function BirthdayEditor({
         solarOfPick={preview.data?.bornSolar ?? null}
         facts={
           <div data-testid="birthday-preview" className="contents">
-            {preview.isSuccess && <PreviewLine facts={preview.data} />}
+            {preview.isSuccess && <PreviewLine facts={preview.data} today={today} />}
             {preview.isError && (
               <span role="alert" className="col-span-3 text-ui text-stop-t">
                 {(preview.error instanceof ApiError && preview.error.detail) ||
@@ -97,18 +97,25 @@ export function BirthdayEditor({
           </div>
         }
       />
-      <PickOne
-        label="Tell me"
-        value={String(draft.remindLead)}
-        choices={LEAD_CHOICES}
-        onPick={(next) => setDraft({ ...draft, remindLead: Number(next) as RemindLead })}
-      />
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-3">
+          <span className="text-meta text-muted">Tell me</span>
+          <PickOne
+            label="Tell me"
+            value={String(draft.remindLead)}
+            choices={LEAD_CHOICES}
+            onPick={(next) => setDraft({ ...draft, remindLead: Number(next) as RemindLead })}
+          />
+        </div>
+        {/* When the reminder comes, and by whose clock (FR-062). */}
+        <span className="text-meta text-subtle">At 00:00 their time</span>
+      </div>
     </div>
   )
 }
 
 /** The pick in the other calendar and this year, each fact in its own cell (FR-010). */
-function PreviewLine({ facts }: { facts: BirthdayPreviewResponse }) {
+function PreviewLine({ facts, today }: { facts: BirthdayPreviewResponse; today: string }) {
   return (
     <>
       {facts.bornSolar && (
@@ -123,7 +130,9 @@ function PreviewLine({ facts }: { facts: BirthdayPreviewResponse }) {
       )}
       <span aria-hidden="true" />
       <span className="text-meta text-subtle">This year</span>
-      <span className="text-ink">{fullDay(facts.next.day)}</span>
+      <span className="text-ink">
+        {weekdayOf(facts.next.day)}, {shortDay(facts.next.day, today)}
+      </span>
       {(facts.zodiac || facts.sign || facts.hour) && (
         <>
           <span aria-hidden="true" />
