@@ -80,13 +80,17 @@ function HungOn({ note }: { note: Pick<NoteResponse, 'anchor' | 'heldAt'> }) {
       ? `${registry.relationFor('meeting').to(a.id)}?${new URLSearchParams({ at: a.occurrenceId })}`
       : registry.relationFor(a.type).to(a.id)
   return (
-    <p className="flex flex-wrap items-center gap-1.5 text-meta text-muted">
-      On
-      <Link to={to} className="inline-flex items-center gap-1 text-ink hover:underline">
+    // Running text, so the comma sits against the name.
+    <p className="text-meta text-muted">
+      On{' '}
+      <Link
+        to={to}
+        className="inline-flex items-center gap-1 align-bottom text-ink hover:underline"
+      >
         <Icon size={12} aria-hidden="true" className={KIND_TEXT[a.type]} />
         {a.title ?? 'something gone'}
       </Link>
-      {note.heldAt && <span>, {shortDay(ymd(new Date(note.heldAt), zone), today)}</span>}
+      {note.heldAt && `, ${shortDay(ymd(new Date(note.heldAt), zone), today)}`}
     </p>
   )
 }
