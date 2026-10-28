@@ -28,7 +28,7 @@ import { Attending } from '../components/Attending'
 import { EarlierInSeries, occurrenceTo } from '../components/EarlierInSeries'
 import { OccurrenceNotes } from '../components/OccurrenceNotes'
 import { ScopeChoice } from '../components/ScopeChoice'
-import { meetingLink } from '../logic/meetingPlace'
+import { joinLink, meetingLink } from '../logic/meetingPlace'
 import { MEETINGS_ID } from '../logic/id'
 
 const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-control px-2 text-meta font-medium'
@@ -90,7 +90,7 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
   })
   const [asking, setAsking] = useState(false)
   const day = m.startsLocal.slice(0, 10)
-  const join = m.joinUrl ?? meetingLink(m.location)
+  const join = joinLink(m.joinUrl, m.location)
   const firstDay = (earlier.data?.at(-1) ?? m).startsLocal.slice(0, 10)
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -210,7 +210,7 @@ function Profile({ meeting: m }: { meeting: MeetingOccurrence }) {
     if (p?.timeZone && p.timeZone !== zone)
       elsewhere.set(p.timeZone, [...(elsewhere.get(p.timeZone) ?? []), p.givenName])
   }
-  const link = m.joinUrl ?? meetingLink(m.location)
+  const link = joinLink(m.joinUrl, m.location)
   return (
     <aside
       aria-label="Profile"

@@ -72,6 +72,7 @@ export function OccurrenceNotes({
             <button
               type="button"
               onClick={() => setWriting(true)}
+              aria-label={note ? 'Edit the notes' : 'Write the notes'}
               className={`${BUTTON.inline} text-meta`}
             >
               {note ? 'Edit' : 'Write'}

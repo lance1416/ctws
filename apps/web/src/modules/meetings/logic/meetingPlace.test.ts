@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { meetingLink } from './meetingPlace'
+import { joinLink, meetingLink } from './meetingPlace'
 
 describe('meetingLink', () => {
   it('opens an explicit http(s) location', () => {
@@ -27,5 +27,14 @@ describe('meetingLink', () => {
 
   it('refuses a link with a space in it, which is a sentence that starts with one', () => {
     expect(meetingLink('https://meet.example.test/abc and then lunch')).toBeNull()
+  })
+})
+
+describe('joinLink', () => {
+  it('takes the meeting link when it is an http(s) address, else a location that is one', () => {
+    expect(joinLink('https://meet.example/a', null)).toBe('https://meet.example/a')
+    expect(joinLink(null, 'https://meet.example/b')).toBe('https://meet.example/b')
+    expect(joinLink('javascript:alert(1)', 'Room 3')).toBeNull()
+    expect(joinLink('javascript:alert(1)', 'https://meet.example/c')).toBe('https://meet.example/c')
   })
 })
