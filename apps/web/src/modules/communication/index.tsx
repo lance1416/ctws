@@ -6,6 +6,7 @@ import { CommunicationSidebar } from './components/CommunicationSidebar'
 import { FollowUpsToday } from './components/FollowUpsToday'
 import { MessageFact, MessageMark } from './components/MessageFacts'
 import { NewMessage } from './components/NewMessage'
+import { useProjectAwaiting } from './hooks/projectThings'
 import { COMMUNICATION_ID } from './logic/id'
 import { CommunicationOverview } from './pages/CommunicationOverview'
 import { Message } from './pages/Message'
@@ -43,6 +44,8 @@ export const communicationModule: WorkspaceModule = {
     },
   ],
   today: [{ id: 'follow-up', order: 10, Block: FollowUpsToday }],
+  // A project's page lists who is waiting for a reply in it (FR-055).
+  project: { Things: { kind: 'communication', useThings: useProjectAwaiting } },
   relations: [
     {
       type: 'communication',

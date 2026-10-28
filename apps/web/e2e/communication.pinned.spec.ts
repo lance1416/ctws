@@ -98,6 +98,33 @@ test('on its day it is on Today; Follow up Mon moves it, and the reply closes it
   )
 })
 
+test('a project lists who is waiting for a reply in it (FR-055)', async ({ page }) => {
+  await registerFreshUser(page)
+  const priya = await apiPost(page, '/people', { givenName: 'Priya', familyName: 'Nair' })
+  const jobs = await apiPost(page, '/projects', { name: 'Job hunt' })
+  await send(page, {
+    parties: [{ type: 'person', id: priya.id }],
+    subject: 'Onsite dates',
+    occurredAt: '2026-10-16T09:00:00.000Z',
+    awaitingReply: true,
+    followUpOn: '2026-10-21',
+    projectId: jobs.id,
+  })
+  await send(page, {
+    parties: [{ type: 'person', id: priya.id }],
+    subject: 'Elsewhere',
+    occurredAt: '2026-10-16T09:00:00.000Z',
+    awaitingReply: true,
+    followUpOn: '2026-10-21',
+  })
+  await page.goto(`/projects/${jobs.id as string}`)
+  const block = page.getByRole('region', { name: 'Communication' })
+  await expect(block).toContainText('Onsite dates')
+  await expect(block).toContainText('Priya Nair')
+  await expect(block).toContainText('Oct 21')
+  await expect(block).not.toContainText('Elsewhere')
+})
+
 test('each organisation in touch is one row, with what is next', async ({ page }) => {
   await registerFreshUser(page)
   const morrow = await apiPost(page, '/organisations', { name: 'Morrow Legal' })
