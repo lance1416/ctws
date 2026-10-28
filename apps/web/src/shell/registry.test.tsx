@@ -145,7 +145,7 @@ describe('the master key table', () => {
   it('merges the shell chords and every module chord into one ordered table', () => {
     const table = build([notes]).chords
     // `q` is declared with a lower order than all but `w`, so it slots in after it.
-    expect(table.map((c) => c.key)).toEqual(['w', 'q', 'c', 'p', 'n'])
+    expect(table.map((c) => c.key)).toEqual(['w', 'q', 'c', 'p'])
   })
 
   it('resolves a module chord to the module own path', () => {
@@ -255,7 +255,7 @@ describe('where another module keeps its things', () => {
       reads: [],
     }
     const shellOnly = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
-    expect(shellOnly.relations.map((r) => r.type)).toEqual(['project', 'note'])
+    expect(shellOnly.relations.map((r) => r.type)).toEqual(['project'])
     expect(shellOnly.relationFor('project').to('p1')).toBe('/projects/p1')
     const withNotes = build([
       {

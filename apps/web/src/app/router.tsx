@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Login } from '../shell/auth'
 import { Calendar } from '../shell/calendar'
-import { Layout, Placeholder, PLACES, RouteError, topPage, type PageHandle } from '../shell/layout'
+import { Layout, RouteError, topPage, type PageHandle } from '../shell/layout'
 import {
   EditProject,
   NewProject,
@@ -14,9 +14,6 @@ import {
 import { WORKBENCH_PATH } from '../shell/registry'
 import { Workbench } from '../shell/workbench'
 import { registry } from './registry'
-
-/** The modules on the bar whose pages are still to come (EPIC-12). */
-const PLACEHOLDERS = ['notes']
 
 export const router = createBrowserRouter([
   {
@@ -50,11 +47,6 @@ export const router = createBrowserRouter([
                 element: <ProjectPage />,
                 handle: { useCrumbs: useProjectCrumbs } satisfies PageHandle,
               },
-              ...PLACES.filter((p) => PLACEHOLDERS.includes(p.id)).map((p) => ({
-                path: p.to,
-                element: <Placeholder place={p} />,
-                handle: topPage(p.label),
-              })),
               ...registry.routes,
               // The addresses the redesign retired (FR-023, FR-029): each goes where its page went.
               { path: '/things', element: <Navigate to={WORKBENCH_PATH} replace /> },

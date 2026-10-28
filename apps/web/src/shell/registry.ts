@@ -40,8 +40,6 @@ const SHELL_CHORDS: Chord[] = [
   { id: 'workbench', key: 'w', label: 'Workbench', resolve: () => WORKBENCH_PATH, order: 5 },
   { id: 'calendar', key: 'c', label: 'Calendar', resolve: () => '/calendar', order: 15 },
   { id: 'projects', key: 'p', label: 'Projects', resolve: () => '/projects', order: 25 },
-  // Its module comes in phase 3; the bar and the keys already lead to its place.
-  { id: 'notes', key: 'n', label: 'Notes', resolve: () => '/notes', order: 55 },
 ]
 
 const SHELL_PAGES: ModulePage[] = [
@@ -59,11 +57,7 @@ const PROJECTS_KIND: KindEntry = {
 
 const SHELL_RELATIONS: RelationContribution[] = [
   { type: 'project', kind: 'Project', plural: 'Projects', to: (id) => `/projects/${id}` },
-  { type: 'note', kind: 'Note', plural: 'Notes', to: (id) => `/notes/${id}` },
 ]
-
-/** The kind whose module comes in phase 3: `N` and the menu already lead to its place. */
-const SHELL_CREATES: Creator[] = [{ kind: 'note', key: 'n', label: 'Note', to: '/notes' }]
 
 /** What the app, not the shell, decides about its modules. */
 export type ShellConfig = {
@@ -180,9 +174,9 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     ...modules.flatMap((m) => (m.relations ?? []).map((r) => ({ ...r, moduleId: m.id }))),
   ]
   const NEW_ORDER = 'tmpoxrnl'
-  const creates = [...modules.flatMap((m) => m.creates ?? []), ...SHELL_CREATES].sort(
-    (a, b) => NEW_ORDER.indexOf(a.key) - NEW_ORDER.indexOf(b.key),
-  )
+  const creates = modules
+    .flatMap((m) => m.creates ?? [])
+    .sort((a, b) => NEW_ORDER.indexOf(a.key) - NEW_ORDER.indexOf(b.key))
   const captures = modules.flatMap((m) =>
     m.capture ? [{ moduleId: m.id, capture: m.capture }] : [],
   )
