@@ -3,7 +3,7 @@ import { clockTime } from '@ctws/core/clock'
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { weekdayOf, ymd } from '../../../platform/time/dates'
+import { monthDay, weekdayOf, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
@@ -36,8 +36,10 @@ export function NextMeetings() {
   const [next, ...after] = coming
   const when = (m: MeetingOccurrence) => {
     const day = ymd(new Date(m.startsAt), zone)
+    // A weekday within the week; past it a date, so next Monday is not read as this one's.
     return {
-      day: day === today ? 'Today' : weekdayOf(day, true),
+      day:
+        day === today ? 'Today' : day <= addDays(today, 6) ? weekdayOf(day, true) : monthDay(day),
       time: clockTime(new Date(m.startsAt), zone),
     }
   }

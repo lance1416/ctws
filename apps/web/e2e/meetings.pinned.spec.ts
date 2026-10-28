@@ -462,3 +462,16 @@ test('a long series shows its three latest, and the rest in the sidebar by month
   await series.getByRole('link', { name: 'All meetings' }).click()
   await expect(sidebar(page).getByRole('region', { name: 'Coming' })).toBeVisible()
 })
+
+test('the workbench says a meeting past this week by its date, not a weekday', async ({ page }) => {
+  await registerFreshUser(page, '/')
+  // The pinned now is Thursday the 22nd: Saturday is this week, the Friday after is not.
+  await meet(page, { title: 'Design review', startsLocal: '2026-10-23T15:00' })
+  await meet(page, { title: 'Climbing', startsLocal: '2026-10-24T10:00' })
+  await meet(page, { title: 'Quarterly', startsLocal: '2026-10-30T10:00' })
+  await page.reload()
+  const rows = page.locator('[data-next-meeting]')
+  await expect(rows.filter({ hasText: 'Climbing' })).toContainText('Sat')
+  await expect(rows.filter({ hasText: 'Quarterly' })).toContainText('Oct 30')
+  await expect(rows.filter({ hasText: 'Quarterly' })).not.toContainText('Fri')
+})
