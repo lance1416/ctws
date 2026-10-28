@@ -93,7 +93,6 @@ for (const width of [320, 375]) {
       ['/reading', 'Designing Data-Intensive Applications'],
       ['/reading', 'Cracking the Coding Interview'],
       ['/notes', 'Questions to ask the interviewer'],
-      ['/review', 'Done one'],
       ['/review?view=done', 'Done one'],
       // The overview: its blocks are what must fit (FR-060).
       ['/people', 'Recently in touch'],
@@ -102,11 +101,13 @@ for (const width of [320, 375]) {
       await expect(page.getByRole('main').getByText(shown).first()).toBeVisible()
       expect(await problems(page), path).toEqual([])
     }
-    // Review a week back, where both steps are live.
+    // Review opens on last week, where both steps are live; forward is this week's rows.
     await page.goto('/review')
-    await page.getByRole('button', { name: 'Previous week' }).click()
     await expect(page.getByRole('button', { name: 'Next week' })).toBeEnabled()
-    expect(await problems(page), 'review, a week back').toEqual([])
+    expect(await problems(page), 'review, last week').toEqual([])
+    await page.getByRole('button', { name: 'Next week' }).click()
+    await expect(page.getByRole('main').getByText('Done one').first()).toBeVisible()
+    expect(await problems(page), 'review, this week').toEqual([])
   })
 }
 
