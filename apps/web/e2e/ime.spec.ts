@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { apiPost, makeProject, registerFreshUser, captureBox, openCapture } from './helpers'
+import { makeProject, registerFreshUser, captureBox, openCapture } from './helpers'
 
 /**
  * ENTER WHILE AN IME IS COMPOSING IS NOT A SUBMIT.
@@ -91,16 +91,16 @@ test('committing English out of an IME does not create a task', async ({ page })
 
 test('committing English out of an IME does not add a person', async ({ page }) => {
   await registerFreshUser(page)
-  // Someone already there: an empty People page is only its New person (FR-030).
-  await apiPost(page, '/people', { name: '韩梅梅' })
-  await page.goto('/people')
+  await page.goto('/people/new')
   const writes = recordWrites(page)
 
-  await commitWithIme(page, 'input[aria-label="Add a name"]', 'Ada')
-  await expect(page.getByLabel('Add a name')).toHaveValue('Ada')
+  // The Enter that commits the IME text is not the form's: nobody is added yet.
+  await commitWithIme(page, 'input[id$="-given"]', 'Ada')
+  await expect(page.getByLabel('Given name', { exact: true })).toHaveValue('Ada')
+  expect(writes).toEqual([])
 
   const added = answered(page, 'POST', /^\/api\/v1\/people$/)
-  await page.getByLabel('Add a name').press('Enter')
-  expect((await added).request().postDataJSON()).toMatchObject({ name: 'Ada' })
+  await page.getByLabel('Given name', { exact: true }).press('ControlOrMeta+Enter')
+  expect((await added).request().postDataJSON()).toMatchObject({ givenName: 'Ada' })
   expect(writes).toEqual(['POST /api/v1/people'])
 })

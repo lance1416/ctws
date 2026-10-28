@@ -72,19 +72,18 @@ test('a reading row whose move the server refuses says so', async ({ page }) => 
   await expect(said(page)).toBeVisible()
 })
 
-test('a person delete the server refuses says so, and the pane stays', async ({ page }) => {
+test('a person delete the server refuses says so, and the page stays', async ({ page }) => {
   await registerFreshUser(page, '/people')
   const person = await apiPost(page, '/people', { name: 'Ying Chen' })
-  await page.goto(`/people/${person.id}`)
-  const pane = page.getByRole('dialog', { name: 'People' })
+  await page.goto(`/people/${person.id}/edit`)
   await refuse(page, `**/api/v1/people/${person.id}`, 'DELETE')
-  await pane.getByRole('button', { name: /^Delete / }).click()
+  await page.getByRole('button', { name: /^Delete / }).click()
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: /^Delete/ })
     .click()
   await expect(said(page)).toBeVisible()
-  await expect(pane).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/people/${person.id}/edit$`))
 })
 
 test('a reading delete the server refuses says so, and the pane stays', async ({ page }) => {
@@ -115,23 +114,22 @@ test('an unlink the server refuses says so, and the link stays', async ({ page }
   await refuse(page, '**/api/v1/relations/*', 'DELETE')
   await page.getByRole('button', { name: 'Unlink The C book' }).click()
   await expect(said(page)).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Linked' })).toContainText('The C book')
+  await expect(page.getByRole('region', { name: 'Recommended reading' })).toContainText(
+    'The C book',
+  )
 })
 
 test('a project rename or recolour the server refuses says so', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
-  await page.goto(`/projects/${pid}`)
+  // Renamed and recoloured on its edit page (DES-001 v1.23).
+  await page.goto(`/projects/${pid}/edit`)
   await refuse(page, `**/api/v1/projects/${pid}`, 'PATCH')
-  await page.getByRole('button', { name: '改版', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Project name' }).fill('改版二期')
-  await page.keyboard.press('Enter')
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('改版二期')
+  await page.getByRole('radio', { name: 'Pink' }).check({ force: true })
+  await page.getByRole('button', { name: /^Save/ }).click()
   await expect(said(page)).toBeVisible()
-
-  await page.reload()
-  await page.getByRole('button', { name: 'Project colour' }).click()
-  await page.getByRole('menuitem', { name: 'Pink' }).click()
-  await expect(said(page)).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}/edit$`))
 })
 
 test('a sign-out the server refuses says so', async ({ page }) => {

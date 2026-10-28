@@ -41,42 +41,31 @@ async function world(page: Page) {
 }
 
 /**
- * A person or a meeting opens as a layer over its list, not a page of its own: the module draws
+ * A meeting opens as a layer over its list; a person has a page of their own (FR-061). The module draws
  * the fields and the shell draws the links. A project keeps a whole page.
  */
-test('a person’s layer shows the module’s fields and the shell’s links', async ({ page }) => {
-  test.fixme(
-    true,
-    "Phase 3, STORY-021: a person's page shows module-owned links (meetings, projects) again.",
-  )
+test('a person’s page shows the module’s fields and what they are in', async ({ page }) => {
   const { person } = await world(page)
   await page.goto(`/people/${person.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Ying Chen' })).toBeVisible()
 
-  const layer = page.getByRole('dialog', { name: 'People' })
-  await expect(layer).toContainText('Ying Chen')
-  await expect(layer).toContainText('Acme recruiting')
-
-  // Read from the other end: attendees are stored on the meeting, the recommendation as a link.
-  const linked = layer.getByRole('region', { name: 'Linked' })
-  await expect(linked.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
-  await expect(linked.getByRole('region', { name: 'Reading' })).toContainText(
+  // Read from the other end: attendees are stored on the meeting, the recommendation as a link,
+  // the project on the person (FR-061).
+  await expect(page.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
+  await expect(page.getByRole('region', { name: 'Recommended reading' })).toContainText(
     'The Design of Everyday Things',
   )
-  await expect(linked.getByRole('region', { name: 'Projects' })).toContainText('Job hunt')
+  await expect(page.getByRole('link', { name: 'Job hunt' })).toBeVisible()
 })
 
 test('following a link from a person to a meeting lands on the meeting’s layer', async ({
   page,
 }) => {
-  test.fixme(
-    true,
-    "Phase 3, STORY-021: a person's page shows module-owned links (meetings, projects) again.",
-  )
   const { person, meeting } = await world(page)
   await page.goto(`/people/${person.id}`)
   await page.getByRole('link', { name: /Second interview/ }).click()
 
-  await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}$`))
+  await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}(\\?|$)`))
   await expect(page.getByRole('dialog', { name: 'Meetings' })).toContainText('Second interview')
   // The list stays behind the layer: after following a link, the next step is likely in it.
   await expect(page.getByRole('heading', { level: 1, name: 'Meetings' })).toBeVisible()
@@ -168,13 +157,15 @@ test('a project’s blocks: what is in it first, the empty ones as their heads, 
   await expect(page).toHaveURL(new RegExp(`/projects/${project.id as string}$`))
   await expect(page.getByRole('region', { name: 'Meetings' })).toContainText('Onsite')
 
-  // And N P on the page: the person is the project's, and the page stays.
+  // And N P on the page: New person is a page of its own (FR-062), and the person it makes is the
+  // project's.
   await page.keyboard.press('n')
   await page.keyboard.press('p')
-  const person = page.getByRole('dialog', { name: 'New person' })
-  await person.getByLabel('Name').fill('Priya Nair')
-  await person.getByRole('button', { name: 'Create' }).click()
-  await expect(person).toHaveCount(0)
-  await expect(page).toHaveURL(new RegExp(`/projects/${project.id as string}$`))
+  await expect(page).toHaveURL(new RegExp(`/people/new\\?project=${project.id as string}$`))
+  await page.getByLabel('Given name', { exact: true }).fill('Priya')
+  await page.getByLabel('Family name', { exact: true }).fill('Nair')
+  await page.getByRole('button', { name: /^Create person/ }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Priya Nair' })).toBeVisible()
+  await page.goto(`/projects/${project.id as string}`)
   await expect(page.getByRole('region', { name: 'People' })).toContainText('Priya Nair')
 })

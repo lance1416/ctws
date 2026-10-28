@@ -23,9 +23,12 @@ test('a book can be linked to the person who recommended it, with a line of why'
 }) => {
   const { person, book } = await world(page)
   await page.goto(`/people/${person.id}`)
-  await expect(page.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
+  const recommended = page.getByRole('region', { name: 'Recommended reading' })
+  await expect(recommended).toContainText('None from Ying yet')
 
-  await page.getByRole('button', { name: '+ Link' }).click()
+  // L links anything to the thing whose page this is (FR-027).
+  await page.getByRole('heading', { level: 1, name: 'Ying Chen' }).click()
+  await page.keyboard.press('l')
   await picker(page).getByRole('combobox', { name: 'Search' }).fill('Everyday')
   await picker(page)
     .getByRole('option', { name: /The Design of Everyday Things/ })
@@ -45,11 +48,8 @@ test('a book can be linked to the person who recommended it, with a line of why'
     note: 'she recommended it',
   })
 
-  const linked = page.getByRole('region', { name: 'Linked' })
-  await expect(linked.getByRole('region', { name: 'Reading' })).toContainText(
-    'The Design of Everyday Things',
-  )
-  await expect(linked).toContainText('she recommended it')
+  await expect(recommended).toContainText('The Design of Everyday Things')
+  await expect(recommended).toContainText('she recommended it')
 })
 
 test('the edge reads from both ends, written once', async ({ page }) => {
@@ -63,7 +63,7 @@ test('the edge reads from both ends, written once', async ({ page }) => {
   // Nothing was written on the BOOK, and the book's module has no page of its own -- so this is
   // read on the person, and on the reading list the item simply exists. One row, two readings.
   await page.goto(`/people/${person.id}`)
-  const row = page.getByRole('region', { name: 'Reading' })
+  const row = page.getByRole('region', { name: 'Recommended reading' })
   await expect(row).toContainText('The Design of Everyday Things')
   // Its line of why, read on this end as on the other.
   await expect(row).toContainText('recommends')
@@ -93,14 +93,17 @@ test('an edge is taken off from either end, whichever way it was written', async
   await page.goto(`/people/${person.id}`)
   // INCOMING: this one was written from the meeting's end.
   await page.getByRole('button', { name: 'Unlink Second interview' }).click()
-  await expect(page.getByRole('region', { name: 'Meetings' })).toHaveCount(0)
+  const meetings = page.getByRole('region', { name: 'Meetings' })
+  await expect(meetings).toContainText('None with Ying yet')
   // OUTGOING: the recommendation was written here.
   await page.getByRole('button', { name: 'Unlink The Design of Everyday Things' }).click()
-  await expect(page.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
+  const recommended = page.getByRole('region', { name: 'Recommended reading' })
+  await expect(recommended).toContainText('None from Ying yet')
 
   // And they are gone on the server, not just out of this render.
   await page.reload()
-  await expect(page.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
+  await expect(meetings).toContainText('None with Ying yet')
+  await expect(recommended).toContainText('None from Ying yet')
 })
 
 test('an edge can be taken off again, and the one a module owns cannot', async ({ page }) => {
@@ -119,7 +122,9 @@ test('an edge can be taken off again, and the one a module owns cannot', async (
   )
   await page.getByRole('button', { name: 'Unlink The Design of Everyday Things' }).click()
   await gone
-  await expect(page.getByRole('region', { name: 'Linked' })).toContainText('Nothing linked yet')
+  await expect(page.getByRole('region', { name: 'Recommended reading' })).toContainText(
+    'None from Ying yet',
+  )
 
   // A task's project is a NOT NULL column its own module keeps. Unlinking it would mean a task
   // belonging to nothing, so the row shows and the control does not.
@@ -139,7 +144,8 @@ test('the picker offers every kind of thing, and never the object itself', async
   })
 
   await page.goto(`/people/${person.id}`)
-  await page.getByRole('button', { name: '+ Link' }).click()
+  await page.getByRole('heading', { level: 1, name: 'Ying Chen' }).click()
+  await page.keyboard.press('l')
   const list = picker(page).getByRole('option')
   // One box, four kinds of thing, each saying which it is -- two titles can read the same.
   await expect(list.filter({ hasText: 'Second interview' })).toContainText('Meeting')
@@ -172,11 +178,9 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
     'Ying Chen',
   )
 
-  // The person's side shows it too: a link is read from both ends.
+  // The person's side shows it too, in their Tasks: a link is read from both ends.
   await page.goto(`/people/${person.id}`)
-  await expect(
-    page.getByRole('dialog', { name: 'People' }).getByRole('region', { name: 'Linked' }),
-  ).toContainText('准备一面')
+  await expect(page.getByRole('region', { name: 'Tasks' })).toContainText('准备一面')
 })
 
 test('a task whose notes mention someone shows them by name, never the mention’s Markdown', async ({
@@ -205,13 +209,15 @@ test('a task whose notes mention someone shows them by name, never the mention�
   await chip.click()
   await expect(page).toHaveURL(new RegExp(`inspect=person(%3A|:)${person.id as string}`))
 
-  // The person's side says the sentence as it reads.
+  // The person's side: the task in their Tasks, by itself; the sentence on their timeline, the
+  // name said plainly (M-01, M-06).
   await page.goto(`/people/${person.id as string}`)
-  const theirs = page
-    .getByRole('dialog', { name: 'People' })
-    .getByRole('region', { name: 'Linked' })
-  await expect(theirs).toContainText('Ask @Ying Chen which questions came up.')
-  await expect(theirs).not.toContainText('ctws://')
+  const tasks = page.getByRole('region', { name: 'Tasks' })
+  await expect(tasks).toContainText('Prepare the system design round')
+  await expect(tasks).not.toContainText('which questions')
+  const timeline = page.getByRole('region', { name: 'Timeline' })
+  await expect(timeline).toContainText('Ask Ying Chen which questions came up.')
+  await expect(timeline).not.toContainText('ctws://')
 })
 
 // ------------------------------------------------------------------- a task's sheet has an address
@@ -254,9 +260,8 @@ test('a task linked to a person opens on its own sheet, and Back returns to the 
     note: 'about',
   })
   await page.goto(`/people/${person.id}`)
-  const personPane = page.getByRole('dialog', { name: 'People' })
-  await personPane
-    .getByRole('region', { name: 'Linked' })
+  await page
+    .getByRole('region', { name: 'Tasks' })
     .getByRole('link', { name: /准备一面/ })
     .click()
 
@@ -268,7 +273,7 @@ test('a task linked to a person opens on its own sheet, and Back returns to the 
 
   await page.goBack()
   await expect(page).toHaveURL(new RegExp(`/people/${person.id}$`))
-  await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Ying Chen' })).toBeVisible()
 })
 
 /**

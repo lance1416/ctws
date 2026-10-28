@@ -346,48 +346,40 @@ test('a parent row says how far its leaves are, in its own column (FR-054)', asy
 
 // ----------------------------------------------------------------- a project can be edited
 
-test('a project can be renamed where it is shown, inbox included', async ({ page }) => {
+test('a project is renamed on its edit page, the inbox included', async ({ page }) => {
   await registerFreshUser(page)
   const { projects } = await (await page.request.get('/api/v1/projects')).json()
   const inbox = projects.find((p: { isInbox: boolean }) => p.isInbox)
   await page.goto(`/projects/${inbox.id}`)
 
-  // The inbox was stuck being called "Inbox" in an otherwise Chinese app: the server has taken
-  // a rename since M2a and nothing in the interface could send one.
-  await page.getByRole('button', { name: 'Inbox' }).click()
-  const field = page.getByRole('textbox', { name: 'Project name' })
-  await field.fill('Inbox')
-  await page.keyboard.press('Enter')
+  // The inbox was stuck being called "Inbox" in an otherwise Chinese app: its More edits it too.
+  await page.getByRole('button', { name: 'More' }).click()
+  await page.getByRole('menuitem', { name: 'Edit project' }).click()
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('收件箱')
+  await page.getByRole('button', { name: /^Save/ }).click()
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Inbox' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: '收件箱' })).toBeVisible()
   // And the rail says so too, from the same cache entry.
-  await expect(page.locator('nav').getByRole('link', { name: 'Inbox' })).toBeVisible()
-
+  await expect(page.locator('nav').getByRole('link', { name: '收件箱' })).toBeVisible()
   const after = await (await page.request.get('/api/v1/projects')).json()
-  expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('Inbox')
+  expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('收件箱')
 })
 
-test('a project colour can be picked from the chip that shows it', async ({ page }) => {
+test('a project colour is picked on its edit page, named in words', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
-  await page.goto(`/projects/${pid}`)
-
   const before = await (await page.request.get('/api/v1/projects')).json()
-  const was = before.projects.find((p: { id: string }) => p.id === pid).color
+  expect(before.projects.find((p: { id: string }) => p.id === pid).color).not.toBe('pink')
 
-  await page.getByRole('button', { name: 'Project colour' }).click()
-  // Waited for, not assumed: reading the server straight after the click is a race the test wins
-  // on an idle machine and loses under a full suite run, which is the worst way for it to fail.
+  await page.goto(`/projects/${pid}/edit`)
+  // Each colour is a radio named by its word, so the swatch is never the only sign (WCAG 1.4.1).
+  await page.getByTitle('Pink').click()
+  await expect(page.getByRole('radio', { name: 'Pink' })).toBeChecked()
   const written = page.waitForResponse(
     (r) => r.request().method() === 'PATCH' && r.url().includes(`/projects/${pid}`),
   )
-  await page.getByRole('menuitem', { name: 'Pink' }).click()
-  await written
-
-  const after = await (await page.request.get('/api/v1/projects')).json()
-  expect(after.projects.find((p: { id: string }) => p.id === pid).color).toBe('pink')
-  expect(was).not.toBe('pink')
-  // The chip is a control, and the project's name is beside it (WCAG 1.4.1).
+  await page.getByRole('button', { name: /^Save/ }).click()
+  expect((await written).request().postDataJSON()).toMatchObject({ color: 'pink' })
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
 })
 

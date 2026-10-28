@@ -181,7 +181,9 @@ test('the inbox has no Archive', async ({ page }) => {
   await page.goto(`/projects/${inbox}`)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'More' })).toHaveCount(0)
+  // Its More edits it, and has no Archive.
+  await page.getByRole('button', { name: 'More' }).click()
+  await expect(page.getByRole('menuitem', { name: /Archive/ })).toHaveCount(0)
 })
 
 /**

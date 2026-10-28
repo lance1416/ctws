@@ -129,7 +129,7 @@ test('a birthday sits on the day the server gives, and clicking it opens the per
   await page.goto('/calendar')
   await expect(square(page, dayOffset(0))).toContainText('周楠')
   await square(page, dayOffset(0)).getByRole('link', { name: /周楠/ }).click()
-  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('周楠')
+  await expect(page.getByRole('heading', { level: 1, name: '周楠' })).toBeVisible()
 })
 
 test('a square shows the lunar day the server gives', async ({ page }) => {

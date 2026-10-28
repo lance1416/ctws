@@ -303,7 +303,7 @@ test('what was opened lately is first, before anything is typed', async ({ page 
   const made = await apiPost(page, '/people', { name: '陈颖' })
   const { id } = made
   await page.goto(`/people/${id}`)
-  await expect(page.getByRole('dialog').getByRole('heading', { name: '陈颖' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: '陈颖' })).toBeVisible()
 
   await page
     .getByRole('banner')
@@ -327,7 +327,7 @@ test('choosing a person in search opens that person', async ({ page }) => {
   await query(page, 'Dana')
   await result(page, 'Dana Search').click()
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
-  await expect(page.getByRole('dialog', { name: 'People' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Dana Search' })).toBeVisible()
 })
 
 test('choosing a reading item in search opens that item', async ({ page }) => {
@@ -372,14 +372,15 @@ test('a person deleted here leaves Recent at once', async ({ page }) => {
   const made = await apiPost(page, '/people', { name: '陈颖' })
   const { id } = made
   await page.goto(`/people/${id}`)
-  const pane = page.getByRole('dialog', { name: 'People' })
-  await expect(pane.getByRole('heading', { name: '陈颖' })).toBeVisible()
-  await pane.getByRole('button', { name: /^Delete / }).click()
+  await expect(page.getByRole('heading', { level: 1, name: '陈颖' })).toBeVisible()
+  // Delete is on their edit page.
+  await page.getByRole('link', { name: 'Edit' }).click()
+  await page.getByRole('button', { name: /^Delete / }).click()
   await page
     .getByRole('alertdialog', { name: 'Delete 陈颖' })
     .getByRole('button', { name: /^Delete/ })
     .click()
-  await expect(pane).toHaveCount(0)
+  await expect(page).toHaveURL(/\/people$/)
 
   await page
     .getByRole('banner')

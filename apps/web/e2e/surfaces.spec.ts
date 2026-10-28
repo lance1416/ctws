@@ -112,19 +112,15 @@ for (const scheme of ['light', 'dark'] as const) {
       .locator(`a[href="/projects/${pid}"] [data-count]`)
     expect(await textContrast(count), 'rail count').toBeGreaterThanOrEqual(4.5)
 
-    // The open person's row: what they do, and their city.
+    // The open person's row in the sidebar, selected.
     await page.goto(`/people/${id}`)
-    const row = page.locator(`[data-person-row="${id}"]`)
-    expect(await textContrast(row.locator('[data-person-meta]')), 'meta').toBeGreaterThanOrEqual(
-      4.5,
-    )
-    expect(await textContrast(row.getByText('Toronto')), 'city').toBeGreaterThanOrEqual(4.5)
+    const row = page.locator(`[data-person-row="${id}"] a`)
+    await expect(row).toHaveAttribute('aria-current', 'page')
+    expect(await textContrast(row.getByText('陈颖')), 'name').toBeGreaterThanOrEqual(4.5)
 
-    // A picked month on Birthdays, and its count.
-    await page.goto('/people/birthdays')
-    await page.getByRole('button', { name: /^March/ }).click()
-    const month = page.getByRole('button', { name: /^March/ })
-    await expect(month).toHaveAttribute('aria-pressed', 'true')
-    expect(await textContrast(month.locator('span')), 'month count').toBeGreaterThanOrEqual(4.5)
+    // The birthdays in the sidebar, and how far off each is.
+    await page.goto('/people?list=birthdays')
+    const day = page.locator(`[data-birthday-row="${id}"]`).getByText(/\d+ d$/)
+    expect(await textContrast(day), 'days').toBeGreaterThanOrEqual(4.5)
   })
 }

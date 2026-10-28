@@ -39,11 +39,12 @@ test('the head is the square and name, the views, New and More (FR-053)', async 
   const id = await makeProject(page, 'Job hunt')
   await page.goto(`/projects/${id}`)
 
-  // The square is the project's own, and opens its colours.
-  const square = header(page).locator(`[data-project-chip="${id}"]`)
-  await expect(square).toHaveAccessibleName('Project colour')
-  await expect(square).toHaveText('JH')
+  // The square is the project's own; its colour and name are changed on the edit page
+  // (DES-001 v1.23), so neither is a control here.
+  await expect(header(page).getByText('JH', { exact: true })).toBeVisible()
   await expect(header(page).getByRole('heading', { level: 1 })).toHaveText('Job hunt')
+  await expect(header(page).getByRole('button', { name: 'Project colour' })).toHaveCount(0)
+  await expect(header(page).getByRole('button', { name: 'Job hunt' })).toHaveCount(0)
   const views = header(page).getByRole('tablist', { name: 'View' })
   await expect(views.getByRole('tab', { name: 'Tree' })).toHaveAttribute('aria-selected', 'true')
   await expect(views.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'false')
@@ -54,10 +55,12 @@ test('the head is the square and name, the views, New and More (FR-053)', async 
   await expect(page.getByRole('menuitem', { name: 'Archive' })).toBeVisible()
 })
 
-test('the inbox has no More: there is nothing in it to do to the inbox', async ({ page }) => {
+test('the inbox’s More edits it, and never archives it', async ({ page }) => {
   await registerFreshUser(page)
   await openProject(page, 'Inbox')
-  await expect(header(page).getByRole('button', { name: 'More' })).toHaveCount(0)
+  await header(page).getByRole('button', { name: 'More' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Edit project' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: /Archive/ })).toHaveCount(0)
 })
 
 test('the view is in the address, and B switches it', async ({ page }) => {

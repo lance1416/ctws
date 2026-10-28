@@ -18,53 +18,47 @@ import { dayOffset } from './days'
 
 const asked = (pane: Locator) => pane.getByRole('alert').filter({ hasText: 'unsaved changes' })
 
-async function person(page: Page) {
+/** A person's edit page, open; a person is edited on a page, not in a pane (FR-063). */
+async function person(page: Page, channels: object[] = []) {
   await registerFreshUser(page, '/people')
-  const made = await apiPost(page, '/people', { name: 'Ying Chen' })
-  await page.goto(`/people/${made.id}`)
-  const pane = page.getByRole('dialog', { name: 'People' })
-  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
-  return pane
+  const made = await apiPost(page, '/people', { name: 'Ying Chen', channels })
+  await page.goto(`/people/${made.id}/edit`)
+  await expect(page.getByLabel('Given name', { exact: true })).toBeVisible()
+  return made.id as string
 }
 
-test('Escape on an edited person asks, and Keep editing keeps the edit', async ({ page }) => {
-  const pane = await person(page)
-  const name = pane.getByLabel('Name', { exact: true })
-  await name.fill('Ying Chen-Li')
-  await name.press('Escape')
+test('leaving an edited person asks, and Keep editing keeps the edit', async ({ page }) => {
+  const id = await person(page)
+  const main = page.getByRole('main')
+  const name = page.getByLabel('Given name', { exact: true })
+  await name.fill('Yan')
+  await page.getByRole('link', { name: 'Cancel' }).click()
 
-  await expect(asked(pane)).toBeVisible()
-  await pane.getByRole('button', { name: 'Keep editing' }).click()
-  await expect(pane).toBeVisible()
-  await expect(name).toHaveValue('Ying Chen-Li')
+  await expect(asked(main)).toBeVisible()
+  await page.getByRole('button', { name: 'Keep editing' }).click()
+  await expect(page).toHaveURL(new RegExp(`/people/${id}/edit$`))
+  await expect(name).toHaveValue('Yan')
 
   // And Discard is the way out when that is what was meant.
-  await name.press('Escape')
-  await pane.getByRole('button', { name: 'Discard changes' }).click()
-  await expect(pane).toHaveCount(0)
+  await page.getByRole('link', { name: 'Cancel' }).click()
+  await page.getByRole('button', { name: 'Discard changes' }).click()
+  await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
 })
 
-test('Escape on a person form with nothing changed just closes', async ({ page }) => {
-  const pane = await person(page)
-  await pane.getByLabel('Name', { exact: true }).press('Escape')
-  await expect(pane).toHaveCount(0)
+test('leaving a person form with nothing changed just goes', async ({ page }) => {
+  const id = await person(page)
+  await page.getByRole('link', { name: 'Cancel' }).click()
+  await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
 })
 
-test('a person whose phone is stored in an older spelling closes untouched without asking', async ({
+test('a person whose phone is stored in an older spelling is left untouched without asking', async ({
   page,
 }) => {
-  await registerFreshUser(page, '/people')
-  const made = await apiPost(page, '/people', {
-    name: 'Ying Chen',
-    channels: [{ kind: 'phone', value: '+86-138-0000-0000', label: null }],
-  })
-  await page.goto(`/people/${made.id}`)
-  const pane = page.getByRole('dialog', { name: 'People' })
-  await pane.getByRole('button', { name: 'Edit', exact: true }).click()
+  const id = await person(page, [{ kind: 'phone', value: '+86-138-0000-0000', label: null }])
   // The phone module has had its turn: the number is shown settled.
-  await expect(pane.getByRole('textbox', { name: 'Item 1' })).toHaveValue('+86 138 0000 0000')
-  await pane.getByLabel('Name', { exact: true }).press('Escape')
-  await expect(pane).toHaveCount(0)
+  await expect(page.getByRole('textbox', { name: 'Item 1' })).toHaveValue('+86 138 0000 0000')
+  await page.getByRole('link', { name: 'Cancel' }).click()
+  await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
 })
 
 test('Escape on an edited meeting asks before throwing the edit away', async ({ page }) => {
@@ -143,18 +137,6 @@ const newDialogs: [string, string, (page: Page) => Promise<unknown>][] = [
       await page
         .getByRole('main')
         .getByRole('button', { name: /^New meeting/ })
-        .first()
-        .click()
-    },
-  ],
-  [
-    'New person',
-    'Name',
-    async (page) => {
-      await page.goto('/people')
-      await page
-        .getByRole('main')
-        .getByRole('button', { name: /^New person/ })
         .first()
         .click()
     },

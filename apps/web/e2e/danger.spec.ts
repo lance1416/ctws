@@ -113,7 +113,7 @@ test('on a short page, Delete project sits at the bottom of the screen', async (
 test('a held Enter on Delete does not also confirm it', async ({ page }) => {
   await registerFreshUser(page)
   const person = await apiPost(page, '/people', { name: 'Keep me' })
-  await page.goto(`/people/${person.id}`)
+  await page.goto(`/people/${person.id}/edit`)
   const ask = page.getByRole('button', { name: /^Delete / })
   await ask.focus()
   // Key repeat: the second Enter lands on whatever took focus when the question opened.

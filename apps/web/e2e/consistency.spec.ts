@@ -28,13 +28,14 @@ async function panes(page: Page) {
   return { pid, person, book, meeting }
 }
 
-test('in every pane, Linked lines up on the left with the other labels', async ({ page }) => {
+test('in every pane, Linked lines up on the left with the other labels (a person has a page)', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const w = await panes(page)
   // The task's inspector has its own Linked, chips under a head with its +; checked below.
   const open: [string, () => Promise<unknown>, string][] = [
     ['Meetings', () => page.goto(`/meetings/${w.meeting.meetingId}`), 'Notes'],
-    ['People', () => page.goto(`/people/${w.person.id}`), 'Notes'],
     ['Reading', () => page.goto(`/reading/${w.book.id}`), 'Status'],
   ]
   for (const [name, go, other] of open) {
@@ -87,7 +88,7 @@ async function leftOf(a: Locator, b: Locator) {
   expect(ra.x + ra.width).toBeLessThanOrEqual(rb.x)
 }
 
-test('all four panes edit with Cancel left, Save right, both at the top', async ({ page }) => {
+test('every edit has Cancel left, Save right, both at the top', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   const w = await panes(page)
   const open: [string, () => Promise<unknown>][] = [
@@ -99,7 +100,6 @@ test('all four panes edit with Cancel left, Save right, both at the top', async 
       },
     ],
     ['Meetings', () => page.goto(`/meetings/${w.meeting.meetingId}`)],
-    ['People', () => page.goto(`/people/${w.person.id}`)],
     ['Reading', () => page.goto(`/reading/${w.book.id}`)],
   ]
   for (const [name, go] of open) {
@@ -117,6 +117,13 @@ test('all four panes edit with Cancel left, Save right, both at the top', async 
     )
     await cancel.click()
   }
+  // A person is edited on a page, with the same order at its head (FR-063).
+  await page.goto(`/people/${w.person.id}/edit`)
+  const save = page.getByRole('button', { name: /^Save/ })
+  await leftOf(page.getByRole('link', { name: 'Cancel' }), save)
+  expect((await save.boundingBox())!.y, 'People: Save above the fields').toBeLessThan(
+    (await page.getByLabel('Given name', { exact: true }).boundingBox())!.y,
+  )
 })
 
 test('new-item dialogs: Cancel left, Create right, at the right edge', async ({ page }) => {
@@ -137,17 +144,6 @@ test('new-item dialogs: Cancel left, Create right, at the right edge', async ({ 
         await page
           .getByRole('main')
           .getByRole('button', { name: /^New meeting/ })
-          .first()
-          .click()
-      },
-    ],
-    [
-      'person',
-      async () => {
-        await page.goto('/people')
-        await page
-          .getByRole('main')
-          .getByRole('button', { name: /^New person/ })
           .first()
           .click()
       },
@@ -285,16 +281,18 @@ test("panes write days the app's way, never in a wire format like 2026-10-19", a
   await expect(mp).toContainText(`${said}, 18:00 · Toronto`)
   await expect(mp.getByText(wire)).toHaveCount(0)
 
+  // A person's page, and their form, say the birthday in words, never as `YYYY-MM-DD`.
   await page.goto(`/people/${person.id}`)
-  const cp = page.getByRole('dialog', { name: 'People' })
-  await expect(cp.getByRole('button', { name: /^Birthday,/ })).toContainText('Oct 17, 1991')
-  await expect(cp.getByText(wire)).toHaveCount(0)
-  // The form says the same day the same way.
-  await cp.getByRole('button', { name: 'Edit', exact: true }).click()
-  await expect(cp.getByRole('button', { name: /^Birthday,/ })).toContainText('Oct 17, 1991')
+  const read = page.getByRole('region', { name: 'Birthday' })
+  await expect(read).toContainText('Oct')
+  await expect(read.getByText(wire)).toHaveCount(0)
+  await page.goto(`/people/${person.id}/edit`)
+  const form = page.getByRole('region', { name: 'Birthday' })
+  await expect(form.getByTestId('birthday-preview')).toContainText('1991')
+  await expect(form.getByText(wire)).toHaveCount(0)
 })
 
-test('one kind, one chip: the same reading and editing, in every pane', async ({ page }) => {
+test('one kind, one chip: the same reading and editing, in the meeting pane', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'IQBank')
   const person = await apiPost(page, '/people', { name: 'Ying Chen', projectIds: [pid] })
@@ -323,10 +321,6 @@ test('one kind, one chip: the same reading and editing, in every pane', async ({
   await mp.getByRole('button', { name: 'Edit', exact: true }).click()
   const editing = mp.getByRole('button', { name: /^Remove .*Ying Chen/ }).locator('..')
   expect(await look(editing)).toBe(read)
-
-  await page.goto(`/people/${person.id}`)
-  const cp = page.getByRole('dialog', { name: 'People' })
-  expect(await look(cp.getByText('IQBank', { exact: true }).first().locator('..'))).toBe(read)
 })
 
 test('the new task dialog sizes status chips to their words, like the pane', async ({ page }) => {

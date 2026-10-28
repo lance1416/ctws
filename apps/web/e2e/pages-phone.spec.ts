@@ -80,7 +80,8 @@ for (const width of [320, 375]) {
       ['/reading', 'Cracking the Coding Interview'],
       ['/review', 'Done one'],
       ['/review?view=done', 'Done one'],
-      ['/people', '陈颖'],
+      // The overview: its blocks are what must fit (FR-060).
+      ['/people', 'Recently in touch'],
     ] as const) {
       await page.goto(path)
       await expect(page.getByRole('main').getByText(shown).first()).toBeVisible()

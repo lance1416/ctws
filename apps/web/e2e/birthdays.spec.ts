@@ -31,24 +31,12 @@ function monthDay(offset: number): { month: number; day: number } {
  * how old, and how far off at the far end. The heading above hangs where the threads do.
  */
 
-test("a person written down here uses People's own dialog", async ({ page }) => {
-  await registerFreshUser(page)
-  await page.goto('/people/birthdays')
-  await page
-    .getByRole('main')
-    .getByRole('button', { name: /^New person/ })
-    .first()
-    .click()
-  const dialog = page.getByRole('dialog', { name: 'New person' })
-  await expect(dialog).toBeVisible()
-  await dialog.getByRole('textbox', { name: 'Name' }).fill('新来的')
-  await dialog.getByRole('button', { name: 'Create' }).click()
-  // It lands on the person's own page -- the shell's, the same one every kind of thing gets.
-  await expect(page).toHaveURL(new RegExp('/people/[0-9a-f-]{36}$'))
-  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('新来的')
-})
-
-test('derived birthday details sit one level down from the date', async ({ page }) => {
+/**
+ * A BIRTHDAY ON A PERSON'S PAGE (FR-061, artboard 5): the day on a tile, how far off, the lunar
+ * date when it is lunar, and the age it turns or that the year is not known. What else a day means
+ * (the zodiac, the sign, the hour) is in the form's preview, where the day is chosen.
+ */
+test('a lunar birthday reads as its day, its lunar date and the age it turns', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠', {
     calendar: 'lunar',
@@ -58,27 +46,34 @@ test('derived birthday details sit one level down from the date', async ({ page 
     hourBranch: 6,
   })
   await page.goto(`/people/${id}`)
-  const glance = page.getByRole('dialog', { name: 'People' })
-  // At a glance only the date; the zodiac, sign, hour and next birthday are one level down.
-  await expect(glance).toContainText('农历辛未年九月初三')
-  await expect(glance).not.toContainText('turns')
-  await expect(glance.locator('[data-birthday-chip]')).toHaveCount(0)
+  const day = page.getByRole('region', { name: 'Birthday' })
+  await expect(day).toContainText('九月初三')
+  await expect(day).toContainText(/Turns \d+/)
+  // The rest of what the day means is the form's, one level down from reading.
+  await expect(day).not.toContainText('羊')
 
-  await glance.getByRole('button', { name: /^Birthday,/ }).click()
-  const more = glance.locator('[data-birthday-more]')
-  await expect(more).toContainText('午时')
-  await expect(more).toContainText('羊')
-  await expect(more).toContainText('天秤')
-  await expect(more).toContainText('turns')
+  await page.goto(`/people/${id}/edit`)
+  const preview = page.getByTestId('birthday-preview')
+  await expect(preview).toContainText('午时')
+  await expect(preview).toContainText('羊')
+  await expect(preview).toContainText('天秤')
+})
+
+test('a birthday without a year says so', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await person(page, '蒋老师', { calendar: 'lunar', month: 9, day: 3 })
+  await page.goto(`/people/${id}`)
+  const day = page.getByRole('region', { name: 'Birthday' })
+  await expect(day).toContainText('九月初三')
+  await expect(day).toContainText('Year not known')
 })
 
 test('a lunar birthday shows its conversion and fallback as it is written', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '外婆')
-  await page.goto(`/people/${id}`)
-  // Edited like any other field: Edit opens the form, and the birthday cell opens its controls.
-  await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  await page.getByRole('button', { name: 'Birthday, not set' }).click()
+  await page.goto(`/people/${id}/edit`)
+  // Folded until asked for.
+  await page.getByRole('button', { name: 'Add a birthday' }).click()
   // The year moves the lunar grid to that year's months, through the server's conversion.
   await lunarYear(page, '1944')
   await pickLunarDay(page, '十二月', '三十')
@@ -88,16 +83,16 @@ test('a lunar birthday shows its conversion and fallback as it is written', asyn
   await expect(preview).toContainText('Feb 12, 1945')
   await expect(preview).toContainText('猴')
   await expect(preview).toContainText('has 29 days')
-  await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('dialog', { name: 'People' })).toContainText('农历甲申年十二月三十')
+  await page.getByRole('button', { name: /^Save/ }).click()
+  await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
+  await expect(page.getByRole('region', { name: 'Birthday' })).toContainText('十二月')
 })
 
 test('a day that year does not have makes the preview say which part fails', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '赵姨')
-  await page.goto(`/people/${id}`)
-  await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  await page.getByRole('button', { name: 'Birthday, not set' }).click()
+  await page.goto(`/people/${id}/edit`)
+  await page.getByRole('button', { name: 'Add a birthday' }).click()
   // The grid offers only days that exist; a day can stop existing when the year changes under it.
   await lunarYear(page, '1944')
   await pickLunarDay(page, '十二月', '三十')
@@ -106,42 +101,10 @@ test('a day that year does not have makes the preview say which part fails', asy
     '十二月 has 29 days in 1993, so there is no 三十.',
   )
   // The server would refuse it, so Save is disabled; the year it happened in brings it back.
-  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
+  const save = page.getByRole('button', { name: /^Save/ })
+  await expect(save).toBeDisabled()
   await page.getByRole('textbox', { name: 'Year' }).fill('1944')
-  await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
-})
-
-test('a lunar birthday without a year draws no chips', async ({ page }) => {
-  await registerFreshUser(page)
-  // A lunar day falls on a different solar day each year, so there is no one sign, and the zodiac
-  // needs a year.
-  const id = await person(page, '蒋老师', { calendar: 'lunar', month: 9, day: 3 })
-  await page.goto(`/people/${id}`)
-  const glance = page.getByRole('dialog', { name: 'People' })
-  await expect(glance).toContainText('农历九月初三')
-  await glance.getByRole('button', { name: /^Birthday,/ }).click()
-  await expect(glance.locator('[data-birthday-chip]')).toHaveCount(0)
-})
-
-test('with a year, the zodiac and the sign get a chip each', async ({ page }) => {
-  await registerFreshUser(page)
-  const id = await person(page, '周楠', { calendar: 'lunar', year: 1991, month: 9, day: 3 })
-  await page.goto(`/people/${id}`)
-  const glance = page.getByRole('dialog', { name: 'People' })
-  await glance.getByRole('button', { name: /^Birthday,/ }).click()
-  await expect(glance.locator('[data-birthday-chip]')).toHaveCount(2)
-})
-
-test('a solar birthday without a year has a sign but no zodiac, so one chip', async ({ page }) => {
-  await registerFreshUser(page)
-  // The only case that exercises each chip's own guard: with both empty the block is not drawn.
-  const id = await person(page, '蒋老师', { calendar: 'solar', month: 11, day: 2 })
-  await page.goto(`/people/${id}`)
-  const glance = page.getByRole('dialog', { name: 'People' })
-  await glance.getByRole('button', { name: /^Birthday,/ }).click()
-  const chips = glance.locator('[data-birthday-chip]')
-  await expect(chips).toHaveCount(1)
-  await expect(chips).toHaveText('天蝎')
+  await expect(save).toBeEnabled()
 })
 
 test("a person's notes are Markdown, through the same pipeline as task notes", async ({ page }) => {
@@ -161,28 +124,13 @@ test("a person's notes are Markdown, through the same pipeline as task notes", a
     },
   })
   await page.goto(`/people/${id}`)
-  const notes = page.locator('[data-person-notes]')
+  const notes = page.getByRole('region', { name: 'Notes' })
   // Wait for the renderer: the fallback is the raw text, and asserting on it tests the wrong frame.
   await expect(notes.locator('[data-note-md]')).toBeVisible()
   await expect(notes.locator('strong')).toHaveText('冷萃')
   await expect(notes.locator('h3')).toHaveText('怎么认识的')
   await expect(notes.locator('li')).toHaveCount(2)
   await expect(notes.locator('code')).toHaveText('pg_trgm')
-})
-
-test('notes are edited in the writing layer and saved when it closes', async ({ page }) => {
-  await registerFreshUser(page)
-  const id = await person(page, '周楠')
-  await page.goto(`/people/${id}`)
-  // Notes have their own way in while reading, without opening the whole form.
-  await page.getByRole('button', { name: 'Edit notes' }).click()
-  // The writing layer is driven the way `notes.spec.ts` drives it: its textarea is labelled
-  // `Markdown source`, and Escape is how it closes everywhere in this app.
-  await page.getByLabel('Markdown source').fill('# 标题\n\n正文一行')
-  await page.keyboard.press('Escape')
-  const notes = page.locator('[data-person-notes]')
-  await expect(notes.locator('[data-note-md]')).toBeVisible()
-  await expect(notes.locator('h1')).toHaveText('标题')
 })
 
 test('the workbench card says who is next when nobody needs greeting', async ({ page }) => {

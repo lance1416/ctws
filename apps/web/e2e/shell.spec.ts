@@ -239,30 +239,28 @@ async function topmostAt(
   )
 }
 
-test('on a phone, a detail pane ends above the tab bar, so its last control can be pressed', async ({
+test('on a phone, a page ends above the tab bar, so its last control can be pressed', async ({
   page,
 }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/people')
   const { id } = await apiPost(page, '/people', { name: '要删的人' })
-  await page.goto(`/people/${id}`)
-  const remove = page
-    .getByRole('dialog', { name: 'People' })
-    .getByRole('button', { name: /^Delete / })
+  await page.goto(`/people/${id}/edit`)
+  const remove = page.getByRole('button', { name: /^Delete / })
   await remove.scrollIntoViewIfNeeded()
   expect(await topmostAt(page, (await remove.boundingBox())!)).toContain('Delete 要删的人')
 })
 
 test('on a phone, a dialog ends above the tab bar too', async ({ page }) => {
   await page.setViewportSize(PHONE)
-  await registerFreshUser(page, '/people')
+  await registerFreshUser(page, '/meetings')
   await page
     .getByRole('main')
-    .getByRole('button', { name: /^New person/ })
+    .getByRole('button', { name: /^New meeting/ })
     .first()
     .click()
   const create = page
-    .getByRole('dialog', { name: 'New person' })
+    .getByRole('dialog', { name: 'New meeting' })
     .getByRole('button', { name: 'Create' })
   await create.scrollIntoViewIfNeeded()
   expect(await topmostAt(page, (await create.boundingBox())!)).toContain('Create')
