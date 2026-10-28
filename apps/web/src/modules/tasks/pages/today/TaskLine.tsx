@@ -64,7 +64,7 @@ export function DueChip({
       data-row-mark
       className={`inline-flex h-5.5 items-center gap-1 justify-self-start rounded-control px-2 text-meta font-medium whitespace-nowrap max-lg:hidden ${MARK_TONE[mark.tone]}`}
     >
-      {mark.tone !== 'late' && <FlagIcon size={12} aria-hidden="true" />}
+      <FlagIcon size={12} aria-hidden="true" />
       {mark.text}
     </span>
   )

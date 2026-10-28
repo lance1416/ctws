@@ -25,7 +25,8 @@ export function UpcomingBirthdays() {
     <Block
       badge={{ icon: CakeIcon, tint: 'bg-person-bg text-person' }}
       title="Birthdays"
-      empty={view.isSuccess && rows.length === 0 ? 'No birthdays recorded' : null}
+      empty={view.isSuccess && rows.length === 0 ? 'No birthdays in the next 30 days.' : null}
+      keepsSize
     >
       {view.isError ? (
         <BlockFailed what="birthdays" onRetry={() => void view.refetch()} />

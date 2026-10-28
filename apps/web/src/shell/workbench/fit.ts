@@ -17,6 +17,8 @@ export function useRowsThatFit(
   most: number,
   /** Height in the element that is not rows: captions, the gap between two lists. */
   reservedPx = 0,
+  /** Fill the place however many that is, `most` only where it has no height of its own. */
+  unbounded = false,
 ): [(el: HTMLElement | null) => void, number] {
   const fixed = useContext(FixedPlaces)
   const [el, setEl] = useState<HTMLElement | null>(null)
@@ -31,5 +33,5 @@ export function useRowsThatFit(
     watch.observe(el)
     return () => watch.disconnect()
   }, [el, rowPx, reservedPx, fixed])
-  return [setEl, fixed ? Math.min(fit, most) : most]
+  return [setEl, fixed ? (unbounded ? fit : Math.min(fit, most)) : most]
 }

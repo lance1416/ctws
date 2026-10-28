@@ -44,7 +44,8 @@ export function NextMeetings() {
     <Block
       kind="meeting"
       title="Next meetings"
-      empty={meetings.isSuccess && !next ? 'None in the next two weeks' : null}
+      empty={meetings.isSuccess && !next ? 'No meetings in the next 7 days.' : null}
+      keepsSize
     >
       {meetings.isError ? (
         <BlockFailed what="meetings" onRetry={() => void meetings.refetch()} />

@@ -17,6 +17,7 @@ export function Block({
   count,
   actions,
   empty,
+  keepsSize = false,
   children,
   className = '',
 }: {
@@ -31,10 +32,16 @@ export function Block({
   actions?: ReactNode
   /** The words when there is nothing: "None yet". The block shrinks to its head. */
   empty?: string | null
+  /**
+   * A block whose size is its place's, a workbench widget's: empty, it keeps its size and says so
+   * on a line under its head.
+   */
+  keepsSize?: boolean
   children?: ReactNode
   className?: string
 }) {
   const Icon = badge?.icon ?? (kind ? KIND_ICON[kind] : null)
+  const emptyInHead = empty && !keepsSize
   const tint = badge?.tint ?? (kind ? `${KIND_TINT[kind]} ${KIND_TEXT[kind]}` : '')
   return (
     <section
@@ -42,7 +49,7 @@ export function Block({
       className={`flex min-w-0 flex-col overflow-hidden rounded-block border border-line bg-panel ${className}`}
     >
       <div
-        className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 ${empty ? '' : 'border-b border-line'}`}
+        className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 ${emptyInHead ? '' : 'border-b border-line'}`}
       >
         {Icon && (
           <span
@@ -53,7 +60,7 @@ export function Block({
           </span>
         )}
         <h2 className="text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
-        {empty ? (
+        {emptyInHead ? (
           <span className="text-meta text-subtle">{empty}</span>
         ) : (
           count !== undefined && (
@@ -65,6 +72,7 @@ export function Block({
         <span aria-hidden="true" className="flex-1" />
         {actions}
       </div>
+      {empty && keepsSize && <p className="px-4 py-3 text-ui text-subtle">{empty}</p>}
       {!empty && children}
     </section>
   )

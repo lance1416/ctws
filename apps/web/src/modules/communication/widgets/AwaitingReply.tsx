@@ -16,20 +16,22 @@ const ROW_PX = 48
 
 /**
  * AWAITING REPLY ON THE WORKBENCH (FR-076, artboards 10 and 22): the messages whose follow-up day
- * has come, each with who it is with, what it was about and how long it has waited; amber from
- * four days. As many as the place holds; the rest are in Communication.
+ * has come, the longest wait first, each with who it is with, what it was about and how long it
+ * has waited; amber from four days. As many as the place holds; the rest are in Communication.
  */
 export function AwaitingReply() {
   const due = useQuery(followUpsQuery())
   const people = usePeople()
-  const rows = due.data ?? []
+  // The longest wait first: it is the one to chase.
+  const rows = [...(due.data ?? [])].sort((a, b) => b.waitingDays - a.waitingDays)
   const [list, fits] = useRowsThatFit(ROW_PX, 5)
   return (
     <Block
       kind="communication"
       title="Awaiting reply"
       count={rows.length}
-      empty={due.isSuccess && rows.length === 0 ? 'Nobody to chase' : null}
+      empty={due.isSuccess && rows.length === 0 ? 'Nobody to follow up with.' : null}
+      keepsSize
     >
       {due.isError ? (
         <BlockFailed what="follow-ups" onRetry={() => void due.refetch()} />

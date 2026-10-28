@@ -26,7 +26,8 @@ export function ReadingNow() {
     <Block
       kind="reading"
       title="Reading"
-      empty={items.isSuccess && reading.length === 0 ? 'Nothing being read' : null}
+      empty={items.isSuccess && reading.length === 0 ? 'Nothing you’re reading.' : null}
+      keepsSize
     >
       {items.isError ? (
         <BlockFailed what="reading" onRetry={() => void items.refetch()} />
