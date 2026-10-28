@@ -17,6 +17,8 @@ import { WeekBlock } from './pages/today/WeekBlock'
 import { openTasksOf } from './logic/openTasks'
 import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
+import { TaskNarrow } from './components/TaskNarrow'
+import { ProjectNarrowTasks } from './components/ProjectNarrowTasks'
 import { Review } from './pages/Review'
 import { ReviewWeeks } from './pages/ReviewWeeks'
 import { Today } from './pages/Today'
@@ -97,6 +99,7 @@ export const taskModule: WorkspaceModule = {
     Main: { Component: ProjectTasks, views: PROJECT_VIEWS },
     Card: { Moved: ProjectMoved, Facts: ProjectCardFacts, useOrder: useProjectOrder },
     Outline: ProjectOutline,
+    Narrow: ProjectNarrowTasks,
     count: openTasksOf,
     counts: ['task'],
     contents: async (qc, projectId) => {
@@ -120,6 +123,9 @@ export const taskModule: WorkspaceModule = {
       Fact: TaskFact,
       describeChange: describeTaskChange,
       finish: (id) => patchTask(id as TaskId, { status: 'done' }),
+      // Its own head, with Open full page, Edit and close: the pane's (artboard 8).
+      Narrow: TaskNarrow,
+      ownHead: true,
     },
   ],
   // A task row names its project, and search says whether that project is archived.

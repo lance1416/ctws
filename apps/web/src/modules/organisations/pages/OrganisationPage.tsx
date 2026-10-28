@@ -193,7 +193,8 @@ function Section({
   )
 }
 
-function Website({ url }: { url: string }) {
+/** The website as a link, its host and path; a link only to an http(s) address. */
+export function Website({ url }: { url: string }) {
   const href = safeHref(url)
   if (!href) return <span className="block truncate">{url}</span>
   return (

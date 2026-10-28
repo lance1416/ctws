@@ -26,6 +26,8 @@ export function anywhereKeys(
       { keys: '?', does: 'This list', presses: { '?': 'help' } },
       { keys: '[', does: 'Hide or show the side panel', presses: { '[': 'sidebar' } },
       { keys: 'Esc', does: 'Close the inspector or the overlay', presses: {} },
+      // Only while focus is in the inspector, where the inspector itself answers it (FR-022).
+      { keys: 'Alt+←', does: 'Back, in the inspector', presses: {} },
       ...chords.map((c) => ({
         keys: `${JUMP_PREFIX.toUpperCase()} ${c.key.toUpperCase()}`,
         does: c.label,

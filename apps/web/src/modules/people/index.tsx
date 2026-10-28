@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import { PersonNarrow } from './components/PersonNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
 import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -80,6 +81,8 @@ export const peopleModule: WorkspaceModule = {
       Mark: PersonMark,
       Fact: PersonFact,
       describeChange: describePersonChange,
+      Narrow: PersonNarrow,
+      edit: (id) => `/${PEOPLE_ID}/${id}/edit`,
     },
   ],
   // A person names the projects they are on.

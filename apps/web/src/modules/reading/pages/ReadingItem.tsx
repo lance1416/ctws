@@ -49,7 +49,7 @@ function useAddressed() {
 const safeLink = (url: string | null) => (url && /^https?:\/\//i.test(url) ? url : null)
 
 /** What a status's day is called on the page: started, finished, dropped. */
-const SINCE_WORDS: Record<ReadingStatus, string> = {
+export const SINCE_WORDS: Record<ReadingStatus, string> = {
   todo: 'Added',
   reading: 'Started',
   done: 'Finished',

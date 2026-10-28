@@ -2,7 +2,7 @@ import type { ProjectId, ReviewResponse, TaskStatus } from '@ctws/contracts'
 import { addDays } from '@ctws/core/day'
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import {
   BackIcon,
@@ -14,6 +14,7 @@ import {
 } from '../../../platform/ui/icons'
 import { StageLabel } from '../../../platform/ui/StageLabel'
 import { useProjects, ProjectSquare, useEveryProject } from '../../../shell/projects'
+import { OpensBeside } from '../../../shell/inspector'
 import { useAlsoThisWeek } from '../../../shell/review'
 import { reviewQuery } from '../api'
 import { StatusMark } from '../../../platform/ui/StatusMark'
@@ -241,12 +242,14 @@ function Item({
       <span className="flex h-5 items-center">
         <StatusMark status={status} size={14} />
       </span>
-      <Link
+      {/* In the inspector, the review staying put (FR-022, DES-001 "回顾"). */}
+      <OpensBeside
+        thing={{ type: 'task', id }}
         to={`/projects/${projectId}?task=${id}`}
-        className={`text-ui hover:underline ${dropped ? 'text-subtle line-through' : 'text-ink'}`}
+        className={`text-left text-ui hover:underline ${dropped ? 'text-subtle line-through' : 'text-ink'}`}
       >
         {title}
-      </Link>
+      </OpensBeside>
     </span>
   )
 }
@@ -320,12 +323,13 @@ function Brief({
               className="flex min-h-8 items-center gap-2.5 px-3.5 text-ui text-ink"
             >
               {project && <ProjectSquare project={project} />}
-              <Link
+              <OpensBeside
+                thing={{ type: 'task', id: s.taskId }}
                 to={`/projects/${s.projectId}?task=${s.taskId}`}
                 className="min-w-0 flex-1 truncate hover:underline"
               >
                 {s.title}
-              </Link>
+              </OpensBeside>
               <StageLabel name={s.to} quiet={false} />
             </li>
           )

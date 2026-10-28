@@ -58,12 +58,15 @@ test('a person’s page shows the module’s fields and what they are in', async
   await expect(page.getByRole('link', { name: 'Job hunt' })).toBeVisible()
 })
 
-test('following a link from a person to a meeting lands on the meeting’s page', async ({
+test('a meeting from a person opens beside them, and its full page is the meeting’s', async ({
   page,
 }) => {
   const { person, meeting } = await world(page)
   await page.goto(`/people/${person.id}`)
   await page.getByRole('link', { name: /Second interview/ }).click()
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector.getByRole('heading', { name: 'Second interview' })).toBeVisible()
+  await inspector.getByRole('button', { name: 'Open full page' }).click()
 
   await expect(page).toHaveURL(new RegExp(`/meetings/${meeting.meetingId}(\\?|$)`))
   await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toHaveText(

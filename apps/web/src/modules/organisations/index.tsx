@@ -1,4 +1,5 @@
 import { topPage } from '../../shell/layout'
+import { OrganisationNarrow } from './components/OrganisationNarrow'
 import type { WorkspaceModule } from '../../shell/contract'
 import { organisationKeys } from './api'
 import {
@@ -61,6 +62,8 @@ export const organisationModule: WorkspaceModule = {
       Mark: OrganisationListMark,
       Fact: OrganisationFact,
       describeChange: describeOrganisationChange,
+      Narrow: OrganisationNarrow,
+      edit: (id) => `/${ORGANISATIONS_ID}/${id}/edit`,
     },
   ],
   // Who works there, what was said with it, and where it stands in projects.

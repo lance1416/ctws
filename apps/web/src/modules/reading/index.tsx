@@ -1,4 +1,5 @@
 import { topPage } from '../../shell/layout'
+import { ReadingNarrow } from './components/ReadingNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useRecommendedBy } from './hooks/personThings'
@@ -78,6 +79,8 @@ export const readingModule: WorkspaceModule = {
       to: (id) => `/${READING_ID}/${id}`,
       Fact: ReadingFact,
       describeChange: describeReadingChange,
+      Narrow: ReadingNarrow,
+      edit: (id) => `/${READING_ID}/${id}/edit`,
     },
   ],
   // An item names its project.

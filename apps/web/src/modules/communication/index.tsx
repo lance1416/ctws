@@ -1,4 +1,5 @@
 import { topPage } from '../../shell/layout'
+import { MessageNarrow } from './components/MessageNarrow'
 import { ReceivedIcon, SentIcon } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { communicationKeys } from './api'
@@ -68,6 +69,7 @@ export const communicationModule: WorkspaceModule = {
       to: (id) => `/${COMMUNICATION_ID}/${id}`,
       Mark: MessageMark,
       Fact: MessageFact,
+      Narrow: MessageNarrow,
     },
   ],
   // Who it was with, and what they are called, and where it is filed.

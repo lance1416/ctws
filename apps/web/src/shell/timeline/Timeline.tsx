@@ -1,6 +1,7 @@
 import { api, type ObjectType, type TimelineEntry, type TimelineKind } from '@ctws/contracts'
 import { linkWords } from '@ctws/core'
 import { queryOptions, useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { useContext, useState, type ReactNode } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { NewContext } from '../creates'
@@ -73,11 +74,17 @@ export function Timeline({
   of,
   filters = false,
   logs = false,
+  last,
+  everything,
 }: {
   of: Thing
   filters?: boolean
   /** Its head's + logs a message with the thing (FR-061, FR-070), where a module can log one. */
   logs?: boolean
+  /** Only the latest this many, as a narrow page shows it (artboard 33). */
+  last?: number
+  /** The line under them that opens the whole of it: "Everything with Mira". */
+  everything?: { label: string; to: string }
 }) {
   const openNew = useContext(NewContext)
   const log = useRegistry().creates.find((c) => c.kind === 'communication')
@@ -90,7 +97,10 @@ export function Timeline({
   if (filter.id === 'all' && entries.isSuccess && entries.data.length === 0 && !logs) return null
   return (
     <section aria-labelledby="timeline-head" className="flex flex-col gap-2">
-      <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1">
+      {/* A narrow page's block names it already (artboard 33). */}
+      <div
+        className={`flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1 ${last ? 'sr-only' : ''}`}
+      >
         <h3 id="timeline-head" className="text-ui font-medium text-ink">
           Timeline
         </h3>
@@ -126,7 +136,7 @@ export function Timeline({
         <BlockFailed what="timeline" onRetry={() => void entries.refetch()} />
       ) : (
         <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
-          {(entries.data ?? []).map((entry, i) => {
+          {(last ? (entries.data ?? []).slice(0, last) : (entries.data ?? [])).map((entry, i) => {
             const line = lineOf(entry, describeChange, timeZone)
             if (!line) return null
             return (
@@ -160,6 +170,14 @@ export function Timeline({
             )
           })}
         </ol>
+      )}
+      {everything && (
+        <Link
+          to={everything.to}
+          className="pl-[calc(52px+24px+1.25rem)] text-meta text-muted hover:text-ink"
+        >
+          {everything.label}
+        </Link>
       )}
     </section>
   )

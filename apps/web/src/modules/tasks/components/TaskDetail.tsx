@@ -21,6 +21,18 @@ type Props = {
 
 /** One task in the pane: reading by default, the form behind Edit. Saving returns to reading. */
 export function TaskDetail({ task, onClose, onSaved }: Props) {
+  return (
+    <DetailPane label="Task details" onClose={onClose}>
+      <TaskDetailBody task={task} onClose={onClose} {...(onSaved ? { onSaved } : {})} />
+    </DetailPane>
+  )
+}
+
+/**
+ * The task itself, wherever it is shown: the pane above, and the inspector, where it is edited in
+ * place too (artboard 8, DES-001 "检查器里的窄版").
+ */
+export function TaskDetailBody({ task, onClose, onSaved }: Props) {
   useRecordRecent({
     type: 'task',
     id: task.id,
@@ -58,7 +70,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
   }
 
   return (
-    <DetailPane label="Task details" onClose={requestClose}>
+    <>
       {/* `flex-1 flex-col`: the height reaches down to `DangerZone`, which needs a floor. */}
       <div
         ref={panel}
@@ -110,6 +122,6 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
           </p>
         )}
       </div>
-    </DetailPane>
+    </>
   )
 }

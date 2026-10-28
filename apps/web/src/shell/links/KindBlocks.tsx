@@ -1,6 +1,5 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
 import { useContext, useState, type ComponentType, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { Avatar } from '../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../platform/ui/Block'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
@@ -12,6 +11,7 @@ import { SearchDialog } from '../search/SearchDialog'
 import { KIND_WORDS } from '../search/view'
 import type { Makes } from './LinkDialog'
 import { LinkedRow } from './LinkedRow'
+import { OpensBeside } from '../inspector/narrow'
 import { type Item, useLinked } from './useLinked'
 
 /** "an organisation", "a note": one of a kind, as a button's name says it. */
@@ -205,7 +205,7 @@ function KindBlock({
         className={`group flex min-w-0 items-center ${join ? 'pr-1.5 hover:bg-hover' : ''}`}
       >
         {/* With its ✕, the row takes the hover whole; the link adds none of its own (N-08). */}
-        <ThingRow row={t} hover={!join} />
+        <ThingRow row={t} kind={kind} hover={!join} />
         {join && (
           <TakeOff
             label={`Remove ${t.title} from ${removeFrom}`}
@@ -219,13 +219,14 @@ function KindBlock({
     ...linked.map((item) => (
       <li key={item.relationId} className="group flex min-w-0 items-center pr-1.5 hover:bg-hover">
         {Linked ? (
-          <Link
+          <OpensBeside
+            thing={{ type: item.type, id: item.id }}
             to={registry.relationFor(item.type).to(item.id)}
             data-linked={item.id}
             className="min-w-0 flex-1 px-3"
           >
             <Linked thing={item} />
-          </Link>
+          </OpensBeside>
         ) : (
           <LinkedRow item={item} />
         )}
@@ -326,11 +327,12 @@ function TakeOff({
  * A module's own thing: first a person's avatar or a word or two (a meeting's day and time), then
  * the title, then a fact.
  */
-function ThingRow({ row, hover = true }: { row: Row; hover?: boolean }) {
+function ThingRow({ row, kind, hover = true }: { row: Row; kind: ObjectType; hover?: boolean }) {
   // A kind with no word to lead with (reading) gives its title the room.
   const lead = row.initials || row.lead !== undefined
   return (
-    <Link
+    <OpensBeside
+      thing={{ type: kind, id: row.id }}
       to={row.to}
       data-linked={row.id}
       className={`grid min-h-9 min-w-0 flex-1 items-center gap-x-3 px-3 text-ui text-ink ${hover ? 'hover:bg-hover' : ''} ${
@@ -352,6 +354,6 @@ function ThingRow({ row, hover = true }: { row: Row; hover?: boolean }) {
         {row.sub && <span className="truncate text-meta text-muted">{row.sub}</span>}
       </span>
       {row.trail ?? <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>}
-    </Link>
+    </OpensBeside>
   )
 }

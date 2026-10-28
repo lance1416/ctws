@@ -35,6 +35,7 @@ import { resourceKeys } from './resources/api'
 import { weekCountKeys } from './review/api'
 import { timelineKeys } from './timeline/Timeline'
 import { projectKeys } from './projects/api'
+import { ProjectNarrow } from './projects/ProjectNarrow'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
 import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
 
@@ -60,7 +61,14 @@ const PROJECTS_KIND: KindEntry = {
 }
 
 const SHELL_RELATIONS: RelationContribution[] = [
-  { type: 'project', kind: 'Project', plural: 'Projects', to: (id) => `/projects/${id}` },
+  {
+    type: 'project',
+    kind: 'Project',
+    plural: 'Projects',
+    to: (id) => `/projects/${id}`,
+    Narrow: ProjectNarrow,
+    edit: (id) => `/projects/${id}/edit`,
+  },
 ]
 
 /** What the app, not the shell, decides about its modules. */
@@ -167,6 +175,7 @@ export type Registry = {
   personLinked: NonNullable<PersonContribution['Linked']>[]
   projectCard: NonNullable<ProjectContribution['Card']> | null
   projectOutline: ComponentType<{ projectId: ProjectId }> | null
+  projectNarrow: ComponentType<{ projectId: ProjectId }> | null
   projectCount: ((project: ProjectResponse) => number) | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
   /** The page-wide keys: capture, search, this help, the jumps. */
@@ -272,6 +281,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     })(),
     projectCard: modules.find((m) => m.project?.Card)?.project?.Card ?? null,
     projectOutline: modules.find((m) => m.project?.Outline)?.project?.Outline ?? null,
+    projectNarrow: modules.find((m) => m.project?.Narrow)?.project?.Narrow ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
     anywhere: anywhereKeys(chords, creates),

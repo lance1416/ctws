@@ -117,12 +117,16 @@ test('the inspector has its own address, survives a reload and closes on Esc', a
   await registerFreshUser(page, '/people?inspect=meeting:01a15e5c-0000-7000-8000-000000000000')
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   await expect(inspector).toBeVisible()
-  await expect(inspector.getByRole('heading', { name: 'Meeting' })).toBeFocused()
+  // A meeting that is not there says so in the meeting's narrow page (FR-022).
+  await expect(inspector).toContainText('This meeting is not here any more.')
+  await expect
+    .poll(() => inspector.evaluate((el) => el.contains(document.activeElement)))
+    .toBe(true)
   await page.reload()
   await expect(inspector).toBeVisible()
   // The page under it stays: People is still the place.
   await expect(page.getByRole('heading', { name: 'People', level: 1 })).toBeVisible()
-  await inspector.getByRole('heading', { name: 'Meeting' }).focus()
+  await inspector.getByRole('button', { name: 'Close' }).focus()
   await page.keyboard.press('Escape')
   await expect(inspector).toHaveCount(0)
   await expect(page).toHaveURL(/\/people$/)

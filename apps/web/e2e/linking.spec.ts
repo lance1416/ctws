@@ -248,7 +248,7 @@ test('opening a task puts it in the address, and a reload opens it again', async
   await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
 })
 
-test('a task linked to a person opens on its own sheet, and Back returns to the person', async ({
+test('a task linked to a person opens beside them, and its full page is its project', async ({
   page,
 }) => {
   const { person } = await world(page)
@@ -265,15 +265,17 @@ test('a task linked to a person opens on its own sheet, and Back returns to the 
     .getByRole('link', { name: /准备一面/ })
     .click()
 
-  // Its project's page, with the task's sheet open -- not the list of projects.
+  // In the inspector, the person's page staying put (FR-022).
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector).toContainText('准备一面')
+  await expect(page).toHaveURL(new RegExp(`/people/${person.id}\\?inspect=task`))
+
+  // Its full page is its project's, with the task's sheet open -- not the list of projects.
+  await inspector.getByRole('link', { name: 'Open full page' }).click()
   await expect(page).toHaveURL(
     new RegExp(`/projects/${project.id as string}\\?.*task=${task.id as string}`),
   )
   await expect(page.getByRole('dialog', { name: 'Task details' })).toContainText('准备一面')
-
-  await page.goBack()
-  await expect(page).toHaveURL(new RegExp(`/people/${person.id}$`))
-  await expect(page.getByRole('heading', { level: 1, name: 'Ying Chen' })).toBeVisible()
 })
 
 /**

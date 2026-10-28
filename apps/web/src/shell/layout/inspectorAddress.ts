@@ -27,16 +27,18 @@ let opener: HTMLElement | null = null
 export function useInspector(): {
   open: Inspected | null
   show: (thing: Inspected) => void
+  /** What it shows, changed from inside it: the address keeps only the one shown (FR-022). */
+  swap: (thing: Inspected) => void
   close: () => void
 } {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const open = parseInspect(params.get(INSPECT))
-  const withParams = (edit: (next: URLSearchParams) => void) => {
+  const withParams = (edit: (next: URLSearchParams) => void, replace = false) => {
     const next = new URLSearchParams(window.location.search)
     edit(next)
     const search = next.toString()
-    navigate({ search: search ? `?${search}` : '' })
+    navigate({ search: search ? `?${search}` : '' }, { replace })
   }
   return {
     open,
@@ -44,6 +46,7 @@ export function useInspector(): {
       opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
       withParams((next) => next.set(INSPECT, formatInspect(thing)))
     },
+    swap: (thing) => withParams((next) => next.set(INSPECT, formatInspect(thing)), true),
     close: () => {
       withParams((next) => next.delete(INSPECT))
       opener?.focus()

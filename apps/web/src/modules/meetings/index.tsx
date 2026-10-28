@@ -8,6 +8,7 @@ import { CalendarOccurrence } from './components/OccurrencePane'
 import { NextMeetingLine } from './components/MeetingsKind'
 import { useMeetingEntries } from './hooks/contributions'
 import { MEETINGS_ID } from './logic/id'
+import { MeetingNarrow } from './components/MeetingNarrow'
 import { MeetingFact } from './components/MeetingFact'
 import { NewMeeting } from './components/NewMeeting'
 import { MeetingsSidebar } from './components/MeetingsSidebar'
@@ -75,6 +76,8 @@ export const meetingModule: WorkspaceModule = {
       plural: 'Meetings',
       to: (id) => `/${MEETINGS_ID}/${id}`,
       Fact: MeetingFact,
+      Narrow: MeetingNarrow,
+      edit: (id) => `/${MEETINGS_ID}/${id}/edit`,
     },
   ],
   // An occurrence names its attendees and its project.

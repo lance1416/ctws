@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { OpensBeside } from '../inspector/narrow'
 import { useRegistry } from '../registry'
 import { whyOf } from './Links'
 import type { Item } from './useLinked'
@@ -9,7 +9,8 @@ export function LinkedRow({ item }: { item: Item }) {
   const Fact = where.Fact
   const why = whyOf(item)
   return (
-    <Link
+    <OpensBeside
+      thing={{ type: item.type, id: item.id }}
       to={where.to(item.id)}
       data-linked={item.id}
       className="grid min-h-9 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui text-ink"
@@ -23,6 +24,6 @@ export function LinkedRow({ item }: { item: Item }) {
           <Fact thing={item} />
         </span>
       )}
-    </Link>
+    </OpensBeside>
   )
 }
