@@ -100,7 +100,8 @@ function More({ rows, shown, onAll }: { rows: number; shown: number; onAll: () =
   )
 }
 
-const AWAITING_COLS = 'grid-cols-[minmax(0,1.2fr)_minmax(0,1.6fr)_4.5rem_4.5rem_8rem_auto]'
+// The actions have a width of their own, so the heads line up over rows that have them.
+const AWAITING_COLS = 'grid-cols-[minmax(0,1.2fr)_minmax(0,1.6fr)_4.5rem_4.5rem_8rem_12rem]'
 
 function Awaiting({ rows, done }: { rows: AwaitingRow[]; done: boolean }) {
   const [all, setAll] = useState(false)

@@ -49,6 +49,7 @@ const site = (v: string) => {
  */
 export function OrganisationEditor({
   organisation,
+  typedName = null,
   busy,
   error,
   cancelTo,
@@ -57,6 +58,8 @@ export function OrganisationEditor({
 }: {
   /** Null on New organisation. */
   organisation: OrganisationResponse | null
+  /** The words New organisation was asked for under (a project's picker). */
+  typedName?: string | null
   busy: boolean
   error: string | null
   cancelTo: string
@@ -66,7 +69,8 @@ export function OrganisationEditor({
 }) {
   const ids = useId()
   const [opened] = useState(() => draftOf(organisation))
-  const [d, setDraft] = useState(opened)
+  // What was typed counts as written: leaving asks, as it would had it been typed here.
+  const [d, setDraft] = useState(() => (typedName ? { ...opened, name: typedName } : opened))
   const set = (patch: Partial<Draft>) => setDraft((was) => ({ ...was, ...patch }))
   const [unnamed, setUnnamed] = useState(false)
   const types = useQuery(overviewQuery()).data?.types.map((t) => t.type) ?? []

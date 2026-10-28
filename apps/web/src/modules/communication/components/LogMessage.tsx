@@ -314,7 +314,7 @@ export function LogMessage({
           )}
         </Field>
 
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
           <div className="flex min-w-0 flex-col gap-1">
             <label htmlFor={`${ids}-subject`} className={label}>
               Subject
@@ -336,6 +336,7 @@ export function LogMessage({
                 value={d.when.slice(0, 10)}
                 today={today}
                 clearable={false}
+                className="min-w-0 flex-1"
                 onChange={(day) => day && set({ when: `${day}T${d.when.slice(11, 16)}` })}
               />
               <input
@@ -345,7 +346,7 @@ export function LogMessage({
                 onChange={(e) =>
                   e.target.value && set({ when: `${d.when.slice(0, 10)}T${e.target.value}` })
                 }
-                className={`${boxed} w-24`}
+                className={`${boxed} w-22 shrink-0`}
               />
             </div>
           </div>
@@ -455,7 +456,7 @@ export function LogMessage({
                   followUpOn: d.followUpOn ?? addDays(today, FOLLOW_UP_DAYS),
                 })
               }
-              className="mt-1 size-4 accent-ink"
+              className="relative mt-0.5 h-4.5 w-8 shrink-0 cursor-pointer appearance-none rounded-full bg-line-strong transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-3.5 before:rounded-full before:bg-panel before:transition-transform checked:bg-ink checked:before:translate-x-3.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-communication"
             />
             <span className="flex flex-col">
               <span className="text-ui font-medium text-communication-t">Waiting for a reply</span>

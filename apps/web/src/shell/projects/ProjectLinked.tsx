@@ -1,6 +1,6 @@
 import type { ObjectType, ProjectId } from '@ctws/contracts'
+import { useNavigate } from 'react-router-dom'
 import { inColumns } from '../../platform/ui/columns'
-import { createOrganisation } from '../links/api'
 import { useKindBlocks } from '../links/KindBlocks'
 import { useRegistry } from '../registry'
 
@@ -32,6 +32,7 @@ export function ProjectLinked({
   beside: boolean
 }) {
   const registry = useRegistry()
+  const navigate = useNavigate()
   const kinds = ORDER.filter((k) => registry.relations.some((r) => r.type === k))
   // One hook per module that lists its own things: the registry's list is fixed.
   const owned = registry.projectThings.map((t) => ({ kind: t.kind, ...t.useThings(projectId) }))
@@ -44,9 +45,17 @@ export function ProjectLinked({
       owned.some((o) => o.kind === kind)
         ? (registry.creates.find((c) => c.kind === kind) ?? null)
         : null,
-    // An organisation is linked, not owned; its + can still write a new one down (FR-055).
-    makesFor: (kind) =>
-      kind === 'organisation' ? { label: 'New organisation', run: createOrganisation } : undefined,
+    // An organisation is linked, not owned; its + can still write a new one down, on its own
+    // form, filled with the words typed, which links it here and comes back (FR-055).
+    makesFor: (kind) => {
+      const creator = registry.creates.find((c) => c.kind === kind)
+      return kind === 'organisation' && typeof creator?.to === 'string'
+        ? {
+            label: 'New organisation',
+            run: (name) => navigate(`${creator.to}?project=${projectId}`, { state: { name } }),
+          }
+        : undefined
+    },
   })
 
   return (

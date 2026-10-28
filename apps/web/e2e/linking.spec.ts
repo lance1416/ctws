@@ -339,6 +339,12 @@ test('a project’s Organisations + writes a new one down on it, and Remove take
   await picker(page).getByRole('combobox').fill('Stripe')
   await picker(page).getByRole('option', { name: 'New organisation “Stripe”' }).click()
   await expect(picker(page)).toHaveCount(0)
+  // Written down on its own form, the name typed already there; made, it is linked and we are
+  // back on the project (FR-055, FR-026).
+  await expect(page).toHaveURL(new RegExp(`/organisations/new\\?project=${pid}$`))
+  await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Stripe')
+  await page.getByRole('button', { name: /^Create organisation/ }).click()
+  await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
   await expect(block).toContainText('Stripe')
 
   await block.getByRole('button', { name: 'Remove Stripe from project' }).click()

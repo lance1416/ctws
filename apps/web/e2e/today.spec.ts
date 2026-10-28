@@ -80,6 +80,8 @@ test('each task is in one block, and the blocks stand in the board’s order', a
     'In progress',
     'Planned for today',
     'Overdue',
+    // The right column in FR-079's order: what to answer first.
+    'Follow up',
     'Ready to start',
     'This week',
     'Birthdays',

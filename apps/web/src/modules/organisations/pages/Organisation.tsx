@@ -1,12 +1,15 @@
 import {
+  api,
   idFrom,
+  OBJECT_TYPES,
   organisationId,
   type CreateOrganisationBody,
   type OrganisationResponse,
   type UpdateOrganisationBody,
 } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { call } from '../../../platform/http/api'
 import { problemText } from '../../../platform/http/api'
 import { DangerZone } from '../../../platform/ui/DangerZone'
 import { DeletedNotice } from '../../../shell/detail'
@@ -52,26 +55,47 @@ export function Organisation() {
   return <OrganisationPage key={o.id} organisation={o} />
 }
 
-/** Writes an organisation, then opens its page. */
-function useWriteOrganisation(organisation: OrganisationResponse | null) {
+/**
+ * Writes an organisation, then opens its page; or, written down from a project's block, links it
+ * to the project and goes back there (FR-026, FR-055).
+ */
+function useWriteOrganisation(
+  organisation: OrganisationResponse | null,
+  project: string | null = null,
+) {
   const navigate = useNavigate()
   return useMutation({
-    mutationFn: (body: CreateOrganisationBody & UpdateOrganisationBody) =>
-      organisation ? patchOrganisation(organisation.id, body) : createOrganisation(body),
-    meta: { changes: ['organisation'], awaits: [organisationKeys.all], ownsError: true },
-    onSuccess: (saved) => navigate(`/organisations/${saved.id}`),
+    mutationFn: async (body: CreateOrganisationBody & UpdateOrganisationBody) => {
+      if (organisation) return patchOrganisation(organisation.id, body)
+      const made = await createOrganisation(body)
+      if (project)
+        await call(api.relations.create, {
+          body: {
+            from: { type: 'project', id: project },
+            to: { type: 'organisation', id: made.id },
+          },
+        })
+      return made
+    },
+    meta: { changes: OBJECT_TYPES, awaits: [organisationKeys.all], ownsError: true },
+    onSuccess: (saved) => navigate(project ? `/projects/${project}` : `/organisations/${saved.id}`),
   })
 }
 
 /** `/organisations/new`: one written down, in the main area. */
 export function OrganisationNew() {
-  const write = useWriteOrganisation(null)
+  const [params] = useSearchParams()
+  const project = params.get('project')
+  // The name typed in a project's picker, carried in the history entry rather than the address.
+  const named = (useLocation().state as { name?: unknown } | null)?.name
+  const write = useWriteOrganisation(null, project)
   return (
     <OrganisationEditor
       organisation={null}
+      typedName={typeof named === 'string' ? named : null}
       busy={write.isPending}
       error={write.isError ? problemText(write.error) : null}
-      cancelTo="/organisations"
+      cancelTo={project ? `/projects/${project}` : '/organisations'}
       onSubmit={(body) => write.mutate(body)}
     />
   )
