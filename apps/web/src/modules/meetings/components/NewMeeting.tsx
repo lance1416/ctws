@@ -12,11 +12,13 @@ export function NewMeeting({
   about,
   onClose,
   opens,
+  day,
 }: {
   projectId: ProjectId | null
   about: { type: ObjectType; id: string } | null
   onClose: () => void
   opens: boolean
+  day: string | null
 }) {
   const navigate = useNavigate()
   return (
@@ -24,6 +26,7 @@ export function NewMeeting({
       projectId={projectId}
       // Made from a person's page, they are in it (FR-061).
       attendeeIds={about?.type === 'person' ? [idFrom(personId, about.id)] : []}
+      day={day}
       onClose={onClose}
       onMade={(made) => {
         onClose()

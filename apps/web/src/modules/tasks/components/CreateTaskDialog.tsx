@@ -36,12 +36,15 @@ import { useNow } from '../../../platform/time/useNow'
 export function CreateTaskDialog({
   projectId,
   relatedTo = null,
+  scheduledOn: plannedOn = null,
   onClose,
 }: {
   /** The project the dialog opens on; still changeable inside it. */
   projectId: ProjectId
   /** What each task made here is related to: the person whose page it was made from. */
   relatedTo?: { type: ObjectType; id: string } | null
+  /** The day it opens planned for, made from a day on the calendar. */
+  scheduledOn?: string | null
   onClose: () => void
 }) {
   const composing = useComposing()
@@ -64,7 +67,7 @@ export function CreateTaskDialog({
       parentId: null,
       title: '',
       status: NEW_TASK_STATUS,
-      scheduledOn: null,
+      scheduledOn: plannedOn,
       dueAt: null,
       notes: null,
     },

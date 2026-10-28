@@ -31,11 +31,14 @@ import {
 export function NewMeetingDialog({
   projectId = null,
   attendeeIds = [],
+  day: heldOn = null,
   onClose,
   onMade,
 }: {
   /** The project it is made in, when opened from one. */
   projectId?: ProjectId | null
+  /** The day it is held, when opened from one on the calendar; else today. */
+  day?: string | null
   /** Who is in it from the start. */
   attendeeIds?: PersonId[]
   onClose: () => void
@@ -47,7 +50,7 @@ export function NewMeetingDialog({
   const composing = useComposing()
 
   const { form, values, ready } = useMeetingForm({
-    ...newMeeting(today, accountZone, projectId),
+    ...newMeeting(heldOn ?? today, accountZone, projectId),
     attendeeIds,
   })
   const dirty = { shouldDirty: true }

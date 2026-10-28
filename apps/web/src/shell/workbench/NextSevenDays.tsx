@@ -79,7 +79,7 @@ export function NextSevenDays() {
                 ))}
                 {on.length > PER_DAY && (
                   <Link
-                    to="/calendar"
+                    to={`/calendar?day=${day}`}
                     className="px-1.5 text-meta text-muted hover:text-ink"
                   >{`+${on.length - PER_DAY} more`}</Link>
                 )}

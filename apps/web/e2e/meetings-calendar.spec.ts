@@ -52,10 +52,10 @@ test('a series agreed in Toronto shows on your clock, and says whose 09:00 it is
   await expect(square(page, '2026-10-20')).toContainText('EDT')
 })
 
-test('the calendar makes nothing: a day square has no create control', async ({ page }) => {
-  // THE FRAMING, as a test. In a calendar app an event is the only entity, so the square is the
-  // obvious place to make one. Here the calendar is a LENS over everything with a date and owns
-  // no kind of thing, so it offers no way to make one -- a meeting is arranged on its own page.
+test('a square makes nothing; a meeting is made from the chosen day', async ({ page }) => {
+  // THE FRAMING, as a test. The calendar is a LENS over everything with a date and owns no kind
+  // of thing, so a square offers no way to make one: its buttons choose the day and open what is
+  // on it. The chosen day offers a meeting on it, made by the meetings module (FR-080).
   await inLondon(page)
   await page.goto('/calendar')
   // The RUNNER's day, which is the account's: the browser registers its user with its own zone. A
@@ -63,8 +63,10 @@ test('the calendar makes nothing: a day square has no create control', async ({ 
   const today = dayOffset(0)
 
   await expect(square(page, today)).toHaveCount(1)
-  await expect(square(page, today).getByRole('button')).toHaveCount(0)
+  await expect(square(page, today).getByRole('button')).toHaveCount(1)
   await expect(page.getByRole('button', { name: /New meeting/ })).toHaveCount(0)
+  await square(page, today).getByRole('button').click()
+  await expect(page.getByRole('button', { name: 'New meeting' })).toBeVisible()
 })
 
 test('a repeating meeting asks which occurrences a move touches', async ({ page }) => {
@@ -159,13 +161,13 @@ test('the people in the room come out of the people module', async ({ page }) =>
  * walks away from the target the moment the grid already starts on it.
  */
 async function openOctober(page: Page) {
-  const heading = page.getByText(/^[A-Z][a-z]{2} \d{4}$/)
+  const heading = page.getByRole('heading', { level: 1 })
   const want = 2026 * 12 + 9
   const monthOn = async () => {
     const shown = (await heading.textContent()) ?? ''
-    const [, name, year] = /^([A-Z][a-z]{2}) (\d{4})$/.exec(shown) ?? []
+    const [, name, year] = /^([A-Z][a-z]+) (\d{4})$/.exec(shown) ?? []
     if (!year || !name) throw new Error(`no month on the page: ${shown}`)
-    return Number(year) * 12 + MONTHS.indexOf(name)
+    return Number(year) * 12 + MONTHS.indexOf(name.slice(0, 3) as (typeof MONTHS)[number])
   }
   // THE BUDGET IS THE DISTANCE, not a constant: the target month is fixed (it is the one spanning
   // the US clock change) while the grid opens on today, so a constant budget is a date that stops

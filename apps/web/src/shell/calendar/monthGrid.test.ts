@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { monthRange, monthSquares, monthTitle, shiftMonth } from './monthGrid'
+import {
+  lunarMonthsOf,
+  lunarSquareName,
+  monthRange,
+  monthSquares,
+  monthTitle,
+  shiftMonth,
+} from './monthGrid'
 
 describe('shiftMonth', () => {
   it('lands on the first of the month, whatever day it started from', () => {
@@ -64,7 +71,45 @@ describe('monthRange', () => {
 
 describe('monthTitle', () => {
   it('is written the way a person says it', () => {
-    expect(monthTitle('2026-10-15')).toBe('Oct 2026')
-    expect(monthTitle('2026-01-01')).toBe('Jan 2026')
+    expect(monthTitle('2026-10-15')).toBe('October 2026')
+    expect(monthTitle('2026-01-01')).toBe('January 2026')
+  })
+})
+
+describe('lunarMonthsOf', () => {
+  const days = {
+    '2026-09-30': '二十',
+    '2026-10-01': '廿一',
+    '2026-10-10': '九月初一',
+    '2026-10-11': '初二',
+  }
+
+  it('names the month the first day is in, then each that begins inside the month', () => {
+    expect(lunarMonthsOf('八月廿一', days, '2026-10')).toEqual(['八月', '九月'])
+  })
+
+  it('names only those it knows while the first day is not yet named', () => {
+    expect(lunarMonthsOf(null, days, '2026-10')).toEqual(['九月'])
+  })
+
+  it('does not count a month that begins on a neighbouring square', () => {
+    expect(lunarMonthsOf('九月廿一', { ...days, '2026-11-09': '十月初一' }, '2026-10')).toEqual([
+      '九月',
+    ])
+  })
+})
+
+describe('lunarSquareName', () => {
+  it('says the festival before anything else', () => {
+    expect(lunarSquareName('初九', '重阳')).toEqual({ text: '重阳', is: 'festival' })
+  })
+
+  it('says the month on its first day, and the day otherwise', () => {
+    expect(lunarSquareName('九月初一', undefined)).toEqual({ text: '九月', is: 'month' })
+    expect(lunarSquareName('十三', undefined)).toEqual({ text: '十三', is: 'day' })
+  })
+
+  it('says nothing for a day not yet named', () => {
+    expect(lunarSquareName(undefined, undefined)).toBeNull()
   })
 })

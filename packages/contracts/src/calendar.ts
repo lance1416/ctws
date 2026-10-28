@@ -83,5 +83,8 @@ export type CalendarEntry = z.infer<typeof calendarEntry>
 
 export const calendarEntriesResponse = z.object({ entries: z.array(calendarEntry) })
 
-/** Each day's lunar name, for the grid's squares. */
-export const calendarDaysResponse = z.object({ days: z.record(calendarDate, z.string()) })
+/** Each day's lunar name, for the grid's squares, and the festival a day is, on the days that are one. */
+export const calendarDaysResponse = z.object({
+  days: z.record(calendarDate, z.string()),
+  festivals: z.record(calendarDate, z.string()),
+})

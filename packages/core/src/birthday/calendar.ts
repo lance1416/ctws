@@ -190,6 +190,16 @@ export function lunarDayLabel(day: string): string {
   return name === '初一' ? `${lunar.getLunarMonth().getName()}${name}` : name
 }
 
+/**
+ * The lunar festival a day is, short as a calendar square says it: "重阳", "中秋", "春节". None on
+ * most days. The trailing 节 goes where two characters are left to say it.
+ */
+export function lunarFestival(day: string): string | null {
+  const name = parseDay(day).getLunarDay().getFestival()?.getName()
+  if (!name) return null
+  return name.length > 2 && name.endsWith('节') ? name.slice(0, -1) : name
+}
+
 /** "十二月廿九": month and day, no year. */
 function lunarFullLabel(day: string): string {
   const lunar = parseDay(day).getLunarDay()

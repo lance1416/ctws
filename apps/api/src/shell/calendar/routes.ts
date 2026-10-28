@@ -1,5 +1,5 @@
 import { api } from '@ctws/contracts'
-import { addDays, lunarDayLabel } from '@ctws/core'
+import { addDays, lunarDayLabel, lunarFestival } from '@ctws/core'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { cacheForADay } from '../../platform/http/cache'
 import { on, serve } from '../../platform/http/serve'
@@ -11,10 +11,13 @@ export const calendarDayRoutes: FastifyPluginAsyncZod = async (app) => {
       // A day's lunar name never changes.
       cacheForADay(reply)
       const days: Record<string, string> = {}
+      const festivals: Record<string, string> = {}
       for (let day = req.query.from; day <= req.query.to; day = addDays(day, 1)) {
         days[day] = lunarDayLabel(day)
+        const festival = lunarFestival(day)
+        if (festival) festivals[day] = festival
       }
-      return { days }
+      return { days, festivals }
     }),
   ])
 }

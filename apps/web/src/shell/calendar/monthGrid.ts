@@ -1,5 +1,4 @@
 import { addDays } from '@ctws/core/day'
-import { MONTHS } from '../../platform/time/dates'
 
 /**
  * The month grid's arithmetic. Every date is a `YYYY-MM-DD` day in the account's zone, never a
@@ -29,10 +28,51 @@ function daysSinceMonday(day: string): number {
 
 const monthOf = (day: string): string => day.slice(0, 7)
 
-/** "Oct 2026". */
+/** "October 2026": the calendar's heading. */
 export function monthTitle(day: string): string {
   const [y, m] = parse(day)
-  return `${MONTHS[m - 1]} ${y}`
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(y, m - 1, 15)))
+}
+
+/**
+ * The lunar months a solar month spans, in order ("八月", "九月"): the one its first day is in,
+ * given whole ("八月廿一"), and each that begins inside it. `days` are the server's names, which
+ * name the month only on its first day ("九月初一").
+ */
+export function lunarMonthsOf(
+  firstDayName: string | null,
+  days: Record<string, string>,
+  month: string,
+): string[] {
+  const own = days[`${month}-01`]
+  const out: string[] = []
+  if (firstDayName && own && firstDayName.endsWith(own) && firstDayName !== own)
+    out.push(firstDayName.slice(0, -own.length))
+  for (const day of Object.keys(days).sort())
+    if (day.startsWith(month) && days[day]!.endsWith('初一')) {
+      const name = days[day]!.replace(/初一$/, '')
+      if (!out.includes(name)) out.push(name)
+    }
+  return out
+}
+
+/**
+ * What a square says of its lunar day: the festival when it is one ("重阳"), the month on its first
+ * day ("九月"), else the day ("十三").
+ */
+export function lunarSquareName(
+  name: string | undefined,
+  festival: string | undefined,
+): { text: string; is: 'festival' | 'month' | 'day' } | null {
+  if (festival) return { text: festival, is: 'festival' }
+  if (!name) return null
+  if (name.endsWith('初一') && name !== '初一')
+    return { text: name.replace(/初一$/, ''), is: 'month' }
+  return { text: name, is: 'day' }
 }
 
 /**

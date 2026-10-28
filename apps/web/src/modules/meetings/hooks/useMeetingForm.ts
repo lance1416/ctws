@@ -31,15 +31,17 @@ export const meetingForm = z.object({
 })
 export type MeetingForm = z.infer<typeof meetingForm>
 
-/** A new meeting: today at the default hour, in the account's zone. */
-/** A new meeting's form; in a project when made from one (FR-026, FR-055). */
+/**
+ * A new meeting's form: on `day` at the default hour, in the account's zone; in a project when made
+ * from one (FR-026, FR-055).
+ */
 export const newMeeting = (
-  today: string,
+  day: string,
   accountZone: string,
   projectId: ProjectId | null = null,
 ): MeetingForm => ({
   title: '',
-  startsLocal: `${today}T${String(DEFAULT_HOUR).padStart(2, '0')}:00`,
+  startsLocal: `${day}T${String(DEFAULT_HOUR).padStart(2, '0')}:00`,
   timeZone: accountZone,
   durationMinutes: DEFAULT_MINUTES,
   rule: null,

@@ -11,9 +11,10 @@ import { menuOrder, recentKinds } from './recent'
  * How the frame opens a creator, for the menu, the `N` keys and the blocks' `+`. What is made
  * stays on the page it was made from, unless `opens`: its module's own sidebar or page (FR-026).
  */
-export const NewContext = createContext<(creator: Creator, how?: { opens: boolean }) => void>(
-  () => {},
-)
+/** How a New was asked for: whether its page opens once made, and the day it is for, from a calendar. */
+export type NewHow = { opens: boolean; day?: string }
+
+export const NewContext = createContext<(creator: Creator, how?: NewHow) => void>(() => {})
 const useOpenNew = () => useContext(NewContext)
 
 /**

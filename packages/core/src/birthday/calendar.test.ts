@@ -4,6 +4,7 @@ import {
   factsOf,
   keptNote,
   lunarDayLabel,
+  lunarFestival,
   nextOccurrence,
   type Birthday,
 } from './calendar'
@@ -171,6 +172,18 @@ describe('lunarDayLabel', () => {
   it('names the month on its first day and only the day otherwise', () => {
     expect(lunarDayLabel('2026-10-10')).toBe('九月初一')
     expect(lunarDayLabel('2026-10-12')).toBe('初三')
+  })
+})
+
+describe('lunarFestival', () => {
+  it('names the festival a day is, without a trailing 节 where two characters remain', () => {
+    expect(lunarFestival('2026-10-18')).toBe('重阳')
+    expect(lunarFestival('2026-09-25')).toBe('中秋')
+    expect(lunarFestival('2026-02-17')).toBe('春节')
+  })
+
+  it('names none on an ordinary day', () => {
+    expect(lunarFestival('2026-10-12')).toBeNull()
   })
 })
 

@@ -389,6 +389,8 @@ export type Creator = {
      * page (FR-026). Otherwise the page it was made from stays, and its block shows it.
      */
     opens: boolean
+    /** The day it is for, made from a day on the calendar (FR-080): a task planned, a meeting held. */
+    day: string | null
   }>
   /** Where to go instead, when the kind is made on its own page; given the page it is made from. */
   to?: string | ((about: { type: ObjectType; id: string; title: string } | null) => string)

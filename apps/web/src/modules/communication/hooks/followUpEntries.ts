@@ -18,7 +18,8 @@ export function useFollowUpEntries(range: { from: string; to: string }) {
             kind: 'follow-up',
             recurrenceId: null,
             day: m.followUpOn,
-            title: m.subject ?? m.parties.map((p) => p.name).join(', '),
+            // Who to chase is what the day says (FR-080); the subject only when nobody is named.
+            title: m.parties.map((p) => p.name).join(', ') || (m.subject ?? ''),
             startsAt: null,
             endsAt: null,
             timeZone: null,

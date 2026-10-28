@@ -5,7 +5,7 @@ import { Navigate, Outlet, useLocation, useMatch, useNavigate } from 'react-rout
 import { call } from '../../platform/http/api'
 import { meKey, useMe } from '../auth/useMe'
 import type { Creator } from '../contract'
-import { NewContext, rememberKind } from '../creates'
+import { NewContext, rememberKind, type NewHow } from '../creates'
 import { LinkDialog } from '../links/LinkDialog'
 import { BottomBar } from './BottomBar'
 import { IconBar } from './IconBar'
@@ -90,7 +90,7 @@ function Frame({
   const [searching, setSearching] = useState(false)
   const [help, setHelp] = useState(false)
   const [linking, setLinking] = useState(false)
-  const [creating, setCreating] = useState<{ creator: Creator; opens: boolean } | null>(null)
+  const [creating, setCreating] = useState<({ creator: Creator } & NewHow) | null>(null)
   const [barExpanded, setBarExpanded] = useRemembered('ctws:iconbar', () => false)
   // A choice made by hand is kept whatever the width (handoff §4).
   const [sidebarOpen, setSidebarOpen] = useRemembered(
@@ -105,9 +105,9 @@ function Frame({
   const onProject = useMatch('/projects/:id')
   const projectId = onProject?.params.id ? idFrom(projectIdSchema, onProject.params.id) : null
 
-  const openNew = (creator: Creator, { opens }: { opens: boolean } = { opens: false }) => {
+  const openNew = (creator: Creator, how: NewHow = { opens: false }) => {
     rememberKind(creator.kind)
-    if (creator.Dialog) setCreating({ creator, opens })
+    if (creator.Dialog) setCreating({ creator, ...how })
     else if (creator.to) navigate(typeof creator.to === 'string' ? creator.to : creator.to(subject))
   }
 
@@ -143,6 +143,7 @@ function Frame({
                       projectId={projectId}
                       about={subject}
                       opens={creating.opens}
+                      day={creating.day ?? null}
                       onClose={() => setCreating(null)}
                     />
                   )}

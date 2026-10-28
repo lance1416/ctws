@@ -1,252 +1,390 @@
-import type { ProjectId } from '@ctws/contracts'
-import type { ShownEntry } from '../contract'
-import { useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { useViewParam, ViewTabs } from '../../platform/ui/ViewTabs'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { calendarDaysQuery } from './api'
-import { useEveryProject } from '../projects/api'
-import { ymd } from '../../platform/time/dates'
-import { useRegistry } from '../registry'
-import { monthRange, monthSquares, monthTitle, shiftMonth, WEEKDAYS } from './monthGrid'
-import { useProjectRail } from '../projects/projectColor'
-import { useTimeZone } from '../auth/useMe'
+import { useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { longDay, monthDay, ymd } from '../../platform/time/dates'
 import { useNow } from '../../platform/time/useNow'
-import { PageHead } from '../../platform/ui/PageHead'
+import { BUTTON, CHOSEN, ICON_BUTTON } from '../../platform/ui/buttonStyles'
+import { useColumns } from '../../platform/ui/columns'
+import { DetailPane } from '../../platform/ui/DetailPane'
+import { BackIcon, CakeIcon, FlagIcon, ForwardIcon, KIND_ICON } from '../../platform/ui/icons'
+import { KIND_ON_TINT, KIND_TINT } from '../../platform/ui/kinds'
+import { useTimeZone } from '../auth/useMe'
+import { useEveryProject } from '../projects/api'
+import { ProjectSquare } from '../projects/ProjectSquare'
+import { useRegistry } from '../registry'
+import { lunarWindowQuery } from './api'
+import { DayPanel } from './DayPanel'
+import { dayParts, squareLines, type Placed } from './dayParts'
+import { useLunarName } from './lunarName'
+import {
+  lunarMonthsOf,
+  lunarSquareName,
+  monthRange,
+  monthSquares,
+  monthTitle,
+  shiftMonth,
+  WEEKDAYS,
+} from './monthGrid'
 
-/** Entries a square shows before it says "+N"; three fit without scrolling. */
+/** Lines a square shows before it says "+N more" (FR-015). */
 const PER_SQUARE = 3
+/** From this many content columns the chosen day stays beside the grid; under it, it opens over. */
+const RESIDENT_FROM = 4
+const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+/** The key above the grid: each kind of line, in its colour. */
+const LEGEND = [
+  { label: 'Meeting', swatch: 'bg-meeting' },
+  { label: 'Due', swatch: 'bg-line-strong' },
+  { label: 'Late', swatch: 'bg-stop' },
+  { label: 'Birthday', swatch: 'bg-person' },
+  { label: 'Follow up', swatch: 'bg-communication' },
+] as const
 
 /**
- * Every module's dated things on one month grid, each entry with the day and wording its module
- * gave it. Nothing is made here: a meeting has its own page and a deadline belongs to a task.
+ * THE CALENDAR (FR-080, artboard 13): a month, Monday first, every module's dated things on their
+ * days with each day's lunar name. A day's planned tasks are only counted; the chosen day lists
+ * them, beside the grid on a wide screen and over it on a narrower one, where something can be
+ * planned or a meeting made on it. Nothing is made in the grid: a meeting has its own page and a
+ * deadline belongs to a task.
  */
 export function Calendar() {
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
-  const [cursor, setCursor] = useState(today)
-  const setParams = useSearchParams()[1]
-  const rail = useProjectRail()
-  const projects = useEveryProject()
+  const [params, setParams] = useSearchParams()
+  const asked = params.get('day')
+  const picked = asked && DAY.test(asked) ? asked : null
+  const [cursor, setCursor] = useState(picked ?? today)
+  const page = useRef<HTMLDivElement>(null)
+  const resident = useColumns(page) >= RESIDENT_FROM
+  const chosen = picked ?? (resident ? today : null)
+
+  const setDay = (day: string | null) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (day) next.set('day', day)
+        else next.delete('day')
+        return next
+      },
+      { replace: true },
+    )
 
   const providers = useRegistry().calendar
   const range = monthRange(cursor)
-  // Each day's lunar-calendar name; a square whose name failed to load simply has none. Like every
-  // module's entries, the month stepped away from stays drawn until the next one is in.
-  const lunar = useQuery({ ...calendarDaysQuery(range), placeholderData: keepPreviousData })
+  // Like every module's entries, the month stepped away from stays drawn until the next one is in;
+  // a square whose lunar name failed to load simply has none.
+  const lunar = useQuery({ ...lunarWindowQuery(range), placeholderData: keepPreviousData })
+  const month = cursor.slice(0, 7)
+  const lunarMonths = lunarMonthsOf(useLunarName(`${month}-01`), lunar.data?.days ?? {}, month)
   // One hook per registered module; the registry's list is fixed, so the hook order is too.
   const results = providers.map((p) => ({ moduleId: p.moduleId, ...p.useEntries(range) }))
-  const views = [
-    { id: 'all', label: 'All' },
-    ...providers.map((p) => ({ id: p.moduleId, label: p.label })),
-  ]
-  const [view, pickView] = useViewParam(views)
-
-  const shown = results.filter((r) => view === 'all' || r.moduleId === view)
-  const failed = shown.some((r) => r.isError)
-  type Placed = ShownEntry & { moduleId: string }
+  const failed = results.filter((r) => r.isError)
   const byDay = new Map<string, Placed[]>()
-  for (const { moduleId, entries } of shown) {
+  for (const { moduleId, entries } of results)
     for (const entry of entries) {
-      const placed = { ...entry, moduleId }
       const list = byDay.get(entry.day)
-      if (list) list.push(placed)
-      else byDay.set(entry.day, [placed])
+      if (list) list.push({ ...entry, moduleId })
+      else byDay.set(entry.day, [{ ...entry, moduleId }])
     }
-  }
-  // Timed entries first, in clock order; '99' puts the untimed ones after them.
-  for (const list of byDay.values()) {
-    list.sort(
-      (a, b) => (a.time ?? '99').localeCompare(b.time ?? '99') || a.title.localeCompare(b.title),
-    )
+
+  // An entry whose module opens it over the grid names it in the address; the rest are links.
+  const opener = (entry: Placed) => {
+    const opens = providers.find((p) => p.moduleId === entry.moduleId)?.opens
+    if (!opens) return null
+    return () =>
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        for (const [k, v] of Object.entries(opens.params(entry))) next.set(k, v)
+        return next
+      })
   }
 
   const squares = monthSquares(cursor)
-
-  // The key names each project whose colour is drawn, so the colour is never the only sign of it.
-  // An entry folded into "+N" draws none; the order is the rail's.
-  const order = new Map(projects.data?.map((p, i) => [p.id, i]))
-  const keyed = new Map<ProjectId, string>()
-  for (const { day } of squares)
-    for (const entry of (byDay.get(day) ?? []).slice(0, PER_SQUARE))
-      if (entry.projectId && entry.projectName && !keyed.has(entry.projectId))
-        keyed.set(entry.projectId, entry.projectName)
-  const key = [...keyed].sort(([a], [b]) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity))
+  const panel = chosen && (
+    <DayPanel
+      day={chosen}
+      today={today}
+      parts={dayParts(byDay.get(chosen) ?? [])}
+      opener={opener}
+    />
+  )
 
   return (
-    <>
+    <div ref={page} className="flex min-h-full flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <PageHead>Calendar</PageHead>
-        <span className="text-ui text-muted tabular-nums">{monthTitle(cursor)}</span>
-        <span className="flex items-center gap-1">
-          <Step label="Previous month" onClick={() => setCursor(shiftMonth(cursor, -1))}>
-            ‹
-          </Step>
-          <Step label="Back to this month" onClick={() => setCursor(today)}>
-            This month
-          </Step>
-          <Step label="Next month" onClick={() => setCursor(shiftMonth(cursor, 1))}>
-            ›
-          </Step>
+        <h1 className="text-title text-ink tabular-nums">{monthTitle(cursor)}</h1>
+        {lunarMonths.map((name) => (
+          <span
+            key={name}
+            data-lunar-month-name
+            className="inline-flex h-5.5 items-center rounded-key bg-hover px-2 text-meta text-muted"
+          >
+            {name}
+          </span>
+        ))}
+        <span className="ml-2 flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Previous month"
+            onClick={() => setCursor(shiftMonth(cursor, -1))}
+            className={ICON_BUTTON}
+          >
+            <BackIcon size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCursor(today)
+              if (picked) setDay(today)
+            }}
+            className={`${BUTTON.secondary} h-8`}
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            aria-label="Next month"
+            onClick={() => setCursor(shiftMonth(cursor, 1))}
+            className={ICON_BUTTON}
+          >
+            <ForwardIcon size={16} aria-hidden="true" />
+          </button>
         </span>
-        <span className="ml-auto">
-          <ViewTabs views={views} current={view} onPick={pickView} />
-        </span>
-      </div>
-
-      {failed && (
-        <p role="alert" className="mt-3 text-ui text-stop-t">
-          Some entries failed to load
-        </p>
-      )}
-
-      {key.length > 0 && (
-        <ul aria-label="Projects on this calendar" className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-          {key.map(([id, name]) => (
-            <li key={id} className="flex min-w-0 items-center gap-1.5 text-meta text-muted">
-              <span
-                aria-hidden="true"
-                data-key-mark
-                className={`h-3 w-[3px] shrink-0 ${rail(id)}`}
-              />
-              {name}
+        <ul aria-label="Key" className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          {LEGEND.map(({ label, swatch }) => (
+            <li key={label} className="flex items-center gap-1.5 text-meta text-muted">
+              <span aria-hidden="true" className={`size-2.5 rounded-[3px] ${swatch}`} />
+              {label}
             </li>
           ))}
         </ul>
-      )}
-
-      <div className="mt-4 min-w-0 overflow-hidden border border-line bg-panel">
-        <div className="grid grid-cols-7">
-          {WEEKDAYS.map((w) => (
-            <div key={w} className="px-2 py-1.5 text-meta text-subtle">
-              {w}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 border-t border-line">
-          {squares.map(({ day, inMonth }, i) => {
-            const entries = byDay.get(day) ?? []
-            const isToday = day === today
-            return (
-              <div
-                key={day}
-                aria-label={day}
-                data-day={day}
-                className={`group relative min-h-24 min-w-0 border-line p-1 ${
-                  i % 7 === 6 ? '' : 'border-r'
-                } ${i < squares.length - 7 ? 'border-b' : ''} ${inMonth ? '' : 'bg-ground'}`}
-              >
-                <div
-                  className={`px-1 text-meta tabular-nums ${
-                    isToday ? 'font-medium text-ink' : inMonth ? 'text-muted' : 'text-subtle'
-                  }`}
-                >
-                  {Number(day.slice(8))}
-                  {lunar.data?.[day] && (
-                    <span data-lunar-day className="ml-1.5 text-meta text-subtle">
-                      {lunar.data[day]}
-                    </span>
-                  )}
-                </div>
-                <ul className="flex flex-col">
-                  {entries.slice(0, PER_SQUARE).map((entry) => {
-                    const opens = providers.find((p) => p.moduleId === entry.moduleId)?.opens
-                    return (
-                      <li key={entry.key} className="min-w-0">
-                        <EntryLink
-                          entry={entry}
-                          onOpen={
-                            opens &&
-                            (() =>
-                              setParams((prev) => {
-                                const out = new URLSearchParams(prev)
-                                for (const [k, v] of Object.entries(opens.params(entry)))
-                                  out.set(k, v)
-                                return out
-                              }))
-                          }
-                        >
-                          {/* Kept with no project too, so every title starts at one x. */}
-                          <span
-                            aria-hidden="true"
-                            data-entry-mark
-                            className={`h-3 w-[3px] shrink-0 ${
-                              entry.projectId ? rail(entry.projectId) : ''
-                            }`}
-                          />
-                          {entry.time && (
-                            <span className="shrink-0 text-meta tabular-nums text-muted">
-                              {entry.time}
-                            </span>
-                          )}
-                          <span className="truncate text-meta text-ink">{entry.title}</span>
-                          {entry.projectName && (
-                            <span className="sr-only">, {entry.projectName}</span>
-                          )}
-                          {/* The zone it was agreed in, when that differs from the account's. */}
-                          {entry.zone && (
-                            <span className="shrink-0 text-meta text-subtle">{entry.zone}</span>
-                          )}
-                        </EntryLink>
-                      </li>
-                    )
-                  })}
-                  {entries.length > PER_SQUARE && (
-                    <li className="px-1 text-meta text-subtle">+{entries.length - PER_SQUARE}</li>
-                  )}
-                </ul>
-              </div>
-            )
-          })}
-        </div>
       </div>
 
+      {failed.length > 0 && (
+        <p role="alert" className="flex items-center gap-2 text-ui text-stop-t">
+          Some entries failed to load
+          <button
+            type="button"
+            onClick={() => failed.forEach((r) => r.retry())}
+            className={BUTTON.inline}
+          >
+            Try again
+          </button>
+        </p>
+      )}
+
+      <div
+        className={`grid min-h-0 flex-1 gap-3 ${resident ? 'grid-cols-[minmax(0,1fr)_420px]' : ''}`}
+      >
+        <div
+          className="grid min-w-0 grid-cols-7 overflow-hidden rounded-card border border-line bg-panel"
+          style={{
+            gridTemplateRows: `2rem repeat(${squares.length / 7}, minmax(7.5rem, 1fr))`,
+          }}
+        >
+          {WEEKDAYS.map((w, i) => (
+            <span
+              key={w}
+              className={`flex items-center border-b border-line px-3 text-meta font-medium text-subtle ${
+                i < 6 ? 'border-r' : ''
+              }`}
+            >
+              {w}
+            </span>
+          ))}
+          {squares.map(({ day, inMonth }, i) => (
+            <Square
+              key={day}
+              day={day}
+              inMonth={inMonth}
+              isToday={day === today}
+              chosen={day === chosen}
+              last={{ column: i % 7 === 6, row: i >= squares.length - 7 }}
+              lunar={lunarSquareName(lunar.data?.days[day], lunar.data?.festivals[day])}
+              entries={byDay.get(day) ?? []}
+              today={today}
+              onPick={() => setDay(day)}
+              opener={opener}
+            />
+          ))}
+        </div>
+        {resident && panel && (
+          <aside
+            aria-label={longDay(chosen)}
+            className="min-w-0 self-start overflow-hidden rounded-card border border-line bg-panel"
+          >
+            {panel}
+          </aside>
+        )}
+      </div>
+
+      {!resident && panel && (
+        <DetailPane label={longDay(chosen)} onClose={() => setDay(null)}>
+          {panel}
+        </DetailPane>
+      )}
       {providers.map(({ moduleId, opens }) => opens && <opens.Pane key={moduleId} />)}
+    </div>
+  )
+}
+
+function Square({
+  day,
+  inMonth,
+  isToday,
+  chosen,
+  last,
+  lunar,
+  entries,
+  today,
+  onPick,
+  opener,
+}: {
+  day: string
+  inMonth: boolean
+  isToday: boolean
+  chosen: boolean
+  last: { column: boolean; row: boolean }
+  lunar: ReturnType<typeof lunarSquareName>
+  entries: Placed[]
+  today: string
+  onPick: () => void
+  opener: (entry: Placed) => (() => void) | null
+}) {
+  const parts = dayParts(entries)
+  const lines = squareLines(parts)
+  // Clicking anywhere on a square chooses its day, except on a line, which opens its thing; the
+  // day's number is the button that does it from the keyboard.
+  return (
+    <div
+      data-day={day}
+      onClick={onPick}
+      className={`flex min-h-0 min-w-0 cursor-default flex-col gap-1 overflow-hidden px-2.5 py-2 ${
+        last.column ? '' : 'border-r'
+      } ${last.row ? '' : 'border-b'} border-line ${inMonth ? '' : 'bg-chrome'} ${
+        chosen ? 'shadow-[inset_0_0_0_2px_var(--color-ink)]' : ''
+      }`}
+    >
+      <div className={`mb-0.5 flex items-baseline justify-between ${inMonth ? '' : 'opacity-55'}`}>
+        <button
+          type="button"
+          aria-label={longDay(day)}
+          aria-pressed={chosen}
+          aria-current={isToday ? 'date' : undefined}
+          className="text-prose font-medium tabular-nums text-ink"
+        >
+          <span
+            className={
+              isToday ? `inline-grid h-6.5 min-w-6.5 place-items-center rounded-full ${CHOSEN}` : ''
+            }
+          >
+            {!inMonth && day.endsWith('-01') ? monthDay(day) : Number(day.slice(8))}
+          </span>
+        </button>
+        {lunar && (
+          <span
+            data-lunar-day
+            className={`text-meta ${
+              lunar.is === 'festival'
+                ? 'font-medium text-person-t'
+                : lunar.is === 'month'
+                  ? 'font-medium text-ink'
+                  : 'text-subtle'
+            }`}
+          >
+            {lunar.text}
+          </span>
+        )}
+      </div>
+      {lines.slice(0, PER_SQUARE).map((entry) => (
+        <Line key={entry.key} entry={entry} today={today} open={opener(entry)} />
+      ))}
+      {lines.length > PER_SQUARE && (
+        <span className="pl-1.5 text-meta text-subtle">{`+${lines.length - PER_SQUARE} more`}</span>
+      )}
+      {parts.planned.length > 0 && (
+        <span data-planned className="pl-1.5 text-meta text-subtle">
+          {`${parts.planned.length} planned`}
+        </span>
+      )}
+    </div>
+  )
+}
+
+/** How a line looks, by what its date is to the thing: late is red, due today amber. */
+function lineLook(entry: Placed, today: string): { tone: string; icon: ReactNode } {
+  const late = entry.day < today
+  const icon = (Icon: typeof FlagIcon) => <Icon size={12} aria-hidden="true" />
+  switch (entry.kind) {
+    case 'occurrence':
+      return {
+        tone: `${KIND_TINT.meeting} ${KIND_ON_TINT.meeting}`,
+        icon: icon(KIND_ICON.meeting),
+      }
+    case 'follow-up':
+      return {
+        tone: late
+          ? 'bg-stop-bg text-stop-t'
+          : `${KIND_TINT.communication} ${KIND_ON_TINT.communication}`,
+        icon: icon(KIND_ICON.communication),
+      }
+    case 'birthday':
+      return { tone: `${KIND_TINT.person} ${KIND_ON_TINT.person}`, icon: icon(CakeIcon) }
+    default:
+      return {
+        tone: late
+          ? 'bg-stop-bg text-stop-t'
+          : entry.day === today
+            ? 'bg-warn-bg text-warn-t'
+            : 'bg-hover text-muted',
+        icon: icon(FlagIcon),
+      }
+  }
+}
+
+/** One thing on a square: its mark, a meeting's time, its name, its project's square. */
+function Line({ entry, today, open }: { entry: Placed; today: string; open: (() => void) | null }) {
+  const projects = useEveryProject()
+  const project = entry.projectId ? projects.data?.find((p) => p.id === entry.projectId) : null
+  const look = lineLook(entry, today)
+  const className = `grid h-6 min-w-0 shrink-0 grid-cols-[12px_auto_minmax(0,1fr)_auto] items-center gap-x-1.5 rounded-key px-1.5 text-left text-meta font-medium hover:brightness-95 ${look.tone}`
+  const stop = (e: MouseEvent) => e.stopPropagation()
+  const body = (
+    <>
+      {look.icon}
+      <span className="font-mono tabular-nums">{entry.kind === 'occurrence' && entry.time}</span>
+      <span className="truncate">
+        {entry.title}
+        {/* The zone it was agreed in, when that is not the account's: whose time it is. */}
+        {entry.zone && <span className="font-normal"> {entry.zone}</span>}
+      </span>
+      {project ? <ProjectSquare project={project} /> : <span />}
+      {entry.projectName && <span className="sr-only">, {entry.projectName}</span>}
     </>
   )
-}
-
-/** A button when the entry's module opens it here, a link when the thing lives elsewhere. */
-function EntryLink({
-  entry,
-  onOpen,
-  children,
-}: {
-  entry: ShownEntry
-  onOpen: (() => void) | undefined
-  children: ReactNode
-}) {
-  const title = [entry.label, entry.title, entry.projectName].filter(Boolean).join(' · ')
-  const className =
-    'flex w-full min-w-0 items-center gap-1 rounded-control px-1 py-0.5 text-left hover:bg-hover'
-  return onOpen ? (
-    <button type="button" onClick={onOpen} title={title} className={className}>
-      {children}
-    </button>
-  ) : (
-    <Link to={entry.to} title={title} className={className}>
-      {children}
-    </Link>
-  )
-}
-
-function Step({
-  label,
-  onClick,
-  children,
-}: {
-  label: string
-  onClick: () => void
-  children: string
-}) {
-  return (
+  return open ? (
     <button
       type="button"
-      aria-label={label}
-      onClick={onClick}
-      className="flex h-8 min-w-8 items-center justify-center rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
+      data-entry={entry.kind}
+      title={entry.title}
+      onClick={(e) => {
+        stop(e)
+        open()
+      }}
+      className={className}
     >
-      {children}
+      {body}
     </button>
+  ) : (
+    <Link
+      to={entry.to}
+      data-entry={entry.kind}
+      title={entry.title}
+      onClick={stop}
+      className={className}
+    >
+      {body}
+    </Link>
   )
 }

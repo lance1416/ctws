@@ -34,6 +34,17 @@ describe('GET /calendar/days', () => {
     })
   })
 
+  it('names the festivals in the window, and only on their days', async () => {
+    const ctx = await setup()
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/calendar/days?from=2026-10-17&to=2026-10-19',
+      headers: ctx.authed,
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json().festivals).toEqual({ '2026-10-18': '重阳' })
+  })
+
   it('bounds the window by the same rule as the other calendar reads', async () => {
     const ctx = await setup()
     const res = await ctx.app.inject({
