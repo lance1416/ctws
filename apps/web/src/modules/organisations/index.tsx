@@ -12,6 +12,10 @@ import { ORGANISATIONS_ID } from './logic/id'
 import { Organisation, OrganisationEdit, OrganisationNew } from './pages/Organisation'
 import { OrganisationsOverview } from './pages/OrganisationsOverview'
 
+// For other modules: a message names organisations among those it was with.
+export { OrganisationMark } from './components/OrganisationMark'
+export { useOrganisations } from './hooks/useOrganisations'
+
 const PAGE = topPage('Organisations')
 
 /**

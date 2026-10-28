@@ -12,10 +12,13 @@ export function DayPickButton({
   label,
   today,
   onPick,
+  text,
 }: {
   label: string
   today: string
   onPick: (day: string) => void
+  /** Words on the button in place of the calendar ("Later"), framed as a row's small action. */
+  text?: string
 }) {
   const [open, setOpen] = useState(false)
   const [month, setMonth] = useState(monthOf(today))
@@ -40,15 +43,27 @@ export function DayPickButton({
         }
       }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        aria-label={label}
-        aria-expanded={open}
-        className={`${ICON_BUTTON} size-6.5`}
-      >
-        <PLACE_ICON.calendar size={14} aria-hidden="true" />
-      </button>
+      {text ? (
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-label={label}
+          aria-expanded={open}
+          className="inline-flex h-7 items-center rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover"
+        >
+          {text}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-label={label}
+          aria-expanded={open}
+          className={`${ICON_BUTTON} size-6.5`}
+        >
+          <PLACE_ICON.calendar size={14} aria-hidden="true" />
+        </button>
+      )}
       {open && (
         <div
           className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 w-80 rounded-block bg-float p-2 shadow-float`}

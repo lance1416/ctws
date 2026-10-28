@@ -14,6 +14,7 @@ describe('this workspace', () => {
       'people',
       'organisations',
       'meetings',
+      'communication',
     ])
   })
 })
@@ -51,6 +52,7 @@ describe('the kinds of thing', () => {
       'People',
       'Organisations',
       'Meetings',
+      'Communication',
       'Reading',
     ])
   })

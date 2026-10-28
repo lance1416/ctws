@@ -16,7 +16,7 @@ import { Workbench } from '../shell/workbench'
 import { registry } from './registry'
 
 /** The modules on the bar whose pages are still to come (EPIC-12). */
-const PLACEHOLDERS = ['communication', 'notes']
+const PLACEHOLDERS = ['notes']
 
 export const router = createBrowserRouter([
   {

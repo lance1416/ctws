@@ -1,5 +1,6 @@
 import type { WorkspaceModule } from '../shell/contract'
 import { meetingModule } from '../modules/meetings'
+import { communicationModule } from '../modules/communication'
 import { organisationModule } from '../modules/organisations'
 import { peopleModule } from '../modules/people'
 import { readingModule } from '../modules/reading'
@@ -12,4 +13,5 @@ export const MODULES: readonly WorkspaceModule[] = Object.freeze([
   peopleModule,
   organisationModule,
   meetingModule,
+  communicationModule,
 ])

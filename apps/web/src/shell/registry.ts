@@ -30,7 +30,6 @@ import { useTimeZone } from './auth/useMe'
 import { said } from './calendar/said'
 import { linkKeys } from './links/api'
 import { timelineKeys } from './timeline/Timeline'
-import { CommunicationFact } from './links/ShellFacts'
 import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
 import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
@@ -41,14 +40,7 @@ const SHELL_CHORDS: Chord[] = [
   { id: 'workbench', key: 'w', label: 'Workbench', resolve: () => WORKBENCH_PATH, order: 5 },
   { id: 'calendar', key: 'c', label: 'Calendar', resolve: () => '/calendar', order: 15 },
   { id: 'projects', key: 'p', label: 'Projects', resolve: () => '/projects', order: 25 },
-  // Their modules come in phase 3; the bar and the keys already lead to their places.
-  {
-    id: 'communication',
-    key: 'x',
-    label: 'Communication',
-    resolve: () => '/communication',
-    order: 45,
-  },
+  // Its module comes in phase 3; the bar and the keys already lead to its place.
   { id: 'notes', key: 'n', label: 'Notes', resolve: () => '/notes', order: 55 },
 ]
 
@@ -67,21 +59,11 @@ const PROJECTS_KIND: KindEntry = {
 
 const SHELL_RELATIONS: RelationContribution[] = [
   { type: 'project', kind: 'Project', plural: 'Projects', to: (id) => `/projects/${id}` },
-  {
-    type: 'communication',
-    kind: 'Communication',
-    plural: 'Communication',
-    to: (id) => `/communication/${id}`,
-    Fact: CommunicationFact,
-  },
   { type: 'note', kind: 'Note', plural: 'Notes', to: (id) => `/notes/${id}` },
 ]
 
-/** The kinds whose modules come in phase 3: `N` and the menu already lead to their places. */
-const SHELL_CREATES: Creator[] = [
-  { kind: 'communication', key: 'x', label: 'Communication', to: '/communication' },
-  { kind: 'note', key: 'n', label: 'Note', to: '/notes' },
-]
+/** The kind whose module comes in phase 3: `N` and the menu already lead to its place. */
+const SHELL_CREATES: Creator[] = [{ kind: 'note', key: 'n', label: 'Note', to: '/notes' }]
 
 /** What the app, not the shell, decides about its modules. */
 export type ShellConfig = {

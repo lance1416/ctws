@@ -53,6 +53,8 @@ const elements = (app) =>
 const MODULE_EDGES = [
   ['meetings', 'people'],
   ['people', 'organisations'],
+  ['communication', 'people'],
+  ['communication', 'organisations'],
 ]
 
 const element = (type, more = {}) => ({ element: { type, ...more } })

@@ -58,11 +58,13 @@ import {
   MapPin,
   Mail,
   Mailbox,
+  MessageSquare,
   MessagesSquare,
   Moon,
   PanelLeftOpen,
   PanelRight,
   Pencil,
+  Phone,
   Plus,
   RotateCcwClock,
   RotateCw,
@@ -185,6 +187,15 @@ export const ContactIcon = Mail
 export const PlacesIcon = MapPin
 /** An organisation's kind, beside its name (FR-065): "Law firm". */
 export const TypeIcon = Tag
+
+/** How a message went (FR-048): its channel, on the form's buttons. */
+export const CHANNEL_ICON = {
+  email: Mail,
+  call: Phone,
+  message: MessageSquare,
+  in_person: UsersRound,
+  other: Ellipsis,
+} as const satisfies Record<string, IconComponent>
 
 /** When a reminder comes: "3 days before". */
 export const RemindIcon = Bell
