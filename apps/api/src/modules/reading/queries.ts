@@ -21,16 +21,37 @@ import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/pag
 
 type ReadingItem = typeof readingItems.$inferSelect
 
-/** An item with the name of the project it is filed under. */
-export type ReadingItemRow = ReadingItem & { projectName: string | null }
+/** An item with the name of the project it is filed under, and since when it is as it is. */
+export type ReadingItemRow = ReadingItem & { projectName: string | null; statusSince: Date }
 
-const withProject = { item: readingItems, projectName: projectNameSql(readingItems.projectId) }
+/**
+ * When the item last took the status it has (FR-072, FR-073): "Since Sep 30" on a card, started
+ * and finished on its page. Its log says; one never changed has had its status since it was added.
+ * Correlated through the literal `reading_items`: a drizzle column would render unqualified.
+ */
+const statusSinceSql = sql<string | null>`(
+  select max(e.occurred_at) from events e
+  where e.object_type = 'reading' and e.object_id = reading_items.id
+    and e.type = 'field_changed' and e.payload->>'field' = 'status'
+    and e.payload->>'to' = reading_items.status
+)`
+
+const withProject = {
+  item: readingItems,
+  projectName: projectNameSql(readingItems.projectId),
+  statusSince: statusSinceSql,
+}
 
 // A deleted project is kept on the row for history, but the page names only a live one.
-const rowOf = (r: { item: ReadingItem; projectName: string | null }): ReadingItemRow => ({
+const rowOf = (r: {
+  item: ReadingItem
+  projectName: string | null
+  statusSince: string | Date | null
+}): ReadingItemRow => ({
   ...r.item,
   projectId: r.projectName === null ? null : r.item.projectId,
   projectName: r.projectName,
+  statusSince: r.statusSince === null ? r.item.createdAt : new Date(r.statusSince),
 })
 
 /** Items filed under no project, or under one that is gone. */

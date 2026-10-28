@@ -22,6 +22,7 @@ export function toReadingItemResponse(
         : null,
     fetchedTitle: r.fetchedTitle,
     fetchedSummary: r.fetchedSummary,
+    statusSince: r.statusSince.toISOString(),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }

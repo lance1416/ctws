@@ -71,6 +71,8 @@ export const readingItemResponse = z.object({
   /** What the page itself says, kept apart from `title`; a title someone typed wins. */
   fetchedTitle: z.string().nullable(),
   fetchedSummary: z.string().nullable(),
+  /** When it took the status it has: started reading, finished, set aside (FR-072, FR-073). */
+  statusSince: instant,
   createdAt: instant,
   updatedAt: instant,
 })

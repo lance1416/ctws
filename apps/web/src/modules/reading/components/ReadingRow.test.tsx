@@ -17,6 +17,7 @@ const item = (over: Partial<ReadingItemResponse> = {}): ReadingItemResponse => (
   recommendedBy: null,
   fetchedTitle: null,
   fetchedSummary: null,
+  statusSince: '2026-10-10T09:00:00Z',
   createdAt: '2026-10-10T09:00:00Z',
   updatedAt: '2026-10-10T09:00:00Z',
   ...over,
