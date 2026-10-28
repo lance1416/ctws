@@ -7,7 +7,7 @@ import { useTimeZone } from '../../../shell/auth'
 import { isFinished } from '../logic/status'
 import { treeDue } from '../logic/tree/treeDue'
 import { CHIP, DUE_TONE } from './board/BoardCard'
-import { StatusMark } from './StatusMark'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 
 /**
  * A task on a person's page (artboard 5): its status, its title, and when, its deadline as the

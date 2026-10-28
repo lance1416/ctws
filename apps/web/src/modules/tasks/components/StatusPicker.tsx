@@ -2,8 +2,8 @@ import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import { ExpandIcon } from '../../../platform/ui/icons'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useState } from 'react'
-import { STATUS_LABEL } from '../logic/status'
-import { StatusMark } from './StatusMark'
+import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 
 /**

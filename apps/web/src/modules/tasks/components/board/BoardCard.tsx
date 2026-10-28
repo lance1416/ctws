@@ -6,7 +6,7 @@ import { waitingOn } from '../../logic/blockedLabel'
 import type { BoardCard as Card } from '../../logic/board/boardColumns'
 import { isFinished } from '../../logic/status'
 import { treeDue } from '../../logic/tree/treeDue'
-import { StatusMark } from '../StatusMark'
+import { StatusMark } from '../../../../platform/ui/StatusMark'
 import { WaitingBadge } from '../TaskRowParts'
 
 /** A date on a card: the deadline, the plan, a follow-up. */

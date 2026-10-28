@@ -8,9 +8,9 @@ import {
   ExpandIcon,
 } from '../../../../platform/ui/icons'
 import type { BoardCard, ShownGroup } from '../../logic/board/boardColumns'
-import { STATUS_LABEL } from '../../logic/status'
+import { STATUS_LABEL } from '../../../../platform/ui/StatusMark'
 import { ProgressSquare } from '../ProgressSquare'
-import { StatusMark } from '../StatusMark'
+import { StatusMark } from '../../../../platform/ui/StatusMark'
 
 /** A column the dragged card is over: its grey goes to `select`, laid over it. */
 const OVER = 'shadow-[inset_0_0_0_100vmax_var(--color-select)]'

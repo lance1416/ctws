@@ -1,5 +1,13 @@
 import type { TaskStatus } from '@ctws/contracts'
-import { STATUS_LABEL } from '../logic/status'
+
+/** A task's status in words: the mark's name, a picker's choices. */
+export const STATUS_LABEL: Record<TaskStatus, string> = {
+  backlog: 'Backlog',
+  todo: 'To do',
+  in_progress: 'In progress',
+  done: 'Done',
+  cancelled: 'Cancelled',
+}
 
 /**
  * A task's status by shape, never by hue alone. Every part is always drawn and fades or scales in,

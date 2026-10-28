@@ -7,7 +7,7 @@ import { nearDay, shortDay, ymd } from '../../../platform/time/dates'
 import { FlagIcon } from '../../../platform/ui/icons'
 import { useNow } from '../../../platform/time/useNow'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
-import { StatusMark } from './StatusMark'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 
 /** One project's movement: what is late, what is next, when it last moved. */
 function useMoved(projectId: ProjectId) {

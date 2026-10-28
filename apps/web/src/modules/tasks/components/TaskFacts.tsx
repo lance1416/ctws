@@ -1,6 +1,6 @@
 import type { LinkCandidate } from '@ctws/contracts'
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
-import { StatusMark } from './StatusMark'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 
 /** A task listed among things of every kind: its status, in the first column. */
 export function TaskMark({ thing }: { thing: LinkCandidate }) {

@@ -5,7 +5,7 @@ import { isFinished } from '../logic/status'
 import { flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
 import { ProgressSquare } from './ProgressSquare'
-import { StatusMark } from './StatusMark'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 import { useTaskParam } from './tree/useTreeParams'
 
 /** How far the outline sits in under its project's row, and each level further. */

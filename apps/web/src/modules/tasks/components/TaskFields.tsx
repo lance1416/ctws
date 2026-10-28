@@ -4,8 +4,8 @@ import type { UseFormRegisterReturn } from 'react-hook-form'
 import { addDays } from '@ctws/core/day'
 import { nextMonday } from '../../../platform/time/dates'
 import { decision, label, STATUS_CHIP, decisionTight } from '../../../platform/ui/formStyles'
-import { STATUS_LABEL } from '../logic/status'
-import { StatusMark } from './StatusMark'
+import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
 
 // Fields the pane's form and the New task dialog both draw; each form keeps its own values.

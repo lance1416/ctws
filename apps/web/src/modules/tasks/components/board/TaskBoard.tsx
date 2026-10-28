@@ -37,7 +37,7 @@ import {
   SIDE_STATUSES,
 } from '../../logic/board/boardColumns'
 import { cardBeside, statusBeside, type ShownColumn } from '../../logic/board/boardKeys'
-import { STATUS_LABEL } from '../../logic/status'
+import { STATUS_LABEL } from '../../../../platform/ui/StatusMark'
 import { leafCounts } from '../../logic/tree/leafCounts'
 import { TaskDetail } from '../TaskDetail'
 import { useTaskParam } from '../tree/useTreeParams'

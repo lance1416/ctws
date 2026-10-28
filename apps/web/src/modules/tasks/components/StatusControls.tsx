@@ -1,6 +1,6 @@
 import { isFinished } from '../logic/status'
 import type { TaskStatus } from '@ctws/contracts'
-import { StatusMark } from './StatusMark'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 
 /**
  * The status mark as a control: one click finishes the task, or restores a finished one. Out of

@@ -1,5 +1,5 @@
 import type { ChildCounts, TaskStatus } from '@ctws/contracts'
-import { STATUS_LABEL } from '../logic/status'
+import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
 
 /** What the square shows: a quarter step of what is done, or how it all ended (artboard 32). */
 type Fill = 0 | 25 | 50 | 75 | 'check' | 'x' | 'dash'
