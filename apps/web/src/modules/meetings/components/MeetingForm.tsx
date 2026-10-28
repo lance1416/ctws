@@ -83,7 +83,7 @@ export function MeetingForm({
           </Field>
           <Field label="Repeats">
             <RepeatPicker
-              startsLocal={meeting.startsLocal}
+              startsLocal={values.startsLocal}
               today={today}
               value={values.rule}
               stored

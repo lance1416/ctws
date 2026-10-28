@@ -1,9 +1,10 @@
 import type { PersonId } from '@ctws/contracts'
+import { useEffect } from 'react'
 import { usePeople } from '../../people'
 import { Button } from '../../../platform/ui/Button'
 import { PickMany, PickOne } from '../../../platform/ui/inline'
 import { useNow } from '../../../platform/time/useNow'
-import { repeatChoices, repeatLabel } from '../api'
+import { followStart, repeatChoices, repeatLabel } from '../api'
 import { cityAndZone, ZONES } from '../logic/timeZones'
 
 // Bare controls shared by New meeting and the pane's form; label and layout are the caller's.
@@ -62,6 +63,11 @@ export function RepeatPicker({
   onPick: (rule: string | null) => void
 }) {
   const choices = repeatChoices(startsLocal)
+  // A new start day moves the kind chosen with it: Weekly on Wednesday becomes Weekly on Thursday.
+  const moved = followStart(value, startsLocal)
+  useEffect(() => {
+    if (moved !== value) onPick(moved)
+  }, [moved, value, onPick])
   const kept = stored && value !== null && !choices.some((c) => c.value === value)
   return (
     <PickOne

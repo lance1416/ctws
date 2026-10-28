@@ -1,6 +1,6 @@
 import { ruleEndDay } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { repeatChoices, repeatLabel, withUntil } from './api'
+import { followStart, repeatChoices, repeatLabel, withUntil } from './api'
 
 /** A Tuesday, so the weekly choices are named after it. */
 const TUESDAY = '2026-10-20T09:00'
@@ -94,5 +94,27 @@ describe('until', () => {
     expect(repeatLabel(rule, TUESDAY, '2026-10-10')).toBe('Weekly on Tuesday, until Dec 31')
     expect(repeatLabel(rule, TUESDAY, '2027-01-04')).toBe('Weekly on Tuesday, until Dec 31, 2026')
     expect(repeatLabel(rule, TUESDAY, '2025-12-30')).toBe('Weekly on Tuesday, until Dec 31, 2026')
+  })
+})
+
+describe('followStart', () => {
+  /** The Thursday after, so a moved rule is named after it. */
+  const THURSDAY = '2026-10-22T09:00'
+
+  it('keeps the kind chosen, moved to the new start day', () => {
+    expect(followStart('FREQ=WEEKLY;BYDAY=TU', THURSDAY)).toBe('FREQ=WEEKLY;BYDAY=TH')
+    expect(followStart('FREQ=WEEKLY;INTERVAL=2;BYDAY=TU', THURSDAY)).toBe(
+      'FREQ=WEEKLY;INTERVAL=2;BYDAY=TH',
+    )
+    expect(followStart('FREQ=MONTHLY;BYMONTHDAY=20', THURSDAY)).toBe('FREQ=MONTHLY;BYMONTHDAY=22')
+    expect(repeatLabel(followStart('FREQ=WEEKLY;BYDAY=TU', THURSDAY), THURSDAY, TODAY)).toBe(
+      'Weekly on Thursday',
+    )
+  })
+
+  it('leaves alone what does not hang on the start day', () => {
+    expect(followStart(null, THURSDAY)).toBeNull()
+    expect(followStart('FREQ=DAILY', THURSDAY)).toBe('FREQ=DAILY')
+    expect(followStart('FREQ=WEEKLY;BYDAY=TU,TH', THURSDAY)).toBe('FREQ=WEEKLY;BYDAY=TU,TH')
   })
 })

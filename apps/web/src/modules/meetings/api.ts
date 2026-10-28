@@ -324,6 +324,19 @@ const WEEKDAY_NAMES = [
 ] as const
 
 /** The choices for a meeting starting on `startsLocal`, named after the day it falls on. */
+/**
+ * A rule the menu offers, moved to the day the meeting now starts on: the same kind of repeat
+ * (weekly, every other week, monthly), named after the new day. Any other rule is kept as it is.
+ */
+export function followStart(rule: string | null, startsLocal: string): string | null {
+  if (rule === null) return null
+  const [, , weekly, everyOther, monthly] = repeatChoices(startsLocal).map((c) => c.value)
+  if (/^FREQ=WEEKLY;BYDAY=[A-Z]{2}$/.test(rule)) return weekly ?? rule
+  if (/^FREQ=WEEKLY;INTERVAL=2;BYDAY=[A-Z]{2}$/.test(rule)) return everyOther ?? rule
+  if (/^FREQ=MONTHLY;BYMONTHDAY=\d+$/.test(rule)) return monthly ?? rule
+  return rule
+}
+
 export function repeatChoices(startsLocal: string): RepeatChoice[] {
   const [date] = startsLocal.split('T') as [string]
   const [y, m, d] = date.split('-').map(Number) as [number, number, number]

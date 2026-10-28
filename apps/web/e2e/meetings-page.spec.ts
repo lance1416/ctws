@@ -514,3 +514,38 @@ test('a task made from a meeting is under Tasks from these meetings', async ({ p
     'Send the launch brief',
   )
 })
+
+test('the repeat chosen follows a new start day, and the menu says which is chosen', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto('/meetings')
+  await page.getByRole('main').getByRole('button', { name: 'New meeting' }).click()
+  await dialog(page).getByLabel('Title').fill('Weekly sync')
+  // A Tuesday, then the Thursday of that week: fixed days, so no run hangs on the clock.
+  await dialog(page).getByLabel('Date').fill('2027-01-05')
+  await dialog(page).getByLabel('Start time').fill('10:00')
+  await pickOne(dialog(page), 'Repeats', 'Every other Tuesday')
+  await dialog(page).getByLabel('Date').fill('2027-01-07')
+  const repeats = dialog(page).getByRole('button', { name: /^Repeats/ })
+  await expect(repeats).toHaveAccessibleName('Repeats: Every other Thursday')
+
+  // The current choice is checked, for a screen reader too, not only marked "Current".
+  await repeats.click()
+  await expect(page.getByRole('menuitemradio', { name: 'Every other Thursday' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
+  await expect(page.getByRole('menuitemradio', { name: 'Daily' })).toHaveAttribute(
+    'aria-checked',
+    'false',
+  )
+  await page.keyboard.press('Escape')
+
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && /\/api\/v1\/meetings$/.test(r.url()),
+  )
+  await dialog(page).getByRole('button', { name: 'Create' }).click()
+  const body = (await made).request().postDataJSON() as Record<string, unknown>
+  expect(body.rrule).toBe('FREQ=WEEKLY;INTERVAL=2;BYDAY=TH')
+})
