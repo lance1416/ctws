@@ -141,6 +141,8 @@ test.describe('from the keyboard', () => {
       '-1',
     )
 
+    // No line inside the grid takes a Tab of its own (BUG-057).
+    await expect(page.locator('[data-day] [data-entry]:not([tabindex="-1"])')).toHaveCount(0)
     await today.focus()
     await page.keyboard.press('ArrowRight')
     await expect(page).toHaveURL(/day=2026-10-23/)

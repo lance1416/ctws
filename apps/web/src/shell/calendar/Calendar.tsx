@@ -442,6 +442,8 @@ function Line({ entry, today, open }: { entry: Placed; today: string; open: (() 
   return open ? (
     <button
       type="button"
+      // The grid is one Tab stop (BUG-057): from the keyboard, Enter opens the day, which lists it.
+      tabIndex={-1}
       data-entry={entry.kind}
       title={entry.title}
       onClick={(e) => {
@@ -455,6 +457,7 @@ function Line({ entry, today, open }: { entry: Placed; today: string; open: (() 
   ) : (
     <Link
       to={entry.to}
+      tabIndex={-1}
       data-entry={entry.kind}
       title={entry.title}
       onClick={stop}
