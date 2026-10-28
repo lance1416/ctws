@@ -6,6 +6,7 @@ import { Block } from '../../platform/ui/Block'
 import { useColumns } from '../../platform/ui/columns'
 import { KIND_ICON, MusicIcon, WeatherIcon } from '../../platform/ui/icons'
 import { useTimeZone } from '../auth'
+import { MovedPrompt } from '../account'
 import { useRegistry } from '../registry'
 import { arrangement, type Place } from './arrangement'
 import { FixedPlaces } from './fit'
@@ -41,6 +42,7 @@ export function Workbench() {
         </h1>
         <span className="font-mono text-prose text-muted tabular-nums">{clockTime(now, zone)}</span>
       </div>
+      <MovedPrompt />
       <FixedPlaces.Provider value={columns > 1}>
         <div data-workbench-columns={columns} className="grid flex-1 gap-3" style={grid}>
           {places.map(({ place, style }) => {
