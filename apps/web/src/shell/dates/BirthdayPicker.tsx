@@ -1,5 +1,5 @@
 import { HOUR_BRANCHES, LUNAR_DAYS, LUNAR_MONTHS } from '@ctws/core'
-import { radioKeys } from '../../platform/ui/radioKeys'
+import { radioKeys } from '../../platform/ui/choiceKeys'
 import { useEffect, useState, type ReactNode } from 'react'
 import { KIND_ICON, NewIcon } from '../../platform/ui/icons'
 import { boxed } from '../../platform/ui/formStyles'

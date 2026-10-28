@@ -1,4 +1,4 @@
-import { radioKeys } from './radioKeys'
+import { radioKeys, tabKeys } from './choiceKeys'
 import type { IconComponent } from './icons'
 
 type Segment = {
@@ -11,7 +11,8 @@ type Segment = {
 
 /**
  * A SEGMENTED SWITCH between a few views of one thing (artboard 8: Tree and Board): the views sit
- * on one grey track, the current one raised on the panel. Tabs to a screen reader, as it is.
+ * on one grey track, the current one raised on the panel. Tabs to a screen reader, as it is,
+ * each naming what it shows (`controls`); one Tab stop, the arrows switching (DES-001 section 4).
  */
 export function Segmented({
   label,
@@ -19,6 +20,7 @@ export function Segmented({
   current,
   onPick,
   picks = false,
+  controls,
 }: {
   label: string
   segments: readonly Segment[]
@@ -29,12 +31,14 @@ export function Segmented({
    * Tab stop, the arrows picking as they move (DES-001 section 4).
    */
   picks?: boolean
+  /** The id of what the tabs switch, for a switch of views. */
+  controls?: string
 }) {
   return (
     <span
       role={picks ? 'radiogroup' : 'tablist'}
       aria-label={label}
-      onKeyDown={picks ? radioKeys : undefined}
+      onKeyDown={picks ? radioKeys : tabKeys}
       className="inline-flex rounded-card bg-hover p-0.5"
     >
       {segments.map(({ id, label: name, icon: Icon, unavailable }) => (
@@ -44,7 +48,11 @@ export function Segmented({
           role={picks ? 'radio' : 'tab'}
           {...(picks
             ? { 'aria-checked': id === current, tabIndex: id === current ? 0 : -1 }
-            : { 'aria-selected': id === current })}
+            : {
+                'aria-selected': id === current,
+                tabIndex: id === current ? 0 : -1,
+                ...(controls ? { 'aria-controls': controls } : {}),
+              })}
           // Not `disabled`: a disabled button never hears the hover that would say why.
           aria-disabled={unavailable ? true : undefined}
           title={typeof unavailable === 'string' ? unavailable : undefined}

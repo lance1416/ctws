@@ -44,6 +44,7 @@ import { useTaskParam } from '../tree/useTreeParams'
 import { useRowPane, useRowRefs } from '../useRowPane'
 import { BoardCard, CardFace } from './BoardCard'
 import { BoardColumn, BoardStrip } from './BoardColumn'
+import { BOARD_ID } from './boardId'
 import { StageBoard } from './StageBoard'
 import { useBoardFolds } from './useBoardFolds'
 
@@ -98,6 +99,7 @@ export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: React
           },
         ]}
         current={byStage ? 'stage' : 'status'}
+        controls={BOARD_ID}
         onPick={(id) =>
           setParams((prev) => {
             const next = new URLSearchParams(prev)
@@ -295,6 +297,7 @@ function Board({
               { id: 'all', label: 'All' },
             ]}
             current={allDone ? 'all' : 'week'}
+            controls={BOARD_ID}
             onPick={(id) => setAllDone(id === 'all')}
           />
         </span>
@@ -322,6 +325,7 @@ function Board({
         {/* At least 240 a column (DES-001 v1.21): what does not fit scrolls sideways in here,
             never the page. */}
         <div
+          id={BOARD_ID}
           data-board
           onKeyDown={onKeyDown}
           className="flex min-w-0 gap-3 max-md:flex-col md:overflow-x-auto md:pb-1"

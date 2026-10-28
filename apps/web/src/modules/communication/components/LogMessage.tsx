@@ -1,4 +1,4 @@
-import { radioKeys } from '../../../platform/ui/radioKeys'
+import { radioKeys } from '../../../platform/ui/choiceKeys'
 import {
   CHANNELS,
   FOLLOW_UP_DAYS,

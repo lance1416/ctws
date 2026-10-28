@@ -49,6 +49,7 @@ import { OrganisationMark } from '../TaskRowParts'
 import { useTaskParam } from '../tree/useTreeParams'
 import { useRowPane, useRowRefs } from '../useRowPane'
 import { CHIP, DateChip } from './BoardCard'
+import { BOARD_ID } from './boardId'
 import { EditStages } from './EditStages'
 
 const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const
@@ -203,6 +204,7 @@ export function StageBoard({
         }}
       >
         <div
+          id={BOARD_ID}
           data-board="stage"
           onKeyDown={onKeyDown}
           // At least 240 a column (DES-001 v1.21), scrolling sideways in here, not the page.

@@ -48,6 +48,19 @@ test('the head is the square and name, the views, New and More (FR-053)', async 
   const views = header(page).getByRole('tablist', { name: 'View' })
   await expect(views.getByRole('tab', { name: 'Tree' })).toHaveAttribute('aria-selected', 'true')
   await expect(views.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'false')
+  // One Tab stop for the switch, and each tab names what it switches (BUG-061).
+  await expect(views.getByRole('tab', { name: 'Board' })).toHaveAttribute('tabindex', '-1')
+  const shown = await views.getByRole('tab', { name: 'Tree' }).getAttribute('aria-controls')
+  await expect(page.locator(`[id="${shown!}"]`)).toBeVisible()
+  await views.getByRole('tab', { name: 'Tree' }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(views.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page).toHaveURL(/view=board/)
+  await expect(page.locator('#project-board')).toBeVisible()
+  await expect(
+    page.getByRole('tablist', { name: 'Columns' }).getByRole('tab', { name: 'Status' }),
+  ).toHaveAttribute('aria-controls', 'project-board')
+  await page.keyboard.press('ArrowLeft')
   await expect(headNew(page)).toBeVisible()
   // Archive is in More now, not a button of its own (FR-052).
   await expect(header(page).getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0)

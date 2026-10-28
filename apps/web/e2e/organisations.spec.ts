@@ -127,14 +127,25 @@ test('an organisation’s page says what it is, who is there and where it stands
     /Stage set to\s*(Stage )?Shortlisted in\s*\S*\s*Find a lawyer/,
   )
   await expect(timeline).toContainText('Added')
-  await timeline.getByRole('button', { name: 'Changes' }).click()
+  await timeline.getByRole('tab', { name: 'Changes' }).click()
   await expect(message).toHaveCount(0)
   await expect(timeline).toContainText(
     /Stage set to\s*(Stage )?Shortlisted in\s*\S*\s*Find a lawyer/,
   )
-  await timeline.getByRole('button', { name: 'Messages' }).click()
+  await timeline.getByRole('tab', { name: 'Messages' }).click()
   await expect(message).toHaveCount(1)
   await expect(timeline).not.toContainText('Added')
+
+  // The filters are tabs over the entries (BUG-061): one Tab stop, the arrows switching.
+  const tabs = timeline.getByRole('tablist', { name: 'Show' }).getByRole('tab')
+  await expect(tabs.and(page.locator('[tabindex="0"]'))).toHaveCount(1)
+  const shown = await tabs.first().getAttribute('aria-controls')
+  await expect(page.locator(`[id="${shown!}"]`)).toContainText('Enquiry')
+  await timeline.getByRole('tab', { name: 'Messages' }).focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(timeline.getByRole('tab', { name: 'All' })).toBeFocused()
+  await expect(timeline.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true')
+  await expect(timeline).toContainText('Added')
 })
 
 test('N O writes one down on a page of its own, and Edit changes it', async ({ page }) => {

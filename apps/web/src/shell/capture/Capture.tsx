@@ -1,5 +1,5 @@
 import type { ProjectId } from '@ctws/contracts'
-import { radioKeys } from '../../platform/ui/radioKeys'
+import { radioKeys } from '../../platform/ui/choiceKeys'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'

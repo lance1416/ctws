@@ -14,7 +14,7 @@ import { useGoOut } from '../resources/away'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
 import { useEveryProject } from './api'
 import { digitHandlers, PROJECT_KEYS } from './keys'
-import { ProjectHead } from './ProjectHead'
+import { PROJECT_MAIN, ProjectHead } from './ProjectHead'
 import { ProjectLinked } from './ProjectLinked'
 
 /** The project the address names, live or archived: an archived project still has its page. */
@@ -110,6 +110,7 @@ function OpenProject({ id }: { id: ProjectId }) {
         {main && (
           // Named for a screen reader; on screen the tree's own column names head it.
           <section
+            id={PROJECT_MAIN}
             aria-labelledby="project-main"
             data-panel={main.moduleLabel}
             className="min-w-0 lg:col-span-(--main)"

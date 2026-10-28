@@ -11,6 +11,9 @@ import { projectKeys, updateProject, useEveryProject } from './api'
 import { PinnedResources } from './PinnedResources'
 import { ProjectSquare } from './ProjectSquare'
 
+/** The project's main column, which its View switches (`aria-controls`). */
+export const PROJECT_MAIN = 'project-main-panel'
+
 type View = { id: string; label: string; icon?: IconComponent }
 
 /**
@@ -61,7 +64,13 @@ export function ProjectHead({
         )}
         {/* The inbox is a list to empty, never a board (FR-059). */}
         {views.length > 1 && !project.isInbox && (
-          <Segmented label="View" segments={views} current={view} onPick={onView} />
+          <Segmented
+            label="View"
+            segments={views}
+            current={view}
+            onPick={onView}
+            controls={PROJECT_MAIN}
+          />
         )}
         <NewMenu projectName={project.name} className="shrink-0" />
         {/* The inbox is where capture lands, and the server refuses to archive it. */}
