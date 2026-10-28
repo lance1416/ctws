@@ -3,7 +3,7 @@ import { topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useProjectPeople } from './hooks/projectThings'
 import { peopleKeys } from './api'
-import { BirthdayCard } from './components/BirthdayCard'
+import { UpcomingBirthdays } from './widgets/UpcomingBirthdays'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
 import { BirthdaysToday } from './components/BirthdaysToday'
 import { NewPerson } from './components/NewPerson'
@@ -58,16 +58,7 @@ export const peopleModule: WorkspaceModule = {
       ...(e.turns !== null ? { title: `${e.title} ${e.turns}` } : {}),
     }),
   },
-  widgets: [
-    {
-      id: 'birthdays',
-      label: 'Birthdays',
-      to: `/${PEOPLE_ID}?list=birthdays`,
-      Component: BirthdayCard,
-      order: 40,
-      span: 4,
-    },
-  ],
+  widgets: [{ place: 'birthdays', Component: UpcomingBirthdays }],
   creates: [{ kind: 'person', key: 'p', label: 'Person', Dialog: NewPerson }],
   chords: [
     {

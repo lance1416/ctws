@@ -24,6 +24,8 @@
 import type { ComponentProps, ComponentType } from 'react'
 import {
   Archive,
+  ArrowRight,
+  ArrowUpRight,
   Bell,
   BookOpen,
   BuildingComplex,
@@ -31,6 +33,9 @@ import {
   CalendarClock,
   CalendarDays,
   CircleAlert,
+  CircleCheck,
+  CloudSun,
+  CornerUpLeft,
   CloudCheck,
   CloudOff,
   ChevronDown,
@@ -60,6 +65,7 @@ import {
   Mailbox,
   MessageSquare,
   MessagesSquare,
+  Music,
   Moon,
   PanelLeftOpen,
   PanelRight,
@@ -190,6 +196,17 @@ export const PlacesIcon = MapPin
 export const TypeIcon = Tag
 /** A file attached to a message or a meeting's notes (K-07); a page is a link. */
 export const FileIcon = FileText
+
+/**
+ * The workbench (FR-076): the launcher's badge, going on to a page, coming back from a resource
+ * (FR-028) and finishing what it was for, and the two widgets not built yet (FR-077).
+ */
+export const LauncherIcon = ArrowUpRight
+export const GoOnIcon = ArrowRight
+export const ReturnedIcon = CornerUpLeft
+export const MarkDoneIcon = CircleCheck
+export const WeatherIcon = CloudSun
+export const MusicIcon = Music
 
 /** A meeting that repeats: its rule's tag, and its earlier occurrences (FR-067). */
 export const RepeatIcon = Repeat

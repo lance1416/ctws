@@ -47,7 +47,7 @@ export type WorkspaceModule = {
    * zone; a client turning an instant into a day would put a 23:00 deadline on the wrong square.
    */
   calendar?: CalendarContribution
-  /** Cards on the workbench. A card must not show rows that already live on a project page. */
+  /** What it shows on the workbench, each in its place there (FR-076). */
   widgets?: readonly Widget[]
   /**
    * Blocks in Today's right column (FR-079): what to answer, start or remember today. Ordered
@@ -95,8 +95,6 @@ export type ProjectContribution = {
     Facts: ComponentType<{ project: ProjectResponse }>
     useOrder: () => (a: ProjectResponse, b: ProjectResponse) => number
   }
-  /** Numbers for a project's Workbench card, a line each. */
-  TileFacts?: ComponentType<{ project: ProjectResponse }>
   /**
    * The open project's outline under its row in the sidebar (FR-021, artboard 8): what to jump
    * to on its page. At most one module gives one.
@@ -205,6 +203,11 @@ export type RelationContribution = {
     event: { type: string; payload: unknown },
     timeZone: string,
   ) => ChangeLine | null
+  /**
+   * Finishing one, for a kind that can be finished: "Mark done" on coming back from a resource
+   * opened from it (FR-028).
+   */
+  finish?: (id: string) => Promise<unknown>
 }
 
 /** One change on a timeline, in its module's words. */
@@ -261,20 +264,17 @@ export type CalendarContribution = {
   }
 }
 
+/**
+ * The places on the workbench a module fills (FR-076). The shell owns the arrangement (FR-078),
+ * the launcher, the next seven days and the widgets not built yet.
+ */
+export type WorkbenchPlace = 'now' | 'meetings' | 'awaiting' | 'birthdays' | 'reading'
+
 export type Widget = {
-  /** Unique within the module; also the card's test handle. */
-  id: string
-  label: string
-  /** The heading links here, so there is no separate "See all". */
-  to?: string
-  /** Takes no props: a widget is about the workspace, not a row. */
+  /** At most one module fills each place. */
+  place: WorkbenchPlace
+  /** Takes no props: a widget is about the workspace. It draws its own block, filling its place. */
   Component: ComponentType
-  /** A short note at the end of the heading row: the date, "2 today", "5 to read". */
-  Aside?: ComponentType
-  /** An editorial order, not registration order. */
-  order?: number
-  /** How many of the Workbench's twelve columns it takes from 1024px up. */
-  span: 4 | 6 | 8
 }
 
 export type ModulePage = {

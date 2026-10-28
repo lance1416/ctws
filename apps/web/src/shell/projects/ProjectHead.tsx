@@ -68,7 +68,7 @@ export function ProjectHead({
         {/* The inbox is edited too (its name), but never archived: capture lands there. */}
         <MoreMenu id={id} archived={project.isInbox ? null : project.archivedAt !== null} />
       </div>
-      <PinnedResources projectId={id} />
+      <PinnedResources projectId={id} name={project.name} />
     </div>
   )
 }

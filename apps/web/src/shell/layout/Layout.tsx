@@ -11,6 +11,7 @@ import { BottomBar } from './BottomBar'
 import { IconBar } from './IconBar'
 import { Inspector } from './Inspector'
 import { BackOnline } from './Online'
+import { BackFromNote } from '../resources/BackFrom'
 import { LeaveGuardContext, type LeaveGuard } from '../../platform/ui/leaveGuard'
 import { placeOf } from './places'
 import { useRemembered } from './remembered'
@@ -149,6 +150,7 @@ function Frame({
               </main>
               <Inspector />
               <BackOnline />
+              <BackFromNote />
             </div>
           </div>
           <Shortcuts

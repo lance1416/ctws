@@ -296,7 +296,7 @@ describe('a moved birthday', () => {
   })
 })
 
-describe('the workbench card', () => {
+describe("Today's Birthdays block", () => {
   it('shows each person by their own lead', async () => {
     const ctx = await setup()
     const today = (await view(ctx)).today

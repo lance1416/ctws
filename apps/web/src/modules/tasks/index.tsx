@@ -1,17 +1,12 @@
+import type { TaskId } from '@ctws/contracts'
 import type { WorkspaceModule } from '../../shell/contract'
 import { topPage } from '../../shell/layout'
-import { projectTasksQuery, taskKeys } from './api'
+import { patchTask, projectTasksQuery, taskKeys } from './api'
 import { PROJECT_VIEWS, ProjectTasks } from './components/ProjectBlock'
 import { openOf, PersonTaskRow } from './components/PersonTaskRow'
 import { ProjectOutline } from './components/ProjectOutline'
-import {
-  ProjectCardFacts,
-  ProjectMoved,
-  ProjectTileFacts,
-  useProjectOrder,
-} from './components/ProjectFacts'
+import { ProjectCardFacts, ProjectMoved, useProjectOrder } from './components/ProjectFacts'
 import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind'
-import { TodayDate, TodayGlance } from './components/TodayGlance'
 import { useInboxCapture, useTaskEntries, useTaskHits } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
 import { describeTaskChange } from './logic/describeChange'
@@ -24,6 +19,7 @@ import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
 import { Review } from './pages/Review'
 import { Today } from './pages/Today'
+import { NowWidget } from './widgets/Now'
 
 // Today and Review live here, not in the shell: they are defined by task semantics.
 
@@ -86,23 +82,12 @@ export const taskModule: WorkspaceModule = {
       label: e.kind,
     }),
   },
-  widgets: [
-    {
-      id: 'today',
-      label: 'Today',
-      to: '/today',
-      Component: TodayGlance,
-      Aside: TodayDate,
-      order: 10,
-      span: 6,
-    },
-  ],
+  widgets: [{ place: 'now', Component: NowWidget }],
   // A person's page draws the tasks linked to them by when they are due (FR-061).
   person: { Linked: { kind: 'task', Row: PersonTaskRow, count: openOf } },
   project: {
     Main: { Component: ProjectTasks, views: PROJECT_VIEWS },
     Card: { Moved: ProjectMoved, Facts: ProjectCardFacts, useOrder: useProjectOrder },
-    TileFacts: ProjectTileFacts,
     Outline: ProjectOutline,
     count: openTasksOf,
     counts: ['task'],
@@ -126,6 +111,7 @@ export const taskModule: WorkspaceModule = {
       Mark: TaskMark,
       Fact: TaskFact,
       describeChange: describeTaskChange,
+      finish: (id) => patchTask(id as TaskId, { status: 'done' }),
     },
   ],
   // A task row names its project, and search says whether that project is archived.

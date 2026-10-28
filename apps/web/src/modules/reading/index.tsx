@@ -4,7 +4,7 @@ import { useRecommendedBy } from './hooks/personThings'
 import { useProjectReading } from './hooks/projectThings'
 import { readingKeys } from './api'
 import { UnfiledLine } from './components/ReadingKind'
-import { ReadingAside, ReadingWidget } from './components/ReadingWidget'
+import { ReadingNow } from './widgets/ReadingNow'
 import { useReadingCapture, useReadingEntries, useReadingHits } from './hooks/contributions'
 import { ReadingFact } from './components/ReadingFact'
 import { describeReadingChange } from './logic/describeChange'
@@ -62,17 +62,7 @@ export const readingModule: WorkspaceModule = {
     useEntries: useReadingEntries,
     show: (e) => ({ to: `/${READING_ID}/${e.id}`, label: 'to read' }),
   },
-  widgets: [
-    {
-      id: 'unfiled',
-      label: 'Reading',
-      to: `/${READING_ID}`,
-      Component: ReadingWidget,
-      Aside: ReadingAside,
-      order: 30,
-      span: 8,
-    },
-  ],
+  widgets: [{ place: 'reading', Component: ReadingNow }],
   // A project's page lists its reading (FR-055).
   project: { Things: { kind: 'reading', useThings: useProjectReading } },
   person: { Things: { kind: 'reading', useThings: useRecommendedBy } },

@@ -9,9 +9,3 @@ export function useTodaysMeetings() {
   const day = ymd(useNow(), useTimeZone())
   return useQuery(meetingsQuery({ from: day, to: day }))
 }
-
-/** "2 today", for Things' count and the Workbench card's corner; null until loaded. */
-export function useTodayCount(): string | null {
-  const today = useTodaysMeetings()
-  return today.data ? `${today.data.length} today` : null
-}

@@ -401,12 +401,14 @@ test('the ? list is the board’s three columns, and its switch names the keys i
     'Go to',
     'New',
     'On a project',
+    'On the Workbench',
     'In a tree or list, with a row focused',
     'In search',
   ])
   await expect(help).toContainText('Fold, or go to the parent')
   await expect(help).toContainText('Open a pinned resource')
   await expect(help).toContainText('Switch between tree and board')
+  await expect(help).toContainText('Open a launcher link')
   // Three columns that fit the screen: the foot is on it.
   const foot = help.getByText('This key changes in the redesign.', { exact: false })
   const box = (await help.boundingBox())!

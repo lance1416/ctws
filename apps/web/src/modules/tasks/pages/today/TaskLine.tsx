@@ -47,8 +47,8 @@ const MARK_TONE = {
   late: 'bg-stop-bg text-stop-t',
 } as const
 
-/** The fourth column: when it is due (FR-079), a chip; empty when it is due on no day. */
-function DueChip({
+/** The fourth column: when it is due (FR-079), a chip; empty when it is due on no day. Also on the workbench's Now. */
+export function DueChip({
   dueAt,
   today,
   timeZone,

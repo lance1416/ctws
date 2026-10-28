@@ -14,7 +14,7 @@ import { MeetingDetail } from './MeetingDetail'
  * Until the address has followed, the old name reads as gone, so the pane shows where it went; and
  * it keeps the key it had, so it is the same pane under its new name rather than a new one opening.
  */
-export function OccurrencePane({ open }: { open: OpenOccurrence }) {
+function OccurrencePane({ open }: { open: OpenOccurrence }) {
   const queryClient = useQueryClient()
   /** The last move made here: the pane's key, the address it was at, and where it went. */
   const [moved, setMoved] = useState<{ key: string; at: string; to: MeetingOccurrence } | null>(

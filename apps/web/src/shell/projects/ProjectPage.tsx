@@ -9,7 +9,8 @@ import { DeletedNotice } from '../detail/DeletedNotice'
 import type { Crumbs } from '../layout/page'
 import { useSubjectOf } from '../layout/subject'
 import { useRegistry } from '../registry'
-import { followable, pinnedOf, resourcesQuery } from '../resources/api'
+import { followable, pinnedOf, resourceName, resourcesQuery } from '../resources/api'
+import { useGoOut } from '../resources/away'
 import { useForgetWhenGone, useRecordRecent } from '../search/recent'
 import { useEveryProject } from './api'
 import { digitHandlers, PROJECT_KEYS } from './keys'
@@ -60,7 +61,9 @@ function OpenProject({ id }: { id: ProjectId }) {
   const main = registry.projectMain
   const [asked, pickView] = useViewParam(main?.views ?? [])
   // The inbox is a list to empty: its tree, whatever the address asks (FR-059).
-  const inbox = useEveryProject().data?.find((p) => p.id === id)?.isInbox === true
+  const project = useEveryProject().data?.find((p) => p.id === id)
+  const inbox = project?.isInbox === true
+  const goOut = useGoOut()
   const view = inbox ? (main?.views[0].id ?? asked) : asked
   const pinned = pinnedOf(useQuery(resourcesQuery({ type: 'project', id })).data ?? [])
   const views = main?.views ?? []
@@ -72,8 +75,15 @@ function OpenProject({ id }: { id: ProjectId }) {
       if (next) pickView(next.id)
     },
     ...digitHandlers((digit) => {
-      const url = followable(pinned.find((p) => p.pinnedRank === digit)?.url ?? '')
-      if (url) window.open(url, '_blank', 'noopener,noreferrer')
+      const r = pinned.find((p) => p.pinnedRank === digit)
+      const url = followable(r?.url ?? '')
+      if (!r || !url) return
+      goOut({
+        url,
+        name: resourceName(r),
+        from: { type: 'project', id, title: project?.name ?? '', projectId: id },
+      })
+      window.open(url, '_blank', 'noopener,noreferrer')
     }),
   })
   // Across the page's columns (DES-001 section 4): the tree takes half, its blocks the rest, or

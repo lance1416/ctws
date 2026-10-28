@@ -23,12 +23,14 @@ import type {
   ShownEntry,
   TodayBlock,
   Widget,
+  WorkbenchPlace,
   WorkspaceModule,
 } from './contract'
 import type { KeyTable } from '../platform/keyboard/keyTable'
 import { useTimeZone } from './auth/useMe'
 import { said } from './calendar/said'
 import { linkKeys } from './links/api'
+import { resourceKeys } from './resources/api'
 import { timelineKeys } from './timeline/Timeline'
 import { projectKeys } from './projects/api'
 import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
@@ -93,6 +95,21 @@ type CalendarProvider = {
 const entryKey = (e: CalendarEntry): string =>
   [e.type, e.id, e.kind, e.day, e.recurrenceId ?? ''].join(':')
 
+/** Each workbench place and the one module's widget that fills it; a second for a place is a mistake. */
+function placed(
+  modules: readonly WorkspaceModule[],
+): Partial<Record<WorkbenchPlace, RegisteredWidget>> {
+  const out: Partial<Record<WorkbenchPlace, RegisteredWidget>> = {}
+  for (const m of modules)
+    for (const w of m.widgets ?? []) {
+      const taken = out[w.place]
+      if (taken)
+        throw new Error(`"${m.id}" and "${taken.moduleId}" both fill the workbench's ${w.place}`)
+      out[w.place] = { ...w, moduleId: m.id }
+    }
+  return out
+}
+
 /** A module's calendar, its entries said and given the module's route and words. */
 function calendarProvider(moduleId: string, c: CalendarContribution): CalendarProvider {
   return {
@@ -131,7 +148,8 @@ export type Registry = {
   captureModuleId: string
   search: SearchProvider[]
   calendar: CalendarProvider[]
-  widgets: RegisteredWidget[]
+  /** What fills each of the workbench's places, by the module that fills it (FR-076). */
+  widgets: Partial<Record<WorkbenchPlace, RegisteredWidget>>
   /** Today's right column, every module's, in order. */
   todayBlocks: (TodayBlock & { moduleId: string })[]
   relations: RegisteredRelation[]
@@ -141,7 +159,6 @@ export type Registry = {
   projectThings: (NonNullable<ProjectContribution['Things']> & { moduleId: string })[]
   personThings: (NonNullable<PersonContribution['Things']> & { moduleId: string })[]
   personLinked: NonNullable<PersonContribution['Linked']>[]
-  projectTileFacts: { moduleId: string; Facts: ComponentType<{ project: ProjectResponse }> }[]
   projectCard: NonNullable<ProjectContribution['Card']> | null
   projectOutline: ComponentType<{ projectId: ProjectId }> | null
   projectCount: ((project: ProjectResponse) => number) | null
@@ -189,6 +206,8 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
   const reads: Reads[] = [
     // An edge's far end can be anything, and the list shows its name.
     { queryKey: linkKeys.all, of: OBJECT_TYPES },
+    // What the launcher shows is pinned on a project, or archived with it.
+    { queryKey: resourceKeys.pinned, of: ['project'] },
     // A timeline holds a thing's changes and whatever is said about it: any write may add a line.
     { queryKey: timelineKeys.all, of: OBJECT_TYPES },
     {
@@ -218,9 +237,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       m.search ? [{ moduleId: m.id, moduleLabel: m.label, useHits: m.search.useHits }] : [],
     ),
     calendar: modules.flatMap((m) => (m.calendar ? [calendarProvider(m.id, m.calendar)] : [])),
-    widgets: modules
-      .flatMap((m) => (m.widgets ?? []).map((w) => ({ ...w, moduleId: m.id })))
-      .sort(byOrder),
+    widgets: placed(modules),
     todayBlocks: modules
       .flatMap((m) => (m.today ?? []).map((b) => ({ ...b, moduleId: m.id })))
       .sort((a, b) => a.order - b.order),
@@ -241,9 +258,6 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
       const m = modules.find((x) => x.project?.Main)
       return m?.project?.Main ? { moduleId: m.id, moduleLabel: m.label, ...m.project.Main } : null
     })(),
-    projectTileFacts: modules.flatMap((m) =>
-      m.project?.TileFacts ? [{ moduleId: m.id, Facts: m.project.TileFacts }] : [],
-    ),
     projectCard: modules.find((m) => m.project?.Card)?.project?.Card ?? null,
     projectOutline: modules.find((m) => m.project?.Outline)?.project?.Outline ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,

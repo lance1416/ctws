@@ -7,7 +7,6 @@ export {
   useEveryProject,
   useProjects,
 } from './api'
-export { useProjectRail } from './projectColor'
 export { MoveToProject } from './MoveToProject'
 export { ProjectChip, ProjectPicker } from './ProjectPicker'
 export { EditProject, NewProject, useEditProjectCrumbs, useNewProjectCrumbs } from './ProjectForm'

@@ -8,7 +8,6 @@ import { buildRegistry, useRegistry, type ShellConfig } from './registry'
 
 /** Fake notes and files modules: one real module could not show that a second is picked up. */
 const NotesOnProject = () => null
-const NotesTileFacts = () => null
 const FilesCard = { Moved: () => null, Facts: () => null, useOrder: () => () => 0 }
 const FilesOutline = () => null
 
@@ -24,12 +23,9 @@ const notes: WorkspaceModule = {
   chords: [
     { id: 'recent', key: 'q', label: 'Go to Recent', resolve: () => '/notes/recent', order: 5 },
   ],
-  widgets: [
-    { id: 'recent', label: 'Recent notes', to: '/notes/recent', Component: () => null, span: 6 },
-  ],
+  widgets: [{ place: 'reading', Component: () => null }],
   project: {
     Main: { Component: NotesOnProject, views: [{ id: 'all', label: 'All' }] },
-    TileFacts: NotesTileFacts,
     contents: async () => '3 notes',
   },
   keys: [{ title: 'In a note', rows: [{ keys: 'e', does: 'Edit', presses: { e: 'edit' } }] }],
@@ -45,7 +41,7 @@ const files: WorkspaceModule = {
     kind: 'reading',
     useTarget: () => ({ target: null, missing: 'No drive to file into' }),
   },
-  widgets: [{ id: 'big', label: 'Bulky', Component: () => null, span: 8 }],
+  widgets: [{ place: 'now', Component: () => null }],
   project: {
     Main: { Component: () => null, views: [{ id: 'all', label: 'All' }] },
     Card: FilesCard,
@@ -114,30 +110,16 @@ describe('routes', () => {
 })
 
 describe('the workbench widgets', () => {
-  it('collects every module card, in registration order, tagged with its module', () => {
-    expect(build([notes, files]).widgets.map((w) => `${w.moduleId}:${w.id}`)).toEqual([
-      'notes:recent',
-      'files:big',
-    ])
+  it('puts each module widget in its place, tagged with its module', () => {
+    const widgets = build([notes, files]).widgets
+    expect(widgets.reading?.moduleId).toBe('notes')
+    expect(widgets.now?.moduleId).toBe('files')
+    expect(widgets.meetings).toBeUndefined()
   })
 
-  it('lays the cards out in their stated order, not in the order modules registered', () => {
-    const first = {
-      ...notes,
-      widgets: [{ id: 'late', label: 'Late', order: 20, Component: () => null, span: 6 as const }],
-    }
-    const second = {
-      ...files,
-      widgets: [
-        { id: 'early', label: 'Early', order: 10, Component: () => null, span: 6 as const },
-      ],
-    }
-    expect(build([first, second]).widgets.map((w) => w.label)).toEqual(['Early', 'Late'])
-  })
-
-  it('is empty for a module that contributes none, rather than inventing one', () => {
-    const { widgets: _dropped, ...noWidgets } = notes
-    expect(build([noWidgets, files]).widgets).toHaveLength(1)
+  it('refuses two widgets for one place', () => {
+    const twice = { ...files, widgets: [{ place: 'reading' as const, Component: () => null }] }
+    expect(() => build([notes, twice])).toThrow(/both fill the workbench's reading/)
   })
 })
 
@@ -193,11 +175,8 @@ describe('what a module hangs on a project page', () => {
     expect(build([files, notes]).projectMain?.moduleId).toBe('files')
   })
 
-  it('collects the card facts and what a delete takes, in registration order', async () => {
+  it('collects what a delete takes, in registration order', async () => {
     const registry = build([notes, files])
-    expect(registry.projectTileFacts.map((f) => [f.moduleId, f.Facts])).toEqual([
-      ['notes', NotesTileFacts],
-    ])
     const qc = new QueryClient()
     expect(
       await Promise.all(registry.projectContents.map((c) => c(qc, idFrom(projectId, 'p')))),
@@ -229,7 +208,6 @@ describe('what a module hangs on a project page', () => {
     }
     const registry = build([bare], { captureModuleId: 'bare', phoneTab: 'shell:calendar' })
     expect(registry.projectMain).toBeNull()
-    expect(registry.projectTileFacts).toEqual([])
     expect(registry.projectContents).toEqual([])
   })
 })
@@ -285,8 +263,14 @@ describe('what a write leaves stale', () => {
     expect(staleFor(['task'])).toEqual([['links'], ['timeline'], ['projects'], ['files']])
   })
 
-  it('reaches whatever names a project when a project changes', () => {
-    expect(staleFor(['project'])).toEqual([['links'], ['timeline'], ['projects'], ['notes']])
+  it('reaches whatever names a project, and what it pins, when a project changes', () => {
+    expect(staleFor(['project'])).toEqual([
+      ['links'],
+      ['resources', 'pinned'],
+      ['timeline'],
+      ['projects'],
+      ['notes'],
+    ])
   })
 
   it('is the links and timelines alone for a kind no module reads', () => {

@@ -193,7 +193,11 @@ export function TaskReading({
         </div>
       )}
 
-      <Resources owner={{ type: 'task', id: task.id }} />
+      <Resources
+        owner={{ type: 'task', id: task.id }}
+        title={task.title}
+        projectId={task.projectId}
+      />
 
       {/* Who or what it is about, after its own fields; the project is already in the head. */}
       <LinkedChips

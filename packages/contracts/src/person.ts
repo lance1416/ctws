@@ -264,7 +264,7 @@ export const birthdaysResponse = z.object({
   today: calendarDate,
   coming: z.array(birthdayListRow),
   later: z.array(birthdayListRow),
-  /** Who the workbench card shows: each person by their own lead. */
+  /** Who Today's Birthdays block shows: each person once their own lead has come. */
   card: z.array(birthdayListRow),
   /** Only the months that have somebody. */
   byMonth: z.record(z.string(), z.number()),

@@ -2,8 +2,7 @@ import { type ProjectResponse, type ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { movementQuery } from '../api'
-import { byRecency, isQuiet, movedLine, movedOn } from '../logic/movement'
-import { openTasksOf } from '../logic/openTasks'
+import { byRecency, isQuiet, movedOn } from '../logic/movement'
 import { nearDay, shortDay, ymd } from '../../../platform/time/dates'
 import { FlagIcon } from '../../../platform/ui/icons'
 import { useNow } from '../../../platform/time/useNow'
@@ -14,23 +13,6 @@ import { StatusMark } from './StatusMark'
 function useMoved(projectId: ProjectId) {
   const movement = useQuery(movementQuery(useAccountToday()))
   return movement.data?.find((m) => m.projectId === projectId)
-}
-
-/** A project's tasks in numbers on its Workbench card, a line each. The open count is the server's. */
-export function ProjectTileFacts({ project: p }: { project: ProjectResponse }) {
-  const m = useMoved(p.id)
-  const today = ymd(useNow(), useTimeZone())
-  return (
-    <>
-      <span className="text-muted tabular-nums">{openTasksOf(p)} open</span>
-      {m && m.overdue > 0 ? (
-        <span className="text-stop-t">{m.overdue} overdue</span>
-      ) : m?.nextDueOn ? (
-        <span className="text-warn-t">Due {shortDay(m.nextDueOn, today)}</span>
-      ) : null}
-      {m && <span className="text-subtle">{movedLine(m, today)}</span>}
-    </>
-  )
 }
 
 /**

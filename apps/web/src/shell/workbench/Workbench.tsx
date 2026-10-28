@@ -1,81 +1,78 @@
-import { Link } from 'react-router-dom'
-import { useProjects } from '../projects/api'
-import { ProjectRail } from '../rows/RowParts'
-import { PanelEmpty, Tile } from '../../platform/ui/Panel'
+import { clockTime } from '@ctws/core/clock'
+import { useRef, type ReactNode } from 'react'
+import { longDay, ymd } from '../../platform/time/dates'
+import { useNow } from '../../platform/time/useNow'
+import { Block } from '../../platform/ui/Block'
+import { useColumns } from '../../platform/ui/columns'
+import { KIND_ICON, MusicIcon, WeatherIcon } from '../../platform/ui/icons'
+import { useTimeZone } from '../auth'
 import { useRegistry } from '../registry'
+import { arrangement, type Place } from './arrangement'
+import { FixedPlaces } from './fit'
+import { Launcher } from './Launcher'
+import { NextSevenDays } from './NextSevenDays'
 
 /**
- * The shell's front page: a fixed arrangement of the cards modules contribute, for the things that
- * belong to no project.
+ * THE WORKBENCH (FR-075, artboards 10 and 22): where the day starts. Today's date and the time;
+ * then a fixed arrangement of widgets, each doing one thing: what is in hand, the launcher, the
+ * next meetings, who owes a reply, birthdays, reading, the week. No editing of the arrangement
+ * this round, and no widget scrolls.
  */
 export function Workbench() {
+  const zone = useTimeZone()
+  const now = useNow()
+  const page = useRef<HTMLDivElement>(null)
+  const columns = useColumns(page)
+  const { grid, places } = arrangement(columns)
   const widgets = useRegistry().widgets
+  const own: Record<Exclude<Place, keyof typeof widgets>, ReactNode> = {
+    launcher: <Launcher tall={columns >= 6} />,
+    week: <NextSevenDays />,
+    quickNote: <Later title="Quick note" kind="note" />,
+    weather: <Later title="Weather" icon={WeatherIcon} />,
+    music: <Later title="Music" icon={MusicIcon} />,
+  }
 
   return (
-    <div className="mx-auto w-full max-w-[73.75rem]">
-      {/* The header already names this page; the heading is for a screen reader's list. */}
-      <h1 tabIndex={-1} className="sr-only">
-        Workbench
-      </h1>
-
-      {/* Twelve columns from 1024 up, one below; the shell's Projects card goes last. */}
-      <div className="grid min-w-0 grid-cols-1 items-start gap-4 pt-2 lg:grid-cols-12">
-        {widgets.map(({ moduleId, id, label, to, Component, Aside, span }) => (
-          <Tile
-            key={`${moduleId}:${id}`}
-            label={label}
-            to={to}
-            action={Aside ? <Aside /> : undefined}
-            className={`lg:self-stretch ${SPAN[span]}`}
-          >
-            <Component />
-          </Tile>
-        ))}
-        <ProjectsWidget />
+    <div ref={page} className="flex min-h-full w-full flex-1 flex-col gap-4">
+      <div className="flex items-baseline gap-4">
+        <h1 tabIndex={-1} className="text-title tracking-[-0.01em] text-ink focus:outline-none">
+          {longDay(ymd(now, zone))}
+        </h1>
+        <span className="font-mono text-prose text-muted tabular-nums">{clockTime(now, zone)}</span>
       </div>
+      <FixedPlaces.Provider value={columns > 1}>
+        <div data-workbench-columns={columns} className="grid flex-1 gap-3" style={grid}>
+          {places.map(({ place, style }) => {
+            const module = widgets[place as keyof typeof widgets]
+            const body = module ? <module.Component /> : own[place as keyof typeof own]
+            if (!body) return null
+            return (
+              <div
+                key={place}
+                data-place={place}
+                style={style}
+                className="flex min-h-0 min-w-0 flex-col *:min-h-0 *:flex-1"
+              >
+                {body}
+              </div>
+            )
+          })}
+        </div>
+      </FixedPlaces.Provider>
     </div>
   )
 }
 
-/** Tailwind sees whole class names only: one literal per width a card can ask for. */
-const SPAN = {
-  4: 'lg:col-span-4',
-  6: 'lg:col-span-6',
-  8: 'lg:col-span-8',
-} as const
-
-/** The shell's own card, not contributed by a module: every project and its numbers. */
-function ProjectsWidget() {
-  const projects = useProjects()
-  const facts = useRegistry().projectTileFacts
-  const rows = projects.data ?? []
-
+/** Not built this round (FR-077): its head and what it will be, nothing to press. */
+function Later({ title, kind, icon }: { title: string; kind?: 'note'; icon?: typeof WeatherIcon }) {
   return (
-    <Tile label="Projects" to="/projects" className="lg:col-span-12">
-      {projects.isError && (
-        <p role="alert" className="px-2 py-1.5 text-ui text-stop-t">
-          Couldn't load projects
-        </p>
-      )}
-      {projects.isSuccess && rows.length === 0 && <PanelEmpty>No projects yet</PanelEmpty>}
-      <ul className="grid grid-cols-2 gap-x-6 gap-y-5 px-2 pb-1 sm:grid-cols-3 lg:grid-cols-6">
-        {rows.map((p) => (
-          <li key={p.id} className="min-w-0">
-            <Link
-              to={`/projects/${p.id}`}
-              className="flex min-w-0 items-stretch gap-3 pt-0.5 pr-1 pb-1 hover:bg-hover"
-            >
-              <ProjectRail projectId={p.id} />
-              <span className="flex min-w-0 flex-col text-ui">
-                <span className="truncate text-prose font-medium text-ink">{p.name}</span>
-                {facts.map(({ moduleId, Facts }) => (
-                  <Facts key={moduleId} project={p} />
-                ))}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </Tile>
+    <Block
+      title={title}
+      {...(kind
+        ? { kind }
+        : { badge: { icon: icon ?? KIND_ICON.note, tint: 'bg-hover text-muted' } })}
+      empty="Coming later"
+    />
   )
 }

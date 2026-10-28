@@ -44,15 +44,15 @@ async function openTask(page: Page, scheme: 'light' | 'dark') {
   return pane
 }
 
-test('the Workbench is the ground, and its cards are tiles on it', async ({ page }) => {
+test('the Workbench is the ground, and its widgets are blocks on it', async ({ page }) => {
   await registerFreshUser(page, '/')
-  const tile = page.getByRole('main').locator('[data-panel]').first()
-  await expect(tile).toBeVisible()
-  // Every page lies on the ground (FR-005); blocks and tiles are panels on it.
+  const widget = page.getByRole('region', { name: 'Now', exact: true })
+  await expect(widget).toBeVisible()
+  // Every page lies on the ground (FR-005); its widgets are blocks, panels with a hairline.
   expect(await style(page.getByRole('main'))).toMatchObject({ fill: await token(page, 'ground') })
-  expect(await style(tile)).toEqual({
+  expect(await style(widget)).toEqual({
     fill: await token(page, 'panel'),
-    border: '0px',
+    border: '1px',
     radius: '10px',
     shadow: 'none',
   })

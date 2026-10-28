@@ -5,7 +5,6 @@ import { useProjectMeetings } from './hooks/projectThings'
 import { meetingKeys } from './api'
 import { CalendarOccurrence } from './components/OccurrencePane'
 import { NextMeetingLine } from './components/MeetingsKind'
-import { MeetingsAside, TodayMeetings } from './components/TodayMeetings'
 import { useMeetingEntries } from './hooks/contributions'
 import { MEETINGS_ID } from './logic/id'
 import { MeetingFact } from './components/MeetingFact'
@@ -13,9 +12,10 @@ import { NewMeeting } from './components/NewMeeting'
 import { MeetingsSidebar } from './components/MeetingsSidebar'
 import { Meeting, MeetingEdit } from './pages/Meeting'
 import { MeetingsOverview } from './pages/MeetingsOverview'
+import { NextMeetings } from './widgets/NextMeetings'
 
 /**
- * Meetings: a page of its own, timed calendar entries, and a Workbench card for today. No search
+ * Meetings: a page of its own, timed calendar entries, and the workbench's next meetings. No search
  * provider: a meeting is found by its date, and a weekly title repeats many times over.
  * No project-page block: meetings reach a project as edges, which the shell draws for every kind.
  */
@@ -62,17 +62,7 @@ export const meetingModule: WorkspaceModule = {
       Pane: CalendarOccurrence,
     },
   },
-  widgets: [
-    {
-      id: 'today',
-      label: 'Meetings',
-      to: `/${MEETINGS_ID}`,
-      Component: TodayMeetings,
-      Aside: MeetingsAside,
-      order: 20,
-      span: 6,
-    },
-  ],
+  widgets: [{ place: 'meetings', Component: NextMeetings }],
   // A project's page lists the meetings coming up in it (FR-055).
   project: { Things: { kind: 'meeting', useThings: useProjectMeetings } },
   person: { Things: { kind: 'meeting', useThings: useMeetingsWith } },

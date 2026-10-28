@@ -1,16 +1,6 @@
 import type { ReadingItemResponse } from '@ctws/contracts'
 
-/** Where a link is from, as a person says it: `w3.org`, not the whole URL. Null without one. */
-export function hostOf(url: string | null): string | null {
-  if (!url) return null
-  try {
-    return new URL(url).host.replace(/^www\./, '')
-  } catch {
-    return null
-  }
-}
-
-/** The Workbench card's mark for a book or a link, named for a screen reader. */
+/** The workbench's mark for a book or a link, named for a screen reader. */
 export function KindGlyph({ kind }: { kind: ReadingItemResponse['kind'] }) {
   return kind === 'book' ? (
     <svg

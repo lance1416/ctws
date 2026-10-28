@@ -6,10 +6,12 @@ import { CommunicationSidebar } from './components/CommunicationSidebar'
 import { FollowUpsToday } from './components/FollowUpsToday'
 import { MessageFact, MessageMark } from './components/MessageFacts'
 import { NewMessage } from './components/NewMessage'
+import { useFollowUpEntries } from './hooks/followUpEntries'
 import { useProjectAwaiting } from './hooks/projectThings'
 import { COMMUNICATION_ID } from './logic/id'
 import { CommunicationOverview } from './pages/CommunicationOverview'
 import { Message } from './pages/Message'
+import { AwaitingReply } from './widgets/AwaitingReply'
 
 const PAGE = topPage('Communication')
 
@@ -44,6 +46,13 @@ export const communicationModule: WorkspaceModule = {
     },
   ],
   today: [{ id: 'follow-up', order: 10, Block: FollowUpsToday }],
+  widgets: [{ place: 'awaiting', Component: AwaitingReply }],
+  // The day each is to be chased (FR-080); the workbench's week shows them too (FR-076).
+  calendar: {
+    label: 'Follow-ups',
+    useEntries: useFollowUpEntries,
+    show: (e) => ({ to: `/${COMMUNICATION_ID}/${e.id}`, label: 'follow up' }),
+  },
   // A project's page lists who is waiting for a reply in it (FR-055).
   project: { Things: { kind: 'communication', useThings: useProjectAwaiting } },
   relations: [

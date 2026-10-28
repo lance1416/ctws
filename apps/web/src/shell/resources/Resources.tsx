@@ -1,6 +1,7 @@
 import { resourceLook } from '@ctws/core'
 import { useQuery } from '@tanstack/react-query'
 import { addResource, followable, resourcesQuery, type ResourceOwner } from './api'
+import { useGoOut } from './away'
 import { ResourceAdd } from './ResourceAdd'
 import { ResourceIcon } from './ResourceIcon'
 
@@ -8,8 +9,18 @@ import { ResourceIcon } from './ResourceIcon'
  * A THING'S RESOURCES (FR-046, FR-056): each address with its service, its name and where it is
  * from ("Google Doc", "martinfowler.com"), and a "+" to hang another.
  */
-export function Resources({ owner }: { owner: ResourceOwner }) {
+export function Resources({
+  owner,
+  title,
+  projectId,
+}: {
+  owner: ResourceOwner
+  /** What the owner is called and the project it sits in, for "Back from" (FR-028). */
+  title: string
+  projectId: string | null
+}) {
   const all = useQuery(resourcesQuery(owner))
+  const goOut = useGoOut()
   const rows = all.data ?? []
   return (
     <section aria-labelledby="resources-head" className="flex flex-col gap-2">
@@ -49,6 +60,13 @@ export function Resources({ owner }: { owner: ResourceOwner }) {
                   target="_blank"
                   rel="noreferrer noopener"
                   data-resource={r.id}
+                  onClick={() =>
+                    goOut({
+                      url: r.url,
+                      name: r.name ?? look.label,
+                      from: { ...owner, title, projectId },
+                    })
+                  }
                   className="flex h-8 min-w-0 items-center gap-2 rounded-control border border-line px-2.5 text-ui text-ink hover:border-line-strong"
                 >
                   <ResourceIcon url={r.url} />

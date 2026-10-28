@@ -20,5 +20,5 @@ test('a path no module registered lands on the workbench', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/nowhere/recent')
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole('heading', { level: 1, name: 'Workbench' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Now', exact: true })).toBeVisible()
 })

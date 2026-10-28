@@ -2,7 +2,14 @@ import type { KeyTable } from '../../platform/keyboard/keyTable'
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const
 type Digit = (typeof DIGITS)[number]
-type ProjectAction = 'switchView' | `open${Digit}`
+type OpenDigit = `open${Digit}`
+type ProjectAction = 'switchView' | OpenDigit
+
+/** Each digit key, to the action that opens what is numbered with it. */
+const digitPresses = Object.fromEntries(DIGITS.map((d) => [d, `open${d}` as const])) as Record<
+  Digit,
+  OpenDigit
+>
 
 /** A handler for each digit, from what opens the resource pinned at a digit. */
 export const digitHandlers = (open: (digit: number) => void) =>
@@ -15,8 +22,14 @@ export const PROJECT_KEYS: KeyTable<ProjectAction> = {
     {
       keys: '1–9',
       does: 'Open a pinned resource',
-      presses: Object.fromEntries(DIGITS.map((d) => [d, `open${d}` as const])),
+      presses: digitPresses,
     },
     { keys: 'B', does: 'Switch between tree and board', presses: { b: 'switchView' } },
   ],
+}
+
+/** On the workbench (FR-076, artboard 24): the launcher's links, by the digit on each. */
+export const WORKBENCH_KEYS: KeyTable<OpenDigit> = {
+  title: 'On the Workbench',
+  rows: [{ keys: '1–9', does: 'Open a launcher link', presses: digitPresses }],
 }

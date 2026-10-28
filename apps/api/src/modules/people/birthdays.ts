@@ -46,7 +46,7 @@ type BirthdaysView = {
   today: string
   coming: BirthdayRow[]
   later: BirthdayRow[]
-  /** Each person once their own lead reaches today; the workbench card draws exactly this. */
+  /** Each person once their own lead reaches today; Today's Birthdays block draws exactly this. */
   card: BirthdayRow[]
   byMonth: Record<string, number>
   circles: Record<string, number>
@@ -162,7 +162,7 @@ export async function listBirthdays(
   const rows = await peopleWithBirthdays(q, workspaceId)
   const today = dayIn(now, accountZone)
 
-  // The lead decides the card and is not sent.
+  // The lead decides who is in Today's block, and is not sent.
   const all = rows.map((p): BirthdayRow & { remindLead: number } => {
     const birthday = toBirthday(p)
     const timeZone = p.timeZone ?? accountZone

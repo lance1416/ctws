@@ -49,7 +49,7 @@ export const calendarView = viewQuery('calendar', { from: calendarDate, to: cale
 )
 
 /** What an entry's date is to the thing: a machine value, which the web puts into words. */
-const CALENDAR_KINDS = ['planned', 'due', 'to-read', 'birthday', 'occurrence'] as const
+const CALENDAR_KINDS = ['planned', 'due', 'to-read', 'birthday', 'occurrence', 'follow-up'] as const
 
 /**
  * One dated thing on the calendar. The server puts it on its day in the account's zone and says

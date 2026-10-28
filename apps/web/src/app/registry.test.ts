@@ -61,13 +61,17 @@ describe('the kinds of thing', () => {
 })
 
 describe('the workbench widgets', () => {
-  it('puts this workspace’s cards in the Workbench’s order', () => {
-    expect(registry.widgets.map((w) => w.label)).toEqual([
-      'Today',
-      'Meetings',
-      'Reading',
-      'Birthdays',
-    ])
+  it('fills each of the workbench’s places from the module that owns it', () => {
+    const owners = Object.fromEntries(
+      Object.entries(registry.widgets).map(([place, w]) => [place, w.moduleId]),
+    )
+    expect(owners).toEqual({
+      now: 'tasks',
+      meetings: 'meetings',
+      awaiting: 'communication',
+      birthdays: 'people',
+      reading: 'reading',
+    })
   })
 })
 
