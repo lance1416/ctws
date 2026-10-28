@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
+  accountZone,
   backdateProjectActivity,
   makeProject,
   makeTask,
@@ -63,8 +64,9 @@ test('a project is said to be quiet only while it really is', async ({ page }) =
   await page.request.patch(`/api/v1/tasks/${done}`, { headers: WEB, data: { status: 'done' } })
 
   // Two projects have been silent for nine days. Only one of them still has work in it.
-  backdateProjectActivity(stale, '9 days')
-  backdateProjectActivity(finished, '9 days')
+  const zone = await accountZone(page)
+  backdateProjectActivity(stale, 9, zone)
+  backdateProjectActivity(finished, 9, zone)
 
   await page.goto('/today')
   const week = page.getByRole('region', { name: 'This week' })

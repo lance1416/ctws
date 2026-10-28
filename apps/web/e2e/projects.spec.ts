@@ -79,9 +79,10 @@ test('a project a week unchanged with work left is quiet, in amber, and after th
   await makeTask(page, busy, 'Doing it')
   const done = await makeProject(page, 'Done with')
   await makeTask(page, done, 'Finished', { status: 'done' })
-  backdateProjectActivity(still, '9 days')
+  const zone = await accountZone(page)
+  backdateProjectActivity(still, 9, zone)
   // Finished, a project nobody touched for as long waits for nobody: not quiet.
-  backdateProjectActivity(done, '9 days')
+  backdateProjectActivity(done, 9, zone)
   await page.goto('/projects')
 
   const names = page.locator('[data-project-card] a')
