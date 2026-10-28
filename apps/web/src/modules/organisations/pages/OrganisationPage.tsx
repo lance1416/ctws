@@ -55,7 +55,7 @@ export function OrganisationPage({ organisation: o }: { organisation: Organisati
       >
         {profiled && <Profile organisation={o} />}
         <div className="min-w-0 rounded-block border border-line bg-panel p-4">
-          <Timeline of={{ type: 'organisation', id: o.id }} filters />
+          <Timeline of={{ type: 'organisation', id: o.id }} filters logs />
         </div>
       </div>
     </div>

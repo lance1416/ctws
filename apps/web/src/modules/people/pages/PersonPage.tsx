@@ -85,7 +85,7 @@ export function PersonPage({ person }: { person: PersonResponse }) {
             ))}
           </div>
           {picker}
-          <Timeline of={{ type: 'person', id: person.id }} filters />
+          <Timeline of={{ type: 'person', id: person.id }} filters logs />
         </div>
       </div>
     </div>

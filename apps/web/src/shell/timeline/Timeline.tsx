@@ -1,7 +1,9 @@
 import { api, type ObjectType, type TimelineEntry, type TimelineKind } from '@ctws/contracts'
 import { linkWords } from '@ctws/core'
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useContext, useState, type ReactNode } from 'react'
+import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
+import { NewContext } from '../creates'
 import { call } from '../../platform/http/api'
 import { monthDay, ymd } from '../../platform/time/dates'
 import { BlockFailed } from '../../platform/ui/Block'
@@ -10,6 +12,7 @@ import {
   DurationIcon,
   KIND_ICON,
   LinkIcon,
+  NewIcon,
   ReceivedIcon,
   SentIcon,
 } from '../../platform/ui/icons'
@@ -65,20 +68,42 @@ const timelineQuery = (thing: Thing, filter: Filter) =>
  * module that owns the thing; the rest the shell says alike for every kind. With `filters`, a
  * page's timeline is narrowed to one kind by its tabs (FR-065).
  */
-export function Timeline({ of, filters = false }: { of: Thing; filters?: boolean }) {
+export function Timeline({
+  of,
+  filters = false,
+  logs = false,
+}: {
+  of: Thing
+  filters?: boolean
+  /** Its head's + logs a message with the thing (FR-061, FR-070), where a module can log one. */
+  logs?: boolean
+}) {
+  const openNew = useContext(NewContext)
+  const log = useRegistry().creates.find((c) => c.kind === 'communication')
   const [filter, setFilter] = useState<Filter>(FILTERS[0])
   const entries = useQuery(timelineQuery(of, filter))
   const timeZone = useTimeZone()
   const describeChange = useRegistry().relationFor(of.type).describeChange
   // Nothing at all to show: no head over an empty list (N-06). A tab with nothing keeps its head,
   // so the other tabs stay in reach.
-  if (filter.id === 'all' && entries.isSuccess && entries.data.length === 0) return null
+  if (filter.id === 'all' && entries.isSuccess && entries.data.length === 0 && !logs) return null
   return (
     <section aria-labelledby="timeline-head" className="flex flex-col gap-2">
       <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1">
         <h3 id="timeline-head" className="text-ui font-medium text-ink">
           Timeline
         </h3>
+        {logs && log && (
+          <button
+            type="button"
+            onClick={() => openNew(log)}
+            aria-label="Log a message"
+            title="Log a message"
+            className={`${ICON_BUTTON} order-last ml-auto`}
+          >
+            <NewIcon size={16} aria-hidden="true" />
+          </button>
+        )}
         {filters && (
           <div role="group" aria-label="Show" className="flex flex-wrap gap-0.5">
             {FILTERS.map((f) => (

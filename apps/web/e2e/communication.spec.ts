@@ -71,7 +71,7 @@ test('N X on an organisation logs a message to it, and it is on every timeline i
     'https://harbour-lane.example/letter.pdf',
   )
   // Closed, the way to log another is still on the head (FR-011 rule 7).
-  await expect(page.getByRole('button', { name: /^Log a message/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Log a message\s*N/ })).toBeVisible()
 
   await page.goto(`/people/${sarah.id as string}`)
   await expect(page.getByRole('region', { name: 'Timeline' })).toContainText(
@@ -106,4 +106,23 @@ test('a message needs someone it was with, and leaving a typed one asks first', 
   await expect(form.getByRole('alert').filter({ hasText: 'unsaved changes' })).toBeVisible()
   await form.getByRole('button', { name: 'Discard changes' }).click()
   await expect(form).toHaveCount(0)
+})
+
+test('the + on a person’s timeline logs a message with them (FR-061)', async ({ page }) => {
+  const { sarah } = await harbour(page)
+  await page.goto(`/people/${sarah.id as string}`)
+  await page
+    .getByRole('region', { name: 'Timeline' })
+    .getByRole('button', { name: 'Log a message' })
+    .click()
+  const form = pane(page)
+  // With her, and with where she works now.
+  await expect(form.getByRole('button', { name: 'Remove Sarah Whitfield' })).toBeVisible()
+  await expect(form.getByRole('button', { name: 'Remove Harbour & Lane LLP' })).toBeVisible()
+  await form.getByRole('textbox', { name: 'Subject' }).fill('Coffee next week?')
+  await form.getByRole('button', { name: /^Log message/ }).click()
+  await expect(form).toHaveCount(0)
+  await expect(
+    page.getByRole('region', { name: 'Timeline' }).locator('[data-timeline-entry="message"]'),
+  ).toContainText('Coffee next week?')
 })
