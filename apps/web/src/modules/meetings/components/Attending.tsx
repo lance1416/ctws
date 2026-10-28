@@ -8,6 +8,7 @@ import { boxed } from '../../../platform/ui/formStyles'
 import { CloseIcon, ForwardIcon, KIND_ICON, PLACE_ICON } from '../../../platform/ui/icons'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { useMe } from '../../../shell/auth'
+import { OrganisationMark } from '../../organisations'
 import { usePeople } from '../../people'
 
 /** Past this many, the list is a row of faces, counted by organisation (FR-069). */
@@ -77,7 +78,8 @@ export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
         <div className="flex flex-col gap-2 pl-6">
           <span className="flex items-center" aria-label={`${count} people`}>
             {attendees.slice(0, LISTED).map((a) => (
-              <span key={a.id} className="-ml-1 first:ml-0 rounded-full ring-2 ring-panel">
+              // Each covers only a sliver of the one before, so every face's letters show (K-03).
+              <span key={a.id} className="-ml-0.5 first:ml-0 rounded-full ring-2 ring-panel">
                 <Avatar initials={initials(a)} />
               </span>
             ))}
@@ -157,8 +159,14 @@ function EveryAttendee({
           const more = g.members.length - listed.length
           return (
             <section key={key} aria-label={g.name || 'Others'} className="flex flex-col gap-1.5">
-              <h3 className="flex items-center justify-between text-ui font-medium text-ink">
-                {g.name || 'Others'}
+              <h3 className="flex items-center gap-2 text-ui font-medium text-ink">
+                {/* The organisation's mark before its name (K-05); "Others" has none. */}
+                {g.name ? (
+                  <OrganisationMark name={g.name} />
+                ) : (
+                  <KIND_ICON.person size={16} aria-hidden="true" className="text-muted" />
+                )}
+                <span className="flex-1 truncate">{g.name || 'Others'}</span>
                 <span className="text-meta font-normal text-muted tabular-nums">
                   {g.members.length}
                 </span>

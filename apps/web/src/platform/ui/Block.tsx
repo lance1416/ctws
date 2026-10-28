@@ -52,7 +52,7 @@ export function Block({
             <Icon size={14} />
           </span>
         )}
-        <h2 className="text-ui font-medium text-ink">{title}</h2>
+        <h2 className="text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
         {empty ? (
           <span className="text-meta text-subtle">{empty}</span>
         ) : (

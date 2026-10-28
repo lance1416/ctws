@@ -135,6 +135,16 @@ function Frame({
               <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:pb-20 has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
                 <LeaveGuardContext.Provider value={leaveGuard}>
                   <Outlet />
+                  {/* Inside main: one that opens as a column (Log a message) makes room for
+                      itself as the page's own panes do (K-02). */}
+                  {creating?.creator.Dialog && (
+                    <creating.creator.Dialog
+                      projectId={projectId}
+                      about={subject}
+                      opens={creating.opens}
+                      onClose={() => setCreating(null)}
+                    />
+                  )}
                 </LeaveGuardContext.Provider>
               </main>
               <Inspector />
@@ -153,14 +163,6 @@ function Frame({
             onNew={openNew}
           />
           {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
-          {creating?.creator.Dialog && (
-            <creating.creator.Dialog
-              projectId={projectId}
-              about={subject}
-              opens={creating.opens}
-              onClose={() => setCreating(null)}
-            />
-          )}
           <BottomBar onSearch={() => setSearching(true)} />
         </div>
       </MentionContext.Provider>

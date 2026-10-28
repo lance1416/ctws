@@ -188,6 +188,9 @@ export const ContactIcon = Mail
 export const PlacesIcon = MapPin
 /** An organisation's kind, beside its name (FR-065): "Law firm". */
 export const TypeIcon = Tag
+/** A file attached to a message or a meeting's notes (K-07); a page is a link. */
+export const FileIcon = FileText
+
 /** A meeting that repeats: its rule's tag, and its earlier occurrences (FR-067). */
 export const RepeatIcon = Repeat
 

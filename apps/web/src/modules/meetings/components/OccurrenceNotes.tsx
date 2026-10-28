@@ -6,9 +6,17 @@ import { problemText } from '../../../platform/http/api'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { shortDay, weekdayOf } from '../../../platform/time/dates'
 import { Block } from '../../../platform/ui/Block'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { BUTTON, ICON_BUTTON } from '../../../platform/ui/buttonStyles'
+import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { area } from '../../../platform/ui/formStyles'
-import { CollapseIcon, ExpandIcon, KIND_ICON, OpenFullIcon } from '../../../platform/ui/icons'
+import {
+  CollapseIcon,
+  ExpandIcon,
+  KIND_ICON,
+  MoreIcon,
+  OpenFullIcon,
+} from '../../../platform/ui/icons'
 import { useAccountToday } from '../../../shell/auth'
 import { meetingKeys, rewriteNote, seriesNotesQuery, writeOccurrenceNote } from '../api'
 import { headingsOf } from '../logic/headings'
@@ -39,59 +47,82 @@ export function OccurrenceNotes({
   const day = m.startsLocal.slice(0, 10)
   const heads = note ? headingsOf(note.body) : []
   const body = useRef<HTMLDivElement>(null)
+  const goTo = (h: string) =>
+    [...(body.current?.querySelectorAll('h1, h2, h3') ?? [])]
+      .find((el) => el.textContent?.trim() === h)
+      ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   return (
-    <Block
-      kind="note"
-      title="Notes"
-      count={
-        <span className="flex items-center gap-2 whitespace-nowrap">
-          <span>
-            {weekdayOf(day, true)}, {shortDay(day, today)}
+    // Its own width decides how its head's contents show, not the window's (K-04).
+    <div className="@container min-w-0">
+      <Block
+        kind="note"
+        title="Notes"
+        count={
+          <span className="flex items-center gap-2 whitespace-nowrap">
+            <span>
+              {weekdayOf(day, true)}, {shortDay(day, today)}
+            </span>
+            {note && note.words > 0 && <span>{words(note.words)}</span>}
           </span>
-          {note && note.words > 0 && <span>{words(note.words)}</span>}
-        </span>
-      }
-      actions={
-        // The contents give way first when the page is narrow: Edit stays in reach.
-        <span className="flex min-w-0 items-center gap-1">
-          <span className="flex min-w-0 items-center gap-1 overflow-hidden">
-            {!writing &&
-              heads.map((h) => (
-                <button
-                  key={h}
-                  type="button"
-                  onClick={() =>
-                    [...(body.current?.querySelectorAll('h1, h2, h3') ?? [])]
-                      .find((el) => el.textContent?.trim() === h)
-                      ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-                  }
-                  className="inline-flex h-6 items-center rounded-control bg-hover px-2 text-meta text-muted hover:text-ink"
-                >
-                  {h}
-                </button>
-              ))}
+        }
+        actions={
+          // The contents give way first when the page is narrow: Edit stays in reach.
+          <span className="flex min-w-0 items-center gap-1">
+            {/* Wide enough, the headings as chips; narrower, the same in a "…" menu (K-04). */}
+            {!writing && heads.length > 0 && (
+              <>
+                <span className="hidden min-w-0 items-center gap-1 @[46rem]:flex">
+                  {heads.map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => goTo(h)}
+                      className="inline-flex h-6 items-center rounded-control bg-hover px-2 text-meta whitespace-nowrap text-muted hover:text-ink"
+                    >
+                      {h}
+                    </button>
+                  ))}
+                </span>
+                <span className="@[46rem]:hidden">
+                  <DropdownMenu.Root modal={false}>
+                    <DropdownMenu.Trigger aria-label="Go to a heading" className={ICON_BUTTON}>
+                      <MoreIcon size={16} aria-hidden="true" />
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Portal>
+                      <DropdownMenu.Content align="end" sideOffset={4} className={MENU_SURFACE}>
+                        {heads.map((h) => (
+                          <DropdownMenu.Item key={h} onSelect={() => goTo(h)} className={MENU_ITEM}>
+                            {h}
+                          </DropdownMenu.Item>
+                        ))}
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Portal>
+                  </DropdownMenu.Root>
+                </span>
+              </>
+            )}
+            {!writing && (
+              <button
+                type="button"
+                onClick={() => setWriting(true)}
+                aria-label={note ? 'Edit the notes' : 'Write the notes'}
+                className={`${BUTTON.inline} text-meta`}
+              >
+                {note ? 'Edit' : 'Write'}
+              </button>
+            )}
           </span>
-          {!writing && (
-            <button
-              type="button"
-              onClick={() => setWriting(true)}
-              aria-label={note ? 'Edit the notes' : 'Write the notes'}
-              className={`${BUTTON.inline} text-meta`}
-            >
-              {note ? 'Edit' : 'Write'}
-            </button>
-          )}
-        </span>
-      }
-    >
-      {writing ? (
-        <Writer meeting={m} note={note} onDone={() => setWriting(false)} />
-      ) : note ? (
-        <Folded note={note} body={body} />
-      ) : (
-        <p className="px-4 py-3 text-ui text-subtle">Nothing written for this one yet.</p>
-      )}
-    </Block>
+        }
+      >
+        {writing ? (
+          <Writer meeting={m} note={note} onDone={() => setWriting(false)} />
+        ) : note ? (
+          <Folded note={note} body={body} />
+        ) : (
+          <p className="px-4 py-3 text-ui text-subtle">Nothing written for this one yet.</p>
+        )}
+      </Block>
+    </div>
   )
 }
 

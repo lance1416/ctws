@@ -10,6 +10,7 @@ import { BlockFailed } from '../../platform/ui/Block'
 import {
   DoneIcon,
   DurationIcon,
+  FileIcon,
   KIND_ICON,
   LinkIcon,
   NewIcon,
@@ -193,6 +194,15 @@ const attachmentWords = (url: string) => {
   }
 }
 
+/** A link whose path ends in a file's name (`letter.pdf`) is a file, and wears a file's icon. */
+const isFile = (url: string) => {
+  try {
+    return /\.[a-z0-9]{2,5}$/i.test(new URL(url).pathname)
+  } catch {
+    return false
+  }
+}
+
 /** An attached link, drawn only for http(s): anything else is shown as its words. */
 const linkable = (url: string) => /^https?:\/\//i.test(url)
 
@@ -267,7 +277,11 @@ function lineOf(
                       title={url}
                       className="inline-flex h-6 max-w-64 items-center gap-1.5 rounded-control border border-line px-2 text-meta text-ink hover:bg-hover"
                     >
-                      <LinkIcon size={12} aria-hidden="true" />
+                      {isFile(url) ? (
+                        <FileIcon size={12} aria-hidden="true" />
+                      ) : (
+                        <LinkIcon size={12} aria-hidden="true" />
+                      )}
                       <span className="truncate">{attachmentWords(url)}</span>
                     </a>
                   ) : (

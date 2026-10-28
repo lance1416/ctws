@@ -52,6 +52,7 @@ const elements = (app) =>
  */
 const MODULE_EDGES = [
   ['meetings', 'people'],
+  ['meetings', 'organisations'],
   ['people', 'organisations'],
   ['communication', 'people'],
   ['communication', 'organisations'],

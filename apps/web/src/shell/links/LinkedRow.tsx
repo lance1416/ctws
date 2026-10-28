@@ -12,7 +12,7 @@ export function LinkedRow({ item }: { item: Item }) {
     <Link
       to={where.to(item.id)}
       data-linked={item.id}
-      className="grid min-h-9 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui text-ink hover:bg-hover"
+      className="grid min-h-9 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui text-ink"
     >
       <span className="flex min-w-0 flex-col">
         <span className="truncate">{item.title}</span>

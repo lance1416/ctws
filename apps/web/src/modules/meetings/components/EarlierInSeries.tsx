@@ -57,16 +57,20 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
       {earlier.isError ? (
         <BlockFailed what="earlier meetings" onRetry={() => void earlier.refetch()} />
       ) : (
-        <ol className="flex flex-col py-1.5">
+        <ol className="flex flex-col py-1.5 [&>li:last-of-type>.thread]:hidden">
           {found.map((o) => {
             const note = noteOf(o)
-            const Icon = note ? KIND_ICON.note : KIND_ICON.meeting
             return (
-              <li key={o.recurrenceId}>
+              <li key={o.recurrenceId} className="relative">
+                {/* The thread from one to the next (artboard 16, K-06); the last has none. */}
+                <span
+                  aria-hidden="true"
+                  className="thread absolute top-9 -bottom-2 left-[calc(1rem+52px+0.625rem+11.5px)] w-px bg-line"
+                />
                 <Link
                   to={occurrenceTo(o)}
                   data-earlier={o.recurrenceId}
-                  className="grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 px-4 py-2 text-ui hover:bg-hover"
+                  className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 px-4 py-2 text-ui hover:bg-hover"
                 >
                   <time className="pt-0.5 font-mono text-meta text-muted tabular-nums">
                     {monthDay(o.startsLocal.slice(0, 10))}
@@ -77,7 +81,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
                       note ? 'bg-note-bg text-note' : 'bg-hover text-muted'
                     }`}
                   >
-                    <Icon size={14} />
+                    <KIND_ICON.note size={14} />
                   </span>
                   <span className="line-clamp-2 min-w-0 text-ink">
                     {note

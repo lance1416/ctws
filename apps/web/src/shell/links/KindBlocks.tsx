@@ -204,7 +204,8 @@ function KindBlock({
         key={t.id}
         className={`group flex min-w-0 items-center ${join ? 'pr-1.5 hover:bg-hover' : ''}`}
       >
-        <ThingRow row={t} />
+        {/* With its ✕, the row takes the hover whole; the link adds none of its own (N-08). */}
+        <ThingRow row={t} hover={!join} />
         {join && (
           <TakeOff
             label={`Remove ${t.title} from ${removeFrom}`}
@@ -221,7 +222,7 @@ function KindBlock({
           <Link
             to={registry.relationFor(item.type).to(item.id)}
             data-linked={item.id}
-            className="min-w-0 flex-1 px-3 hover:bg-hover"
+            className="min-w-0 flex-1 px-3"
           >
             <Linked thing={item} />
           </Link>
@@ -325,14 +326,14 @@ function TakeOff({
  * A module's own thing: first a person's avatar or a word or two (a meeting's day and time), then
  * the title, then a fact.
  */
-function ThingRow({ row }: { row: Row }) {
+function ThingRow({ row, hover = true }: { row: Row; hover?: boolean }) {
   // A kind with no word to lead with (reading) gives its title the room.
   const lead = row.initials || row.lead !== undefined
   return (
     <Link
       to={row.to}
       data-linked={row.id}
-      className={`grid min-h-9 min-w-0 flex-1 items-center gap-x-3 px-3 text-ui text-ink hover:bg-hover ${
+      className={`grid min-h-9 min-w-0 flex-1 items-center gap-x-3 px-3 text-ui text-ink ${hover ? 'hover:bg-hover' : ''} ${
         lead ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]'
       }`}
     >
