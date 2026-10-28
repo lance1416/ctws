@@ -30,7 +30,10 @@ export function DetailPane({
   const wide = useWidePane()
 
   // The panel is last in the DOM, and Escape only works while focus is inside.
-  useEffect(() => panel.current?.focus(), [])
+  // A field inside that took focus itself (a search box with `autoFocus`) keeps it.
+  useEffect(() => {
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus()
+  }, [])
 
   // Hang below the header, measured rather than hard-coded.
   const [top, setTop] = useState(0)

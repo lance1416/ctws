@@ -1,6 +1,10 @@
 import { idFrom, meetingId, type MeetingOccurrence, type UpdateSeriesBody } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { UnsavedAsk } from '../../../platform/ui/UnsavedAsk'
+import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { problemText } from '../../../platform/http/api'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { DangerZone } from '../../../platform/ui/DangerZone'
@@ -143,18 +147,33 @@ function EditForm({
   navigate: ReturnType<typeof useNavigate>
 }) {
   const back = () => navigate(occurrenceTo(m))
+  // Where a save that moved it now is: the page it opens on, not the address it left (moved is
+  // told before saved).
+  const movedTo = useRef<MeetingOccurrence | null>(null)
+  const [unsaved, setUnsaved] = useState(false)
+  const [done, setDone] = useState(false)
+  const guard = useUnsavedGuard(unsaved && !done)
   const edit = useScopedEdit(m, {
-    moved: (to) => navigate(occurrenceTo(to), { replace: true }),
-    saved: back,
+    moved: (to) => {
+      movedTo.current = to
+    },
+    // Saved: drawn at once with nothing left to lose, so the guard lets the page go; and gone at
+    // once, before the occurrence it left reads as gone and takes this form with it.
+    saved: () => {
+      flushSync(() => setDone(true))
+      navigate(occurrenceTo(movedTo.current ?? m), { replace: movedTo.current !== null })
+    },
   })
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    // As tall as the page, so Delete sits at its foot under the last field (FR-035).
+    <div className="flex min-h-full max-w-3xl shrink-0 flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h1 tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
           Edit {m.title}
         </h1>
         {m.rrule && <p className="text-ui text-muted">Changing: {REACH[scope]}</p>}
       </div>
+      <UnsavedAsk guard={guard} />
       {edit.failed && (
         <p role="alert" className="text-ui text-stop-t">
           {edit.failed}
@@ -164,8 +183,9 @@ function EditForm({
         <MeetingForm
           meeting={m}
           busy={edit.busy}
-          onCancel={back}
+          onCancel={() => guard.leave(back)}
           onSave={(patch: UpdateSeriesBody) => edit.submitAs(patch, scope)}
+          onUnsaved={setUnsaved}
         />
       </div>
       <DangerZone>

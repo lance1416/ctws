@@ -13,12 +13,19 @@ import { PageHead } from '../../../platform/ui/PageHead'
 import { useTimeZone } from '../../../shell/auth'
 import { NewContext } from '../../../shell/creates'
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
+import { ModuleEmpty } from '../../../shell/layout'
 import { useRegistry } from '../../../shell/registry'
 import { meetingsQuery, seriesNotesQuery } from '../api'
 import { occurrenceTo } from '../components/EarlierInSeries'
 
 /** Each block shows this many before "All N" (FR-011). */
 const SHOWN = 5
+
+/**
+ * How far either way the overview looks before it says there are no meetings: half a year each
+ * way, one window the server allows (MAX_CALENDAR_SPAN_DAYS).
+ */
+const ANY_DAYS = 180
 
 /** How far back a meeting held without notes is still one to write (FR-066). */
 const WRITE_BACK_DAYS = 14
@@ -30,6 +37,13 @@ const WRITE_BACK_DAYS = 14
 export function MeetingsOverview() {
   const openNew = useContext(NewContext)
   const creator = useRegistry().creates.find((c) => c.kind === 'meeting')
+  const zone = useTimeZone()
+  const today = ymd(useNow(), zone)
+  // Half a year either way with nothing in it: no meetings, as far as anyone looks (FR-030).
+  const any = useQuery(
+    meetingsQuery({ from: addDays(today, -ANY_DAYS), to: addDays(today, ANY_DAYS) }),
+  )
+  if (any.isSuccess && any.data.length === 0) return <ModuleEmpty kind="meeting" />
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-3">
