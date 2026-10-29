@@ -26,15 +26,6 @@ async function xs(page: Page, selector: string): Promise<number[]> {
 
 // ------------------------------------------------------------------ the margin and the thread
 
-/** Where each of a set of elements ENDS, rounded-key to the pixel. */
-async function rights(page: Page, selector: string): Promise<number[]> {
-  const ends = await page
-    .locator(selector)
-    .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().right)))
-  expect(ends.length, `cells matching ${selector}`).toBeGreaterThan(1)
-  return ends
-}
-
 /**
  * In the tree only the NAME is indented (FR-054): the stage, progress and due columns stay at one
  * x at every depth, so they read as columns down a deep tree, while the titles step in by one
@@ -222,22 +213,13 @@ test('the tree has no breadcrumb; Today says where in its path column', async ({
 
 // ------------------------------------------------------------------------------- the project rail
 
-test('Done carries the rail, and a search result its project', async ({ page }) => {
+test('a finished task’s search result wears its project', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '归档测试')
   await makeTask(page, pid, '做完的事', { status: 'done' })
-  await page.goto('/review?view=done')
-  await expect(page.getByText('做完的事')).toBeVisible()
-  await expect(page.locator('[data-project-rail]').first()).toHaveAttribute(
-    'data-project-rail',
-    pid,
-  )
-  // The clock is the margin, and it ends at one x too.
   await makeTask(page, pid, '另一件做完的事', { status: 'done' })
-  await page.reload()
-  await expect(page.locator('time')).toHaveCount(2)
-  const times = await rights(page, 'time')
-  expect(new Set(times).size, `clock ends: ${times.join(',')}`).toBe(1)
+  await page.goto('/today')
+  await page.locator('#today-heading').waitFor()
 
   await page.keyboard.press('Control+k')
   await page.getByRole('combobox', { name: 'Search' }).fill('做完的事')
@@ -281,13 +263,6 @@ test('the status marker is the row’s heaviest mark, and only in progress has a
   expect(await colourOf(mark('To do'))).toBe(await token('muted'))
   expect(await colourOf(mark('Backlog'))).toBe(subtle)
   expect(await colourOf(mark('In progress'))).toBe(await token('go'))
-
-  // A finished one is subtle, as the backlog, and told by its filled shape. (On Done.)
-  await makeTask(page, pid, '收工', { status: 'done' })
-  await page.goto('/review?view=done')
-  await expect(page.getByText('收工')).toBeVisible()
-  expect(await colourOf(mark('Done'))).toBe(subtle)
-  expect(await mark('Done').evaluate((el) => el.getBoundingClientRect().width)).toBe(20)
 })
 
 // ------------------------------------------------------------- the two date semantics, by shape

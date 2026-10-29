@@ -3,7 +3,7 @@ import { usePhone } from '../../../platform/ui/phone'
 import { addDays } from '@ctws/core/day'
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import {
   BackIcon,
@@ -21,7 +21,6 @@ import { reviewQuery } from '../api'
 import { StatusMark } from '../../../platform/ui/StatusMark'
 import { useReviewWeek } from '../hooks/useReviewWeek'
 import { cellLines, type CellLine } from '../logic/review'
-import { Completed } from './Completed'
 import { ReviewWeeks } from './ReviewWeeks'
 
 /** Lines a cell shows before the rest fold into "N more". */
@@ -58,13 +57,8 @@ export function Review() {
         <ReviewWeeks />
       </>
     )
-  if (params.get('view') === 'done')
-    return (
-      <>
-        <h1 className="text-title text-ink">Done</h1>
-        <Completed />
-      </>
-    )
+  // The Done view is gone (RV-01): its address is the review, as the retired pages' are (FR-023).
+  if (params.has('view')) return <Navigate to="/review" replace />
   return <Week />
 }
 

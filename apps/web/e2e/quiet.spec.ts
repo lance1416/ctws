@@ -383,7 +383,7 @@ test('a project colour is picked on its edit page, named in words', async ({ pag
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
 })
 
-test('a finished task opens from the Done list, not only restored from it', async ({ page }) => {
+test('a finished task opens from the review, to be read', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const id = await makeTask(page, pid, '写迁移')
@@ -392,12 +392,12 @@ test('a finished task opens from the Done list, not only restored from it', asyn
     data: { status: 'done', notes: '先问清需求' },
   })
 
-  await page.goto('/review?view=done')
-  await page.getByRole('button', { name: '写迁移 改版' }).click()
-  const pane = page.getByRole('dialog', { name: 'Task details' })
-  await expect(pane).toBeVisible()
-  // Reading it is the point: looking at a finished task does not mean finding it again in its
-  // project's tree.
+  // Since the Done view went (RV-01), the week it was finished in is where it is read.
+  await page.goto('/review')
+  await page.getByRole('button', { name: 'Next week' }).click()
+  await page.getByRole('main').getByText('写迁移', { exact: true }).click()
+  // Beside the review, in the inspector: reading it does not mean finding it again in its tree.
+  const pane = page.getByRole('complementary', { name: 'Inspector' })
   await expect(pane).toContainText('先问清需求')
   await expect(pane.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
 })

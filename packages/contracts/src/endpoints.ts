@@ -135,8 +135,6 @@ import {
 } from './search'
 import { timelineQuery, timelineResponse } from './timeline'
 import {
-  completedQuery,
-  completedResponse,
   createTaskBody,
   dependencyLists,
   dependencyParams,
@@ -580,14 +578,6 @@ export const api = {
       query: reviewQuery,
       ok: 200,
       response: reviewResponse,
-    }),
-    completed: endpoint({
-      method: 'GET',
-      path: '/tasks',
-      summary: 'The latest finished tasks, newest first (view=completed).',
-      query: completedQuery,
-      ok: 200,
-      response: completedResponse,
     }),
     movement: endpoint({
       method: 'GET',

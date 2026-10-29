@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import type { KeyboardEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { monthDay } from '../../../platform/time/dates'
 import { useAccountToday } from '../../../shell/auth'
 import { reviewWeeksQuery } from '../api'
@@ -21,8 +20,6 @@ export function ReviewWeeks() {
   const today = useAccountToday()
   const weeks = useQuery(reviewWeeksQuery(today))
   const { monday, thisMonday, show } = useReviewWeek()
-  const [params, setParams] = useSearchParams()
-  const done = params.get('view') === 'done'
   if (!weeks.data) return null
   const order = weeks.data.map((w) => w.from)
   // A list like the others: ↑ and ↓ step to the newer and older week.
@@ -44,7 +41,7 @@ export function ReviewWeeks() {
           <h3 className="px-4 pt-2.5 pb-1 text-meta font-medium text-subtle">{monthName(month)}</h3>
           <ul className="flex flex-col">
             {inMonth.map((w) => {
-              const on = !done && w.from === monday
+              const on = w.from === monday
               return (
                 <li key={w.from}>
                   <button
@@ -81,18 +78,6 @@ export function ReviewWeeks() {
           </ul>
         </section>
       ))}
-      {/* Everything finished, newest first, whatever week it was. */}
-      <h3 className="px-4 pt-2.5 pb-1 text-meta font-medium text-subtle">All weeks</h3>
-      <button
-        type="button"
-        aria-current={done ? 'true' : undefined}
-        onClick={() => setParams({ view: 'done' })}
-        className={`mx-1.5 flex min-h-9 items-center rounded-control max-lg:min-h-11 px-2.5 text-left text-ui text-ink ${
-          done ? 'bg-select font-medium' : 'hover:bg-hover'
-        }`}
-      >
-        Done
-      </button>
     </nav>
   )
 }

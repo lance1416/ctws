@@ -1,6 +1,5 @@
 import type {
   CalendarEntry,
-  CompletedTaskResponse,
   DependencyRef,
   ReadyTaskResponse,
   SearchTaskResponse,
@@ -10,7 +9,7 @@ import type {
 } from '@ctws/contracts'
 import { isoOrNull } from '../../platform/values'
 import { dayEntry } from '../../shell/calendar'
-import type { CalendarRow, CompletedTask, ReadyTask, SearchTask, TodayTask } from './queries'
+import type { CalendarRow, ReadyTask, SearchTask, TodayTask } from './queries'
 import type { Task } from './tables'
 
 export function toTaskResponse(t: Task): TaskResponse {
@@ -49,16 +48,6 @@ export function toTodayResponse(
 
 export function toReadyResponse(t: ReadyTask): ReadyTaskResponse {
   return { ...toTaskResponse(t), projectName: t.projectName, path: t.path }
-}
-
-export function toCompletedResponse(t: CompletedTask): CompletedTaskResponse {
-  return {
-    ...toTaskResponse(t),
-    completedAt: t.completedAt.toISOString(),
-    projectName: t.projectName,
-    parentTitle: t.parentTitle,
-    completedOn: t.completedOn,
-  }
 }
 
 export function toSearchResponse(t: SearchTask): SearchTaskResponse {

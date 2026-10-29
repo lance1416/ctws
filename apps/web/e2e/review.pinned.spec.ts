@@ -58,7 +58,7 @@ test('the weeks are under their months, every bar on one scale', async ({ page }
     weeks.getByRole('region', { name: 'October' }).getByRole('button').first(),
   ).toHaveText(/Oct 19, so far\s*2/)
   // From the first change, here this week, but last week at least.
-  await expect(weeks.getByRole('button')).toHaveText([/Oct 19, so far\s*2/, /Oct 12\s*0/, 'Done'])
+  await expect(weeks.getByRole('button')).toHaveText([/Oct 19, so far\s*2/, /Oct 12\s*0/])
   // It opens on last week, the one a review is of; this week is there, so far.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Week of October 12')
   await expect(page.locator('[data-review-total]')).toHaveText(/0\s*finished\s*this week/)

@@ -9,7 +9,6 @@ import { pullRequestsOf } from '../../shell/resources'
 import { addDependency, createTask, removeDependency, deleteTask, updateTask } from './service'
 import {
   toCalendarEntry,
-  toCompletedResponse,
   toReadyResponse,
   toSearchResponse,
   toTaskResponse,
@@ -18,7 +17,6 @@ import {
 import {
   blockersFor,
   getTask,
-  listCompleted,
   listProjectMovement,
   listReady,
   listReview,
@@ -71,12 +69,6 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     on(api.tasks.review, async (req) => {
       const user = currentUser(req)
       return listReview(app.db, user.workspaceId, user.timezone, req.query, app.clock())
-    }),
-
-    on(api.tasks.completed, async (req) => {
-      const user = currentUser(req)
-      const { rows, page } = await listCompleted(app.db, user.workspaceId, user.timezone, req.query)
-      return { tasks: rows.map(toCompletedResponse), page }
     }),
 
     on(api.tasks.movement, async (req) => {

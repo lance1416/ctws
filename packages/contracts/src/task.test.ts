@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  completedTaskResponse,
   createTaskBody,
   projectMovementResponse,
   searchTaskResponse,
@@ -202,33 +201,6 @@ describe('searchTaskResponse', () => {
       projectArchived: false,
     })
     expect(parsed.status).toBe('cancelled')
-  })
-})
-
-describe('completedTaskResponse', () => {
-  const done = {
-    id: '00000000-0000-7000-8000-000000000001',
-    projectId: '00000000-0000-7000-8000-000000000002',
-    parentId: null,
-    title: 'a',
-    notes: null,
-    status: 'done',
-    scheduledOn: null,
-    dueAt: null,
-    rank: 'm',
-    stageId: null,
-    stageSince: null,
-    completedAt: '2026-10-04T09:00:00Z',
-    createdAt: '2026-10-04T00:00:00Z',
-    updatedAt: '2026-10-04T00:00:00Z',
-    projectName: 'Alpha',
-    parentTitle: null,
-    completedOn: '2026-10-04',
-  }
-
-  it('requires the moment it was finished', () => {
-    expect(completedTaskResponse.safeParse(done).success).toBe(true)
-    expect(completedTaskResponse.safeParse({ ...done, completedAt: null }).success).toBe(false)
   })
 })
 

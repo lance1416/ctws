@@ -27,9 +27,6 @@ export const markStart = (depth: number) => (depth - 1) * INDENT_PX + 16 + 6
 /** Where a row's title starts, past its mark: the inline new-task boxes start there too. */
 export const titleStart = (depth: number) => markStart(depth) + 16 + 6 + 4
 
-/** The Done view's rows carry nothing on the right, so its list is kept narrow. */
-export const DONE_LIST_MEASURE = 'max-w-[36rem]'
-
 /** The date marks share one canvas, stroke and size, so only their silhouettes differ. */
 function Glyph({ children }: { children: ReactNode }) {
   return (

@@ -1,5 +1,2 @@
-/** The row parts every list is built from, so modules' rows line up. */
-export { DaySection } from './DaySection'
+/** What every list's rows share, so modules' rows line up. */
 export { dueTodayAt } from './leads'
-export { RowLead } from './RowLead'
-export { ProjectRail, ROW_BODY_WIDE } from './RowParts'

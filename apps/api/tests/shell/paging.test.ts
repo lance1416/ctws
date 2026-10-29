@@ -95,7 +95,6 @@ describe('the page a list gives when none is asked for', () => {
     ['/api/v1/people', 200],
     ['/api/v1/reading', 200],
     ['/api/v1/admin/users', 200],
-    ['/api/v1/tasks?view=completed', 200],
     ['/api/v1/tasks?q=needle', 50],
     ['/api/v1/people?q=Person', 20],
     ['/api/v1/reading?q=Book', 20],

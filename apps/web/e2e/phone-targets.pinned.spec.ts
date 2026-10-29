@@ -230,7 +230,6 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
     ['a note', `/notes/${a.note}`],
     ['Review', '/review'],
     ['the weeks', '/review?list=weeks'],
-    ['Done', '/review?view=done'],
     ['Account', '/account'],
     ['a task in the sheet', `/projects/${a.jh}?inspect=task:${a.amazon}`],
     ['a person in the sheet', `/projects/${a.jh}?inspect=person:${a.mira}`],

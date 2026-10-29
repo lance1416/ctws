@@ -205,7 +205,6 @@ describe('the OpenAPI document', () => {
     const views = tasks.find((p) => p.name === 'view')!.schema as { enum: string[] }
     expect([...views.enum].sort()).toEqual([
       'calendar',
-      'completed',
       'movement',
       'ready',
       'review',

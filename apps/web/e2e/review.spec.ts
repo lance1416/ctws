@@ -61,7 +61,7 @@ test('the review is a destination: each line of work a row, split by what happen
   await expect(page.locator('[data-no-movement]')).toContainText('Quiet')
 })
 
-test('it shows work that was finished and then reopened, which Done does not', async ({ page }) => {
+test('it shows work that was finished and then reopened', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'CTWS')
   const id = await makeTask(page, pid, '写迁移', { status: 'done' })
@@ -72,12 +72,19 @@ test('it shows work that was finished and then reopened, which Done does not', a
   await page.goto('/review')
   await thisWeek(page)
   await expect(cell(page, 'CTWS', 'finished')).toContainText('写迁移')
+})
 
-  await page
-    .getByRole('navigation', { name: 'Weeks' })
-    .getByRole('button', { name: 'Done' })
-    .click()
-  await expect(page.getByText('Nothing finished yet')).toBeVisible()
+test('the Done view is gone: the weeks end with the weeks, and its address is the review (RV-01)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto('/review?view=done')
+  await expect(page).toHaveURL(/\/review$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Week of /)
+  const weeks = page.getByRole('navigation', { name: 'Weeks' })
+  await expect(weeks.getByRole('button').first()).toBeVisible()
+  await expect(weeks.getByRole('button', { name: 'Done' })).toHaveCount(0)
+  await expect(weeks.getByText('All weeks')).toHaveCount(0)
 })
 
 test('a week with nothing in it says so', async ({ page }) => {

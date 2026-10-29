@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { addDays } from '@ctws/core/day'
 import { fullDay, monthDay, weekdayOf } from '../../platform/time/dates'
 
-export type LeadTone = 'missed' | 'deadline' | 'plan' | 'time' | 'quiet'
+type LeadTone = 'missed' | 'deadline' | 'plan' | 'time' | 'quiet'
 
 /** What goes in the margin. `exact` is the moment in full, for the title. */
 export type Lead = { text: string; tone: LeadTone; flag: boolean; exact?: string }

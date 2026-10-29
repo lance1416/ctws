@@ -11,7 +11,7 @@ import {
 } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
-import { pageInfo, pageQuery } from './page'
+import { pageInfo } from './page'
 import { stageResponse } from './project'
 
 export const TASK_STATUSES = ['backlog', 'todo', 'in_progress', 'done', 'cancelled'] as const
@@ -291,26 +291,6 @@ const readyTaskResponse = taskResponse.extend({
 export type ReadyTaskResponse = z.infer<typeof readyTaskResponse>
 
 export const readyResponse = z.object({ tasks: z.array(readyTaskResponse) })
-
-export const completedTaskResponse = taskResponse.extend({
-  completedAt: instant,
-  projectName: z.string(),
-  parentTitle: z.string().nullable(),
-  /** The day it was finished, in the account's zone. */
-  completedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-})
-export type CompletedTaskResponse = z.infer<typeof completedTaskResponse>
-
-/** How many finished tasks one page holds; the weekly review covers older ones. */
-const COMPLETED_PAGE = 200
-
-export const completedQuery = viewQuery('completed', pageQuery(COMPLETED_PAGE))
-
-/** The latest finished tasks, newest first; a next cursor says older ones exist. */
-export const completedResponse = z.object({
-  tasks: z.array(completedTaskResponse),
-  page: pageInfo,
-})
 
 /** One project's movement: counts, never a ratio. Days are in the account's zone. */
 export const projectMovementResponse = z.object({

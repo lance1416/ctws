@@ -128,28 +128,26 @@ test('leaving a reading edit with nothing changed just goes', async ({ page }) =
   await expect(page).toHaveURL(new RegExp(`/reading/${item.id}$`))
 })
 
-for (const where of ['Today', 'Done'] as const) {
-  test(`opening another task beside an edited one on ${where} asks first`, async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await registerFreshUser(page)
-    const pid = await makeProject(page, 'P')
-    const today = dayInZone(await accountZone(page))
-    const fields = where === 'Today' ? { scheduledOn: today } : { status: 'done' }
-    await makeTask(page, pid, 'First task', fields)
-    await makeTask(page, pid, 'Second task', fields)
-    await page.goto(where === 'Today' ? '/today' : '/review?view=done')
+test('opening another task beside an edited one on Today asks first', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const today = dayInZone(await accountZone(page))
+  const fields = { scheduledOn: today }
+  await makeTask(page, pid, 'First task', fields)
+  await makeTask(page, pid, 'Second task', fields)
+  await page.goto('/today')
 
-    await page.getByRole('main').getByText('First task').click()
-    const pane = page.getByRole('dialog', { name: 'Task details' })
-    await editDetail(page)
-    await pane.getByRole('textbox', { name: 'Title' }).fill('First task, renamed')
-    await page.getByRole('main').getByText('Second task').click()
+  await page.getByRole('main').getByText('First task').click()
+  const pane = page.getByRole('dialog', { name: 'Task details' })
+  await editDetail(page)
+  await pane.getByRole('textbox', { name: 'Title' }).fill('First task, renamed')
+  await page.getByRole('main').getByText('Second task').click()
 
-    await expect(asked(pane)).toBeVisible()
-    await pane.getByRole('button', { name: 'Keep editing' }).click()
-    await expect(pane.getByRole('textbox', { name: 'Title' })).toHaveValue('First task, renamed')
-  })
-}
+  await expect(asked(pane)).toBeVisible()
+  await pane.getByRole('button', { name: 'Keep editing' }).click()
+  await expect(pane.getByRole('textbox', { name: 'Title' })).toHaveValue('First task, renamed')
+})
 
 /** Each dialog: its name, its box, and a way to open it, again and again from the same place. */
 const newDialogs: [string, string, (page: Page) => Promise<() => Promise<unknown>>][] = [

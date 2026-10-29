@@ -49,19 +49,6 @@ test('an empty project is its column names and New task, one way to add', async 
   await expect(page.getByRole('listitem').filter({ hasText: '第一条' })).toBeVisible()
 })
 
-test('an empty Done says so, and the line goes when something is finished', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  await page.goto('/review?view=done')
-
-  await expect(page.getByText('Nothing finished yet')).toBeVisible()
-
-  await makeTask(page, pid, '做完的事', { status: 'done' })
-  await page.goto('/review?view=done')
-  await expect(page.getByText('做完的事')).toBeVisible()
-  await expect(page.getByText('Nothing finished yet')).toHaveCount(0)
-})
-
 test('a search with no match says so, and offers to make it a task (FR-024)', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')

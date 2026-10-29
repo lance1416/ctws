@@ -95,7 +95,6 @@ for (const width of [320, 375]) {
       ['/reading', 'Designing Data-Intensive Applications'],
       ['/reading', 'Cracking the Coding Interview'],
       ['/notes', 'Questions to ask the interviewer'],
-      ['/review?view=done', 'Done one'],
       // The overview: its blocks are what must fit (FR-060).
       ['/people', 'Recently in touch'],
     ] as const) {
@@ -112,27 +111,3 @@ for (const width of [320, 375]) {
     expect(await problems(page), 'review, this week').toEqual([])
   })
 }
-
-/** How far in a row's body starts: the padding of the li's child that holds `title`. */
-const bodyStart = (page: Page, title: string) =>
-  page
-    .getByRole('main')
-    .getByText(title, { exact: true })
-    .first()
-    .evaluate((el) => {
-      let at: Element = el
-      while (at.parentElement && at.parentElement.tagName !== 'LI') at = at.parentElement
-      return getComputedStyle(at).paddingLeft
-    })
-
-// Today's rows are blocks' rows now (artboard 12), each block with its own inset; the phone's
-// Today is phase 4 (STORY-037).
-test('Completed starts 14px past the thread on a phone too', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 800 })
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'Gutter')
-  await makeTask(page, pid, 'Finished', { status: 'done' })
-
-  await page.goto('/review?view=done')
-  expect(await bodyStart(page, 'Finished'), 'Completed').toBe('14px')
-})

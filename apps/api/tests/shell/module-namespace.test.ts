@@ -28,9 +28,8 @@ afterAll(async () => {
 const get = (url: string, headers = ctx.authed) => ctx.app.inject({ method: 'GET', url, headers })
 
 describe('the task module answers under its own namespace', () => {
-  it('serves today, completed, search and the task collection under /api/v1/tasks', async () => {
+  it('serves today, search and the task collection under /api/v1/tasks', async () => {
     expect((await get('/api/v1/tasks?view=today')).statusCode).toBe(200)
-    expect((await get('/api/v1/tasks?view=completed')).statusCode).toBe(200)
     expect((await get('/api/v1/tasks?q=inside')).statusCode).toBe(200)
     const list = await get(`/api/v1/tasks?projectId=${projectId}`)
     expect(list.statusCode).toBe(200)
@@ -52,9 +51,7 @@ describe('the OpenAPI document describes the namespaced API', () => {
     expect(paths).toContain('/api/v1/tasks/{id}')
     // A view of a collection is a query on its path, not a path of its own; `/search` is the
     // shell's, across every collection, and no collection's view.
-    expect(
-      paths.filter((p) => /\/v1\/.+\/(today|search|calendar|completed|movement)$/.test(p)),
-    ).toEqual([])
+    expect(paths.filter((p) => /\/v1\/.+\/(today|search|calendar|movement)$/.test(p))).toEqual([])
     expect(paths).toContain('/api/v1/search')
     // The shell's own surface, still flat.
     expect(paths).toContain('/api/v1/projects')

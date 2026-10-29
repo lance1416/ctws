@@ -31,7 +31,6 @@ export const taskKeys = {
   /** Today's list, whichever day it was read for. */
   todays: ['tasks', 'today'] as const,
   today: (day: string) => [...taskKeys.todays, day] as const,
-  completed: (day: string) => ['tasks', 'completed', day] as const,
   movement: (day: string) => ['tasks', 'movement', day] as const,
   ready: (day: string) => ['tasks', 'ready', day] as const,
   calendar: (range: Range) => ['tasks', 'calendar', range.from, range.to] as const,
@@ -68,14 +67,6 @@ export const todayQuery = (day: string) =>
     queryKey: taskKeys.today(day),
     queryFn: async ({ signal }) =>
       (await call(api.tasks.today, { query: { view: 'today' } }, { signal })).tasks,
-  })
-
-/** Newest first; the server decides each task's day and whether this is the whole history. */
-export const completedQuery = (day: string) =>
-  queryOptions({
-    queryKey: taskKeys.completed(day),
-    queryFn: ({ signal }) =>
-      call(api.tasks.completed, { query: { view: 'completed' } }, { signal }),
   })
 
 /**

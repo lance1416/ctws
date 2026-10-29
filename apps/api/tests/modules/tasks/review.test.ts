@@ -77,12 +77,12 @@ describe('the weekly review', () => {
     const body = await review(ctx)
     expect(body.projects[0]!.finished.map((t) => t.title)).toEqual(['写迁移'])
     // While the task itself is plainly not finished.
-    const completed = await ctx.app.inject({
+    const task = await ctx.app.inject({
       method: 'GET',
-      url: '/api/v1/tasks?view=completed',
+      url: `/api/v1/tasks/${id}`,
       headers: ctx.authed,
     })
-    expect((completed.json() as { tasks: unknown[] }).tasks).toEqual([])
+    expect((task.json() as { status: string }).status).toBe('todo')
   })
 
   it('counts a task once per list however often it moved', async () => {
