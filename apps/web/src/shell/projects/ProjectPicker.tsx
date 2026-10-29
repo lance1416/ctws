@@ -1,14 +1,12 @@
 import type { ProjectId } from '@ctws/contracts'
 import { PickMany, PickOne, type Choice } from '../../platform/ui/inline'
 import { useEveryProject, useProjects } from './api'
-import { useProjectRail } from './projectColor'
+import { ProjectSquare } from './ProjectSquare'
 
-/** A project's colour as the 3px mark beside its name, which is always shown with it. */
+/** A project beside its name in a picker: its square, as everywhere a project is named (G-02). */
 export function ProjectChip({ projectId }: { projectId: ProjectId }) {
-  const rail = useProjectRail()
-  return (
-    <span aria-hidden="true" className={`h-3.5 w-[3px] shrink-0 rounded-full ${rail(projectId)}`} />
-  )
+  const project = useEveryProject().data?.find((p) => p.id === projectId)
+  return project ? <ProjectSquare project={project} /> : null
 }
 
 function useLiveChoices(): Choice<ProjectId>[] {

@@ -1,5 +1,4 @@
-import { type ProjectColor, type ProjectId } from '@ctws/contracts'
-import { useEveryProject } from './api'
+import type { ProjectColor } from '@ctws/contracts'
 
 /**
  * The eight project colours (tokens.md). The colour is stored on the project, chosen by the server
@@ -23,12 +22,4 @@ const UNKNOWN_RAIL = 'bg-line'
 /** A lookup, not a template: Tailwind only emits classes it can see. */
 export function squareClass(color: ProjectColor | undefined): string {
   return color ? RAIL[color] : UNKNOWN_RAIL
-}
-
-/** `(projectId) => class`, for places that hold a project id and not the project. */
-export function useProjectRail(): (projectId: ProjectId) => string {
-  // Live and archived both: a row on an archived project keeps its colour (the shelf, a search).
-  const { data } = useEveryProject()
-  const byId = new Map(data?.map((p) => [p.id, p.color]) ?? [])
-  return (projectId) => squareClass(byId.get(projectId))
 }

@@ -192,7 +192,8 @@ function EditForm({
           {edit.failed}
         </p>
       )}
-      <div className="rounded-block border border-line bg-panel p-4">
+      {/* A phone's form page is the page itself, no card inside it (P4-16). */}
+      <div className="rounded-block border border-line bg-panel p-4 max-lg:border-0 max-lg:bg-transparent max-lg:p-0">
         <MeetingForm
           meeting={m}
           busy={edit.busy}
