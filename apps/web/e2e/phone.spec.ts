@@ -241,47 +241,53 @@ test('the phone calendar: lunar names, a dot a kind, the chosen day listed (FR-0
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
-test('a person on a phone: a tap to reach them, their clock, the rest under More about (FR-087)', async ({
-  page,
-}) => {
-  // Their clock against yours on a day of their summer time and ours.
-  await page.clock.setFixedTime(new Date('2026-10-18T09:24:00Z'))
-  await registerFreshUser(page)
-  const wang = await apiPost(page, '/people', {
-    givenName: '磊',
-    familyName: '王',
-    city: 'Shanghai, China',
-    cityKey: 'shanghai-cn',
-    timeZone: 'Asia/Shanghai',
-    note: 'Met at the Beijing meetup.',
-    channels: [{ kind: 'phone', value: '+86 139 1234 5678', label: null }],
+test.describe('with your clock in London', () => {
+  // "7 hours ahead" is Shanghai against London in British Summer Time, not against wherever
+  // the suite happens to run.
+  test.use({ timezoneId: 'Europe/London' })
+
+  test('a person on a phone: a tap to reach them, their clock, the rest under More about (FR-087)', async ({
+    page,
+  }) => {
+    // Their clock against yours on a day of their summer time and ours.
+    await page.clock.setFixedTime(new Date('2026-10-18T09:24:00Z'))
+    await registerFreshUser(page)
+    const wang = await apiPost(page, '/people', {
+      givenName: '磊',
+      familyName: '王',
+      city: 'Shanghai, China',
+      cityKey: 'shanghai-cn',
+      timeZone: 'Asia/Shanghai',
+      note: 'Met at the Beijing meetup.',
+      channels: [{ kind: 'phone', value: '+86 139 1234 5678', label: null }],
+    })
+    await page.goto(`/people/${wang.id as string}`)
+    await expect(page.getByRole('link', { name: 'People' }).first()).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Call' })).toHaveAttribute(
+      'href',
+      'tel:+8613912345678',
+    )
+    await expect(page.getByRole('link', { name: 'Message' })).toHaveAttribute(
+      'href',
+      'sms:+8613912345678',
+    )
+    // No address to write to: Email is greyed and goes nowhere.
+    await expect(page.getByRole('link', { name: 'Email' })).toHaveCount(0)
+
+    const card = page.getByRole('list', { name: 'Profile' })
+    await expect(card).toContainText('17:24 in Shanghai')
+    await expect(card).toContainText('7 hours ahead of you')
+    const more = page.getByRole('region', { name: 'More about 王磊' })
+    await expect(more).toContainText('Shanghai, China')
+    await expect(more).toContainText('Met at the Beijing meetup.')
+
+    // "…" holds Delete, and only that.
+    await page.getByRole('button', { name: 'More', exact: true }).click()
+    const sheet = page.getByRole('dialog', { name: '王磊' })
+    await expect(sheet.getByRole('button')).toHaveCount(2)
+    await expect(sheet.getByRole('button', { name: 'Close' })).toBeVisible()
+    await expect(sheet.getByRole('button', { name: 'Delete 王磊' })).toBeVisible()
   })
-  await page.goto(`/people/${wang.id as string}`)
-  await expect(page.getByRole('link', { name: 'People' }).first()).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Call' })).toHaveAttribute(
-    'href',
-    'tel:+8613912345678',
-  )
-  await expect(page.getByRole('link', { name: 'Message' })).toHaveAttribute(
-    'href',
-    'sms:+8613912345678',
-  )
-  // No address to write to: Email is greyed and goes nowhere.
-  await expect(page.getByRole('link', { name: 'Email' })).toHaveCount(0)
-
-  const card = page.getByRole('list', { name: 'Profile' })
-  await expect(card).toContainText('17:24 in Shanghai')
-  await expect(card).toContainText('7 hours ahead of you')
-  const more = page.getByRole('region', { name: 'More about 王磊' })
-  await expect(more).toContainText('Shanghai, China')
-  await expect(more).toContainText('Met at the Beijing meetup.')
-
-  // "…" holds Delete, and only that.
-  await page.getByRole('button', { name: 'More', exact: true }).click()
-  const sheet = page.getByRole('dialog', { name: '王磊' })
-  await expect(sheet.getByRole('button')).toHaveCount(2)
-  await expect(sheet.getByRole('button', { name: 'Close' })).toBeVisible()
-  await expect(sheet.getByRole('button', { name: 'Delete 王磊' })).toBeVisible()
 })
 
 test('on a phone the inspector is a sheet over the whole screen: ×, ‹ once deeper, Edit (FR-088)', async ({
