@@ -231,6 +231,64 @@ test('pin a link from the launcher, on a project, at its first free digit', asyn
   await expect(place(page, 'launcher').locator('[data-launcher="1"]')).toContainText('Budget')
 })
 
+test('N L hangs a link where you are: the inspector’s task, this project, or one picked', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const jh = await makeProject(page, 'Job hunt')
+  await makeProject(page, 'Moving flat')
+  const task = await makeTask(page, jh, 'Write the cover letter')
+  const form = page.getByRole('dialog', { name: 'Pin a link' })
+  const resources = async (type: string, id: string) =>
+    (
+      (await (
+        await page.request.get(`/api/v1/resources?type=${type}&id=${id}`, { headers: WEB })
+      ).json()) as { resources: { url: string; pinnedRank: number | null }[] }
+    ).resources
+
+  // A task in the inspector: added to its Resources.
+  await page.goto(`/projects/${jh}?inspect=task:${task}`)
+  await expect(page.getByRole('complementary', { name: 'Inspector' })).toBeVisible()
+  await page.keyboard.press('n')
+  await page.keyboard.press('l')
+  await expect(form.locator('[data-pin-where]')).toHaveText('Adds to Write the cover letter')
+  await form.getByRole('textbox', { name: 'Address' }).fill('https://github.com/x/y')
+  await form.getByRole('button', { name: 'Add', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  expect((await resources('task', task)).map((r) => r.url)).toEqual(['https://github.com/x/y'])
+
+  // The project's page, nothing inspected: pinned in its head at the first free digit.
+  await page.goto(`/projects/${jh}`)
+  await expect(page.getByRole('heading', { name: 'Job hunt', level: 1 })).toBeVisible()
+  await page.keyboard.press('n')
+  await page.keyboard.press('l')
+  await expect(form.locator('[data-pin-where]')).toContainText('Pins on')
+  await expect(form.locator('[data-pin-where]')).toContainText('Job hunt')
+  await form.getByRole('textbox', { name: 'Address' }).fill('https://docs.google.com/d/cv')
+  // Esc keeps what was typed for the next N L (FR-029).
+  await page.keyboard.press('Escape')
+  await expect(form).toHaveCount(0)
+  await page.keyboard.press('n')
+  await page.keyboard.press('l')
+  await expect(form.getByRole('textbox', { name: 'Address' })).toHaveValue(
+    'https://docs.google.com/d/cv',
+  )
+  await form.getByRole('button', { name: 'Pin', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  expect((await resources('project', jh)).map((r) => r.pinnedRank)).toEqual([1])
+
+  // Anywhere else: which project, asked.
+  await page.goto('/people')
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
+  await page.keyboard.press('n')
+  await page.keyboard.press('l')
+  await form.getByRole('textbox', { name: 'Address' }).fill('https://example.com/van')
+  await expect(form.getByRole('button', { name: 'Pin', exact: true })).toBeDisabled()
+  await pickOne(form, 'Projects', 'Moving flat')
+  await form.getByRole('button', { name: 'Pin', exact: true }).click()
+  await expect(form).toHaveCount(0)
+})
+
 test.describe('coming back from a resource (FR-028)', () => {
   /** Opens the task's resource from its pane, and comes back to the tab. */
   async function goAndComeBack(page: Page, name: string) {

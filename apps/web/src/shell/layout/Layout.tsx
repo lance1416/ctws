@@ -1,4 +1,6 @@
 import { api, idFrom, projectId as projectIdSchema } from '@ctws/contracts'
+import { PinLink } from '../resources/PinLink'
+import { forgetDrafts } from '../../platform/ui/drafts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { Navigate, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom'
@@ -43,6 +45,7 @@ export function Layout() {
       // Every cache, not just the session: the next sign-in may be someone else.
       qc.clear()
       qc.setQueryData(meKey, null)
+      forgetDrafts()
     },
   })
 
@@ -92,6 +95,7 @@ function Frame({
   const [searching, setSearching] = useState(false)
   const [help, setHelp] = useState(false)
   const [linking, setLinking] = useState(false)
+  const [pinning, setPinning] = useState(false)
   const [creating, setCreating] = useState<({ creator: Creator } & NewHow) | null>(null)
   const [barExpanded, setBarExpanded] = useRemembered('ctws:iconbar', () => false)
   // A choice made by hand is kept whatever the width (handoff §4).
@@ -169,7 +173,9 @@ function Frame({
                 if (subject) setLinking(true)
               }}
               onNew={openNew}
+              onPinLink={() => setPinning(true)}
             />
+            {pinning && <PinLink onClose={() => setPinning(false)} />}
             {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
             <BottomBar onSearch={() => setSearching(true)} />
           </div>

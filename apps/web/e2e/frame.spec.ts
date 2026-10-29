@@ -106,9 +106,9 @@ test('expanding the icon bar leaves the sidebar, and the longest name fits (D2-0
 test('the N prefix swallows a key that makes nothing (BUG-018)', async ({ page }) => {
   await registerFreshUser(page)
   const before = page.url()
-  // `L` alone links; after `N` it is a creator's key, and none is `L` yet.
+  // `Q` makes nothing after `N`, and must not reach anything else either.
   await page.keyboard.press('n')
-  await page.keyboard.press('l')
+  await page.keyboard.press('q')
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(page.url()).toBe(before)
 })

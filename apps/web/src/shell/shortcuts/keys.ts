@@ -1,6 +1,6 @@
 import type { KeyTable } from '../../platform/keyboard/keyTable'
 import type { Chord, Creator } from '../contract'
-import { JUMP_PREFIX, NEW_PREFIX } from './chords'
+import { JUMP_PREFIX, NEW_PREFIX, PIN_LINK_KEY } from './chords'
 
 export type AnywhereAction = 'capture' | 'search' | 'help' | 'sidebar' | 'jump' | 'link' | 'new'
 
@@ -25,7 +25,11 @@ export function anywhereKeys(
       { keys: 'L', does: 'Link this to something', presses: { l: 'link' } },
       { keys: '?', does: 'This list', presses: { '?': 'help' } },
       { keys: '[', does: 'Hide or show the side panel', presses: { '[': 'sidebar' } },
-      { keys: 'Esc', does: 'Close the inspector or the overlay', presses: {} },
+      {
+        keys: 'Esc',
+        does: 'Close the inspector or the overlay',
+        presses: {},
+      },
       // Only while focus is in the inspector, where the inspector itself answers it (FR-022).
       { keys: 'Alt+←', does: 'Back, in the inspector', presses: {} },
       ...chords.map((c) => ({
@@ -41,6 +45,11 @@ export function anywhereKeys(
         presses: { [NEW_PREFIX]: 'new' as const },
         ...(c.kind === 'task' ? { was: 'n' } : {}),
       })),
+      {
+        keys: `${NEW_PREFIX.toUpperCase()} ${PIN_LINK_KEY.toUpperCase()}`,
+        does: 'Link',
+        presses: { [NEW_PREFIX]: 'new' as const },
+      },
     ],
   }
 }

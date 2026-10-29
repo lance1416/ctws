@@ -9,3 +9,6 @@ export const NEW_PREFIX = 'n'
 
 /** How long a pending `g` waits for its second key before it is forgotten. */
 export const CHORD_TIMEOUT_MS = 1500
+
+/** After N: a link, which is no kind of its own but hangs on one (FR-029). */
+export const PIN_LINK_KEY = 'l'

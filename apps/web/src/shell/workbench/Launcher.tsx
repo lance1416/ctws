@@ -1,23 +1,15 @@
 import { resourceLook } from '@ctws/core'
-import type { ProjectId, ResourceResponse } from '@ctws/contracts'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { PinLink } from '../resources/PinLink'
+import type { ResourceResponse } from '@ctws/contracts'
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { Block, BlockFailed, SkeletonRows } from '../../platform/ui/Block'
 import { KEY } from '../../platform/ui/buttonStyles'
-import { DialogFooter } from '../../platform/ui/DialogFooter'
-import { textbox } from '../../platform/ui/formStyles'
 import { LauncherIcon, NewIcon } from '../../platform/ui/icons'
-import { Modal } from '../../platform/ui/Modal'
-import { ProjectPicker, ProjectSquare, useEveryProject } from '../projects'
+import { ProjectSquare, useEveryProject } from '../projects'
 import { digitHandlers, LAUNCHER_LINKS, WORKBENCH_KEYS } from '../projects/keys'
-import {
-  followable,
-  pinnedEverywhereQuery,
-  pinOnProject,
-  resourceKeys,
-  resourceName,
-} from '../resources/api'
+import { followable, pinnedEverywhereQuery, resourceName } from '../resources/api'
 import { useGoOut } from '../resources/away'
 import { ResourceIcon } from '../resources/ResourceIcon'
 
@@ -141,64 +133,7 @@ function PinALink() {
         <NewIcon size={14} aria-hidden="true" />
         Pin a link
       </button>
-      {open && <PinDialog onClose={() => setOpen(false)} />}
+      {open && <PinLink onClose={() => setOpen(false)} pick />}
     </>
-  )
-}
-
-function PinDialog({ onClose }: { onClose: () => void }) {
-  const [project, setProject] = useState<ProjectId | null>(null)
-  const [url, setUrl] = useState('')
-  const [name, setName] = useState('')
-  const typed = url.trim()
-  const recognised = /^https?:\/\/\S+$/i.test(typed)
-  const pin = useMutation({
-    mutationFn: async () => {
-      const made = await pinOnProject(project!, { url: typed, name: name.trim() || null })
-      if (!made) throw new Error('Nine are pinned on that project, one for each digit')
-      return made
-    },
-    meta: { changes: ['project'], awaits: [resourceKeys.pinned], ownsError: true },
-    onSuccess: onClose,
-  })
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    if (recognised && project) pin.mutate()
-  }
-  return (
-    <Modal title="Pin a link" onClose={onClose} unsaved={typed !== '' || name.trim() !== ''}>
-      <form onSubmit={submit} noValidate aria-label="Pin a link" className="flex flex-col gap-3">
-        <input
-          type="url"
-          autoFocus
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://"
-          aria-label="Address"
-          className={`w-full ${textbox}`}
-        />
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={recognised ? resourceLook(typed).label : 'Name (optional)'}
-          aria-label="Name (optional)"
-          className={`w-full ${textbox}`}
-        />
-        <ProjectPicker value={project} onPick={setProject} none="Pin on…" />
-        {pin.isError && (
-          <p role="alert" className="text-meta text-stop-t">
-            {pin.error.message.startsWith('Nine')
-              ? pin.error.message
-              : 'Couldn’t pin it. What you typed is still here.'}
-          </p>
-        )}
-        <DialogFooter
-          submit="Pin"
-          busy={pin.isPending}
-          disabled={!recognised || !project}
-          onCancel={onClose}
-        />
-      </form>
-    </Modal>
   )
 }

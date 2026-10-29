@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Creator } from '../contract'
 import { useRegistry } from '../registry'
-import { CHORD_TIMEOUT_MS, JUMP_PREFIX, NEW_PREFIX } from './chords'
+import { CHORD_TIMEOUT_MS, JUMP_PREFIX, NEW_PREFIX, PIN_LINK_KEY } from './chords'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { SearchDialog } from '../search/SearchDialog'
 import { ShortcutHelp } from './ShortcutHelp'
@@ -22,6 +22,7 @@ export function Shortcuts({
   onSidebar,
   onLink,
   onNew,
+  onPinLink,
 }: {
   search: boolean
   setSearch: (open: boolean) => void
@@ -30,6 +31,8 @@ export function Shortcuts({
   onSidebar: () => void
   onLink: () => void
   onNew: (creator: Creator) => void
+  /** N L: a link, hung where you are (FR-029). */
+  onPinLink: () => void
 }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
@@ -70,6 +73,8 @@ export function Shortcuts({
             const to = chord.resolve({ queryClient: qc })
             if (to) navigate(to)
           }
+        } else if (e.key === PIN_LINK_KEY) {
+          onPinLink()
         } else {
           const creator = registry.creatorFor(e.key)
           if (creator) {
