@@ -23,8 +23,9 @@ test('the zone changes in place, saved on picking, and the clock follows', async
   await registerFreshUser(page, '/account')
   const place = page.getByRole('region', { name: 'Time and place' })
   await expect(place).toContainText('Europe/London')
-  // 00:30 UTC is 01:30 in London, 08:30 in Shanghai.
-  await expect(place).toContainText(/01:3\d now/)
+  // 00:30 UTC is 01:30 in London, 08:30 in Shanghai. The pinned clock runs on from when the
+  // server started, so only the hour is held: the minutes are however long the stack has been up.
+  await expect(place).toContainText(/01:\d\d now/)
 
   await place.getByRole('button', { name: 'Change' }).click()
   await place.getByRole('combobox', { name: 'Time zone' }).press('Escape')
@@ -34,7 +35,7 @@ test('the zone changes in place, saved on picking, and the clock follows', async
   await place.getByRole('combobox', { name: 'Time zone' }).fill('shanghai')
   await place.getByRole('option', { name: 'Asia/Shanghai' }).click()
   await expect(place).toContainText('Asia/Shanghai')
-  await expect(place).toContainText(/08:3\d now/)
+  await expect(place).toContainText(/08:\d\d now/)
   const me = await page.request.get('/api/v1/auth/me', { headers: WEB })
   expect(((await me.json()) as { timezone: string }).timezone).toBe('Asia/Shanghai')
 })
