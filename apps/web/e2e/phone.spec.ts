@@ -633,3 +633,22 @@ test('the review on a phone: ‹ Weeks to the list of weeks, a week back to it; 
   await page.getByRole('navigation', { name: 'Weeks' }).getByRole('button').first().click()
   await expect(page.getByRole('heading', { level: 1, name: /^Week of / })).toBeVisible()
 })
+
+test('a task in the inbox is not offered the Inbox to move back to (BUG-073)', async ({ page }) => {
+  await registerFreshUser(page)
+  await makeProject(page, 'Job hunt')
+  const projects = (await (
+    await page.request.get('/api/v1/projects', { headers: WEB })
+  ).json()) as {
+    projects: { id: string; isInbox: boolean }[]
+  }
+  const inbox = projects.projects.find((p) => p.isInbox)!.id
+  const stray = await makeTask(page, inbox, 'Call the bank')
+  await page.goto(`/projects/${inbox}?inspect=task:${stray}`)
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await sheet.getByRole('button', { name: 'Edit', exact: true }).click()
+  await sheet.getByRole('button', { name: /Move to…/ }).click()
+  const picker = page.getByRole('dialog', { name: /^Move “Call the bank” to/ })
+  await expect(picker.getByRole('option').first()).toContainText('Job hunt')
+  await expect(picker.getByRole('option').filter({ hasText: 'Inbox' })).toHaveCount(0)
+})

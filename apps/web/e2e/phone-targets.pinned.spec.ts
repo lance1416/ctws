@@ -121,6 +121,19 @@ async function aFullAccount(page: Page) {
     durationMinutes: 30,
     rrule: 'FREQ=WEEKLY;BYDAY=TH',
   })
+  // A meeting with more people than are listed, folded behind "All N" (BUG-071).
+  const crowd: string[] = []
+  for (const n of ['Ada', 'Ben', 'Cal', 'Dee', 'Eli', 'Fay', 'Gus', 'Hal', 'Ivy'])
+    crowd.push(
+      (await apiPost<{ id: string }>(page, '/people', { givenName: n, familyName: 'Lee' })).id,
+    )
+  const crowded = await apiPost<{ meetingId: string }>(page, '/meetings', {
+    title: 'Atlas weekly',
+    startsLocal: '2026-10-23T10:00',
+    timeZone: 'Europe/London',
+    durationMinutes: 45,
+    attendeeIds: crowd,
+  })
   await apiPost(page, '/notes', {
     body: 'The proc-macro server crashed again.',
     anchor: { type: 'meeting', id: sync.meetingId, occurrenceId: '2026-10-01T10:00' },
@@ -147,6 +160,7 @@ async function aFullAccount(page: Page) {
     anchor: { type: 'project', id: jh },
   })
   return {
+    crowded: crowded.meetingId,
     jh,
     amazon,
     stripe: stripe.id,
@@ -187,6 +201,7 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
     ['Meetings', '/meetings'],
     ['a meeting', `/meetings/${a.screen}?at=2026-10-22T14:00`],
     ['a series', `/meetings/${a.sync}?at=2026-10-22T10:00`],
+    ['a crowded meeting', `/meetings/${a.crowded}?at=2026-10-23T10:00`],
     ['a meeting, edited', `/meetings/${a.screen}/edit`],
     ['Organisations', '/organisations'],
     ['an organisation', `/organisations/${a.stripe}`],
@@ -220,6 +235,17 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
     ).toBeVisible()
     await sweep(name)
   }
+
+  // The series' search goes under its name on a phone, never over it (BUG-074).
+  await page.goto(`/meetings/${a.sync}?at=2026-10-22T10:00`)
+  const earlier = page.getByRole('region', { name: 'Earlier in this series' })
+  const heading = (await earlier
+    .getByRole('heading', { name: 'Earlier in this series' })
+    .boundingBox())!
+  const search = (await earlier
+    .getByRole('searchbox', { name: 'Search these notes' })
+    .boundingBox())!
+  expect(search.y).toBeGreaterThanOrEqual(heading.y + heading.height)
 
   // And what opens over a page.
   const sheet = page.getByRole('complementary', { name: 'Inspector' })
