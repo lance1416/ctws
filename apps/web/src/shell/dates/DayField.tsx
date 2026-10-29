@@ -1,5 +1,6 @@
 import { parseDay, parseMonth, whyNotADay } from '@ctws/core'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useComposing } from '../../platform/keyboard/composition'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { boxed } from '../../platform/ui/formStyles'
 import { AlertIcon, CloseIcon, PLACE_ICON } from '../../platform/ui/icons'
@@ -62,6 +63,7 @@ export function DayField({
    */
   onRefusal?: (reason: string | null) => void
 }) {
+  const composing = useComposing()
   const say = (v: string | null) =>
     v === null ? '' : mode === 'month' ? sayMonth(v) : sayDay(v, today)
   const [text, setText] = useState(() => say(value))
@@ -111,6 +113,7 @@ export function DayField({
     if (parsed !== value) onChange(parsed)
   }
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (composing.composingNow(e)) return
     if (e.key === 'Enter') {
       e.preventDefault()
       read()
@@ -139,6 +142,7 @@ export function DayField({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onBlur={read}
+          {...composing.bind}
           onKeyDown={onKeyDown}
           onFocus={() => {
             if (value) setShown(value.slice(0, mode === 'month' ? 4 : 7))

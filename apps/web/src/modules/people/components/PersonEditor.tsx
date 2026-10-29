@@ -975,6 +975,7 @@ function Circles({
   picked: readonly CircleId[]
   onPick: (next: CircleId[]) => void
 }) {
+  const composing = useComposing()
   const circles = useQuery(circlesQuery())
   const qc = useQueryClient()
   const [naming, setNaming] = useState<string | null>(null)
@@ -1031,7 +1032,10 @@ function Circles({
           autoFocus
           value={naming}
           onChange={(e) => setNaming(e.target.value)}
+          {...composing.bind}
           onKeyDown={(e) => {
+            // A circle's name is often typed through an IME: its Enter picks the word.
+            if (composing.composingNow(e)) return
             if (e.key === 'Enter' && !(e.ctrlKey || e.metaKey)) {
               e.preventDefault()
               void add()

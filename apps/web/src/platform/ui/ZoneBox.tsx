@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { useComposing } from '../keyboard/composition'
 import { boxed } from './formStyles'
 import { LAYER } from './layers'
 
@@ -43,6 +44,7 @@ export function ZoneBox({
   onZone: (zone: string | null) => void
   onLeave: () => void
 }) {
+  const composing = useComposing()
   const listId = useId()
   const found = zonesMatching(typed).slice(0, 12)
   return (
@@ -58,13 +60,14 @@ export function ZoneBox({
         value={typed}
         onChange={(e) => onType(e.target.value)}
         onBlur={onLeave}
+        {...composing.bind}
         onKeyDown={(e) => {
           if (e.key === 'Escape' && onCancel) {
             e.preventDefault()
             onCancel()
             return
           }
-          if (e.key !== 'Enter' || e.ctrlKey || e.metaKey) return
+          if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || composing.composingNow(e)) return
           e.preventDefault()
           onLeave()
         }}

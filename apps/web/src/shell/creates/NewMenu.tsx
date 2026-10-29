@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useComposing } from '../../platform/keyboard/composition'
 import { BUTTON, KEY, KEY_ON_INK, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { KIND_ICON, NewIcon } from '../../platform/ui/icons'
 import { LAYER } from '../../platform/ui/layers'
@@ -32,6 +33,7 @@ export function NewMenu({
   /** A "+" in a phone's title bar, not the desk's ink New with its key (P4-11). */
   compact?: boolean
 }) {
+  const composing = useComposing()
   const registry = useRegistry()
   const openNew = useOpenNew()
   const [open, setOpen] = useState(false)
@@ -61,6 +63,8 @@ export function NewMenu({
     openNew(creator)
   }
   const onKeyDown = (e: KeyboardEvent) => {
+    // A key that belongs to an IME is the IME's: its Enter picks a word, not a kind.
+    if (composing.composingNow(e)) return
     if (e.key === 'Escape') {
       e.preventDefault()
       setOpen(false)
@@ -109,6 +113,7 @@ export function NewMenu({
             <NewIcon size={16} aria-hidden="true" />
             <input
               ref={input}
+              {...composing.bind}
               value={typed}
               onChange={(e) => {
                 setTyped(e.target.value)

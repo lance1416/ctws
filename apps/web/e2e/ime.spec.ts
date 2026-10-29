@@ -119,3 +119,21 @@ test('committing English out of an IME does not add a person', async ({ page }) 
   expect((await added).request().postDataJSON()).toMatchObject({ givenName: 'Ada' })
   expect(writes).toEqual(['POST /api/v1/people'])
 })
+
+test('committing a circle’s name out of an IME does not add the circle', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.goto('/people/new')
+  await page.getByRole('button', { name: 'New circle' }).click()
+  const writes = recordWrites(page)
+
+  await commitWithIme(page, 'input[aria-label="New circle"]', '大学同学')
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+  )
+  expect(writes).toEqual([])
+
+  const added = answered(page, 'PUT', /^\/api\/v1\/people\/circles$/)
+  await page.getByLabel('New circle').press('Enter')
+  await added
+  expect(writes).toEqual(['PUT /api/v1/people/circles'])
+})
