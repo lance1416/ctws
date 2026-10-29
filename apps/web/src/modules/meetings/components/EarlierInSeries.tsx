@@ -85,7 +85,10 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
                   </span>
                   <span className="line-clamp-2 min-w-0 text-ink">
                     {note
-                      ? linkWords(note.body.replace(/^#+\s+/gm, ''))
+                      ? linkWords(
+                          // What was said, not its headings (U-20): a heading's line goes.
+                          note.body.replace(/^#+\s.*$/gm, '').replace(/^\s*[-*>]\s+/gm, ''),
+                        )
                       : o === first
                         ? 'First meeting, no notes'
                         : 'No notes'}

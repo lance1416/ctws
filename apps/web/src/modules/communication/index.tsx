@@ -14,6 +14,7 @@ import { COMMUNICATION_ID } from './logic/id'
 import { CommunicationOverview } from './pages/CommunicationOverview'
 import { Message } from './pages/Message'
 import { AwaitingReply } from './widgets/AwaitingReply'
+import { followUpLists } from './components/FollowUpsToday'
 
 const PAGE = topPage('Communication')
 
@@ -61,6 +62,7 @@ export const communicationModule: WorkspaceModule = {
   },
   // A project's page lists who is waiting for a reply in it (FR-055).
   project: { Things: { kind: 'communication', useThings: useProjectAwaiting } },
+  lists: followUpLists,
   relations: [
     {
       type: 'communication',

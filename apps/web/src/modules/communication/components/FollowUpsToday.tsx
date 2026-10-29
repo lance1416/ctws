@@ -5,7 +5,10 @@ import { shortDay, ymd } from '../../../platform/time/dates'
 import { Avatar } from '../../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../../platform/ui/Block'
 import { FollowUpIcon } from '../../../platform/ui/icons'
-import { useTimeZone } from '../../../shell/auth'
+import type { CommunicationResponse } from '@ctws/contracts'
+import { useAccountToday, useTimeZone } from '../../../shell/auth'
+import type { InspectorList } from '../../../shell/contract'
+import { AllInInspector, ListHead } from '../../../shell/inspector'
 import { OrganisationMark } from '../../organisations'
 import { usePeople } from '../../people'
 import { followUpsQuery } from '../api'
@@ -19,8 +22,6 @@ import { AwaitingActions } from './AwaitingActions'
  */
 export function FollowUpsToday({ today }: { today: string }) {
   const followUps = useQuery(followUpsQuery())
-  const people = usePeople()
-  const timeZone = useTimeZone()
   const rows = followUps.data ?? []
   const badge = { icon: FollowUpIcon, tint: 'bg-communication-bg text-communication' }
   if (followUps.isError)
@@ -37,43 +38,87 @@ export function FollowUpsToday({ today }: { today: string }) {
       empty={followUps.isSuccess && rows.length === 0 ? 'Nothing to chase today' : null}
     >
       <ul className="flex flex-col p-1.5">
-        {rows.map((m) => {
-          const person = m.parties.find((p) => p.type === 'person')
-          const org = m.parties.find((p) => p.type === 'organisation')
-          const known = person ? people.data?.find((p) => p.id === person.id) : undefined
-          const who = person ?? org
-          const sent = ymd(new Date(m.occurredAt), timeZone)
-          return (
-            <li
-              key={m.id}
-              data-follow-up={m.id}
-              className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover"
-            >
-              <Link to={`/communication/${m.id}`} className="flex min-w-0 items-center gap-2.5">
-                {person ? (
-                  <Avatar initials={known ? avatarInitials(known) : ([...person.name][0] ?? '')} />
-                ) : (
-                  <OrganisationMark name={org?.name ?? '?'} />
-                )}
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-ui text-ink">{m.subject ?? 'No subject'}</span>
-                  <span className="flex flex-wrap gap-x-2.5 text-meta text-muted">
-                    {who && <span>{who.name}</span>}
-                    <span>Sent {shortDay(sent, today)}</span>
-                  </span>
-                </span>
-                {/* When it fell due, as its own tag on the right (C-03). */}
-                {m.followUpOn && (
-                  <span className="inline-flex h-5.5 shrink-0 items-center rounded-control bg-warn-bg px-2 text-meta font-medium text-warn-t">
-                    {dueLine(m.followUpOn, today)}
-                  </span>
-                )}
-              </Link>
-              <AwaitingActions message={m} later="monday" />
-            </li>
-          )
-        })}
+        {rows.slice(0, SHOWN).map((m) => (
+          <FollowUpRow key={m.id} message={m} today={today} />
+        ))}
       </ul>
+      {rows.length > SHOWN && (
+        <AllInInspector list={FOLLOW_UPS} count={rows.length} className={ALL_ROW} />
+      )}
     </Block>
   )
 }
+
+/** One message to chase: who, when sent and when it fell due, then its two ways on. */
+function FollowUpRow({ message: m, today }: { message: CommunicationResponse; today: string }) {
+  const people = usePeople()
+  const timeZone = useTimeZone()
+  const person = m.parties.find((p) => p.type === 'person')
+  const org = m.parties.find((p) => p.type === 'organisation')
+  const known = person ? people.data?.find((p) => p.id === person.id) : undefined
+  const who = person ?? org
+  const sent = ymd(new Date(m.occurredAt), timeZone)
+  return (
+    <li
+      data-follow-up={m.id}
+      className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover"
+    >
+      <Link to={`/communication/${m.id}`} className="flex min-w-0 items-center gap-2.5">
+        {person ? (
+          <Avatar initials={known ? avatarInitials(known) : ([...person.name][0] ?? '')} />
+        ) : (
+          <OrganisationMark name={org?.name ?? '?'} />
+        )}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-ui text-ink">{m.subject ?? 'No subject'}</span>
+          <span className="flex flex-wrap gap-x-2.5 text-meta text-muted">
+            {who && <span>{who.name}</span>}
+            <span>Sent {shortDay(sent, today)}</span>
+          </span>
+        </span>
+        {/* When it fell due, as its own tag on the right (C-03). */}
+        {m.followUpOn && (
+          <span className="inline-flex h-5.5 shrink-0 items-center rounded-control bg-warn-bg px-2 text-meta font-medium text-warn-t">
+            {dueLine(m.followUpOn, today)}
+          </span>
+        )}
+      </Link>
+      <AwaitingActions message={m} later="monday" />
+    </li>
+  )
+}
+
+/** The whole of Follow up, in the inspector beside Today (FR-011 rule 3, U-08). */
+function FollowUpsList() {
+  const followUps = useQuery(followUpsQuery())
+  const today = useAccountToday()
+  const rows = followUps.data ?? []
+  return (
+    <>
+      <ListHead
+        badge={{ icon: FollowUpIcon, tint: 'bg-communication-bg text-communication' }}
+        title="Follow up"
+        count={rows.length}
+      />
+      <ul className="flex flex-col p-1.5">
+        {rows.map((m) => (
+          <FollowUpRow key={m.id} message={m} today={today} />
+        ))}
+      </ul>
+    </>
+  )
+}
+
+/** Today's Follow up names its full list by this. */
+const FOLLOW_UPS = 'today-follow-ups'
+
+export const followUpLists: InspectorList[] = [
+  { name: FOLLOW_UPS, label: 'Today', icon: FollowUpIcon, Body: FollowUpsList },
+]
+
+/** A block's rows before its "All N" (FR-011 rule 3). */
+const SHOWN = 5
+
+/** A block's "All N", a row at its foot. */
+const ALL_ROW =
+  'flex h-9 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink'
