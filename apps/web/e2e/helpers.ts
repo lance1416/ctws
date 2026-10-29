@@ -58,7 +58,7 @@ export async function signUpThroughForm(page: Page): Promise<string> {
 }
 
 /** Presses Sign out in the account menu; whether it signs out is the page's to decide. */
-async function pressSignOut(page: Page): Promise<void> {
+export async function pressSignOut(page: Page): Promise<void> {
   await page.getByTestId('current-user').click()
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
 }

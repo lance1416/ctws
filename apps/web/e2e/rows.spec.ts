@@ -263,6 +263,14 @@ test('the status marker is the row’s heaviest mark, and only in progress has a
   expect(await colourOf(mark('To do'))).toBe(await token('muted'))
   expect(await colourOf(mark('Backlog'))).toBe(subtle)
   expect(await colourOf(mark('In progress'))).toBe(await token('go'))
+
+  // A finished one is subtle, as the backlog, and told by its filled shape. (On the board.)
+  await makeTask(page, pid, '收工', { status: 'done' })
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').first().waitFor()
+  await page.getByRole('tab', { name: 'Board' }).click()
+  await expect(page.getByRole('main').getByText('收工')).toBeVisible()
+  expect(await colourOf(page.getByRole('main').getByRole('img', { name: 'Done' }))).toBe(subtle)
 })
 
 // ------------------------------------------------------------- the two date semantics, by shape
