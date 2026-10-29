@@ -879,7 +879,8 @@ function SearchRow({
       >
         <span className="inline-grid size-6 place-items-center text-muted">{row.icon}</span>
         <span className="truncate">{row.title}</span>
-        <kbd className={KEY}>{row.hint}</kbd>
+        {/* No key hints on a phone (DES-001 "搜索"). */}
+        <kbd className={`${KEY} max-lg:hidden`}>{row.hint}</kbd>
       </li>
     )
   if (row.kind === 'new')
