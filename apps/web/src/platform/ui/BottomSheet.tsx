@@ -114,5 +114,11 @@ export function usePullToClose(panel: RefObject<HTMLElement | null>, onClose: ()
       if (by > CLOSE_AFTER_PX) onClose()
       else if (panel.current) panel.current.style.transform = ''
     },
+    // The browser took the gesture (iOS Safari scrolling the page): the sheet goes back, not
+    // left hanging where the finger was.
+    onPointerCancel: () => {
+      pull.current = null
+      if (panel.current) panel.current.style.transform = ''
+    },
   }
 }
