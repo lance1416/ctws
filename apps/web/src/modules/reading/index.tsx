@@ -1,4 +1,4 @@
-import { topPage } from '../../shell/layout'
+import { thingPage, topPage } from '../../shell/layout'
 import { ReadingNarrow } from './components/ReadingNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -17,6 +17,8 @@ import { ReadingEdit, ReadingItem } from './pages/ReadingItem'
 import { ReadingOverview } from './pages/ReadingOverview'
 
 const PAGE = topPage('Reading')
+/** One of them, under its kind in the breadcrumbs (FR-018). */
+const THING = thingPage('Reading', '/reading')
 
 export const readingModule: WorkspaceModule = {
   id: READING_ID,
@@ -33,7 +35,7 @@ export const readingModule: WorkspaceModule = {
   routes: [
     { index: true, element: <ReadingOverview />, handle: PAGE },
     // One item's page (FR-073), and its form.
-    { path: ':id', element: <ReadingItem />, handle: PAGE },
+    { path: ':id', element: <ReadingItem />, handle: THING },
     { path: ':id/edit', element: <ReadingEdit />, handle: PAGE },
   ],
   capture: { kind: 'reading', useTarget: useReadingCapture, accepts: isReadingUrl },

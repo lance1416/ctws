@@ -1,4 +1,4 @@
-import { topPage } from '../../shell/layout'
+import { thingPage, topPage } from '../../shell/layout'
 import { OrganisationNarrow } from './components/OrganisationNarrow'
 import type { WorkspaceModule } from '../../shell/contract'
 import { organisationKeys } from './api'
@@ -18,6 +18,8 @@ export { OrganisationMark } from './components/OrganisationMark'
 export { useOrganisations } from './hooks/useOrganisations'
 
 const PAGE = topPage('Organisations')
+/** One of them, under its kind in the breadcrumbs (FR-018). */
+const THING = thingPage('Organisations', '/organisations')
 
 /**
  * Organisations (FR-064, FR-065): the overview, each one's page, and the form that writes one
@@ -38,7 +40,7 @@ export const organisationModule: WorkspaceModule = {
     { index: true, element: <OrganisationsOverview />, handle: PAGE },
     // Before `:id`, which would take `new` for an id.
     { path: 'new', element: <OrganisationNew />, handle: PAGE },
-    { path: ':id', element: <Organisation />, handle: PAGE },
+    { path: ':id', element: <Organisation />, handle: THING },
     { path: ':id/edit', element: <OrganisationEdit />, handle: PAGE },
   ],
   creates: [

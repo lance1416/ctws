@@ -2,7 +2,7 @@
 export { Layout } from './Layout'
 export { ModuleEmpty } from './ModuleEmpty'
 export { RouteError } from './RouteError'
-export { topPage, type PageHandle } from './page'
+export { thingPage, topPage, type PageHandle } from './page'
 export { useSubjectOf } from './subject'
 export { FILTER_FROM, FilteredEmpty, matches, SidebarFilter } from './SidebarFilter'
 export { More } from './More'

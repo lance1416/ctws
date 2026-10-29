@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { PersonNarrow } from './components/PersonNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
-import { topPage } from '../../shell/layout'
+import { thingPage, topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useProjectPeople } from './hooks/projectThings'
 import { peopleKeys } from './api'
@@ -27,6 +27,8 @@ export { usePeople } from './hooks/usePeople'
  * No project-page block: people reach a project as edges, which the shell draws for every kind.
  */
 const PAGE = topPage('People')
+/** One of them, under its kind in the breadcrumbs (FR-018). */
+const THING = thingPage('People', '/people')
 
 export const peopleModule: WorkspaceModule = {
   id: PEOPLE_ID,
@@ -47,7 +49,7 @@ export const peopleModule: WorkspaceModule = {
     { path: 'birthdays', element: <Navigate to="/people?list=birthdays" replace /> },
     // Before `:id`, which would take `new` for an id.
     { path: 'new', element: <PersonNew />, handle: PAGE },
-    { path: ':id', element: <Person />, handle: PAGE },
+    { path: ':id', element: <Person />, handle: THING },
     { path: ':id/edit', element: <PersonEdit />, handle: PAGE },
   ],
   calendar: {

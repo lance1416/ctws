@@ -1,4 +1,4 @@
-import { topPage } from '../../shell/layout'
+import { thingPage, topPage } from '../../shell/layout'
 import { NoteNarrow } from './components/NoteNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -9,6 +9,8 @@ import { Note } from './pages/Note'
 import { NotesOverview } from './pages/NotesOverview'
 
 const PAGE = topPage('Notes')
+/** One of them, under its kind in the breadcrumbs (FR-018). */
+const THING = thingPage('Notes', '/notes')
 
 /**
  * Notes (FR-050, FR-074): a kind of its own, standing alone or hung on a meeting, a project, a
@@ -29,7 +31,7 @@ export const notesModule: WorkspaceModule = {
   routes: [
     { index: true, element: <NotesOverview />, handle: PAGE },
     // `new` too: the note it makes keeps the editor it was typed in (see Note).
-    { path: ':id', element: <Note />, handle: PAGE },
+    { path: ':id', element: <Note />, handle: THING },
   ],
   creates: [{ kind: 'note', key: 'n', label: 'Note', to: `/${NOTES_ID}/new` }],
   chords: [{ id: 'notes', key: 'n', label: 'Notes', resolve: () => `/${NOTES_ID}`, order: 55 }],

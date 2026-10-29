@@ -1,4 +1,5 @@
 import { useMatches } from 'react-router-dom'
+import { useSubject } from './subject'
 
 /** Where a step of a page's path links. */
 type Step = { label: string; to: string }
@@ -32,3 +33,15 @@ export function usePage<K extends keyof PageHandle>(
 
 /** A page at the top of the hierarchy, named `label`: a module's root or a page across kinds. */
 export const topPage = (label: string): PageHandle => ({ useCrumbs: () => [{ label }] })
+
+/**
+ * A thing's own page under its kind (FR-018): "People", then "Mira Chen". The name is the one the
+ * page says it is about (`useSubjectOf`), so it reads the same as the page's head, and a page
+ * still loading is its kind alone.
+ */
+export const thingPage = (label: string, to: string): PageHandle => ({
+  useCrumbs: () => {
+    const subject = useSubject()
+    return subject ? [{ label, to }, { label: subject.title }] : [{ label }]
+  },
+})

@@ -1,4 +1,4 @@
-import { topPage } from '../../shell/layout'
+import { thingPage, topPage } from '../../shell/layout'
 import { MessageNarrow } from './components/MessageNarrow'
 import { ReceivedIcon, SentIcon } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -17,6 +17,8 @@ import { AwaitingReply } from './widgets/AwaitingReply'
 import { followUpLists } from './components/FollowUpsToday'
 
 const PAGE = topPage('Communication')
+/** One of them, under its kind in the breadcrumbs (FR-018). */
+const THING = thingPage('Communication', '/communication')
 
 /**
  * Communication (FR-048, FR-070, FR-071): logging an exchange from any page, the overview of who
@@ -37,7 +39,7 @@ export const communicationModule: WorkspaceModule = {
   },
   routes: [
     { index: true, element: <CommunicationOverview />, handle: PAGE },
-    { path: ':id', element: <Message />, handle: PAGE },
+    { path: ':id', element: <Message />, handle: THING },
   ],
   // The kind's name, as everywhere (DES-001 "种类名"); its button says the act: Log a message.
   creates: [{ kind: 'communication', key: 'x', label: 'Communication', Dialog: NewMessage }],

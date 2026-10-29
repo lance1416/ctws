@@ -1,4 +1,4 @@
-import { topPage } from '../../shell/layout'
+import { thingPage, topPage } from '../../shell/layout'
 import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useMeetingsWith } from './hooks/personThings'
@@ -22,6 +22,8 @@ import { NextMeetings } from './widgets/NextMeetings'
  * No project-page block: meetings reach a project as edges, which the shell draws for every kind.
  */
 const PAGE = topPage('Meetings')
+/** One of them, under its kind in the breadcrumbs (FR-018). */
+const THING = thingPage('Meetings', '/meetings')
 
 export const meetingModule: WorkspaceModule = {
   id: MEETINGS_ID,
@@ -38,7 +40,7 @@ export const meetingModule: WorkspaceModule = {
   routes: [
     { index: true, element: <MeetingsOverview />, handle: PAGE },
     // One occurrence's page, `?at=` naming which; the series' next one without it (FR-067).
-    { path: ':id', element: <Meeting />, handle: PAGE },
+    { path: ':id', element: <Meeting />, handle: THING },
     { path: ':id/edit', element: <MeetingEdit />, handle: PAGE },
   ],
   creates: [{ kind: 'meeting', key: 'm', label: 'Meeting', Dialog: NewMeeting }],
