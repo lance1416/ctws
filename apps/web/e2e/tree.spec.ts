@@ -503,6 +503,9 @@ test('a task created while the project is still loading appears', async ({ page 
   // list under test.
   await page.getByRole('main').getByRole('link', { name: 'P', exact: true }).click()
   await heldStale
+  // The list is asked for before the page is drawn (its loader), so its being held says nothing
+  // of the page: N T made before the page knows its project would make the task in the Inbox.
+  await expect(page.getByRole('heading', { level: 1, name: 'P' })).toBeVisible()
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   const dialog = page.getByRole('dialog', { name: 'New task' })

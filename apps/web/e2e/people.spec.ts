@@ -491,7 +491,7 @@ test.describe(() => {
     })
     let release = () => {}
     const held = new Promise<void>((resolve) => (release = resolve))
-    await page.route('**/assets/phone-*.js', async (route) => {
+    await page.route('**/assets/phoneNumbers-*.js', async (route) => {
       await held
       await route.continue()
     })
