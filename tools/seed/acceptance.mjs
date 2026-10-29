@@ -11,9 +11,15 @@
  *   node tools/seed/acceptance.mjs --base http://localhost:3303 --password '<one for all>' \
  *     [--typical typical@example.com] [--many many@example.com] [--empty empty@example.com]
  *
+ * History the server stamps with its own clock (the review's earlier weeks, a project quiet for
+ * nine days) is written first, a day at a time, with the clock pinned at each day of `HISTORY`
+ * and `--history <day>`; then the run above, at 2026-10-22, adds the rest to the same account.
+ *
+ *   for each day in HISTORY: pin CLOCK_PINNED_AT to <day>T09:00:00Z, recreate the API, then
+ *   node tools/seed/acceptance.mjs --base ... --history <day>
+ *
  * The password is given on the command line (or in CTWS_SEED_PASSWORD) and never written down
- * here. What the API cannot write is left out and said at the end: a project quiet for days, and
- * the weeks of the review before this one.
+ * here.
  */
 import { parseArgs } from 'node:util'
 
@@ -24,6 +30,7 @@ const { values: opt } = parseArgs({
     many: { type: 'string', default: 'many@example.com' },
     empty: { type: 'string', default: 'empty@example.com' },
     password: { type: 'string', default: process.env.CTWS_SEED_PASSWORD ?? '' },
+    history: { type: 'string' },
   },
 })
 if (!opt.password) throw new Error('give --password or set CTWS_SEED_PASSWORD')
@@ -66,7 +73,33 @@ async function signUp(email) {
   await post('/auth/register', { email, password: opt.password, timezone: ZONE })
 }
 
-const task = (projectId, title, fields = {}) => post('/tasks', { projectId, title, ...fields })
+/** Into an account the history made, or a new one when there was none. */
+async function signIn(email) {
+  cookie = ''
+  try {
+    await post('/auth/login', { email, password: opt.password })
+  } catch {
+    await signUp(email)
+  }
+}
+
+/** A project by its name, made when it is not there yet. */
+async function project(name, color) {
+  const found = (await call('GET', '/projects?archived=false')).projects.find(
+    (p) => p.name === name,
+  )
+  return found ? found.id : (await post('/projects', { name, color })).id
+}
+
+/**
+ * A task, made as a person makes one: as to do, then moved on. Made already done, it was never
+ * finished in any week, and the review counts what was finished, started and dropped.
+ */
+async function task(projectId, title, { status, ...fields } = {}) {
+  const made = await post('/tasks', { projectId, title, ...fields })
+  if (status && status !== 'todo') await patch(`/tasks/${made.id}`, { status })
+  return made
+}
 const at = (day, clock = '18:00') => `${day}T${clock}:00+01:00`
 
 /** A book or a link, then its fields: a new one is "to read". */
@@ -76,8 +109,51 @@ async function reading(title, fields = {}) {
   return item
 }
 
+// ======================================================================= typical: history
+/**
+ * What happened before the acceptance "now", by the day it happened on (the clock pinned there):
+ * the review's weeks, finished counts newest first 25, 14, 8, 10, 6, 9 (acceptance-data.md), and
+ * Moving flat, last touched on the 13th, nine days quiet by the 22nd.
+ */
+const HISTORY = {
+  '2026-09-09': { done: 9 },
+  '2026-09-16': { done: 6 },
+  '2026-09-23': { done: 10 },
+  '2026-09-30': { done: 8 },
+  '2026-10-07': { done: 14 },
+  '2026-10-13': { done: 25, dropped: 2, movingFlat: true },
+}
+if (opt.history) {
+  const step = HISTORY[opt.history]
+  if (!step) throw new Error(`no history on ${opt.history}; the days are ${Object.keys(HISTORY)}`)
+  await signIn(opt.typical)
+  const ctws = await project('CTWS', 'blue')
+  const earlier = (await call('GET', `/tasks?projectId=${ctws}`)).tasks.find(
+    (t) => t.title === 'Earlier work' && t.parentId === null,
+  )
+  const parent = earlier ? earlier.id : (await task(ctws, 'Earlier work')).id
+  for (let i = 1; i <= step.done; i++)
+    await task(ctws, `Finished in the week of ${opt.history} (${i})`, {
+      parentId: parent,
+      status: 'done',
+    })
+  for (let i = 1; i <= (step.dropped ?? 0); i++)
+    await task(ctws, `Dropped in the week of ${opt.history} (${i})`, {
+      parentId: parent,
+      status: 'cancelled',
+    })
+  if (step.movingFlat) {
+    const flat = await project('Moving flat', 'violet')
+    await task(flat, 'Call the removal company')
+    await task(flat, 'Pack the books')
+    await task(flat, 'Measure the living room')
+  }
+  console.log(`history of ${opt.history} written`)
+  process.exit(0)
+}
+
 // =============================================================================== typical
-await signUp(opt.typical)
+await signIn(opt.typical)
 
 // ---- projects ---------------------------------------------------------------------------------
 const P = {}
@@ -92,7 +168,7 @@ for (const [name, color] of [
   ['Old blog', 'olive'],
   ['Kitchen 2025', 'amber'],
 ]) {
-  P[name] = (await post('/projects', { name, color })).id
+  P[name] = await project(name, color)
 }
 await patch(`/projects/${P['Old blog']}`, { archived: true })
 await patch(`/projects/${P['Kitchen 2025']}`, { archived: true })
@@ -347,9 +423,9 @@ await post('/resources', {
 })
 
 // ---- Today: planned, carried over, overdue ----------------------------------------------------
-await task(P['Moving flat'], 'Measure the living room', { scheduledOn: '2026-10-22' })
-await task(P['Moving flat'], 'Call the removal company', { scheduledOn: '2026-10-18' })
-await task(P['Moving flat'], 'Pack the books', {})
+// Moving flat is left alone today: its history says nine days quiet.
+await task(P.Atlas, 'Book the room for the Atlas demo', { scheduledOn: '2026-10-22' })
+await task(P.Thesis, 'Email the supervisor', { scheduledOn: '2026-10-18' })
 await task(P['Find a lawyer'], 'Send the lease to Harbour & Lane', { dueAt: at('2026-10-15') })
 await task(P.Thesis, 'Draft the related-work section', { dueAt: at('2026-10-20') })
 await task(P.Thesis, 'Fix the figure numbering', {})
@@ -660,10 +736,7 @@ console.log(
         projects: P,
         people: { mira: mira.id, liwen: liwen.id, tom: tom.id, wanglei: wanglei.id },
       },
-      leftOut: [
-        'Moving flat quiet for nine days: an event time the API does not write',
-        'the review weeks before this one: done times the API stamps now',
-      ],
+      history: Object.keys(HISTORY),
     },
     null,
     2,
