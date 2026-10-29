@@ -22,8 +22,8 @@
  *    `li`, `tr`, `article`, `[role=row]`, `[role=listitem]` or `[role=option]` inside it with
  *    non-empty text. Nothing here names a class or a test id, so the same check holds on any
  *    markup that keeps the landmark and lists its data as list items, table rows or articles.
- *    For a page that names its subject (a project, a person), `expect` also has to appear in
- *    the document text, so a list that drew before the subject loaded does not end the clock.
+ *    `rowsDrawn` can also wait for a text (`expect`) to appear, but no page passes one: the
+ *    2026-10-19 baseline was measured without it, and a re-test has to keep that rule.
  *
  * 2. Per API request, `server`: the time from the request leaving the browser to the first byte
  *    of the response, as Chromium reports it (`responseStart - requestStart`). The API sends no
@@ -32,6 +32,7 @@
  *    rest, first byte to last.
  *
  * Search is a dialog, not a page, so its clock starts when the word is typed into the search box
+ * (however the box was opened: `f` before the redesign, Ctrl+K after it; the opening is not timed)
  * and ends when the results list (`[role=listbox]`) shows at least one option and every search
  * request has been answered. The app's 150 ms typing pause is inside the number.
  *
@@ -60,6 +61,8 @@ const { values: opt } = parseArgs({
     query: { type: 'string' },
     runs: { type: 'string', default: '5' },
     out: { type: 'string', default: 'perf-result.json' },
+    // Today's address: /tasks/today before the redesign, /today after it (the old one redirects).
+    today: { type: 'string', default: '/tasks/today' },
   },
 })
 for (const k of ['email', 'password', 'project', 'person', 'query']) {
@@ -139,6 +142,21 @@ function watchApi(page, since) {
 
 const round = (n) => Math.round(n * 10) / 10
 
+/** Opens the search box by whichever key this version answers to; the box is the only combobox. */
+async function openSearch(page) {
+  const box = page.getByRole('combobox')
+  for (const key of ['f', 'Control+k', 'Meta+k']) {
+    await page.keyboard.press(key)
+    try {
+      await box.waitFor({ timeout: 2000 })
+      return box
+    } catch {
+      // Not this version's key; try the next.
+    }
+  }
+  throw new Error('no key opened the search box')
+}
+
 /** The path with its query's parameter names, so `/tasks?q` and `/tasks?scheduledOn` stay apart. */
 function shape(url) {
   const u = new URL(url)
@@ -179,9 +197,7 @@ async function runPage(browser, cookies, spec) {
       await page.waitForFunction(rowsDrawn, { expect: null }, { timeout: TIMEOUT_MS })
       await api.settled(performance.now() + TIMEOUT_MS)
       api.requests.length = 0
-      await page.keyboard.press('f')
-      const box = page.getByRole('combobox')
-      await box.waitFor({ timeout: TIMEOUT_MS })
+      const box = await openSearch(page)
       const t1 = performance.now()
       await box.fill(spec.search)
       await page.waitForFunction(optionsDrawn, null, { timeout: TIMEOUT_MS })
@@ -225,10 +241,10 @@ const median = (xs) => {
 }
 
 const pages = [
-  { name: 'Today', path: '/tasks/today' },
+  { name: 'Today', path: opt.today },
   { name: 'Project', path: `/projects/${opt.project}` },
   { name: 'Person', path: `/people/${opt.person}` },
-  { name: 'Search', path: '/tasks/today', search: opt.query },
+  { name: 'Search', path: opt.today, search: opt.query },
 ]
 
 const cookies = await signIn()
