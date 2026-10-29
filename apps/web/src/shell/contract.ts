@@ -79,6 +79,13 @@ export type ProjectContribution = {
   Main?: {
     Component: ComponentType<{ projectId: ProjectId; view: string }>
     views: readonly [ProjectView, ...ProjectView[]]
+    /** What it is on a phone, where there is one view and no dragging (FR-088). */
+    Phone?: ComponentType<{ projectId: ProjectId }>
+    /** What a phone's "…" also offers, each in a sheet: Edit stages, where the board has it. */
+    phoneMore?: readonly {
+      label: string
+      Sheet: ComponentType<{ projectId: ProjectId; onClose: () => void }>
+    }[]
   }
   /**
    * This module's own things in a project, for their block on its page (FR-055): the meetings

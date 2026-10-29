@@ -1,4 +1,5 @@
 import { idFrom, projectId, taskId, type TaskId } from '@ctws/contracts'
+import { EditStagesSheet, PhoneProjectTree } from './components/PhoneProjectTree'
 import type { WorkspaceModule } from '../../shell/contract'
 import { topPage } from '../../shell/layout'
 import { patchTask, projectTasksQuery, taskKeys } from './api'
@@ -99,7 +100,12 @@ export const taskModule: WorkspaceModule = {
   // A person's page draws the tasks linked to them by when they are due (FR-061).
   person: { Linked: { kind: 'task', Row: PersonTaskRow, count: openOf } },
   project: {
-    Main: { Component: ProjectTasks, views: PROJECT_VIEWS },
+    Main: {
+      Component: ProjectTasks,
+      views: PROJECT_VIEWS,
+      Phone: PhoneProjectTree,
+      phoneMore: [{ label: 'Edit stages', Sheet: EditStagesSheet }],
+    },
     Card: { Moved: ProjectMoved, Facts: ProjectCardFacts, useOrder: useProjectOrder },
     Outline: ProjectOutline,
     Narrow: ProjectNarrowTasks,

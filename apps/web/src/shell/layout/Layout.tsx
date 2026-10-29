@@ -1,4 +1,5 @@
 import { api, idFrom, projectId as projectIdSchema } from '@ctws/contracts'
+import { PhoneBack } from './PhoneBack'
 import { PinLink } from '../resources/PinLink'
 import { forgetDrafts } from '../../platform/ui/drafts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -144,6 +145,7 @@ function Frame({
                 inset, and a 12px gap. */}
                 <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:px-4 max-lg:pt-3 max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom))] has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
                   <LeaveGuardContext.Provider value={leaveGuard}>
+                    <PhoneBack />
                     <Outlet />
                     {/* Inside main: one that opens as a column (Log a message) makes room for
                       itself as the page's own panes do (K-02). */}

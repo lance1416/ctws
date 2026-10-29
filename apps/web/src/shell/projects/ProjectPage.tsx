@@ -16,6 +16,8 @@ import { useEveryProject } from './api'
 import { digitHandlers, PROJECT_KEYS } from './keys'
 import { PROJECT_MAIN, ProjectHead } from './ProjectHead'
 import { ProjectLinked } from './ProjectLinked'
+import { PhoneProject } from './PhoneProject'
+import { usePhone } from '../../platform/ui/phone'
 
 /** The project the address names, live or archived: an archived project still has its page. */
 function useOpenProject() {
@@ -40,6 +42,7 @@ export function useProjectCrumbs(): Crumbs {
  */
 export function ProjectPage() {
   const { id, project, gone } = useOpenProject()
+  const phone = usePhone()
   useForgetWhenGone('project', id ?? null, gone)
   useSubjectOf(id && project ? { type: 'project', id, title: project.name } : null)
   useRecordRecent(
@@ -53,7 +56,7 @@ export function ProjectPage() {
   if (gone) return <DeletedNotice type="project" id={id} />
   // Keyed by the project: what was half-done on one (a rename, a delete question) does not carry
   // over to the next, which the router draws in the same element.
-  return <OpenProject key={id} id={id} />
+  return phone ? <PhoneProject key={id} id={id} /> : <OpenProject key={id} id={id} />
 }
 
 function OpenProject({ id }: { id: ProjectId }) {

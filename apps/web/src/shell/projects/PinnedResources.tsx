@@ -38,11 +38,12 @@ export function PinnedResources({ projectId, name }: { projectId: ProjectId; nam
               from: { type: 'project', id: projectId, title: name, projectId },
             })
           }
-          className="inline-flex h-7 items-center gap-1.5 rounded-control border border-line bg-panel px-2.5 text-meta font-medium text-ink hover:border-line-strong"
+          className="inline-flex h-7 items-center gap-1.5 rounded-control border border-line bg-panel px-2.5 text-meta font-medium text-ink hover:border-line-strong max-lg:min-h-11 max-lg:text-ui"
         >
           <ResourceIcon url={r.url} />
           {resourceName(r)}
-          <span aria-hidden="true" className={KEY}>
+          {/* A phone has no digit keys (DES-001 "项目页"). */}
+          <span aria-hidden="true" className={`${KEY} max-lg:hidden`}>
             {r.pinnedRank}
           </span>
         </a>

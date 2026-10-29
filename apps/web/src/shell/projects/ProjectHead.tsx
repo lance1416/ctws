@@ -88,7 +88,16 @@ export function ProjectHead({
  * undone from the same menu.
  */
 /** `archived` null: the inbox, which is never archived. */
-function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean | null }) {
+export function MoreMenu({
+  id,
+  archived,
+  more = [],
+}: {
+  id: ProjectId
+  archived: boolean | null
+  /** What else a phone offers here, as the board offers it on the desk (Edit stages). */
+  more?: readonly { label: string; onSelect: () => void }[]
+}) {
   const navigate = useNavigate()
   const toggle = useMutation({
     mutationFn: () => updateProject(id, { archived: !archived }),
@@ -108,6 +117,11 @@ function MoreMenu({ id, archived }: { id: ProjectId; archived: boolean | null })
             >
               Edit project
             </DropdownMenu.Item>
+            {more.map((m) => (
+              <DropdownMenu.Item key={m.label} onSelect={m.onSelect} className={MENU_ITEM}>
+                {m.label}
+              </DropdownMenu.Item>
+            ))}
             {archived !== null && (
               <DropdownMenu.Item
                 onSelect={() => toggle.mutate()}
