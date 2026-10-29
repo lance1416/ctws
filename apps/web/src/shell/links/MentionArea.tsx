@@ -1,4 +1,4 @@
-import type { LinkCandidate, ObjectType } from '@ctws/contracts'
+import type { LinkCandidate } from '@ctws/contracts'
 import { mentionAddress } from '@ctws/core'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
@@ -16,6 +16,7 @@ import { caretPoint } from '../../platform/ui/caretPoint'
 import { KIND_ICON } from '../../platform/ui/icons'
 import { KIND_TEXT } from '../../platform/ui/kinds'
 import { LAYER } from '../../platform/ui/layers'
+import { useRegistry } from '../registry'
 import { everythingQuery } from '../search/api'
 import { KIND_ORDER, KIND_WORDS } from '../search/view'
 
@@ -183,8 +184,7 @@ export function MentionArea({
                     <MentionRow
                       key={`${thing.type}:${thing.id}`}
                       id={`${listId}-${i}`}
-                      type={thing.type}
-                      title={thing.title}
+                      thing={thing}
                       active={i === active}
                       onPoint={() => setPointed(i)}
                       onChoose={() => choose(thing)}
@@ -202,20 +202,20 @@ export function MentionArea({
 
 function MentionRow({
   id,
-  type,
-  title,
+  thing,
   active,
   onPoint,
   onChoose,
 }: {
   id: string
-  type: ObjectType
-  title: string
+  thing: LinkCandidate
   active: boolean
   onPoint: () => void
   onChoose: () => void
 }) {
-  const Icon = KIND_ICON[type]
+  // Each kind's own mark, as search draws it: a person's initials, a project's square.
+  const { Mark } = useRegistry().relationFor(thing.type)
+  const Icon = KIND_ICON[thing.type]
   return (
     <li
       id={id}
@@ -231,8 +231,12 @@ function MentionRow({
         active ? 'bg-select' : ''
       }`}
     >
-      <Icon size={14} aria-hidden="true" className={`shrink-0 ${KIND_TEXT[type]}`} />
-      <span className="truncate">{title}</span>
+      {Mark ? (
+        <Mark thing={thing} />
+      ) : (
+        <Icon size={14} aria-hidden="true" className={`shrink-0 ${KIND_TEXT[thing.type]}`} />
+      )}
+      <span className="truncate">{thing.title}</span>
     </li>
   )
 }
