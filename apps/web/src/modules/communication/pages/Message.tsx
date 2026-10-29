@@ -34,7 +34,7 @@ export function Message() {
   const gone = message.isError
   const m = message.data
   useForgetWhenGone('communication', id, gone)
-  useSubjectOf(m ? { type: 'communication', id: m.id, title: m.subject ?? 'Message' } : null)
+  useSubjectOf(m ? { type: 'communication', id: m.id, title: m.subject ?? 'No subject' } : null)
   useRecordRecent(
     m
       ? {

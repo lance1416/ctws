@@ -8,6 +8,7 @@ import { dayPhrase } from '../../platform/time/dates'
 import { DayGrid, monthOf } from '../dates/grids'
 import { MoveToProject } from '../projects/MoveToProject'
 import { ProjectSquare } from '../projects/ProjectSquare'
+import { ReadingImports } from './ReadingImports'
 
 type Kind = 'task' | 'reading'
 
@@ -104,6 +105,7 @@ export function CaptureSheet({
             Coming later
           </p>
         )}
+        {kind === 'reading' && <ReadingImports />}
         <div className="flex min-w-0 items-center gap-2">
           <span className="text-ui whitespace-nowrap text-subtle">Lands in</span>
           <button

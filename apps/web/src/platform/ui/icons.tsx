@@ -78,7 +78,9 @@ import {
   Repeat,
   RotateCcwClock,
   RotateCw,
+  ScanBarcode,
   Search,
+  Share,
   Tag,
   Send,
   SquareCheckBig,
@@ -248,6 +250,9 @@ export const DoneIcon = Check
 export const CarriedIcon = CornerDownRight
 /** A task to do, not yet started. */
 export const ToDoIcon = Circle
+/** Reading's imports to come (FR-102): a barcode to scan, and a link shared in from another app. */
+export const ScanIcon = ScanBarcode
+export const ShareInIcon = Share
 
 /** In progress: a ring with its right half filled, at an icon's size (not in Lucide). */
 export function InProgressIcon({

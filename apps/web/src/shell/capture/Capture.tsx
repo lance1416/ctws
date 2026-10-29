@@ -27,6 +27,7 @@ import { ProjectSquare } from '../projects/ProjectSquare'
 import { useRegistry } from '../registry'
 import { useAccountToday } from '../auth/useMe'
 import { DayField } from '../dates'
+import { ReadingImports } from './ReadingImports'
 
 type Kind = 'task' | 'reading'
 
@@ -295,6 +296,11 @@ export function Capture() {
             <WhyIcon size={12} aria-hidden="true" />
             {why}
           </p>
+          {kind === 'reading' && (
+            <div className="mx-3 mt-2.5">
+              <ReadingImports />
+            </div>
+          )}
           <div className="mt-2.5 flex items-center gap-2 border-t border-line px-3 py-2.5">
             <span className="text-meta whitespace-nowrap text-subtle">Lands in</span>
             <DropdownMenu.Root>
