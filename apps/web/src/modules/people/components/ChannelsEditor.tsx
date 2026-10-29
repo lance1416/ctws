@@ -115,6 +115,8 @@ export function useChannelRows(initial: () => ChannelRow[]) {
  * Another role do.
  */
 export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useChannelRows> }) {
+  // The row Another way just added: its box takes the typing (BUG-085).
+  const [added, setAdded] = useState<number | null>(null)
   return (
     <>
       <ul className="flex flex-col gap-2">
@@ -129,6 +131,7 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
               onPick={(kind) => channels.setKind(i, kind)}
             />
             <input
+              autoFocus={i === added}
               aria-label={`Item ${i + 1}`}
               value={c.value}
               placeholder={channelPlaceholder(c.kind)}
@@ -163,7 +166,10 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
       </ul>
       <button
         type="button"
-        onClick={channels.add}
+        onClick={() => {
+          setAdded(channels.rows.length)
+          channels.add()
+        }}
         className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink max-lg:tap"
       >
         <NewIcon size={14} aria-hidden="true" />

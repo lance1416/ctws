@@ -192,6 +192,8 @@ export function PersonEditor({
   // Bumped to start the birthday controls afresh, after a day picked on New person is cleared.
   const [dayKey, setDayKey] = useState(0)
   const [unnamed, setUnnamed] = useState(false)
+  // The row Another name or Another role just added: its first box takes the typing (BUG-085).
+  const [added, setAdded] = useState<number | null>(null)
 
   const parts = {
     givenName: d.givenName.trim(),
@@ -366,6 +368,7 @@ export function PersonEditor({
               {d.aliases.map((a, i) => (
                 <div key={a.key} className="flex items-center gap-2">
                   <input
+                    autoFocus={a.key === added}
                     aria-label={`Label of other name ${i + 1}`}
                     placeholder="Label"
                     value={a.label}
@@ -398,9 +401,11 @@ export function PersonEditor({
                 </div>
               ))}
               <Another
-                onAdd={() =>
-                  set({ aliases: [...d.aliases, { key: nextKey(), name: '', label: '' }] })
-                }
+                onAdd={() => {
+                  const key = nextKey()
+                  setAdded(key)
+                  set({ aliases: [...d.aliases, { key, name: '', label: '' }] })
+                }}
               >
                 Another name
               </Another>
@@ -437,6 +442,7 @@ export function PersonEditor({
                       key={r.key}
                       at={i + 1}
                       role={r}
+                      fresh={r.key === added}
                       today={today}
                       onChange={change}
                       onRemove={() => set({ roles: d.roles.filter((x) => x.key !== r.key) })}
@@ -446,12 +452,14 @@ export function PersonEditor({
               </div>
             )}
             <Another
-              onAdd={() =>
+              onAdd={() => {
+                const key = nextKey()
+                setAdded(key)
                 set({
                   roles: [
                     ...d.roles,
                     {
-                      key: nextKey(),
+                      key,
                       organisationId: null,
                       organisationName: '',
                       title: '',
@@ -460,7 +468,7 @@ export function PersonEditor({
                     },
                   ],
                 })
-              }
+              }}
             >
               Another role
             </Another>
@@ -700,12 +708,15 @@ function Remove({ what, onRemove }: { what: string; onRemove: () => void }) {
 function RoleRow({
   at,
   role,
+  fresh,
   today,
   onChange,
   onRemove,
 }: {
   at: number
   role: Role
+  /** Just added: its organisation box takes the typing. */
+  fresh: boolean
   today: string
   onChange: (patch: Partial<Role>) => void
   onRemove: () => void
@@ -714,7 +725,7 @@ function RoleRow({
     // On a phone, two lines a role: where and as what, then from and to; its × at the end of the
     // first (DES-001 "表单").
     <div className="contents max-lg:grid max-lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] max-lg:items-center max-lg:gap-2">
-      <OrganisationBox at={at} role={role} onChange={onChange} />
+      <OrganisationBox at={at} role={role} fresh={fresh} onChange={onChange} />
       <input
         aria-label={`Role ${at}`}
         value={role.title}
@@ -763,10 +774,12 @@ function RoleRow({
 function OrganisationBox({
   at,
   role,
+  fresh,
   onChange,
 }: {
   at: number
   role: Role
+  fresh: boolean
   onChange: (patch: Partial<Role>) => void
 }) {
   const [typing, setTyping] = useState(false)
@@ -811,7 +824,7 @@ function OrganisationBox({
   return (
     <div className="relative min-w-0">
       <input
-        autoFocus={changing}
+        autoFocus={changing || fresh}
         aria-label={`Organisation of role ${at}`}
         role="combobox"
         aria-expanded={open}

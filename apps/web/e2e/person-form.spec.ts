@@ -220,3 +220,23 @@ test('the organisation and city lists are chosen from with the keyboard (BUG-082
     ((await orgs.json()) as { organisations: { name: string }[] }).organisations.map((o) => o.name),
   ).toEqual(['Stride Health', 'Stripe'])
 })
+
+test('a row added takes the typing, by key or by click (BUG-085)', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.goto('/people/new')
+  await box(page, 'Given name').fill('Ada')
+
+  await page.getByRole('button', { name: 'Another name' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(box(page, 'Label of other name 1')).toBeFocused()
+  // Typed into the box, never read as keys: N T opens no new task.
+  await page.keyboard.type('Countess')
+  await expect(box(page, 'Label of other name 1')).toHaveValue('Countess')
+  await expect(page.getByRole('dialog', { name: 'New task' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Another role' }).click()
+  await expect(page.getByRole('combobox', { name: 'Organisation of role 1' })).toBeFocused()
+
+  await page.getByRole('button', { name: 'Another way' }).click()
+  await expect(box(page, 'Item 2')).toBeFocused()
+})
