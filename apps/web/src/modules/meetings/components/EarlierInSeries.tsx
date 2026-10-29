@@ -70,7 +70,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
                 <Link
                   to={occurrenceTo(o)}
                   data-earlier={o.recurrenceId}
-                  className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 px-4 py-2 text-ui hover:bg-hover"
+                  className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 px-4 py-2 text-ui hover:bg-hover max-lg:min-h-11 max-lg:items-center"
                 >
                   <time className="pt-0.5 font-mono text-meta text-muted tabular-nums">
                     {monthDay(o.startsLocal.slice(0, 10))}

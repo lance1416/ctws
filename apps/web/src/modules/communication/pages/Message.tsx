@@ -99,7 +99,10 @@ function MessagePage({ message: m }: { message: CommunicationResponse }) {
               {fullDay(day)} {clock}
             </span>
             {project && (
-              <Link to={`/projects/${project.id}`} className="inline-flex items-center gap-1.5">
+              <Link
+                to={`/projects/${project.id}`}
+                className="inline-flex items-center gap-1.5 max-lg:tap"
+              >
                 <ProjectSquare project={project} />
                 {project.name}
               </Link>

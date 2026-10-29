@@ -198,29 +198,6 @@ export function MigrationReport() {
             Couldn’t finish the report. It is still here.
           </p>
         )}
-        {/* On a phone the sidebar is a row of tags that wraps, each a jump to its part (DES-001). */}
-        <nav aria-label="Migration report" className="flex flex-wrap gap-1.5 lg:hidden">
-          {[...NEED_A_LOOK, ...IF_YOU_LIKE]
-            .filter((s) => of(s.id).length > 0)
-            .map((s) => {
-              const left = of(s.id).filter(waiting).length
-              return (
-                <a
-                  key={s.id}
-                  href={`#${sectionId(s.id)}`}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-line bg-panel px-3 text-ui text-ink"
-                >
-                  <s.icon size={14} aria-hidden="true" className={`shrink-0 ${s.tone}`} />
-                  {s.label}
-                  {left > 0 ? (
-                    <span className="text-meta text-muted tabular-nums">{left}</span>
-                  ) : (
-                    <MarkDoneIcon size={14} aria-label="Looked at" className="text-go" />
-                  )}
-                </a>
-              )
-            })}
-        </nav>
 
         <Names items={of('names')} />
         <Merges items={of('organisationsToMerge')} />
@@ -622,7 +599,17 @@ function Plain({
   const where = (type: ObjectType | null, id: string | null) =>
     type && id ? relationFor(type).to(id) : null
   return (
-    <Part id={section.id} icon={section.icon} title={section.label}>
+    <Part
+      id={section.id}
+      icon={section.icon}
+      title={section.label}
+      says={(() => {
+        const left = items.filter(waiting).length
+        return left > 0
+          ? `${left} to look at, ${items.length - left} look right`
+          : `${items.length}`
+      })()}
+    >
       <ul>
         {items.map((item) => {
           const to = where(item.type, item.id)

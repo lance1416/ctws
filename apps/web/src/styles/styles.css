@@ -381,3 +381,17 @@ kbd {
     display: none;
   }
 }
+
+/* A FIELD ON A PHONE IS AT LEAST 16PX: Safari on an iPhone zooms the page into any field set
+   smaller when it takes focus, and leaves it zoomed. Unlayered, so it outranks the type scale's
+   utilities on every field, whatever size the desk gives it. */
+@media (width < 64rem) {
+  :is(
+    input:not([type='checkbox'], [type='radio'], [type='range']),
+    select,
+    textarea,
+    [contenteditable='true']
+  ) {
+    font-size: max(1rem, 1em);
+  }
+}
