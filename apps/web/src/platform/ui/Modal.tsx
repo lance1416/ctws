@@ -99,7 +99,7 @@ export function Modal({
             if (e.target === e.currentTarget) guard.leave(onClose)
           }}
           // `max-sm:pt-24`: the top bar stays above the scrim and is two rows tall on a phone.
-          className={`fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 py-[8vh] max-sm:pt-24`}
+          className={`fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-sm:pt-24`}
         >
           <Dialog.Content
             aria-describedby={undefined}

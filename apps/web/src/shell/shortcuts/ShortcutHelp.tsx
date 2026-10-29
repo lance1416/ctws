@@ -95,9 +95,10 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       icon: BoardIcon,
       tint: 'bg-task-bg text-task',
       rows: [
-        { keys: '↑ ↓ ← →', does: 'Move between cards', presses: {} },
-        { keys: 'Alt+← Alt+→', does: 'Move the card to the column beside', presses: {} },
-        { keys: 'Enter', does: 'Open the card', presses: {} },
+        { keys: '← or →', does: 'Previous or next column', presses: {} },
+        { keys: '↑ or ↓', does: 'Previous or next card', presses: {} },
+        { keys: 'Alt+← or Alt+→', does: 'Move the card to the column beside', presses: {} },
+        { keys: 'Enter', does: 'Open the details', presses: {} },
       ],
     },
     {

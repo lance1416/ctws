@@ -386,7 +386,7 @@ test.describe('the tree on a phone', () => {
 test.describe('motion', () => {
   const duration = (page: Page) =>
     page
-      .locator('[data-task-tree] svg circle[fill="currentColor"]')
+      .locator('[data-task-tree] svg [data-part="check"]')
       .first()
       .evaluate((el) => getComputedStyle(el).transitionDuration)
 
