@@ -10,7 +10,6 @@ import { capturedLabel } from '../logic/dueDates'
 import { treeDue, type TreeDue } from '../logic/tree/treeDue'
 import { useTimeZone } from '../../../shell/auth'
 import {
-  Grip,
   INDENT_PX,
   OrganisationMark,
   SavedMark,
@@ -19,6 +18,7 @@ import {
   WaitingBadge,
   opensOnClick,
 } from './TaskRowParts'
+import { Grip } from '../../../platform/ui/Grip'
 import { StageLabel } from '../../../platform/ui/StageLabel'
 import { ProgressSquare } from './ProgressSquare'
 import { StartButton, StatusButton } from './StatusControls'

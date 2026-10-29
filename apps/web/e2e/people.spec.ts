@@ -7,6 +7,7 @@ import {
   pickLunarDay,
   pickOne,
   registerFreshUser,
+  WEB,
 } from './helpers'
 
 /**
@@ -631,4 +632,52 @@ test('opening the birthday and saving it untouched writes no birthday', async ({
     people: { id: string; birthday: unknown }[]
   }
   expect(people.find((p) => p.id === made.id)?.birthday).toBeNull()
+})
+
+test('circles are edited beside the people: renamed, added, and deleted with a question', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/people')
+  const put = await page.request.put('/api/v1/people/circles', {
+    headers: WEB,
+    data: { circles: [{ name: 'Family' }, { name: 'Climbing' }] },
+  })
+  expect(put.ok()).toBe(true)
+  const { circles } = (await put.json()) as { circles: { id: string; name: string }[] }
+  await apiPost(page, '/people', {
+    givenName: 'Prisha',
+    familyName: 'Rao',
+    circleIds: [circles.find((c) => c.name === 'Climbing')!.id],
+  })
+  await page.reload()
+  await page.getByRole('region', { name: 'Circles' }).getByRole('button', { name: 'Edit' }).click()
+  const pane = page
+    .getByRole('complementary', { name: 'Circles' })
+    .or(page.getByRole('dialog', { name: 'Circles' }))
+  const list = pane.getByRole('list', { name: 'Circles' })
+  await expect(list.getByRole('listitem')).toHaveCount(2)
+
+  // Renamed in place: Enter keeps it.
+  await list.getByRole('button', { name: 'Rename Family' }).click()
+  await pane.getByRole('textbox', { name: 'Name of Family' }).fill('Home')
+  await page.keyboard.press('Enter')
+  await expect(list.getByRole('button', { name: 'Rename Home' })).toBeVisible()
+
+  // A new one, typed where it goes.
+  await pane.getByRole('button', { name: 'New circle' }).click()
+  await pane.getByRole('textbox', { name: 'New circle' }).fill('University')
+  await page.keyboard.press('Enter')
+  await expect(list.getByRole('listitem')).toHaveCount(3)
+
+  // Deleting asks first, and says who stays.
+  await list.getByRole('button', { name: 'Delete Climbing' }).click()
+  await expect(pane.getByRole('alert')).toContainText(
+    'Delete Climbing? The 1 person in it stays; they just leave this circle.',
+  )
+  await pane.getByRole('button', { name: 'Delete Climbing', exact: true }).last().click()
+  await expect(list.getByRole('listitem')).toHaveCount(2)
+  const after = await page.request.get('/api/v1/people/circles', { headers: WEB })
+  expect(
+    ((await after.json()) as { circles: { name: string }[] }).circles.map((c) => c.name),
+  ).toEqual(['Home', 'University'])
 })

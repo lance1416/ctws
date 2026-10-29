@@ -15,7 +15,7 @@ import { boxed } from '../../../../platform/ui/formStyles'
 import { EditIcon, FoldStageIcon, NewIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, putStages } from '../../../../shell/projects'
 import { projectTasksQuery } from '../../api'
-import { Grip } from '../TaskRowParts'
+import { Grip } from '../../../../platform/ui/Grip'
 
 type Entry = { id?: StageId; name: string; collapsed?: boolean; mergeInto?: StageId }
 const asEntries = (stages: readonly StageResponse[]): Entry[] =>

@@ -1,8 +1,9 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { avatarInitials } from '@ctws/core'
 import { useQuery } from '@tanstack/react-query'
-import { useContext, type ReactNode } from 'react'
+import { useContext, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { EditCircles } from '../components/EditCircles'
 import { nearDay, shortDay, weekdayDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Avatar } from '../../../platform/ui/Avatar'
@@ -283,25 +284,41 @@ function OutOfTouch({ byId }: { byId: People }) {
 
 function Circles() {
   const circles = useQuery(circlesQuery())
+  // Edit opens the list beside the page, to reorder, rename, add and delete (artboard 29).
+  const [editing, setEditing] = useState(false)
   return (
-    <Block
-      empty={(circles.data ?? []).length === 0 ? 'None yet' : null}
-      title="Circles"
-      icon={CirclesIcon}
-      tint="bg-hover text-muted"
-    >
-      <div className="flex flex-wrap gap-2 p-2">
-        {(circles.data ?? []).map((c) => (
-          <Link
-            key={c.id}
-            to={`/people?circle=${c.id}`}
-            className="inline-flex h-6.5 items-center gap-1.5 rounded-control bg-hover px-2.5 text-ui text-ink hover:bg-select"
+    <>
+      <Block
+        empty={(circles.data ?? []).length === 0 ? 'None yet' : null}
+        title="Circles"
+        icon={CirclesIcon}
+        tint="bg-hover text-muted"
+        action={
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className={`${BUTTON.quiet} h-7 px-2.5 text-meta`}
           >
-            {c.name}
-            <span className="text-meta text-muted tabular-nums">{c.count}</span>
-          </Link>
-        ))}
-      </div>
-    </Block>
+            Edit
+          </button>
+        }
+      >
+        <div className="flex flex-wrap gap-2 p-2">
+          {(circles.data ?? []).map((c) => (
+            <Link
+              key={c.id}
+              to={`/people?circle=${c.id}`}
+              className="inline-flex h-6.5 items-center gap-1.5 rounded-control bg-hover px-2.5 text-ui text-ink hover:bg-select"
+            >
+              {c.name}
+              <span className="text-meta text-muted tabular-nums">{c.count}</span>
+            </Link>
+          ))}
+        </div>
+      </Block>
+      {editing && circles.data && (
+        <EditCircles circles={circles.data} onClose={() => setEditing(false)} />
+      )}
+    </>
   )
 }
