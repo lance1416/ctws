@@ -266,6 +266,8 @@ const wanglei = await person({
   name: '王磊',
   city: 'Shanghai, China',
   circleIds: [circle.University],
+  // A number to call, so a phone's Call opens the dialler (FR-087).
+  channels: [{ kind: 'phone', value: '+86 139 1234 5678' }],
 })
 const lena = await person({
   givenName: 'Lena',
