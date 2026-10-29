@@ -374,12 +374,7 @@ export function LogMessage({
           <label htmlFor={`${ids}-body`} className={label}>
             What was said
           </label>
-          <MentionArea
-            {...mentionedBody}
-            id={`${ids}-body`}
-            rows={4}
-            className={area}
-          />
+          <MentionArea {...mentionedBody} id={`${ids}-body`} rows={4} className={area} />
         </div>
 
         <Field label="Attached">
