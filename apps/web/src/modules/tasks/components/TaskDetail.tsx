@@ -30,6 +30,11 @@ type Props = {
   act?: ReactNode
   /** Where the frame around it finds how to close it: keeping an edit, as the ✕ does. */
   closing?: RefObject<() => void>
+  /**
+   * Deleted: where it was shown goes too. The inspector's, which nothing else closes (BUG-090);
+   * a page's pane is closed by its list, whose row has gone.
+   */
+  onDeleted?: () => void
 }
 
 /** One task in the pane: reading by default, the form behind Edit. Saving returns to reading. */
@@ -54,7 +59,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
  * The task itself, wherever it is shown: the pane above, and the inspector, where it is edited in
  * place too (artboard 8, DES-001 "检查器里的窄版").
  */
-export function TaskDetailBody({ task, onClose, onSaved, act, closing }: Props) {
+export function TaskDetailBody({ task, onClose, onSaved, act, closing, onDeleted }: Props) {
   useRecordRecent({
     type: 'task',
     id: task.id,
@@ -69,7 +74,7 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing }: Props) 
   const [said, setSaid] = useState<string | null>(null)
   const unsay = useCallback(() => setSaid(null), [])
   const edit = useTaskDetailForm(task)
-  const doomed = useDeleteTask(task)
+  const doomed = useDeleteTask(task, onDeleted)
 
   // A save in flight loses nothing, so it does not trap the person who pressed Save and then a
   // link. The save resets the form's dirty state when it lands, so the guard works again after.
