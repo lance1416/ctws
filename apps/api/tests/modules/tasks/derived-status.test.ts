@@ -1,4 +1,4 @@
-import type { TaskId } from '@ctws/contracts'
+import type { ProjectId, TaskId } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createProject, createTask } from '../../helpers/builders'
 import { appWithUser, eventsOf, type Harness } from '../../helpers/harness'
@@ -241,7 +241,7 @@ describe('only leaves are listed as in progress or ready', () => {
       url: '/api/v1/projects',
       headers: ctx.authed,
     })
-    const inbox = (projects.json().projects as { id: string; isInbox: boolean }[]).find(
+    const inbox = (projects.json().projects as { id: ProjectId; isInbox: boolean }[]).find(
       (p) => p.isInbox,
     )!
     await createTask(ctx, inbox.id, 'Renew the passport')
