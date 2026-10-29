@@ -5,7 +5,9 @@ import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { ICON_BUTTON, KEY } from '../../platform/ui/buttonStyles'
 import {
   BarExpandIcon,
+  BoardIcon,
   CloseIcon,
+  EditIcon,
   KIND_ICON,
   NewIcon,
   PLACE_ICON,
@@ -87,6 +89,26 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       rows: t.rows,
     })),
     { title: SEARCH_KEYS.title, icon: PLACE_ICON.search, tint: grey, rows: SEARCH_KEYS.rows },
+    // Said here, kept by the board and every form themselves: no single key among them (U-22).
+    {
+      title: 'On a board, with a card focused',
+      icon: BoardIcon,
+      tint: 'bg-task-bg text-task',
+      rows: [
+        { keys: '↑ ↓ ← →', does: 'Move between cards', presses: {} },
+        { keys: 'Alt+← Alt+→', does: 'Move the card to the column beside', presses: {} },
+        { keys: 'Enter', does: 'Open the card', presses: {} },
+      ],
+    },
+    {
+      title: 'In a form',
+      icon: EditIcon,
+      tint: grey,
+      rows: [
+        { keys: 'Ctrl+Enter', does: 'Save', presses: {} },
+        { keys: 'Esc', does: 'Cancel, asking first when something was changed', presses: {} },
+      ],
+    },
   ]
   // Tables under one title are one group: Today's row keys are the tree's, said once.
   const merged = new Map<string, Group>()
