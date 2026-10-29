@@ -25,7 +25,7 @@ import { MentionContext, type Mention } from '../../platform/notes/mention'
 import { useRegistry } from '../registry'
 import { SignOutContext } from './signOut'
 import { Sidebar } from './Sidebar'
-import { SubjectProvider, useSubject } from './subject'
+import { SubjectProvider, useLinkSubject, useSubject } from './subject'
 import { TopBar } from './TopBar'
 
 /**
@@ -111,6 +111,7 @@ function Frame({
   const registry = useRegistry()
   const hasSidebar = place !== null && (place.kind !== null || place.to in registry.pageSidebars)
   const subject = useSubject()
+  const linkFrom = useLinkSubject()
   // What a New makes on a project page belongs to the project (FR-026).
   const onProject = useMatch('/projects/:id')
   const projectId = onProject?.params.id ? idFrom(projectIdSchema, onProject.params.id) : null
@@ -173,13 +174,13 @@ function Frame({
               setHelp={setHelp}
               onSidebar={() => setSidebarOpen(!sidebarOpen)}
               onLink={() => {
-                if (subject) setLinking(true)
+                if (linkFrom) setLinking(true)
               }}
               onNew={openNew}
               onPinLink={() => setPinning(true)}
             />
             {pinning && <PinLink onClose={() => setPinning(false)} />}
-            {linking && subject && <LinkDialog of={subject} onClose={() => setLinking(false)} />}
+            {linking && linkFrom && <LinkDialog of={linkFrom} onClose={() => setLinking(false)} />}
             <BottomBar />
             <WhyGreyed />
           </div>

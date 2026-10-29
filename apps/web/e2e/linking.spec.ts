@@ -183,6 +183,43 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
   await expect(page.getByRole('region', { name: 'Tasks' })).toContainText('准备一面')
 })
 
+test('L with a task open beside the project links the task, not the project (BUG-080)', async ({
+  page,
+}) => {
+  const { person } = await world(page)
+  const project = await apiPost(page, '/projects', { name: '找工作' })
+  await apiPost(page, '/tasks', { title: '准备一面', projectId: project.id })
+  await page.goto(`/projects/${project.id as string}`)
+  await page.getByRole('listitem').filter({ hasText: '准备一面' }).first().click()
+  const pane = page.getByRole('dialog', { name: 'Task details' })
+  await expect(pane.getByRole('region', { name: 'Linked' })).toContainText('None yet')
+
+  await page.keyboard.press('l')
+  // The picker says what it links: the task, by name.
+  await expect(picker(page).getByRole('heading', { name: 'Link to 准备一面' })).toBeVisible()
+  await picker(page).getByRole('combobox', { name: 'Search' }).fill('Ying')
+  await picker(page)
+    .getByRole('option', { name: /Ying Chen/ })
+    .click()
+  await page.getByRole('textbox', { name: 'Why' }).press('Enter')
+  await expect(pane.getByRole('region', { name: 'Linked' }).getByRole('link')).toHaveText(
+    'Ying Chen',
+  )
+  // The project took nothing.
+  const links = await page.request.get(
+    `/api/v1/relations?type=project&id=${project.id as string}`,
+    {
+      headers: { 'x-ctws-client': 'web' },
+    },
+  )
+  expect(links.ok()).toBe(true)
+  expect(JSON.stringify(await links.json())).not.toContain(person.id as string)
+
+  // The pane's own `+` names the task too.
+  await pane.getByRole('button', { name: 'Link something' }).click()
+  await expect(picker(page).getByRole('heading', { name: 'Link to 准备一面' })).toBeVisible()
+})
+
 test('a task whose notes mention someone shows them by name, never the mention’s Markdown', async ({
   page,
 }) => {

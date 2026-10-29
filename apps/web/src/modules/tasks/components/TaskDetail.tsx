@@ -18,6 +18,7 @@ import { TaskEditForm } from './TaskEditForm'
 import { TaskReading } from './TaskReading'
 import { useDeleteTask } from './useDeleteTask'
 import { useTaskDetailForm } from './useTaskDetailForm'
+import { useInspectedOf } from '../../../shell/layout'
 
 type Props = {
   task: TaskResponse
@@ -35,6 +36,8 @@ type Props = {
 export function TaskDetail({ task, onClose, onSaved }: Props) {
   // The pane's own ways out (Esc, a click outside) close as the body's ✕ does.
   const closing = useRef(onClose)
+  // The pane is the inspector a task's own list opens it in: `L` links from it (BUG-080).
+  useInspectedOf({ type: 'task', id: task.id, title: task.title })
   return (
     <DetailPane label="Task details" onClose={() => closing.current()}>
       <TaskDetailBody

@@ -1,5 +1,6 @@
 import { type LinkCandidate, OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
+import { useNameOf } from '../layout/subject'
 import { SearchDialog } from '../search/SearchDialog'
 import { createLink, linkKeys, type Endpoint } from './api'
 
@@ -32,6 +33,9 @@ export function LinkDialog({
   makes?: Makes | undefined
   onClose: () => void
 }) {
+  // A block's `+` knows only the endpoint; the page or the inspector knows its name (BUG-080).
+  const named = useNameOf(of)
+  const title = of.title ?? named
   const make = useMutation({
     mutationFn: async ({ to, why }: { to: LinkCandidate; why: string | null }) =>
       createLink({
@@ -49,7 +53,7 @@ export function LinkDialog({
       pick={{
         // The endpoint only: the query is strict, and the subject carries its title too.
         of: { type: of.type, id: of.id },
-        title: of.title ? `Link to ${of.title}` : 'Link to',
+        title: title ? `Link to ${title}` : 'Link to',
         only,
         onPick: (to, why) => make.mutate({ to, why }),
         ...(makes ? { asksWhy: false } : {}),

@@ -23,6 +23,7 @@ import { InspectorContext, type ListAct } from '../inspector/narrow'
 import { LINKED_LIST, LinkedList } from '../inspector/LinkedList'
 import { useRegistry, type RegisteredRelation, type Registry } from '../registry'
 import { formatInspect, openedAct, useInspector, type Inspected } from './inspectorAddress'
+import { useInspectedOf } from './subject'
 
 /** One thing gone back past: what it was, its name, and where its page was scrolled to. */
 type Behind = {
@@ -106,6 +107,10 @@ export function Inspector() {
         : // Opened from a page's block: what that block offers (a person's Remove from Job hunt).
           openedAct(open)?.(open, close),
   }
+
+  useInspectedOf(
+    open && open.type !== 'list' && title ? { type: open.type, id: open.id, title } : null,
+  )
 
   if (!open) return null
   const view = viewOf(registry, open)
