@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { problemText } from '../../../platform/http/api'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { area, field } from '../../../platform/ui/formStyles'
+import { MentionArea, useMentionText } from '../../../shell/links'
 import { createNote, noteKeys, notesQuery, patchNote } from '../api'
 import { noteTitle } from '../logic/title'
 
@@ -26,6 +27,7 @@ export function NoteEditor({
   const qc = useQueryClient()
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
+  const mentioned = useMentionText(body, setBody)
   const [preview, setPreview] = useState(body)
   // Untitled, it is called as lists call it (a meeting's and its day, else its first line); the
   // box says so (R-05, FR-050).
@@ -94,11 +96,10 @@ export function NoteEditor({
         className={`${field} h-9 text-subject ${named ? 'placeholder:text-ink' : ''}`}
       />
       <div className="grid items-start gap-3 lg:grid-cols-2">
-        <textarea
+        <MentionArea
+          {...mentioned}
           aria-label="Note"
-          value={body}
           rows={18}
-          onChange={(e) => setBody(e.target.value)}
           placeholder="Markdown: # a heading, - a list, **bold**, @ someone"
           className={`${area} min-h-80 font-mono`}
         />

@@ -29,6 +29,7 @@ import { ProgressSquare } from './ProgressSquare'
 import { StageDot, StagePicker } from './StageField'
 import { StatusMark } from '../../../platform/ui/StatusMark'
 import { DateDecisions, StatusRadios } from './TaskFields'
+import { MentionArea } from '../../../shell/links'
 import type { useTaskDetailForm } from './useTaskDetailForm'
 import { useTaskPlace } from './useTaskPlace'
 
@@ -344,12 +345,12 @@ export function TaskEditForm({
             </button>
           </div>
           {/* Notes are prose, so the one reading measure in the app: 68ch. */}
-          <textarea
+          <MentionArea
             id="detail-notes"
+            value={watch('notes') ?? ''}
             // Empty notes are null, not '': a PATCH clearing them has to say null.
-            {...register('notes', {
-              setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
-            })}
+            onText={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
+            onMention={edit.mention}
             rows={5}
             className={`${area} mt-1.5 max-w-reading`}
           />

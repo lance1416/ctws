@@ -34,6 +34,7 @@ import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { DayField } from '../../../shell/dates'
 import { ProjectPicker } from '../../../shell/projects'
+import { MentionArea, useMentionText } from '../../../shell/links'
 import { communicationKeys, logMessage, logReply, patchMessage } from '../api'
 import { PartyChip, PartyPicker, type Party } from './PartyPicker'
 
@@ -152,6 +153,7 @@ export function LogMessage({
   const kept = keptKey(what)
   const [d, setDraft] = useState(() => keptDraft<Draft>(kept) ?? opened)
   const set = (patch: Partial<Draft>) => setDraft((was) => ({ ...was, ...patch }))
+  const mentionedBody = useMentionText(d.body, (body) => set({ body }))
   const [link, setLink] = useState<string | null>(null)
   const [nobody, setNobody] = useState(false)
   const reply = what.kind === 'reply'
@@ -372,11 +374,10 @@ export function LogMessage({
           <label htmlFor={`${ids}-body`} className={label}>
             What was said
           </label>
-          <textarea
+          <MentionArea
+            {...mentionedBody}
             id={`${ids}-body`}
-            value={d.body}
             rows={4}
-            onChange={(e) => set({ body: e.target.value })}
             className={area}
           />
         </div>

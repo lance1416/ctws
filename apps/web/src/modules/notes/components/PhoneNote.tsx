@@ -6,6 +6,7 @@ import { NoteBody } from '../../../platform/notes/NoteBody'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { EditIcon } from '../../../platform/ui/icons'
 import { area, field } from '../../../platform/ui/formStyles'
+import { MentionArea, useMentionText } from '../../../shell/links'
 import { createNote, notesQuery, patchNote } from '../api'
 import { noteTitle } from '../logic/title'
 
@@ -55,6 +56,7 @@ function PhoneNoteEditor({
   const qc = useQueryClient()
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
+  const mentioned = useMentionText(body, setBody)
   const save = useMutation({
     mutationFn: () => {
       const fields = { title: title.trim() || null, body }
@@ -105,9 +107,8 @@ function PhoneNoteEditor({
           placeholder={note ? noteTitle({ ...note, title: null }) : 'Title'}
           className={field}
         />
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
+        <MentionArea
+          {...mentioned}
           aria-label="Note"
           // The box is the screen: Markdown, as on the desk.
           autoFocus

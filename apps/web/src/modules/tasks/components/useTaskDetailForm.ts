@@ -31,7 +31,8 @@ export function useTaskDetailForm(task: TaskResponse) {
   const mentions = useRef(new Map<string, string>())
   const defaults = (): DetailTaskForm => {
     const notes = task.notes === null ? null : mentionsAsWords(task.notes)
-    mentions.current = notes?.links ?? new Map()
+    // Added to, never emptied: this runs on every render, after a mention may have been chosen.
+    for (const [words, href] of notes?.links ?? []) mentions.current.set(words, href)
     return {
       projectId: task.projectId,
       parentId: task.parentId,
@@ -114,7 +115,10 @@ export function useTaskDetailForm(task: TaskResponse) {
   /** Cancel, answered Discard: it is let go. */
   const discard = () => forgetDraft(draft)
 
-  return { form, isDirty, save, submit, start, keep, discard }
+  /** A mention chosen in the notes: where its words go, for the save. */
+  const mention = (words: string, address: string) => mentions.current.set(words, address)
+
+  return { form, isDirty, save, submit, start, keep, discard, mention }
 }
 
 type Kept = { values: DetailTaskForm; changed: (keyof DetailTaskForm)[] }

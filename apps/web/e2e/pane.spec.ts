@@ -551,3 +551,84 @@ test('a mention in the notes is edited as its name, and saved as its link', asyn
     `Ask ${link} what came up, and ${link} again.`,
   )
 })
+
+/**
+ * @ IN THE NOTES (FR-042, BUG-079): typing `@` and a few letters offers search's list under the
+ * caret, by kind; the one chosen is the mention, and the person's page has the sentence until it
+ * is taken out again.
+ */
+test('@ in the notes offers things by kind; the one chosen is mentioned', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
+  await apiPost(page, '/organisations', { name: 'Mirage Labs' })
+  await makeTask(page, pid, 'Update the CV')
+  await openTaskPane(page, pid, 'Update the CV')
+
+  const notes = page.getByRole('textbox', { name: 'Notes' })
+  await notes.click()
+  await notes.pressSequentially('@Mir')
+  const list = page.getByRole('listbox', { name: 'Mention' })
+  await expect(list.getByRole('option')).toHaveText(['Mira Chen', 'Mirage Labs'])
+  await expect(list).toContainText('People')
+  await expect(list).toContainText('Organisations')
+  await notes.press('Enter')
+  await expect(list).toHaveCount(0)
+  await notes.pressSequentially('说可以帮忙看简历')
+  await expect(notes).toHaveValue('@Mira Chen 说可以帮忙看简历')
+
+  const saved = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok())
+  await page.getByRole('button', { name: /^Save/ }).click()
+  expect((await saved).request().postDataJSON().notes).toBe(
+    `[@Mira Chen](ctws://person/${mira.id}) 说可以帮忙看简历`,
+  )
+  // Read, the mention is her chip.
+  await expect(page.locator('[data-detail-notes] [data-mention="person"]')).toHaveText('Mira Chen')
+
+  await page.goto(`/people/${mira.id}`)
+  const timeline = page.getByRole('region', { name: 'Timeline' })
+  await expect(timeline).toContainText('Mira Chen 说可以帮忙看简历')
+
+  // The sentence taken out, the mention goes with it.
+  await openTaskPane(page, pid, 'Update the CV')
+  await page.getByRole('textbox', { name: 'Notes' }).fill('Nothing yet')
+  const cleared = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok())
+  await page.getByRole('button', { name: /^Save/ }).click()
+  await cleared
+  await page.goto(`/people/${mira.id}`)
+  await expect(page.getByRole('region', { name: 'Timeline' })).not.toContainText('说可以帮忙看简历')
+})
+
+test('@ works in a message too; Esc puts the list away, not the form', async ({ page }) => {
+  await registerFreshUser(page)
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
+  const firm = await apiPost<{ id: string }>(page, '/organisations', { name: 'Harbour Lane' })
+  await page.goto(`/organisations/${firm.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Harbour Lane' })).toBeVisible()
+  await page.keyboard.press('n')
+  await page.keyboard.press('x')
+  const form = page.getByRole('dialog', { name: 'Log a message' })
+
+  const said = form.getByRole('textbox', { name: 'What was said' })
+  await said.click()
+  await said.pressSequentially('Ask @Mi')
+  const list = page.getByRole('listbox', { name: 'Mention' })
+  await expect(list.getByRole('option')).toHaveText(['Mira Chen'])
+  await said.press('Escape')
+  await expect(list).toHaveCount(0)
+  await expect(form).toBeVisible()
+  // Put away, it stays away for those words; a new `@` asks again, and a click chooses.
+  await said.pressSequentially('r')
+  await expect(list).toHaveCount(0)
+  await said.pressSequentially(' and @Mira')
+  await list.getByRole('option', { name: 'Mira Chen' }).click()
+  await expect(said).toHaveValue('Ask @Mir and @Mira Chen ')
+
+  const logged = page.waitForResponse(
+    (r) => r.request().method() === 'POST' && /\/communication$/.test(r.url()) && r.ok(),
+  )
+  await said.press('ControlOrMeta+Enter')
+  expect((await logged).request().postDataJSON().body).toBe(
+    `Ask @Mir and [@Mira Chen](ctws://person/${mira.id})`,
+  )
+})
