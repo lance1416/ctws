@@ -335,7 +335,7 @@ test('the frame stays put as a long page scrolls: only the main area moves', asy
   await expect.poll(() => main.evaluate((el) => el.scrollTop)).toBeGreaterThan(300)
   // The icon bar and the top bar do not scroll away and leave the page without its frame.
   expect(Math.round((await bar.boundingBox())!.y)).toBe(Math.round(before.y))
-  expect(Math.round((await page.locator('header').boundingBox())!.y)).toBe(0)
+  expect(Math.round((await page.getByRole('banner').boundingBox())!.y)).toBe(0)
 })
 
 test('on a phone, several things in progress are rows, not a column of empty space', async ({
