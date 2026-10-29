@@ -549,7 +549,8 @@ test('a city box suggests after a few letters, and saves the standard name', asy
   const oxford = page.getByRole('option', { name: 'Oxford, England, United Kingdom' })
   await expect(oxford).toBeVisible()
   await oxford.click()
-  await expect(box).toHaveValue('Oxford, England, United Kingdom')
+  // Picked, it reads as the city and the country (M-05); the whole name is what is saved.
+  await expect(box).toHaveValue('Oxford, United Kingdom')
 
   const written = patchAnswered(page, 'people/')
   await save(page).click()

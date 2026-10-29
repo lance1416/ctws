@@ -18,6 +18,7 @@ export function PickCity({
   value,
   onChange,
   onPick,
+  shown,
 }: {
   label: string
   id: string
@@ -25,6 +26,8 @@ export function PickCity({
   onChange: (next: string) => void
   /** The city chosen from the list, with its key and zone; null once the words are typed over. */
   onPick?: (city: City | null) => void
+  /** How a city picked from the list reads until it is typed over ("London, United Kingdom", M-05). */
+  shown?: string | undefined
 }) {
   const [typing, setTyping] = useState(false)
   const [at, setAt] = useState(0)
@@ -58,7 +61,7 @@ export function PickCity({
       </label>
       <input
         id={id}
-        value={value}
+        value={typing || shown === undefined ? value : shown}
         autoComplete="off"
         role="combobox"
         aria-expanded={listed}

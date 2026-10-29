@@ -202,7 +202,7 @@ test('the organisation and city lists are chosen from with the keyboard (BUG-082
   await city.press('ArrowUp')
   await city.press('Enter')
   await expect(page).toHaveURL(/\/people\/new$/)
-  await expect(city).toHaveValue('London, England, United Kingdom')
+  await expect(city).toHaveValue('London, United Kingdom')
   await expect(page.getByText('From Lives in')).toBeVisible()
 
   const made = page.waitForResponse(

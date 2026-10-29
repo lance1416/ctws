@@ -48,6 +48,7 @@ import {
 } from '../api'
 import { BirthdayEditor } from '../birthday/BirthdayEditor'
 import { byKind } from '../logic/channels'
+import { cityAndCountry } from '../logic/places'
 import { GENDER_CHOICES } from '../logic/labels'
 import { setNewPersonDraft } from '../logic/newPersonDraft'
 import { ChannelsEditor, useChannelRows } from './ChannelsEditor'
@@ -480,6 +481,7 @@ export function PersonEditor({
                 id={`${ids}-city`}
                 label="Lives in"
                 value={d.city}
+                shown={d.cityKey ? cityAndCountry(d.city) : undefined}
                 onChange={(city) => set({ city })}
                 onPick={(c) => set({ cityKey: c?.key ?? null, cityZone: c?.timeZone ?? null })}
               />
@@ -487,6 +489,7 @@ export function PersonEditor({
                 id={`${ids}-hometown`}
                 label="Hometown"
                 value={d.hometown}
+                shown={d.hometownKey ? cityAndCountry(d.hometown) : undefined}
                 onChange={(hometown) => set({ hometown })}
                 onPick={(c) => set({ hometownKey: c?.key ?? null })}
               />
