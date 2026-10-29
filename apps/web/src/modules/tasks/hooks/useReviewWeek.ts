@@ -21,6 +21,8 @@ export function useReviewWeek() {
       const next = new URLSearchParams(prev)
       // A week chosen leaves Done for the week.
       next.delete('view')
+      // And a phone's list of weeks it was chosen from.
+      next.delete('list')
       if (week === lastMonday) next.delete('week')
       else next.set('week', week)
       return next

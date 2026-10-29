@@ -591,3 +591,45 @@ test('in the edit, Move to… takes a project, then a parent, saved with the res
     .poll(async () => (await serverTasks(page, jh)).find((t) => t.id === loose)?.parentId)
     .toBe(amazon)
 })
+
+test('Move to… ends with the Inbox, under a line: picked, saved, said at the foot (FR-059)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const jh = await makeProject(page, 'Job hunt')
+  const stray = await makeTask(page, jh, 'Call the letting agent')
+  await page.goto(`/projects/${jh}?inspect=task:${stray}`)
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await sheet.getByRole('button', { name: 'Edit', exact: true }).click()
+  await sheet.getByRole('button', { name: /Move to…/ }).click()
+  const picker = page.getByRole('dialog', { name: /^Move “Call the letting agent” to/ })
+  const options = picker.getByRole('option')
+  await expect(options.last()).toContainText('Inbox')
+  // A way back, not a place to go into.
+  await expect(picker.getByRole('button', { name: 'Inside “Inbox”' })).toHaveCount(0)
+  await options.last().click()
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Moved to Inbox' })).toBeVisible()
+  const projects = (await (
+    await page.request.get('/api/v1/projects', { headers: WEB })
+  ).json()) as {
+    projects: { id: string; isInbox: boolean }[]
+  }
+  const inbox = projects.projects.find((p) => p.isInbox)!.id
+  await expect.poll(async () => (await serverTasks(page, inbox)).map((t) => t.id)).toContain(stray)
+})
+
+test('the review on a phone: ‹ Weeks to the list of weeks, a week back to it; More is the tab (DES-001)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto('/review')
+  await expect(tabs(page).getByRole('link', { name: 'More' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await page.getByRole('link', { name: 'Weeks' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Weeks' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Weeks' }).getByRole('button').first().click()
+  await expect(page.getByRole('heading', { level: 1, name: /^Week of / })).toBeVisible()
+})

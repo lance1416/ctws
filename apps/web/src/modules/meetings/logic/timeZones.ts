@@ -26,7 +26,7 @@ const COMMON = [
 export const ZONES: readonly string[] = [...new Set([browserZone(), ...COMMON])]
 
 /**
- * "Toronto · EDT": the city and the abbreviation the zone uses at `at`, which changes with the
+ * "Toronto (EDT)": the city and the abbreviation the zone uses at `at`, which changes with the
  * season. `at` is required so a meeting is labelled for its own date, not today's.
  */
 export function cityAndZone(at: Date, zone: string): string {
@@ -34,7 +34,7 @@ export function cityAndZone(at: Date, zone: string): string {
   try {
     const abbr = zoneAbbreviation(at, zone)
     // "UTC" is both city and abbreviation, so it is said once.
-    return abbr && abbr !== city ? `${city} · ${abbr}` : city
+    return abbr && abbr !== city ? `${city} (${abbr})` : city
   } catch {
     return city
   }

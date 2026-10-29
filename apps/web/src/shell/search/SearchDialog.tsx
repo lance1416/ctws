@@ -122,6 +122,11 @@ export type Pick = {
   of: Endpoint | null
   /** Offered first among what the words find (the capture's Inbox, FR-084). */
   first?: string | null
+  /**
+   * Offered last, under a line, when the words find it: a way back rather than a place to go
+   * into, so no "›" and its own mark (a task's Inbox, FR-059).
+   */
+  last?: { id: string; mark: ReactNode } | null
   title: string
   /** Offer this kind only, when the block it opened from holds one kind. */
   only?: ObjectType | undefined
@@ -243,8 +248,9 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     .filter(
       (h) => ((scope ?? 'all') === 'all' || h.type === scope) && !pick?.leaveOut?.includes(h.id),
     )
-    // The one asked for first leads; the rest keep the server's order.
+    // The one asked for first leads, the one asked for last ends; the rest keep the server's order.
     .sort((a, b) => Number(b.id === pick?.first) - Number(a.id === pick?.first))
+    .sort((a, b) => Number(a.id === pick?.last?.id) - Number(b.id === pick?.last?.id))
   // A picker of one kind lists every one it finds, not five and an "All N".
   const view: Tab = pick ? (pick.only ?? 'all') : (scope ?? tab)
   const tabs: Tab[] = pick
@@ -405,7 +411,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
 
   const intoOf = (row: Row | undefined) => {
     const thing = row?.kind === 'hit' ? hitsById.get(row.id) : undefined
-    return thing && pick?.drill?.into(thing) ? thing : null
+    return thing && thing.id !== pick?.last?.id && pick?.drill?.into(thing) ? thing : null
   }
   const goInto = (thing: LinkCandidate) => {
     if (!pick?.busy) setInside(thing)
@@ -538,11 +544,15 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             }
             aria-label="Search"
             data-bare
-            className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-subtle ${pick ? 'text-ui' : 'text-prose'}`}
+            className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-subtle max-lg:h-11 ${pick ? 'text-ui' : 'text-prose'}`}
           />
           {!pick && <kbd className={`${KEY} max-lg:hidden`}>Esc</kbd>}
           {/* A phone has no Esc: the full screen closes here (FR-088). */}
-          <button type="button" onClick={onClose} className="text-ui text-muted lg:hidden">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-ui text-muted lg:hidden max-lg:tap"
+          >
             Cancel
           </button>
         </div>
@@ -566,7 +576,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                   aria-selected={view === t}
                   tabIndex={-1}
                   onClick={() => showTab(t)}
-                  className={`inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium whitespace-nowrap ${
+                  className={`inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium whitespace-nowrap max-lg:tap ${
                     view === t ? 'bg-select text-ink' : 'text-muted hover:bg-hover'
                   }`}
                 >
@@ -654,6 +664,9 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                   chosen ? row.kind === 'hit' && row.id === chosen.id : run.start + j === at
                 }
                 compact={pick !== undefined}
+                {...(row.kind === 'hit' && row.id === pick?.last?.id
+                  ? { apart: pick.last.mark }
+                  : {})}
                 onChoose={() => open(row, false)}
                 {...(intoOf(row) ? { onInto: () => goInto(intoOf(row)!) } : {})}
                 onHover={() => {
@@ -762,7 +775,7 @@ function NextStep({
     <button
       type="button"
       onClick={onClick}
-      className="mx-1.5 grid h-9 grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-x-2.5 rounded-control px-2.5 text-left text-ui text-ink hover:bg-hover"
+      className="mx-1.5 grid h-9 grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-x-2.5 rounded-control px-2.5 text-left text-ui text-ink hover:bg-hover max-lg:h-11"
     >
       <span aria-hidden="true" className="inline-grid place-items-center text-muted">
         {icon}
@@ -827,9 +840,12 @@ function SearchRow({
   onChoose,
   onHover,
   onInto,
+  apart,
 }: {
   row: Row
   id: string
+  /** The picker's last row, under a line, with this mark in place of its own. */
+  apart?: ReactNode
   /** What was typed, marked where a title matches it (S-01). */
   words: string
   selected: boolean
@@ -850,7 +866,8 @@ function SearchRow({
       .filter((t) => t.length > 0)
     setLabel(parts.length > 0 ? parts.join(', ') : undefined)
   }, [row, words])
-  const shared = `grid min-h-10 cursor-pointer items-center gap-x-3 px-4 text-ui text-ink ${
+  // On a phone every row is 44, with or without its "›" (P4-25).
+  const shared = `grid min-h-10 cursor-pointer items-center gap-x-3 px-4 text-ui text-ink max-lg:min-h-11 ${
     selected ? 'bg-select' : ''
   }`
   if (row.kind === 'scope')
@@ -944,7 +961,7 @@ function SearchRow({
       aria-selected={selected}
       onClick={onChoose}
       onMouseEnter={onHover}
-      className={`${shared} ${
+      className={`${shared} ${apart ? 'border-t border-line' : ''} ${
         compact
           ? onInto
             ? 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)_24px] pr-2'
@@ -954,7 +971,7 @@ function SearchRow({
       }`}
     >
       <span className="inline-grid size-6 place-items-center max-lg:row-span-2 max-lg:self-start">
-        {row.mark ?? <KindBadge type={row.type} />}
+        {apart ?? row.mark ?? <KindBadge type={row.type} />}
       </span>
       <span data-said className={`truncate ${compact ? '' : 'max-lg:col-span-2'}`}>
         <Matched text={row.title} words={words} />
@@ -986,7 +1003,7 @@ function SearchRow({
             e.stopPropagation()
             onInto()
           }}
-          className="inline-grid size-6 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink"
+          className="inline-grid size-6 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink max-lg:tap"
         >
           <ForwardIcon size={16} aria-hidden="true" />
         </button>

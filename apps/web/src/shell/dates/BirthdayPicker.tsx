@@ -93,7 +93,7 @@ export function BirthdayPicker({
               aria-checked={value.calendar === c}
               tabIndex={value.calendar === c ? 0 : -1}
               onClick={() => set({ calendar: c, leapMonth: c === 'lunar' && value.leapMonth })}
-              className={`h-7 rounded-control px-2.5 text-meta font-medium max-lg:h-11 ${
+              className={`h-7 rounded-control px-2.5 text-meta font-medium max-lg:tap ${
                 value.calendar === c ? 'bg-panel text-ink ring-1 ring-line' : 'text-muted'
               }`}
             >
@@ -102,7 +102,7 @@ export function BirthdayPicker({
           ))}
         </div>
         <span aria-hidden="true" className="flex-1" />
-        <label className="inline-flex items-center gap-2 text-ui text-ink">
+        <label className="inline-flex items-center gap-2 text-ui text-ink max-lg:min-h-11">
           <input
             type="checkbox"
             checked={!yearKnown}
@@ -195,7 +195,7 @@ export function BirthdayPicker({
           <button
             type="button"
             onClick={() => setHourOpen(true)}
-            className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-ink max-lg:min-h-11"
+            className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-ink max-lg:tap"
           >
             <NewIcon size={14} aria-hidden="true" />
             Hour

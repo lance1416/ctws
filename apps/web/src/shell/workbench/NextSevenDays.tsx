@@ -52,7 +52,7 @@ export function NextSevenDays() {
       actions={
         <Link
           to="/calendar"
-          className="mr-1.5 inline-flex items-center gap-1 text-meta text-muted hover:text-ink"
+          className="mr-1.5 inline-flex items-center gap-1 text-meta text-muted hover:text-ink max-lg:tap"
         >
           Calendar
           <GoOnIcon size={12} aria-hidden="true" />
@@ -88,7 +88,7 @@ export function NextSevenDays() {
                 {on.length > PER_DAY && (
                   <Link
                     to={`/calendar?day=${day}`}
-                    className="px-1.5 text-meta text-muted hover:text-ink"
+                    className="px-1.5 text-meta text-muted hover:text-ink max-lg:tap"
                   >{`+${on.length - PER_DAY} more`}</Link>
                 )}
               </li>
@@ -126,7 +126,7 @@ function Chip({ entry: e, soon }: { entry: ShownEntry; soon: boolean }) {
       to={e.to}
       title={e.title}
       data-week-entry={e.kind}
-      className={`flex h-5.5 min-w-0 items-center gap-1.25 rounded-key px-1.5 text-meta font-medium whitespace-nowrap hover:brightness-95 ${look.tone}`}
+      className={`flex h-5.5 min-w-0 items-center gap-1.25 rounded-key px-1.5 text-meta font-medium whitespace-nowrap hover:brightness-95 max-lg:tap ${look.tone}`}
     >
       {look.icon}
       <span className="truncate">{look.text}</span>

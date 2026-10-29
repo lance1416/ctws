@@ -51,11 +51,7 @@ export function FormBar({
               {typeof failed === 'string' && <span className="block text-muted">{failed}</span>}
             </span>
           </p>
-          <button
-            type="submit"
-            disabled={busy}
-            className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
-          >
+          <button type="submit" disabled={busy} className={`${BUTTON.small} h-7 px-2.5 text-meta`}>
             <RetryIcon size={14} aria-hidden="true" />
             Try again
           </button>

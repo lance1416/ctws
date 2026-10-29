@@ -5,7 +5,7 @@ import { Field } from '../../../platform/ui/Field'
 import { area, boxed, field, label } from '../../../platform/ui/formStyles'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
 import { keepDraft, keptDraft } from '../../../platform/ui/drafts'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { FormBar, saveOnChord } from '../../../shell/detail'
 import { ProjectPicker } from '../../../shell/projects'
 import { useTimeZone } from '../../../shell/auth'
@@ -102,27 +102,33 @@ export function MeetingForm({
                   onChange={(e) => setStart(startDay, e.target.value)}
                   className={`${boxed} h-8 w-28 py-0 text-ui tabular-nums`}
                 />
-                <ZonePicker
-                  value={values.timeZone}
-                  onPick={(zone) => form.setValue('timeZone', zone, dirty)}
-                />
+                <Boxed>
+                  <ZonePicker
+                    value={values.timeZone}
+                    onPick={(zone) => form.setValue('timeZone', zone, dirty)}
+                  />
+                </Boxed>
               </div>
             </Field>
           </div>
           <Field label="Length">
-            <LengthPicker
-              value={values.durationMinutes}
-              onPick={(minutes) => form.setValue('durationMinutes', minutes, dirty)}
-            />
+            <Boxed>
+              <LengthPicker
+                value={values.durationMinutes}
+                onPick={(minutes) => form.setValue('durationMinutes', minutes, dirty)}
+              />
+            </Boxed>
           </Field>
           <Field label="Repeats">
-            <RepeatPicker
-              startsLocal={values.startsLocal}
-              today={today}
-              value={values.rule}
-              stored
-              onPick={(rule) => form.setValue('rule', rule, dirty)}
-            />
+            <Boxed>
+              <RepeatPicker
+                startsLocal={values.startsLocal}
+                today={today}
+                value={values.rule}
+                stored
+                onPick={(rule) => form.setValue('rule', rule, dirty)}
+              />
+            </Boxed>
           </Field>
           {values.rule !== null && (
             <Field label="Ends">
@@ -138,11 +144,13 @@ export function MeetingForm({
             </Field>
           )}
           <Field label="Projects">
-            <ProjectPicker
-              value={values.projectId}
-              onPick={(id) => form.setValue('projectId', id, dirty)}
-              none="No project"
-            />
+            <Boxed>
+              <ProjectPicker
+                value={values.projectId}
+                onPick={(id) => form.setValue('projectId', id, dirty)}
+                none="No project"
+              />
+            </Boxed>
           </Field>
         </div>
       </div>
@@ -187,3 +195,8 @@ export function MeetingForm({
 
 /** What a meeting's form in a pane keeps when Esc closes it. */
 export const meetingDraft = (meeting: MeetingOccurrence) => `meeting:edit:${meeting.meetingId}`
+
+/** A dropdown framed as a field, as the reading form's are (E-01, P4-21). */
+const Boxed = ({ children }: { children: ReactNode }) => (
+  <div className={`${boxed} flex min-w-0 items-center px-2`}>{children}</div>
+)

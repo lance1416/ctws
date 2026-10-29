@@ -36,8 +36,12 @@ export function MeetingRead({
           <h2 data-detail-title className="truncate text-subject text-ink">
             {meeting.title}
           </h2>
-          <p className="truncate text-ui text-muted tabular-nums">
-            {when} · {cityAndZone(new Date(meeting.startsAt), meeting.timeZone)}
+          {/* When and where its clock is, each in its own place (no "·"). */}
+          <p className="flex min-w-0 gap-3 text-ui text-muted tabular-nums">
+            <span className="shrink-0">{when}</span>
+            <span className="truncate">
+              {cityAndZone(new Date(meeting.startsAt), meeting.timeZone)}
+            </span>
           </p>
         </div>
         <Button look="secondary" onClick={onEdit}>

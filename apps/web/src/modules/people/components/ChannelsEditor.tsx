@@ -151,7 +151,7 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
               type="button"
               aria-label={`Remove item ${i + 1}`}
               onClick={() => channels.remove(i)}
-              className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink max-lg:size-11"
+              className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink max-lg:tap"
             >
               <CloseIcon size={14} aria-hidden="true" />
             </button>
@@ -164,7 +164,7 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
       <button
         type="button"
         onClick={channels.add}
-        className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink max-lg:min-h-11"
+        className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink max-lg:tap"
       >
         <NewIcon size={14} aria-hidden="true" />
         Another way

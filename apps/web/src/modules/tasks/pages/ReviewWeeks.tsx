@@ -53,7 +53,7 @@ export function ReviewWeeks() {
                     aria-current={on ? 'true' : undefined}
                     onClick={() => show(w.from)}
                     onKeyDown={(e) => step(e, w.from)}
-                    className={`mx-1.5 grid min-h-9 w-[calc(100%-0.75rem)] grid-cols-[minmax(0,1fr)_28px] items-center gap-x-2 rounded-control px-2.5 text-left text-ui text-ink ${
+                    className={`mx-1.5 grid min-h-9 w-[calc(100%-0.75rem)] max-lg:min-h-11 grid-cols-[minmax(0,1fr)_28px] items-center gap-x-2 rounded-control px-2.5 text-left text-ui text-ink ${
                       on ? 'bg-select' : 'hover:bg-hover'
                     }`}
                   >
@@ -87,7 +87,7 @@ export function ReviewWeeks() {
         type="button"
         aria-current={done ? 'true' : undefined}
         onClick={() => setParams({ view: 'done' })}
-        className={`mx-1.5 flex min-h-9 items-center rounded-control px-2.5 text-left text-ui text-ink ${
+        className={`mx-1.5 flex min-h-9 items-center rounded-control max-lg:min-h-11 px-2.5 text-left text-ui text-ink ${
           done ? 'bg-select font-medium' : 'hover:bg-hover'
         }`}
       >

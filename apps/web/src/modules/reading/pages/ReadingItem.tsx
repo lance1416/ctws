@@ -87,8 +87,9 @@ function ReadingPage({ item }: { item: ReadingItemResponse }) {
       <div className="grid items-start gap-4 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
         <Profile item={item} />
         <div className="flex min-w-0 flex-col gap-4">
-          {/* What it is linked to, then what happened to it: as a person's page has them (R-04). */}
-          <div className="grid items-start gap-3 xl:grid-cols-2">{blocks}</div>
+          {/* What it is linked to, then what happened to it: as a person's page has them (R-04).
+              On a phone the timeline comes first, as on every thing's page (FR-088, P4-15). */}
+          <div className="grid items-start gap-3 max-lg:order-last xl:grid-cols-2">{blocks}</div>
           <div className="rounded-block border border-line bg-panel p-4">
             <Timeline of={{ type: 'reading', id: item.id }} />
           </div>
@@ -200,7 +201,7 @@ function Profile({ item }: { item: ReadingItemResponse }) {
           <Link
             to={`/people/${item.recommendedBy.id}`}
             data-recommended-by={item.recommendedBy.id}
-            className="flex items-center gap-2 pl-6 text-ui text-ink hover:underline"
+            className="flex items-center gap-2 pl-6 text-ui text-ink hover:underline max-lg:min-h-11"
           >
             <Avatar initials={initialsOf(item.recommendedBy.name)} />
             {item.recommendedBy.name}
@@ -211,7 +212,7 @@ function Profile({ item }: { item: ReadingItemResponse }) {
         <Section title="In project" icon={KIND_ICON.project}>
           <Link
             to={`/projects/${project.id}`}
-            className="flex items-center gap-2 pl-6 text-ui text-ink hover:underline"
+            className="flex items-center gap-2 pl-6 text-ui text-ink hover:underline max-lg:min-h-11"
           >
             <ProjectSquare project={project} />
             {project.name}
@@ -281,7 +282,7 @@ function EditPage({ item }: { item: ReadingItemResponse }) {
   })
   return (
     <div className="flex min-h-full max-w-3xl shrink-0 flex-col gap-4">
-      <h1 tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
+      <h1 data-form-head tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
         Edit {readingLabel(item)}
       </h1>
       <UnsavedAsk guard={guard} />

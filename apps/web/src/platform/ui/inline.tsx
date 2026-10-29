@@ -35,7 +35,7 @@ export function PickOne<T extends string | null>({
       <DropdownMenu.Trigger
         disabled={disabled}
         aria-label={`${label}: ${current?.label ?? placeholder}`}
-        className="-mx-1.5 flex h-8 min-w-0 items-center max-lg:min-h-11 max-lg:min-w-11 gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover disabled:opacity-50"
+        className="-mx-1.5 flex h-8 min-w-0 items-center max-lg:tap gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover disabled:opacity-50"
       >
         {current?.mark && (
           <span aria-hidden="true" className="flex shrink-0">
@@ -111,7 +111,7 @@ export function PickMany<T extends string>({
             type="button"
             aria-label={`Remove ${label} “${c.label}”`}
             onClick={() => onChange(live.filter((v) => v !== c.value))}
-            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-control text-subtle hover:text-ink"
+            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-control text-subtle hover:text-ink max-lg:tap"
           >
             <CloseIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
           </button>
@@ -122,7 +122,7 @@ export function PickMany<T extends string>({
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger
             aria-label={`Add ${label}`}
-            className="flex h-7 w-7 items-center justify-center rounded-control border border-dashed border-line-strong text-subtle hover:bg-hover hover:text-ink"
+            className="flex h-7 w-7 items-center justify-center rounded-control border border-dashed border-line-strong text-subtle hover:bg-hover hover:text-ink max-lg:tap"
           >
             <NewIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
           </DropdownMenu.Trigger>

@@ -168,6 +168,7 @@ export function TaskReading({
             shortcut (DES-001 "滑动只是快捷方式"). Done is the status above. */}
         {inSheet && !counts && !isFinished(task.status) && (
           <PlanAgain
+            named={task.scheduledOn === null}
             title={task.title}
             today={today}
             busy={plan.isPending}
@@ -238,11 +239,14 @@ export function TaskReading({
 
 /** Tomorrow and Pick a date, a phone's swipe on the row, under the plan in the sheet. */
 function PlanAgain({
+  named,
   title,
   today,
   busy,
   onPlan,
 }: {
+  /** No plan row above to say what these change: they say it (P4-23). */
+  named: boolean
   title: string
   today: string
   busy: boolean
@@ -251,7 +255,8 @@ function PlanAgain({
   const [picking, setPicking] = useState(false)
   const [month, setMonth] = useState(monthOf(today))
   return (
-    <div className="col-span-full flex gap-2 pt-1">
+    <div className="col-span-full flex items-center gap-2 pt-1">
+      {named && <span className="text-meta text-subtle">Plan</span>}
       <button
         type="button"
         disabled={busy}

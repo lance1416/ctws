@@ -114,7 +114,7 @@ export function Modal({
           className={
             full
               ? 'fixed inset-0 z-40 flex bg-float pt-[env(safe-area-inset-top)]'
-              : `fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-lg:pt-4 max-lg:has-[[data-phone-form-bar]]:pt-16`
+              : `fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-lg:pt-4 max-lg:has-[[data-phone-form-bar]]:bg-ground max-lg:has-[[data-phone-form-bar]]:px-0 max-lg:has-[[data-phone-form-bar]]:pt-16 max-lg:has-[[data-phone-form-bar]]:pb-0`
           }
         >
           <Dialog.Content
@@ -175,13 +175,14 @@ export function Modal({
             className={
               full
                 ? 'flex min-h-0 w-full flex-col bg-float'
-                : `h-fit w-full rounded-block bg-float shadow-float ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : picker ? 'max-w-[23.75rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`
+                : `group/modal h-fit w-full rounded-block bg-float shadow-float max-lg:has-[[data-phone-form-bar]]:min-h-full max-lg:has-[[data-phone-form-bar]]:max-w-none max-lg:has-[[data-phone-form-bar]]:bg-ground max-lg:has-[[data-phone-form-bar]]:shadow-none ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : picker ? 'max-w-[23.75rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`
             }
           >
             {palette || picker ? (
               <Dialog.Title className="sr-only">{title}</Dialog.Title>
             ) : (
-              <div className="flex items-center justify-between border-b border-line px-5 py-3">
+              // A form on a phone is a page: its bar says what it is (DES-001 "表单页").
+              <div className="flex items-center justify-between border-b border-line px-5 py-3 max-lg:group-has-[[data-phone-form-bar]]/modal:sr-only">
                 <Dialog.Title className="font-medium text-ink">{title}</Dialog.Title>
                 {dismissLabel !== null && (
                   <Dialog.Close className={BUTTON.inline}>{dismissLabel}</Dialog.Close>

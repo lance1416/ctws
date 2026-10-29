@@ -24,7 +24,8 @@ export function PhoneFormBar({
   cancelTo?: string
   onCancel?: () => void
 }) {
-  const cancel = 'flex min-h-11 items-center px-2 text-prose text-muted'
+  // Its words at the bar's 16, the press at the other 16 (DES-001 "表单页").
+  const cancel = '-ml-2 flex min-h-11 items-center px-2 text-prose text-muted'
   let back: ReactNode = null
   if (cancelTo)
     back = (
@@ -41,12 +42,11 @@ export function PhoneFormBar({
   return (
     <div
       data-phone-form-bar
-      className="fixed inset-x-0 top-0 z-30 flex items-center gap-2 border-b border-line bg-chrome px-2 pt-[env(safe-area-inset-top)] pb-1 lg:hidden"
+      className="fixed inset-x-0 top-0 z-30 flex min-h-14 items-center gap-2 border-b border-line bg-chrome px-4 pt-[env(safe-area-inset-top)] lg:hidden"
     >
       {back}
-      <span className="min-w-0 flex-1 truncate text-center text-ui font-medium text-ink">
-        {title}
-      </span>
+      {/* The page's name on a phone, where its own head stands down (styles.css). */}
+      <h1 className="min-w-0 flex-1 truncate text-center text-ui font-medium text-ink">{title}</h1>
       <button
         type="submit"
         disabled={disabled && !why}

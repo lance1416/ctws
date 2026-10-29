@@ -49,9 +49,10 @@ export function NotesOverview() {
                 <Link
                   to={`/${NOTES_ID}/${n.id}`}
                   data-note-row={n.id}
-                  className="grid min-h-9 max-lg:min-h-11 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
+                  // On a phone two lines: the note, then what it hangs on and when (P4-22).
+                  className="grid min-h-9 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover max-lg:min-h-14 max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:gap-y-0.5 max-lg:py-2"
                 >
-                  <span className="truncate text-ink">{noteTitle(n)}</span>
+                  <span className="truncate text-ink max-lg:col-span-2">{noteTitle(n)}</span>
                   <Anchor note={n} />
                   <span className="text-right font-mono text-meta text-muted tabular-nums">
                     {monthDay(ymd(new Date(n.updatedAt), zone))}

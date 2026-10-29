@@ -26,7 +26,7 @@ export function StatusButton({
       data-status-button
       aria-label={inactive ? `Reopen “${title}”` : `Complete “${title}”`}
       onClick={onClick}
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-control hover:bg-hover`}
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-control hover:bg-hover max-lg:tap`}
     >
       <StatusMark status={status} size={size} />
     </button>

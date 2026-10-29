@@ -3,7 +3,7 @@ import { usePhone } from '../../../platform/ui/phone'
 import { addDays } from '@ctws/core/day'
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import {
   BackIcon,
@@ -22,6 +22,7 @@ import { StatusMark } from '../../../platform/ui/StatusMark'
 import { useReviewWeek } from '../hooks/useReviewWeek'
 import { cellLines, type CellLine } from '../logic/review'
 import { Completed } from './Completed'
+import { ReviewWeeks } from './ReviewWeeks'
 
 /** Lines a cell shows before the rest fold into "N more". */
 const PER_CELL = 5
@@ -48,6 +49,15 @@ const weekTitle = (monday: string) =>
  */
 export function Review() {
   const [params] = useSearchParams()
+  const phone = usePhone()
+  // A phone has no sidebar: the weeks are a page of their own, "‹ Weeks" from the week (DES-001).
+  if (phone && params.get('list') === 'weeks')
+    return (
+      <>
+        <h1 className="text-title text-ink">Weeks</h1>
+        <ReviewWeeks />
+      </>
+    )
   if (params.get('view') === 'done')
     return (
       <>
@@ -60,6 +70,7 @@ export function Review() {
 
 function Week() {
   const phone = usePhone()
+  const [params] = useSearchParams()
   const { monday, thisMonday, show } = useReviewWeek()
   const review = useQuery(reviewQuery({ from: monday, to: addDays(monday, 6) }))
   const data = review.data
@@ -70,6 +81,15 @@ function Week() {
 
   return (
     <div className="flex flex-col gap-3.5">
+      {phone && (
+        <Link
+          to={`?${new URLSearchParams({ ...Object.fromEntries(params), list: 'weeks' })}`}
+          className="-ml-1 -mb-2 flex min-h-11 items-center gap-1 self-start text-prose text-task-t"
+        >
+          <BackIcon size={20} aria-hidden="true" />
+          Weeks
+        </Link>
+      )}
       <div className="flex flex-wrap items-center gap-3.5">
         <button
           type="button"
@@ -338,7 +358,7 @@ function Parent({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="grid min-h-6 grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2 text-left"
+        className="grid min-h-6 grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2 text-left max-lg:min-h-11"
       >
         <span className="flex h-5 items-center text-muted">
           <Toggle size={14} aria-hidden="true" />
@@ -371,36 +391,40 @@ function Brief({
 }) {
   const every = useEveryProject()
   const also = useAlsoThisWeek(range)
+  const phone = usePhone()
   return (
     <aside
       aria-label="This week in brief"
       className="flex flex-col rounded-card border border-line bg-panel pb-2"
     >
-      <BriefSection
-        icon={<ByStageIcon size={16} aria-hidden="true" />}
-        title="Stages moved"
-        count={stages.length}
-      >
-        {stages.map((s) => {
-          const project = every.data?.find((p) => p.id === s.projectId)
-          return (
-            <li
-              key={`${s.taskId}:${s.at}`}
-              className="flex min-h-8 items-center gap-2.5 px-3.5 text-ui text-ink"
-            >
-              {project && <ProjectSquare project={project} />}
-              <OpensBeside
-                thing={{ type: 'task', id: s.taskId }}
-                to={`/projects/${s.projectId}?task=${s.taskId}`}
-                className="min-w-0 flex-1 truncate hover:underline"
+      {/* On a phone, not drawn when none moved (DES-001 "回顾"); the desk keeps its 0. */}
+      {(stages.length > 0 || !phone) && (
+        <BriefSection
+          icon={<ByStageIcon size={16} aria-hidden="true" />}
+          title="Stages moved"
+          count={stages.length}
+        >
+          {stages.map((s) => {
+            const project = every.data?.find((p) => p.id === s.projectId)
+            return (
+              <li
+                key={`${s.taskId}:${s.at}`}
+                className="flex min-h-8 items-center gap-2.5 px-3.5 text-ui text-ink"
               >
-                {s.title}
-              </OpensBeside>
-              <StageLabel name={s.to} quiet={false} />
-            </li>
-          )
-        })}
-      </BriefSection>
+                {project && <ProjectSquare project={project} />}
+                <OpensBeside
+                  thing={{ type: 'task', id: s.taskId }}
+                  to={`/projects/${s.projectId}?task=${s.taskId}`}
+                  className="min-w-0 flex-1 truncate hover:underline"
+                >
+                  {s.title}
+                </OpensBeside>
+                <StageLabel name={s.to} quiet={false} />
+              </li>
+            )
+          })}
+        </BriefSection>
+      )}
       <BriefSection icon={<InTouchIcon size={16} aria-hidden="true" />} title="Also this week">
         {also.isError && (
           <li className="px-3.5 text-ui text-stop-t">

@@ -74,7 +74,7 @@ export function ScopeChoice({
   // On a phone, a sheet from the foot, its two buttons one over the other (DES-001).
   if (phone)
     return (
-      <BottomSheet title="This meeting repeats. Change which?" onClose={onCancel}>
+      <BottomSheet title="This meeting repeats. Change which?" onClose={onCancel} close={false}>
         <div ref={box} className="flex flex-col gap-3 px-4 pt-1 pb-4">
           {radios}
           <button

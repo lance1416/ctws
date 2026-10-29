@@ -128,7 +128,7 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
             {r.title && <span>{r.title}</span>}
             <Link
               to={registry.relationFor('organisation').to(r.organisationId)}
-              className="inline-flex min-h-11 min-w-11 items-center font-medium text-organisation-t"
+              className="font-medium text-organisation-t max-lg:tap"
             >
               {r.organisationName}
             </Link>

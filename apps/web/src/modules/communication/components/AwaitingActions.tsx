@@ -11,7 +11,7 @@ import { communicationKeys, patchMessage } from '../api'
 import { nextMonday } from '../logic/followUp'
 import { LogMessage } from './LogMessage'
 
-const SMALL = `inline-flex h-7 max-lg:min-h-11 items-center gap-1.5 rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover ${GATED}`
+const SMALL = `inline-flex h-7 max-lg:tap items-center gap-1.5 rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover ${GATED}`
 
 /** Moves a waiting message's follow-up day: "Later", "Follow up Mon" (FR-048, FR-079). */
 function useFollowUpOn(message: CommunicationResponse) {

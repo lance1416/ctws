@@ -100,7 +100,7 @@ export function MeetingNarrow({ id, at }: { id: string; at?: string | undefined 
                 target="_blank"
                 rel="noreferrer noopener"
                 aria-label={`Join ${m.title}`}
-                className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
+                className={`${BUTTON.small} h-7 px-2.5 text-meta`}
               >
                 <JoinIcon size={14} aria-hidden="true" />
                 Join

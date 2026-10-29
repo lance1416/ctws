@@ -72,7 +72,7 @@ export function NextMeetings() {
                     thing={{ type: 'meeting', id: m.meetingId, at: m.recurrenceId }}
                     to={occurrenceTo(m)}
                     data-next-meeting={m.meetingId}
-                    className="grid h-7.5 grid-cols-[4.25rem_44px_minmax(0,1fr)] items-center gap-x-2.5 rounded-control px-2.5 hover:bg-hover"
+                    className="grid h-7.5 grid-cols-[4.25rem_44px_minmax(0,1fr)] items-center gap-x-2.5 rounded-control px-2.5 hover:bg-hover max-lg:h-11"
                   >
                     <span className="font-mono text-meta text-muted">{w.day}</span>
                     <span className="font-mono text-meta text-muted">{w.time}</span>
@@ -110,7 +110,7 @@ function NextOne({
         <OpensBeside
           thing={{ type: 'meeting', id: m.meetingId, at: m.recurrenceId }}
           to={occurrenceTo(m)}
-          className="truncate text-ui font-medium text-ink hover:underline"
+          className="truncate text-ui font-medium text-ink hover:underline max-lg:py-3"
         >
           {m.title}
         </OpensBeside>
@@ -128,16 +128,13 @@ function NextOne({
             href={join}
             target="_blank"
             rel="noreferrer"
-            className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
+            className={`${BUTTON.small} h-7 px-2.5 text-meta`}
           >
             <JoinIcon size={14} aria-hidden="true" />
             Join
           </a>
         )}
-        <Link
-          to={`${occurrenceTo(m)}&write=1`}
-          className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
-        >
+        <Link to={`${occurrenceTo(m)}&write=1`} className={`${BUTTON.small} h-7 px-2.5 text-meta`}>
           <KIND_ICON.note size={14} aria-hidden="true" />
           Notes
         </Link>

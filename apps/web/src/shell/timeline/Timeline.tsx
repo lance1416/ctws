@@ -149,7 +149,7 @@ export function Timeline({
                 aria-controls={shown}
                 tabIndex={filter.id === f.id ? 0 : -1}
                 onClick={() => setFilter(f)}
-                className="inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium text-muted max-lg:min-h-11 max-lg:min-w-11 max-lg:justify-center hover:bg-hover hover:text-ink aria-selected:bg-select aria-selected:text-ink"
+                className="inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium text-muted max-lg:tap hover:bg-hover hover:text-ink aria-selected:bg-select aria-selected:text-ink"
               >
                 {f.id !== 'all' && f.id !== 'change' && <FilterIcon kind={f.id} />}
                 {f.label}
@@ -233,7 +233,7 @@ export function Timeline({
       {everything && (
         <Link
           to={everything.to}
-          className="pl-[calc(52px+24px+1.25rem)] text-meta text-muted hover:text-ink max-lg:flex max-lg:min-h-11 max-lg:items-center"
+          className="pl-[calc(52px+24px+1.25rem)] text-meta text-muted hover:text-ink max-lg:tap"
         >
           {everything.label}
         </Link>

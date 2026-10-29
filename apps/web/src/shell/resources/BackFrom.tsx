@@ -70,17 +70,13 @@ export function BackFromCard() {
             type="button"
             disabled={done.isPending}
             onClick={() => done.mutate()}
-            className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
+            className={`${BUTTON.small} h-7 px-2.5 text-meta`}
           >
             <MarkDoneIcon size={14} aria-hidden="true" className="text-go" />
             Mark done
           </button>
         )}
-        <button
-          type="button"
-          onClick={settle}
-          className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
-        >
+        <button type="button" onClick={settle} className={`${BUTTON.small} h-7 px-2.5 text-meta`}>
           Still on it
         </button>
       </span>

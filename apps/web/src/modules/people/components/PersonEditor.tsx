@@ -296,7 +296,7 @@ export function PersonEditor({
       // in the head on screen (FR-062).
       className="grid min-h-full shrink-0 grid-cols-[minmax(0,1fr)_auto] content-start gap-x-3 gap-y-4"
     >
-      <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
+      <div data-form-head className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
         <Avatar initials={initials} size={56} />
         <div className="flex min-w-0 flex-col">
           <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
@@ -671,7 +671,7 @@ function Another({ onAdd, children }: { onAdd: () => void; children: ReactNode }
     <button
       type="button"
       onClick={onAdd}
-      className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink max-lg:min-h-11"
+      className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink max-lg:tap"
     >
       <NewIcon size={14} aria-hidden="true" />
       {children}
@@ -685,7 +685,7 @@ function Remove({ what, onRemove }: { what: string; onRemove: () => void }) {
       type="button"
       onClick={onRemove}
       aria-label={`Remove ${what}`}
-      className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink max-lg:size-11"
+      className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink max-lg:tap"
     >
       <CloseIcon size={14} aria-hidden="true" />
     </button>
@@ -963,7 +963,7 @@ function Circles({
             type="button"
             aria-pressed={on}
             onClick={() => onPick(on ? picked.filter((p) => p !== c.id) : [...picked, c.id])}
-            className={`inline-flex h-7 items-center gap-1 rounded-control px-2.5 text-ui ${
+            className={`inline-flex h-7 items-center gap-1 rounded-control px-2.5 text-ui max-lg:tap ${
               on ? CHOSEN : 'bg-hover text-muted hover:text-ink'
             }`}
           >
@@ -976,7 +976,7 @@ function Circles({
         <button
           type="button"
           onClick={() => setNaming('')}
-          className="inline-flex h-7 max-lg:h-11 items-center gap-1 rounded-control border border-dashed border-line-strong px-2.5 text-ui text-muted hover:text-ink"
+          className="inline-flex h-7 items-center gap-1 rounded-control border border-dashed max-lg:tap border-line-strong px-2.5 text-ui text-muted hover:text-ink"
         >
           <NewIcon size={12} aria-hidden="true" />
           New circle

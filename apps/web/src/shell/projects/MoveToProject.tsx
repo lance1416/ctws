@@ -2,7 +2,8 @@ import type { LinkCandidate, ObjectType, ProjectId, TaskId } from '@ctws/contrac
 import { idFrom, projectId as projectIdSchema } from '@ctws/contracts'
 import { PickThing } from '../search/PickThing'
 import { useRegistry } from '../registry'
-import { useProjects } from './api'
+import { InboxIcon } from '../../platform/ui/icons'
+import { inboxOf, useProjects } from './api'
 
 /** Where a parent was picked: its project, by name too, and itself. */
 export type PickedParent = {
@@ -13,7 +14,8 @@ export type PickedParent = {
 /**
  * MOVE TO… (FR-059): the link picker (FR-024, FR-027), offering projects only and never the one
  * the thing is in. Picking one is the whole act: no line of why is asked. A project with parents
- * ends in "›" when `onPickParent` is given: its parents are the second step, in the same box.
+ * ends in "›" when `onPickParent` is given: its parents are the second step, in the same box. A
+ * task out of the inbox can go back to it: the Inbox is the last row, under a line, no "›".
  */
 export function MoveToProject({
   of,
@@ -45,13 +47,22 @@ export function MoveToProject({
   const parents = useRegistry().projectParents
   const projects = useProjects().data ?? []
   const project = (thing: LinkCandidate) => idFrom(projectIdSchema, thing.id)
+  const inbox = inboxOf(projects)
+  const back =
+    of?.type === 'task' && inbox && inbox.id !== from
+      ? {
+          id: inbox.id,
+          mark: <InboxIcon size={16} aria-hidden="true" className="text-muted" />,
+        }
+      : null
   return (
     <PickThing
       of={of}
       title={title}
       only="project"
-      leaveOut={from ? [from] : []}
+      leaveOut={[...(from ? [from] : []), ...(inbox && !back && !first ? [inbox.id] : [])]}
       first={first}
+      last={back}
       busy={busy}
       error={error}
       onPick={(to) => onPick(project(to))}

@@ -127,7 +127,7 @@ export function Timeline({
                     href={first.joinUrl!}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className={`${BUTTON.secondary} h-6.5 shrink-0 px-2 text-meta`}
+                    className={`${BUTTON.small} h-6.5 shrink-0 px-2 text-meta`}
                   >
                     <JoinIcon size={14} aria-hidden="true" />
                     Join
@@ -259,7 +259,7 @@ function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number
                     target="_blank"
                     rel="noreferrer noopener"
                     aria-label={`Join ${m.title}`}
-                    className={`${BUTTON.secondary} h-6.5 shrink-0 px-2 text-meta`}
+                    className={`${BUTTON.small} h-6.5 shrink-0 px-2 text-meta`}
                   >
                     <JoinIcon size={14} aria-hidden="true" />
                     Join

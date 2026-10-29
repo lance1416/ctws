@@ -81,7 +81,7 @@ export function MoveUnderParent({
           type="button"
           onClick={back}
           title="Back  ←"
-          className="flex max-w-[45%] shrink-0 items-center gap-1 rounded-control px-1.5 py-1 text-ui text-muted hover:bg-hover hover:text-ink"
+          className="flex max-w-[45%] shrink-0 items-center gap-1 rounded-control px-1.5 py-1 text-ui text-muted hover:bg-hover hover:text-ink max-lg:tap"
         >
           <BackIcon size={16} aria-hidden="true" className="shrink-0" />
           <span className="truncate">{project.name}</span>
@@ -118,7 +118,7 @@ export function MoveUnderParent({
           placeholder="Filter parents"
           aria-label={`Parents in ${project.name}`}
           data-bare
-          className="h-9 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+          className="h-9 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle max-lg:h-11"
         />
       </div>
       {tasks.isPending ? (
@@ -151,7 +151,7 @@ export function MoveUnderParent({
               onClick={() => pick(row.id)}
               onMouseEnter={() => setAt(i)}
               style={{ paddingLeft: 16 + (typed === '' ? (row.depth - 1) * LEVEL : 0) }}
-              className={`flex min-h-10 cursor-pointer items-center gap-3 pr-4 text-ui text-ink ${
+              className={`flex min-h-10 cursor-pointer items-center gap-3 pr-4 text-ui text-ink max-lg:min-h-11 ${
                 i === active ? 'bg-select' : ''
               }`}
             >

@@ -180,7 +180,7 @@ function EditForm({
   return (
     // As tall as the page, so Delete sits at its foot under the last field (FR-035).
     <div className="flex min-h-full max-w-3xl shrink-0 flex-col gap-4">
-      <div className="flex flex-col gap-1">
+      <div data-form-head className="flex flex-col gap-1">
         <h1 tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
           Edit {m.title}
         </h1>

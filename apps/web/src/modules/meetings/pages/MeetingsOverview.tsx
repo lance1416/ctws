@@ -175,7 +175,7 @@ function NotesToWrite() {
             <Link
               to={`${occurrenceTo(m)}&write=1`}
               aria-label={`Write the notes for ${m.title}, ${monthDay(ymd(new Date(m.startsAt), zone))}`}
-              className="inline-flex h-7 items-center gap-1.5 rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover"
+              className="inline-flex h-7 items-center gap-1.5 rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover max-lg:tap"
             >
               <EditIcon size={12} aria-hidden="true" />
               Write

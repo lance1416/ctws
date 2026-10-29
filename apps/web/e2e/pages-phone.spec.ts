@@ -65,7 +65,9 @@ const problems = async (page: Page) => {
     await page.evaluate(() => {
       const out: string[] = []
       for (const b of document.querySelectorAll<HTMLElement>('main button, main a'))
-        if (b.offsetHeight > 0 && b.scrollHeight > b.clientHeight + 1 && b.clientHeight <= 40)
+        // A `tap` target's unseen square overflows it on purpose; it is not its words wrapping.
+        if (getComputedStyle(b, '::before').position === 'absolute') continue
+        else if (b.offsetHeight > 0 && b.scrollHeight > b.clientHeight + 1 && b.clientHeight <= 40)
           out.push(`wraps inside: "${b.textContent?.trim()}"`)
       for (const m of document.querySelectorAll<HTMLElement>(
         '[data-row-lead], [data-birthday-lead]',

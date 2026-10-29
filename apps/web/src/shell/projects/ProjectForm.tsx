@@ -168,7 +168,8 @@ function ProjectForm({
       }}
       className="flex min-h-full shrink-0 flex-col gap-4"
     >
-      <div className="flex flex-wrap items-center gap-3">
+      <PhoneFormBar title={title} submit={submit} disabled={busy} cancelTo={cancelTo} />
+      <div data-form-head className="flex flex-wrap items-center gap-3">
         <ProjectSquare
           project={{
             name: draft.name,
@@ -184,7 +185,6 @@ function ProjectForm({
         >
           {title}
         </h1>
-        <PhoneFormBar title={title} submit={submit} disabled={busy} cancelTo={cancelTo} />
         <Link to={cancelTo} className={`${BUTTON.quiet} max-lg:hidden`}>
           Cancel
         </Link>

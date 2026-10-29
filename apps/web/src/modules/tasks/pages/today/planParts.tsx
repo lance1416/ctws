@@ -65,7 +65,7 @@ export function MoveAllMenu({
       <DropdownMenu.Trigger
         disabled={!save.online}
         title={save.props.title}
-        className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
+        className={`${BUTTON.small} h-7 px-2.5 text-meta`}
       >
         Move all to…
         <ExpandIcon size={12} aria-hidden="true" />

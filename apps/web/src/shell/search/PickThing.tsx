@@ -17,6 +17,7 @@ export function PickThing({
   onClose,
   drill,
   first = null,
+  last = null,
 }: {
   /** What it is picked for; null for a thing not made yet. */
   of: { type: ObjectType; id: string } | null
@@ -31,6 +32,8 @@ export function PickThing({
   drill?: Pick['drill']
   /** Offered before the rest, when the words find it. */
   first?: string | null
+  /** Offered after the rest, under a line (`Pick['last']`). */
+  last?: Pick['last']
 }) {
   return (
     <SearchDialog
@@ -43,6 +46,7 @@ export function PickThing({
         leaveOut,
         busy,
         first,
+        last,
         error,
         onPick,
         ...(drill ? { drill } : {}),

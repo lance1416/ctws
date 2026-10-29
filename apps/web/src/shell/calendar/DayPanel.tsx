@@ -95,7 +95,7 @@ export function DayPanel({
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label={`Join ${m.title}`}
-                  className={`${BUTTON.secondary} h-6.5 px-2 text-meta`}
+                  className={`${BUTTON.small} h-6.5 px-2 text-meta`}
                 >
                   <JoinIcon size={14} aria-hidden="true" />
                   Join
@@ -157,7 +157,7 @@ export function DayPanel({
               key={creator.kind}
               type="button"
               onClick={() => openNew(creator, { opens: false, day })}
-              className={`${BUTTON.secondary} h-7 px-2.5 text-ui`}
+              className={`${BUTTON.small} h-7 px-2.5 text-ui`}
             >
               <Icon size={14} aria-hidden="true" />
               {label}

@@ -371,7 +371,7 @@ function LooksRight({ item }: { item: MigrationItem }) {
         type="button"
         disabled={check.isPending}
         onClick={() => check.mutate({ key: item.key, checked: true })}
-        className={`${BUTTON.secondary} h-7 shrink-0 px-2.5 text-meta whitespace-nowrap`}
+        className={`${BUTTON.small} h-7 shrink-0 px-2.5 text-meta whitespace-nowrap`}
       >
         Looks right
       </button>
@@ -399,7 +399,7 @@ function Names({ items }: { items: MigrationItem[] }) {
           <button
             type="button"
             onClick={() => setAll(!all)}
-            className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
+            className={`${BUTTON.small} h-7 px-2.5 text-meta`}
           >
             {all ? 'Show the ones to look at' : `Show all ${items.length}`}
           </button>
@@ -566,7 +566,7 @@ function MergeRow({ item }: { item: MigrationItem }) {
         <span key={g.id} className="flex items-center gap-1.5">
           <Link
             to={`/organisations/${g.id}`}
-            className="inline-flex h-6 items-center gap-1.5 rounded-key bg-organisation-bg px-2 text-meta font-medium text-organisation-t hover:underline max-lg:h-11"
+            className="inline-flex h-6 items-center gap-1.5 rounded-key bg-organisation-bg px-2 text-meta font-medium text-organisation-t hover:underline max-lg:tap"
           >
             <KIND_ICON.organisation size={12} aria-hidden="true" />
             {g.name}

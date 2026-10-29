@@ -7,7 +7,7 @@ import { keyLabel } from '../../../platform/keyboard/keys'
 import { shortDay, ymd } from '../../../platform/time/dates'
 import { Avatar } from '../../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../../platform/ui/Block'
-import { BUTTON, KEY_ON_INK } from '../../../platform/ui/buttonStyles'
+import { BUTTON, KEY } from '../../../platform/ui/buttonStyles'
 import { FollowUpIcon, NewIcon, ReceivedIcon, SentIcon } from '../../../platform/ui/icons'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { StageLabel } from '../../../platform/ui/StageLabel'
@@ -52,11 +52,12 @@ export function CommunicationOverview() {
           <button
             type="button"
             onClick={() => openNew(creator, { opens: true })}
-            className={BUTTON.primary}
+            // A frame, as every overview's: the ink is the tab bar's capture (P4-20).
+            className={BUTTON.secondary}
           >
             <NewIcon size={16} aria-hidden="true" />
             Log a message
-            <kbd className={`${KEY_ON_INK} max-lg:hidden`}>{keyLabel('N X')}</kbd>
+            <kbd className={`${KEY} max-lg:hidden`}>{keyLabel('N X')}</kbd>
           </button>
         )}
       </div>
@@ -181,7 +182,10 @@ function With({ row }: { row: AwaitingRow }) {
   // Where they work now, under the name (C-01), when the message does not name it itself.
   const works = org?.name ?? known?.roles.find((r) => r.to === null)?.organisationName
   return (
-    <Link to={`/people/${person.id}`} className="flex min-w-0 items-center gap-2.5 hover:underline">
+    <Link
+      to={`/people/${person.id}`}
+      className="flex min-w-0 items-center gap-2.5 hover:underline max-lg:min-h-11"
+    >
       <Avatar initials={known ? avatarInitials(known) : ([...person.name][0] ?? '')} />
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-ui text-ink">{person.name}</span>
@@ -208,7 +212,7 @@ function About({
   return (
     <Link
       to={to}
-      className={`flex min-w-0 items-center gap-2 text-ui text-ink hover:underline ${wide ? 'max-lg:basis-full' : ''}`}
+      className={`flex min-w-0 items-center gap-2 text-ui text-ink hover:underline max-lg:min-h-11 ${wide ? 'max-lg:basis-full' : ''}`}
     >
       {project && <ProjectSquare project={project} />}
       <span className="truncate">{children}</span>
@@ -256,7 +260,7 @@ function InTouchLine({ row }: { row: OrganisationInTouch }) {
     >
       <Link
         to={`/organisations/${row.organisationId}`}
-        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline max-lg:basis-full"
+        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline max-lg:basis-full max-lg:min-h-11"
       >
         <OrganisationMark name={row.organisationName} />
         <span className="truncate">{row.organisationName}</span>
@@ -265,7 +269,7 @@ function InTouchLine({ row }: { row: OrganisationInTouch }) {
         {row.standing && (
           <Link
             to={`/projects/${row.standing.projectId}`}
-            className="flex min-w-0 items-center gap-2 text-ui text-ink hover:underline"
+            className="flex min-w-0 items-center gap-2 text-ui text-ink hover:underline max-lg:tap"
           >
             {project && <ProjectSquare project={project} />}
             <span className="truncate">{row.standing.projectName}</span>
@@ -277,7 +281,7 @@ function InTouchLine({ row }: { row: OrganisationInTouch }) {
       </span>
       <Link
         to={`/communication/${row.lastContact.communicationId}`}
-        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline max-lg:order-last max-lg:basis-full"
+        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline max-lg:order-last max-lg:basis-full max-lg:min-h-11"
       >
         <span className="inline-grid size-6 shrink-0 place-items-center rounded-control bg-communication-bg text-communication">
           <Way size={14} aria-hidden="true" />

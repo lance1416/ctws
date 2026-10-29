@@ -132,7 +132,7 @@ function LinkedChip({ item, onUnlink }: { item: Item; onUnlink: (() => void) | u
       <OpensBeside
         thing={{ type: item.type, id: item.id }}
         to={where.to(item.id)}
-        className={`inline-flex min-w-0 items-center gap-1.25 pl-2 hover:underline ${onUnlink ? 'pr-1' : 'pr-2'}`}
+        className={`inline-flex min-w-0 items-center gap-1.25 pl-2 hover:underline max-lg:tap ${onUnlink ? 'pr-1' : 'pr-2'}`}
       >
         <Icon size={12} aria-hidden="true" className="shrink-0" />
         <span className="truncate">{item.title}</span>

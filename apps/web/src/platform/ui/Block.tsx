@@ -119,11 +119,7 @@ export function BlockFailed({ what, onRetry }: { what: string; onRetry: () => vo
         <AlertIcon size={14} aria-hidden="true" className="mt-0.75 shrink-0" />
         Couldn’t load the {what}.
       </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
-      >
+      <button type="button" onClick={onRetry} className={`${BUTTON.small} h-7 px-2.5 text-meta`}>
         <RetryIcon size={14} aria-hidden="true" />
         Try again
       </button>

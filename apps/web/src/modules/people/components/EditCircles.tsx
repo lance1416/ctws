@@ -113,7 +113,7 @@ export function EditCircles({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="flex h-8 max-lg:h-11 items-center gap-2 self-start rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
+            className="flex h-8 items-center gap-2 self-start max-lg:tap rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
           >
             <NewIcon size={14} aria-hidden="true" />
             New circle

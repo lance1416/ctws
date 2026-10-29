@@ -59,7 +59,7 @@ export function Projects() {
         <button
           type="button"
           onClick={() => showArchived(true)}
-          className="inline-flex items-center gap-1.5 self-start rounded-control text-meta text-muted hover:text-ink"
+          className="inline-flex items-center gap-1.5 self-start rounded-control text-meta text-muted hover:text-ink max-lg:tap"
         >
           <ArchiveIcon size={14} aria-hidden="true" />
           {set} archived project{set === 1 ? '' : 's'}
@@ -121,7 +121,7 @@ function InboxCard({ inbox }: { inbox: ProjectResponse }) {
       {/* Above the card's own link, which covers the rest of it. */}
       <Link
         to={`/projects/${inbox.id}`}
-        className="relative inline-flex h-6.5 items-center self-start rounded-control border border-line-strong bg-panel px-2.25 text-meta font-medium text-ink hover:bg-hover"
+        className="relative inline-flex h-6.5 items-center self-start rounded-control border border-line-strong bg-panel px-2.25 text-meta font-medium text-ink hover:bg-hover max-lg:tap"
       >
         Sort the inbox
       </Link>

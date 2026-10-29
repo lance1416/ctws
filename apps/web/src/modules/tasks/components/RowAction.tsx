@@ -24,7 +24,7 @@ export function RowAction({
       onClick={save.gate(onPress)}
       {...save.props}
       aria-label={label}
-      className={`${BUTTON.secondary} h-6.5 px-2.5 text-meta ${GATED} ${className}`}
+      className={`${BUTTON.small} h-6.5 px-2.5 text-meta ${GATED} ${className}`}
     >
       {children}
     </button>

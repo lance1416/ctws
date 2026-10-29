@@ -319,7 +319,8 @@ test("panes write days the app's way, never in a wire format like 2026-10-19", a
   await expect(mp.getByText(wire)).toHaveCount(0)
   await page.goto(overCalendar(meeting))
   const pane = page.getByRole('dialog', { name: 'Meetings' })
-  await expect(pane).toContainText(`${said}, 18:00 · Toronto`)
+  await expect(pane).toContainText(`${said}, 18:00`)
+  await expect(pane).toContainText('Toronto (')
   await expect(pane.getByText(wire)).toHaveCount(0)
 
   // A person's page, and their form, say the birthday in words, never as `YYYY-MM-DD`.

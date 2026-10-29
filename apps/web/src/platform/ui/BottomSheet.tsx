@@ -18,6 +18,7 @@ export function BottomSheet({
   full = false,
   initialFocus,
   head = true,
+  close = true,
   about,
   children,
 }: {
@@ -27,6 +28,8 @@ export function BottomSheet({
   initialFocus?: RefObject<HTMLElement | null>
   /** The title row; a sheet whose body draws its own head (a picker's box) leaves it out. */
   head?: boolean
+  /** The ×; a confirmation leaves it out, its own Cancel full width under it (P4-24). */
+  close?: boolean
   /** A line under the title, subtle and cut to fit: what the sheet is about ("Move to" what). */
   about?: string
   children: ReactNode
@@ -70,9 +73,11 @@ export function BottomSheet({
                 <Dialog.Title className="line-clamp-2 text-subject text-ink">{title}</Dialog.Title>
                 {about && <span className="truncate text-ui text-subtle">{about}</span>}
               </span>
-              <Dialog.Close aria-label="Close" className={ICON_BUTTON}>
-                <CloseIcon size={18} aria-hidden="true" />
-              </Dialog.Close>
+              {close && (
+                <Dialog.Close aria-label="Close" className={ICON_BUTTON}>
+                  <CloseIcon size={18} aria-hidden="true" />
+                </Dialog.Close>
+              )}
             </div>
           ) : (
             <Dialog.Title className="sr-only">{title}</Dialog.Title>

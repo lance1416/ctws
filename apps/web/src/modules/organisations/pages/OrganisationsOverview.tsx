@@ -91,7 +91,7 @@ function Chip({
     <Link
       to={to}
       aria-current={on ? 'true' : undefined}
-      className={`inline-flex h-6 items-center gap-1.5 rounded-control px-2 text-meta font-medium max-lg:h-11 ${
+      className={`inline-flex h-6 items-center gap-1.5 rounded-control px-2 text-meta font-medium max-lg:tap ${
         on ? 'bg-select text-ink' : 'bg-hover text-muted hover:text-ink'
       }`}
     >
@@ -149,20 +149,24 @@ function InTouchRow({ row }: { row: OrganisationInTouch }) {
   return (
     <li
       data-in-touch={row.organisationId}
-      className="grid min-h-10 grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_7rem_6rem] items-center gap-x-3 px-3 text-ui max-lg:flex max-lg:flex-wrap max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-1.5 max-lg:py-3"
+      className="grid min-h-10 grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_7rem_6rem] items-center gap-x-3 px-3 text-ui max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:gap-y-1.5 max-lg:py-3"
     >
+      {/* On a phone a card, every one the same: the name; when and how many; the project and its
+          stage. What a card lacks is left empty, never filled by what comes after (P4-14). */}
       <Link
         to={`/organisations/${row.organisationId}`}
-        className="flex min-w-0 items-center gap-3 text-ink hover:underline max-lg:basis-full"
+        className="flex min-w-0 items-center gap-3 text-ink hover:underline max-lg:col-span-2 max-lg:min-h-11"
       >
         <OrganisationMark name={row.organisationName} />
         <span className="truncate">{row.organisationName}</span>
       </Link>
-      <span className="min-w-0">{row.standing && <ProjectNamed standing={row.standing} />}</span>
-      <span className="min-w-0">
+      <span className="min-w-0 max-lg:order-last max-lg:ml-9">
+        {row.standing && <ProjectNamed standing={row.standing} />}
+      </span>
+      <span className="min-w-0 max-lg:order-last max-lg:justify-self-end">
         <StageOf standing={row.standing} />
       </span>
-      <span className="flex items-center gap-2 text-meta text-muted">
+      <span className="flex items-center gap-2 text-meta text-muted max-lg:ml-9">
         {/* Either way on the message tint, as the people overview marks them (H-02). */}
         <span className="inline-grid size-6 place-items-center rounded-control bg-communication-bg text-communication">
           <Way size={14} aria-hidden="true" />
@@ -175,7 +179,7 @@ function InTouchRow({ row }: { row: OrganisationInTouch }) {
         </span>
       </span>
       {/* With the organisation itself, no one in it: nothing to count. */}
-      <span className="text-meta text-muted">
+      <span className="text-meta text-muted max-lg:justify-self-end">
         {row.peopleCount === 0
           ? ''
           : row.peopleCount === 1

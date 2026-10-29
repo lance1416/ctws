@@ -24,7 +24,7 @@ test.use({ viewport: PHONE, hasTouch: true })
 /** What may be under 44: a link or a mention inside a note's own text. */
 const INLINE = ['[data-note-md] *']
 
-const TARGETS = 'button, a[href], [role=tab], [role=radio], [role=option]'
+const TARGETS = 'button, a[href], [role=tab], [role=radio], [role=option], input:not([type=hidden])'
 
 /** Every target on the page that shows and is under 44 either way, by its name and size. */
 async function small(page: Page): Promise<string[]> {
@@ -38,6 +38,9 @@ async function small(page: Page): Promise<string[]> {
         // A link stretched over its card by an `after:inset-0` is pressed as the card.
         const after = getComputedStyle(el, '::after')
         let hit: Element = el
+        // An input inside its label is pressed through the label.
+        const label = el.tagName === 'INPUT' ? el.closest('label') : null
+        if (label) hit = label
         if (after.content !== 'none' && after.position === 'absolute') {
           for (let up = el.parentElement; up; up = up.parentElement)
             if (getComputedStyle(up).position !== 'static') {
@@ -47,11 +50,16 @@ async function small(page: Page): Promise<string[]> {
         }
         const r = hit.getBoundingClientRect()
         if (r.width === 0 || r.height === 0) continue
-        if (r.width >= 43.5 && r.height >= 43.5) continue
+        // `tap`: an unseen square under the target, pressed for it.
+        const before = getComputedStyle(el, '::before')
+        const pad =
+          before.content !== 'none' && before.position === 'absolute'
+            ? [parseFloat(before.width), parseFloat(before.height)]
+            : [0, 0]
+        const [w, h] = [Math.max(r.width, pad[0]!), Math.max(r.height, pad[1]!)]
+        if (w >= 43.5 && h >= 43.5) continue
         const name = (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().slice(0, 40)
-        out.push(
-          `${el.tagName.toLowerCase()} "${name}" ${Math.round(r.width)}×${Math.round(r.height)}`,
-        )
+        out.push(`${el.tagName.toLowerCase()} "${name}" ${Math.round(w)}×${Math.round(h)}`)
       }
       return out
     },
@@ -97,6 +105,7 @@ test('on a phone nothing that is pressed is under 44, on any page (DES-001)', as
   })
 
   const pages: [string, string][] = [
+    ['Workbench', '/'],
     ['Today', '/today'],
     ['Calendar', '/calendar'],
     ['More', '/more'],
@@ -117,6 +126,10 @@ test('on a phone nothing that is pressed is under 44, on any page (DES-001)', as
     ['a note', `/notes/${note.id}`],
     ['Communication', '/communication'],
     ['Review', '/review'],
+    ['the weeks', '/review?list=weeks'],
+    ['Done', '/review?view=done'],
+    ['New person', '/people/new'],
+    ['a project, edited', `/projects/${jh}/edit`],
     ['Account', '/account'],
     ['a task in the sheet', `/projects/${jh}?inspect=task:${amazon}`],
     ['a person in the sheet', `/projects/${jh}?inspect=person:${mira.id}`],
@@ -159,6 +172,19 @@ test('on a phone nothing that is pressed is under 44, on any page (DES-001)', as
       async () => {
         await page.getByRole('button', { name: 'New', exact: true }).click()
         await page.getByRole('menuitem', { name: /^Task/ }).click()
+      },
+    ],
+    [
+      'Move to’s second step',
+      `/projects/${jh}?inspect=task:${amazon}`,
+      async () => {
+        const sheet = page.getByRole('complementary', { name: 'Inspector' })
+        await sheet.getByRole('button', { name: 'Edit', exact: true }).click()
+        await sheet.getByRole('button', { name: /Move to…/ }).click()
+        await page
+          .getByRole('button', { name: /^Inside “/ })
+          .first()
+          .click()
       },
     ],
   ]

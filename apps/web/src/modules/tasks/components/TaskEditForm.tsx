@@ -52,7 +52,8 @@ export function TaskEditForm({
   guard: UnsavedGuard
   onCancel: () => void
   onClose: () => void
-  onSaved: () => void
+  /** Called once the server has it, with what to say of it, if anything. */
+  onSaved: (says?: string) => void
 }) {
   const { form, save, submit } = edit
   const { control, register, setValue, watch } = form
@@ -117,7 +118,9 @@ export function TaskEditForm({
   return (
     <>
       <form
-        onSubmit={submit(onSaved)}
+        onSubmit={submit(() =>
+          onSaved(movingTo?.isInbox && projectId !== task.projectId ? 'Moved to Inbox' : undefined),
+        )}
         // Ctrl Enter saves from any field (FR-029); a plain Enter in the notes is a new line.
         onKeyDown={(e) => {
           if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.nativeEvent.isComposing) return
@@ -193,7 +196,7 @@ export function TaskEditForm({
                 titleField.current = el
               }}
               aria-label="Title"
-              className="-my-0.5 min-w-0 flex-1 rounded-control bg-transparent py-0.5 text-subject text-ink"
+              className="-my-0.5 min-w-0 flex-1 rounded-control bg-transparent py-0.5 max-lg:min-h-11 text-subject text-ink"
             />
           </h2>
         </div>
@@ -226,7 +229,13 @@ export function TaskEditForm({
             {counts ? (
               <span className="text-ui text-ink">{STATUS_LABEL[task.status]}</span>
             ) : (
-              <StatusRadios id="detail" field={register('status')} bare />
+              <StatusRadios
+                id="detail"
+                field={register('status')}
+                current={status}
+                onPick={(s) => setValue('status', s, dirty)}
+                bare
+              />
             )}
           </Field>
           {!counts && (
@@ -328,7 +337,7 @@ export function TaskEditForm({
             <button
               type="button"
               onClick={() => setWriting(true)}
-              className="-mb-0.5 h-7 rounded-control border border-line px-2 text-meta text-muted hover:border-line-strong hover:text-ink max-lg:h-11"
+              className="-mb-0.5 h-7 rounded-control border border-line px-2 text-meta text-muted hover:border-line-strong hover:text-ink max-lg:tap"
             >
               Full screen
             </button>

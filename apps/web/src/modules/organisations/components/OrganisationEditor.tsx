@@ -111,7 +111,7 @@ export function OrganisationEditor({
       // in the head on screen, as on New person.
       className="grid min-h-full shrink-0 grid-cols-[minmax(0,1fr)_auto] content-start gap-x-3 gap-y-4"
     >
-      <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
+      <div data-form-head className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
         <OrganisationMark name={d.name} size={56} />
         <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
           {organisation ? `Edit ${organisation.name}` : 'New organisation'}
@@ -171,7 +171,7 @@ export function OrganisationEditor({
                       type="button"
                       aria-pressed={d.type.trim() === t}
                       onClick={() => set({ type: t })}
-                      className="inline-flex h-6 items-center rounded-control bg-hover px-2 text-meta text-muted hover:text-ink aria-pressed:bg-select aria-pressed:font-medium aria-pressed:text-ink"
+                      className="inline-flex h-6 items-center rounded-control bg-hover px-2 text-meta text-muted hover:text-ink aria-pressed:bg-select aria-pressed:font-medium aria-pressed:text-ink max-lg:tap"
                     >
                       {t}
                     </button>

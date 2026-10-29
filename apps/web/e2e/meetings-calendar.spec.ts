@@ -216,11 +216,11 @@ test('a meeting says the zone abbreviation of its own date, not of today', async
   const open = (m: { meetingId: string; recurrenceId: string }) =>
     page.goto(`/calendar?${new URLSearchParams({ meeting: m.meetingId, at: m.recurrenceId })}`)
   await open(winter)
-  await expect(pane(page)).toContainText('Toronto · EST')
+  await expect(pane(page)).toContainText('Toronto (EST)')
   await expect(pane(page)).not.toContainText('EDT')
 
   await open(summer)
-  await expect(pane(page)).toContainText('Toronto · EDT')
+  await expect(pane(page)).toContainText('Toronto (EDT)')
   await expect(pane(page)).not.toContainText('EST')
 })
 

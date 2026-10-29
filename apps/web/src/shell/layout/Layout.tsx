@@ -144,7 +144,7 @@ function Frame({
                 {/* An item open as a column (`DetailPane`, from 1280) takes its width from the main
                 area's right, so it sits beside the page rather than over it: 22rem, its 12px
                 inset, and a 12px gap. */}
-                <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:px-4 max-lg:pt-3 max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom))] max-lg:has-[[data-phone-form-bar]]:pt-16 has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
+                <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-ground p-5 max-lg:px-4 max-lg:pt-3 max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom))] max-lg:has-[[data-phone-form-bar]]:pt-16 max-lg:has-[[data-phone-form-bar]]:pb-6 has-[[data-detail-mode=pane]]:pr-[calc(var(--width-inspector)+1.25rem)]">
                   <LeaveGuardContext.Provider value={leaveGuard}>
                     <PhoneBack />
                     <Outlet />

@@ -129,7 +129,7 @@ function PersonRow({
     <li>
       <Link
         to={`/people/${id}`}
-        className="grid min-h-10 grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-3 rounded-control px-3 hover:bg-hover"
+        className="grid min-h-10 grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-3 rounded-control px-3 hover:bg-hover max-lg:min-h-11"
       >
         <Avatar initials={initials} />
         <span className={`truncate text-ui text-ink ${strong ? 'font-medium' : ''}`}>{name}</span>
@@ -276,7 +276,7 @@ function Circles() {
             <Link
               key={c.id}
               to={`/people?circle=${c.id}`}
-              className="inline-flex h-6.5 items-center gap-1.5 rounded-control bg-hover px-2.5 text-ui text-ink hover:bg-select"
+              className="inline-flex h-6.5 items-center gap-1.5 rounded-control bg-hover px-2.5 text-ui text-ink hover:bg-select max-lg:tap"
             >
               {c.name}
               <span className="text-meta text-muted tabular-nums">{c.count}</span>

@@ -19,13 +19,18 @@ export const BUTTON = {
   secondary: `${BASE} border border-line-strong text-ink hover:bg-hover disabled:opacity-50`,
   quiet: `${BASE} text-ink hover:bg-hover disabled:opacity-50`,
   destructive: `${BASE} border border-stop text-stop-t hover:bg-stop-bg disabled:opacity-50`,
+  /**
+   * `secondary` kept small in a row or a block head (Start, Later, Looks right), sized where it is
+   * used: on a phone it still looks small, and an unseen 44 takes the finger (DES-001).
+   */
+  small:
+    'inline-flex h-8 items-center gap-2 rounded-control border border-line-strong px-3 text-ui font-medium text-ink hover:bg-hover disabled:opacity-50 max-lg:tap',
   /** A small action inside a row or a block head: no frame, muted until hovered. */
-  inline:
-    'rounded-control px-2 py-1 text-ui text-muted hover:bg-hover hover:text-ink max-lg:inline-flex max-lg:min-h-11 max-lg:items-center',
+  inline: 'rounded-control px-2 py-1 text-ui text-muted hover:bg-hover hover:text-ink max-lg:tap',
   /** The phone's capture, the middle of the tab bar: an ink square with a plus (artboard 25). */
   tab: 'grid size-11 place-items-center rounded-card bg-ink text-ui text-on-ink',
   /** An offer to add something, not a command. */
-  link: `rounded-control px-2 py-1 text-ui ${LINK} hover:bg-hover max-lg:inline-flex max-lg:min-h-11 max-lg:items-center`,
+  link: `rounded-control px-2 py-1 text-ui ${LINK} hover:bg-hover max-lg:tap`,
 } as const
 
 /** A chip that is chosen among others (a person's circles): ink, so it parts from the rest. */

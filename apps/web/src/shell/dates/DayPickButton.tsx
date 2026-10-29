@@ -53,7 +53,7 @@ export function DayPickButton({
           {...save.props}
           aria-label={label}
           aria-expanded={open}
-          className={`inline-flex h-7 items-center rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover ${GATED}`}
+          className={`inline-flex h-7 items-center rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover max-lg:tap ${GATED}`}
         >
           {text}
         </button>

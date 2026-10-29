@@ -68,7 +68,7 @@ export function ReadingOverview() {
           {(finished > 0 || dropped > 0) && (
             <Link
               to="/reading?list=finished"
-              className="inline-flex items-center gap-3 self-start text-meta text-muted hover:text-ink"
+              className="inline-flex items-center gap-3 self-start text-meta text-muted hover:text-ink max-lg:tap"
             >
               {finished > 0 && (
                 <span className="inline-flex items-center gap-1.5">

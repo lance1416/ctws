@@ -75,7 +75,7 @@ export function PersonNarrow({ id }: { id: string }) {
                 <InspectLink
                   thing={{ type: 'organisation', id: r.organisationId }}
                   to={`/organisations/${r.organisationId}`}
-                  className={`${TAG} bg-organisation-bg text-organisation-t hover:underline max-lg:h-11`}
+                  className={`${TAG} bg-organisation-bg text-organisation-t hover:underline max-lg:tap`}
                 >
                   <KIND_ICON.organisation size={12} aria-hidden="true" />
                   {r.organisationName}
@@ -94,10 +94,7 @@ export function PersonNarrow({ id }: { id: string }) {
       <PropRows>
         <PropRow icon={ContactIcon} label="Email">
           {email && (
-            <a
-              href={channelHref(email.kind, email.value)}
-              className="hover:underline max-lg:flex max-lg:min-h-11 max-lg:items-center"
-            >
+            <a href={channelHref(email.kind, email.value)} className="hover:underline max-lg:tap">
               {channelLabel(email.kind, email.value)}
             </a>
           )}

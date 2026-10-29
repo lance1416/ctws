@@ -123,7 +123,7 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
           {project && (
             <Link
               to={`/projects/${project.id}`}
-              className="inline-flex items-center gap-1.5 text-ui text-muted hover:text-ink max-lg:min-h-11"
+              className="inline-flex items-center gap-1.5 text-ui text-muted hover:text-ink max-lg:tap"
             >
               <ProjectSquare project={project} />
               {project.name}
@@ -245,7 +245,7 @@ function Profile({ meeting: m }: { meeting: MeetingOccurrence }) {
                 href={link}
                 target="_blank"
                 rel="noreferrer"
-                className="truncate text-ink hover:underline"
+                className="truncate text-ink hover:underline max-lg:tap"
               >
                 {link.replace(/^https?:\/\//i, '')}
               </a>

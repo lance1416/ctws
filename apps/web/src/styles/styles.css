@@ -356,3 +356,28 @@ kbd {
 [tabindex='-1']:focus-visible {
   outline: none;
 }
+
+/* A TARGET THAT LOOKS SMALLER THAN IT IS PRESSED (DES-001 "44 和看起来的大小"): a tag, a filter,
+   a row's small × or Later keeps its 28 to 32, and an unseen square of at least 44 centred on it
+   takes the finger. Used as `max-lg:tap`; `phone-targets.spec.ts` measures this square. */
+@utility tap {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 2.75rem);
+    height: max(100%, 2.75rem);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* A FORM ON A PHONE IS A PAGE OF ITS OWN (DES-001 "表单页"): while its bar is up the tab bar stands
+   down, so a half-done edit is not tapped away, and the page's own head does too, its name being
+   in the bar. */
+@media (width < 64rem) {
+  body:has([data-phone-form-bar]) :is([data-bottom-bar], [data-form-head]) {
+    display: none;
+  }
+}

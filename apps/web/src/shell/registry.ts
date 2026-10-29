@@ -37,7 +37,12 @@ import { weekCountKeys } from './review/api'
 import { timelineKeys } from './timeline/Timeline'
 import { projectKeys } from './projects/api'
 import { ProjectNarrow } from './projects/ProjectNarrow'
-import { ProjectsCount, ProjectsMoreCount, ProjectsStatus } from './projects/ProjectKind'
+import {
+  ProjectListMark,
+  ProjectsCount,
+  ProjectsMoreCount,
+  ProjectsStatus,
+} from './projects/ProjectKind'
 import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
 
 export const WORKBENCH_PATH = '/'
@@ -69,6 +74,7 @@ const SHELL_RELATIONS: RelationContribution[] = [
     plural: 'Projects',
     to: (id) => `/projects/${id}`,
     Narrow: ProjectNarrow,
+    Mark: ProjectListMark,
     edit: (id) => `/projects/${id}/edit`,
   },
 ]

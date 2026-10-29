@@ -1,8 +1,16 @@
 import { problemText } from '../../../platform/http/api'
 import type { TaskResponse } from '@ctws/contracts'
-import { useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
+import {
+  useCallback,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
+import { Toast } from '../../../platform/ui/Toast'
 import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { useRecordRecent } from '../../../shell/search'
 import { revealHref } from '../logic/crumb'
@@ -54,6 +62,9 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing }: Props) 
   /** The pane's body: where focus goes back to, rather than <body>. */
   const panel = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
+  // What a save said where it lands, once: "Moved to Inbox" (FR-059).
+  const [said, setSaid] = useState<string | null>(null)
+  const unsay = useCallback(() => setSaid(null), [])
   const edit = useTaskDetailForm(task)
   const doomed = useDeleteTask(task)
 
@@ -110,7 +121,8 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing }: Props) 
                 })
               }
               onClose={requestClose}
-              onSaved={() => {
+              onSaved={(says) => {
+                if (says) setSaid(says)
                 setEditing(false)
                 // The pressed control is gone: back to the panel, which listens for Escape.
                 backToPanel()
@@ -146,6 +158,7 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing }: Props) 
             {problemText(doomed.remove.error) ?? "Couldn't delete it"}
           </p>
         )}
+        {said && <Toast onGone={unsay}>{said}</Toast>}
       </div>
     </>
   )

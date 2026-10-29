@@ -1,9 +1,11 @@
-import { TASK_STATUSES } from '@ctws/contracts'
+import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import type { ReactNode } from 'react'
 import type { UseFormRegisterReturn } from 'react-hook-form'
 import { addDays } from '@ctws/core/day'
 import { nextMonday } from '../../../platform/time/dates'
-import { decision, label, STATUS_CHIP, decisionTight } from '../../../platform/ui/formStyles'
+import { boxed, decision, label, STATUS_CHIP, decisionTight } from '../../../platform/ui/formStyles'
+import { PickOne } from '../../../platform/ui/inline'
+import { usePhone } from '../../../platform/ui/phone'
 import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
 import { StatusMark } from '../../../platform/ui/StatusMark'
 import { DeadlineMark, PlanMark } from './TaskRowParts'
@@ -26,13 +28,39 @@ const namedDays = (
 export function StatusRadios({
   id,
   field,
+  current,
+  onPick,
   bare = false,
 }: {
   id: string
   field: UseFormRegisterReturn
+  /** The status chosen now, for the mark beside a phone's dropdown. */
+  current: TaskStatus
+  /** A phone's dropdown sets the field itself. */
+  onPick: (status: TaskStatus) => void
   /** In a field row whose name says Status already: the label is for a screen reader only. */
   bare?: boolean
 }) {
+  // On a phone a dropdown, drawn as where the status is read (DES-001 "44 和看起来的大小"):
+  // five chips of 44 would fold into three lines.
+  if (usePhone())
+    return (
+      <div className="flex flex-col gap-1">
+        <span className={bare ? 'sr-only' : label}>Status</span>
+        <div className={`${boxed} flex items-center px-2`}>
+          <PickOne
+            label="Status"
+            value={current}
+            choices={TASK_STATUSES.map((s) => ({
+              value: s,
+              label: STATUS_LABEL[s],
+              mark: <StatusMark status={s} />,
+            }))}
+            onPick={onPick}
+          />
+        </div>
+      </div>
+    )
   return (
     <div role="radiogroup" aria-labelledby={`${id}-status-label`}>
       <span id={`${id}-status-label`} className={bare ? 'sr-only' : label}>

@@ -49,7 +49,12 @@ function Question({
   // other, the way out last (DES-001).
   if (phone)
     return (
-      <BottomSheet title="This meeting repeats" onClose={onCancel} initialFocus={firstFocus}>
+      <BottomSheet
+        title="This meeting repeats"
+        onClose={onCancel}
+        initialFocus={firstFocus}
+        close={false}
+      >
         <div
           role="alertdialog"
           aria-label="This meeting repeats"

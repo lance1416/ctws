@@ -125,7 +125,7 @@ export function DependencyRows({
                   setError(null)
                   setAdding(true)
                 }}
-                className="-mx-1.5 h-8 self-start rounded-control px-1.5 text-ui text-muted hover:bg-hover hover:text-ink max-lg:h-11 max-lg:min-w-11"
+                className="-mx-1.5 h-8 self-start rounded-control px-1.5 text-ui text-muted hover:bg-hover hover:text-ink max-lg:tap"
               >
                 Add
               </button>

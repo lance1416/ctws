@@ -96,7 +96,7 @@ function HungOn({ note }: { note: Pick<NoteResponse, 'anchor' | 'heldAt'> }) {
       On{' '}
       <Link
         to={to}
-        className="inline-flex items-center gap-1 align-bottom text-ink hover:underline"
+        className="inline-flex items-center gap-1 align-bottom text-ink hover:underline max-lg:tap"
       >
         <Icon size={12} aria-hidden="true" className={KIND_TEXT[a.type]} />
         {a.title ?? 'something gone'}

@@ -83,7 +83,10 @@ export function NowWidget() {
                   {working.map((t) => (
                     <li key={t.id} data-now-working={t.id} className={ROW}>
                       <InProgressIcon size={16} className="text-go" />
-                      <Link to={opens(t)} className="truncate text-ui font-medium text-ink">
+                      <Link
+                        to={opens(t)}
+                        className="truncate text-ui font-medium text-ink max-lg:py-3"
+                      >
                         {t.title}
                       </Link>
                       <TaskPath task={t} />
@@ -109,7 +112,7 @@ export function NowWidget() {
                   {next.map((t) => (
                     <li key={t.id} data-now-ready={t.id} className={ROW}>
                       <ToDoIcon size={16} aria-hidden="true" className="text-muted" />
-                      <Link to={opens(t)} className="truncate text-ui text-ink">
+                      <Link to={opens(t)} className="truncate text-ui text-ink max-lg:py-3">
                         {t.title}
                       </Link>
                       <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
@@ -135,7 +138,7 @@ export function NowWidget() {
         )}
         <Link
           to="/today"
-          className="mt-auto flex shrink-0 items-center gap-1.5 px-3 text-ui text-muted hover:text-ink"
+          className="mt-auto flex shrink-0 items-center gap-1.5 px-3 text-ui text-muted hover:text-ink max-lg:min-h-11"
         >
           <span className="flex-1">Everything for today is in Today</span>
           <GoOnIcon size={16} aria-hidden="true" />

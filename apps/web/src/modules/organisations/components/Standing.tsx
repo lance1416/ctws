@@ -9,7 +9,7 @@ export function ProjectNamed({ standing }: { standing: ProjectStanding }) {
   return (
     <Link
       to={`/projects/${standing.projectId}`}
-      className="inline-flex min-w-0 items-center gap-2 text-ui text-ink hover:underline"
+      className="inline-flex min-w-0 items-center gap-2 text-ui text-ink hover:underline max-lg:tap"
     >
       {project && <ProjectSquare project={project} />}
       <span className="truncate">{standing.projectName}</span>
@@ -24,7 +24,7 @@ export function ProjectById({ id, name }: { id: string | null; name: string }) {
   return (
     <Link
       to={`/projects/${project.id}`}
-      className="inline-flex min-w-0 items-center gap-1.5 text-ink hover:underline"
+      className="inline-flex min-w-0 items-center gap-1.5 text-ink hover:underline max-lg:tap"
     >
       <ProjectSquare project={project} />
       <span className="truncate">{name}</span>

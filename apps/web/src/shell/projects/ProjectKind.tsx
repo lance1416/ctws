@@ -1,5 +1,7 @@
+import type { LinkCandidate } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { archivedProjectsQuery, useProjects } from './api'
+import { archivedProjectsQuery, useEveryProject, useProjects } from './api'
+import { ProjectSquare } from './ProjectSquare'
 
 /** Things' count for projects: the lines of work still running. */
 export function ProjectsCount() {
@@ -20,4 +22,10 @@ export function ProjectsMoreCount() {
   const projects = useProjects()
   if (!projects.data) return null
   return <span data-count>{projects.data.filter((p) => !p.isInbox).length}</span>
+}
+
+/** A project in a list of things (a picker, search): its own square, not the kind's folder. */
+export function ProjectListMark({ thing }: { thing: LinkCandidate }) {
+  const project = useEveryProject().data?.find((p) => p.id === thing.id)
+  return project ? <ProjectSquare project={project} /> : null
 }

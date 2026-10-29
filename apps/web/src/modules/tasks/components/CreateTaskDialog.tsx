@@ -176,6 +176,10 @@ export function CreateTaskDialog({
               setValue('parentId', null)
             }}
           />
+          {/* On a phone a field like the others, named above it (DES-001 "表单页"). */}
+          <span aria-hidden="true" className={`${label} mt-2 lg:hidden`}>
+            Title
+          </span>
           <input
             {...titleRest}
             ref={(el) => {
@@ -184,7 +188,7 @@ export function CreateTaskDialog({
             }}
             aria-label="Title"
             aria-invalid={errors.title ? true : undefined}
-            className="mt-0.5 w-full rounded-control bg-transparent py-0.5 text-subject text-ink"
+            className="mt-0.5 w-full rounded-control bg-transparent py-0.5 text-subject text-ink max-lg:mt-1 max-lg:h-11 max-lg:border max-lg:border-line-strong max-lg:bg-panel max-lg:px-2.5 max-lg:text-ui"
           />
         </div>
 
@@ -207,7 +211,12 @@ export function CreateTaskDialog({
           </div>
         </div>
 
-        <StatusRadios id="create" field={register('status')} />
+        <StatusRadios
+          id="create"
+          field={register('status')}
+          current={watch('status') ?? NEW_TASK_STATUS}
+          onPick={(s) => setValue('status', s)}
+        />
 
         {/* Named days only. Each button shows a pressed state, since nothing is sent yet. */}
         <DateDecisions
