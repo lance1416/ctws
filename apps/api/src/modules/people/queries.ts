@@ -55,7 +55,7 @@ export type PersonRow = Omit<
   | 'birthdayHourBranch'
   | 'birthdayRemindLead'
 > & {
-  projects: Named<ProjectId>[]
+  projects: PersonProject[]
   channels: PersonChannel[]
   birthday: StoredBirthday | null
   roles: PersonRoleRow[]
@@ -71,16 +71,45 @@ type PersonRoleRow = {
   to: string | null
 }
 
-const projectRow = z.object({ personId: z.string(), id: z.string(), name: z.string() })
+const projectRow = z.object({
+  personId: z.string(),
+  id: z.string(),
+  name: z.string(),
+  openTasks: z.coerce.number(),
+  lastActivityAt: z.coerce.date().nullable(),
+})
 
-/** The live projects each person is in, in project order. */
+type PersonProject = Named<ProjectId> & { openTasks: number; lastActivityAt: Date | null }
+
+/**
+ * The live projects each person is in, the one that moved last first (FR-061): with how many of
+ * their tasks in it are still open, a task being theirs when it is linked to them either way.
+ */
 async function projectsOf(
   q: Queryable,
   workspaceId: WorkspaceId,
   ids: readonly PersonId[],
-): Promise<Map<string, Named<ProjectId>[]>> {
+): Promise<Map<string, PersonProject[]>> {
   const result = await q.execute(sql`
-    select pp.person_id as "personId", p.id, p.name
+    select pp.person_id as "personId", p.id, p.name,
+      (
+        select count(*) from tasks t
+        where t.project_id = p.id and t.deleted_at is null
+          and t.status not in ('done', 'cancelled')
+          and exists (
+            select 1 from relations r
+            where r.workspace_id = ${workspaceId}
+              and ((r.from_type = 'task' and r.from_id = t.id
+                    and r.to_type = 'person' and r.to_id = pp.person_id)
+                or (r.to_type = 'task' and r.to_id = t.id
+                    and r.from_type = 'person' and r.from_id = pp.person_id))
+          )
+      ) as "openTasks",
+      (
+        select max(ev.occurred_at) from events ev
+        join tasks ev_t on ev_t.id = ev.object_id and ev.object_type = 'task'
+        where ev.workspace_id = ${workspaceId} and ev_t.project_id = p.id
+      ) as "lastActivityAt"
     from person_projects pp
     join projects p on p.id = pp.project_id
     where ${projectScope(workspaceId, 'p')}
@@ -88,12 +117,17 @@ async function projectsOf(
         ids.map((id) => sql`${id}`),
         sql`, `,
       )})
-    order by p.rank, p.id
+    order by "lastActivityAt" desc nulls last, p.rank, p.id
   `)
   return groupBy(
     rowsOf(result, projectRow),
     (r) => r.personId,
-    (r): Named<ProjectId> => ({ id: r.id as ProjectId, name: r.name }),
+    (r): PersonProject => ({
+      id: r.id as ProjectId,
+      name: r.name,
+      openTasks: r.openTasks,
+      lastActivityAt: r.lastActivityAt,
+    }),
   )
 }
 

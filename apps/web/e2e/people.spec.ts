@@ -706,3 +706,28 @@ test('a long people list has a filter at its top, which says when it finds nobod
   await list.getByRole('button', { name: 'Clear the filter' }).click()
   await expect(list.locator('[data-person-row]')).toHaveCount(14)
 })
+
+test('a person in nine projects shows five squares and “+4”, which lists all nine (FR-061)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const ids: string[] = []
+  for (let i = 1; i <= 9; i++)
+    ids.push((await apiPost<{ id: string }>(page, '/projects', { name: `Project ${i}` })).id)
+  const morgan = await apiPost<{ id: string }>(page, '/people', {
+    name: 'Morgan Lee',
+    projectIds: ids,
+  })
+  await page.goto(`/people/${morgan.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Morgan Lee' })).toBeVisible()
+  const head = page.getByRole('main').locator('a[href^="/projects/"][title^="Project "]')
+  await expect(head).toHaveCount(5)
+  const more = page.getByRole('button', { name: '4 more projects' })
+  await expect(more).toHaveText('+4')
+
+  await more.click()
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector.getByRole('heading', { name: 'Projects' })).toBeVisible()
+  await expect(inspector.getByRole('listitem')).toHaveCount(9)
+  await expect(inspector.getByRole('listitem').first()).toContainText('0')
+})

@@ -17,6 +17,7 @@ import { PEOPLE_ID } from './logic/id'
 import { PeopleSidebar } from './components/PeopleSidebar'
 import { Person, PersonEdit, PersonNew } from './pages/Person'
 import { peopleLists } from './components/TouchLists'
+import { personProjectsList } from './components/PersonProjects'
 import { prefetchPerson } from './pages/PersonPage'
 const People = lazyPage(() => import('./pages/People').then((m) => m.People))
 
@@ -91,7 +92,7 @@ export const peopleModule: WorkspaceModule = {
       prefetch: (qc) => void qc.prefetchQuery(peopleQuery()),
     },
   },
-  lists: peopleLists,
+  lists: [...peopleLists, personProjectsList],
   relations: [
     {
       type: 'person',

@@ -177,7 +177,17 @@ export const personResponse = z.object({
   hometownKey: z.string().nullable(),
   org: z.string().nullable(),
   note: z.string().nullable(),
-  projects: z.array(z.object({ id: projectId, name: z.string() })),
+  /** The live projects they are in, the one that moved last first (FR-061). */
+  projects: z.array(
+    z.object({
+      id: projectId,
+      name: z.string(),
+      /** Their tasks in it still open: linked to them, neither done nor cancelled. */
+      openTasks: z.number().int().nonnegative(),
+      /** The last change to anything in it; null for one nothing has happened in. */
+      lastActivityAt: instant.nullable(),
+    }),
+  ),
   channels: z.array(channelResponse),
   birthday: birthdayResponse.nullable(),
   gender: z.enum(GENDERS).nullable(),

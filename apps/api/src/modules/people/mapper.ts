@@ -23,7 +23,10 @@ export function toPersonResponse(p: PersonRow, today: string): PersonResponse {
     hometownKey: p.hometownKey,
     org: p.org,
     note: p.note,
-    projects: p.projects,
+    projects: p.projects.map((pr) => ({
+      ...pr,
+      lastActivityAt: pr.lastActivityAt?.toISOString() ?? null,
+    })),
     channels: p.channels,
     birthday: p.birthday ? withFacts(p.birthday, today) : null,
     gender: p.gender,

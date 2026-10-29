@@ -2,7 +2,7 @@ import type { PersonResponse } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { afterEach, describe, expect, it } from 'vitest'
 import { setupWith, type Harness, web, secondUser } from '../../helpers/harness'
-import { createProject, createPerson } from '../../helpers/builders'
+import { createProject, createPerson, createTask } from '../../helpers/builders'
 
 /**
  * PEOPLE, on vCard 4.0's model (RFC 6350).
@@ -421,5 +421,48 @@ describe("a person's birthday", () => {
     })
     expect(res.statusCode).toBe(400)
     expect(res.json().detail).toContain('remindLead')
+  })
+})
+
+describe('the projects a person is in (FR-061)', () => {
+  it('come the one that moved last first, each with their tasks in it still open', async () => {
+    const ctx = await setup()
+    const quiet = await createProject(ctx, 'Quiet')
+    const busy = await createProject(ctx, 'Busy')
+    const idle = await createProject(ctx, 'Idle')
+    const person = await createPerson(ctx, { name: 'Mira', projectIds: [quiet, busy, idle] })
+    const link = async (taskId: string) =>
+      expect(
+        (
+          await ctx.app.inject({
+            method: 'POST',
+            url: '/api/v1/relations',
+            headers: web(ctx),
+            payload: { from: { type: 'task', id: taskId }, to: { type: 'person', id: person.id } },
+          })
+        ).statusCode,
+      ).toBe(201)
+    const hers = await createTask(ctx, busy, 'Hers, open')
+    await link(hers)
+    const finished = await createTask(ctx, busy, 'Hers, done', undefined, { status: 'done' })
+    await link(finished)
+    await createTask(ctx, busy, 'Not hers')
+    const old = await createTask(ctx, quiet, 'Long ago')
+    // When each moved, said outright: Busy last, Quiet before it, Idle never.
+    await ctx.db.execute(sql`
+      update events set occurred_at = case
+        when object_id in (${hers}, ${finished}) then '2026-10-20T09:00:00Z'::timestamptz
+        else '2026-09-01T09:00:00Z'::timestamptz end
+      where object_type = 'task'`)
+    void old
+
+    const mira = (await list(ctx)).find((p) => p.id === person.id)!
+    expect(mira.projects.map((p) => [p.name, p.openTasks])).toEqual([
+      ['Busy', 1],
+      ['Quiet', 0],
+      ['Idle', 0],
+    ])
+    expect(mira.projects[0]!.lastActivityAt).toBe('2026-10-20T09:00:00.000Z')
+    expect(mira.projects[2]!.lastActivityAt).toBeNull()
   })
 })

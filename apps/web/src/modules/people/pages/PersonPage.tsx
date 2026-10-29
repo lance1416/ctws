@@ -29,6 +29,7 @@ import { circlesQuery, peopleQuery } from '../api'
 import { usePhone } from '../hooks/usePhone'
 import { usePhone as usePhoneFrame } from '../../../platform/ui/phone'
 import { PhonePerson } from './PhonePerson'
+import { MoreProjects, SHOWN_PROJECTS } from '../components/PersonProjects'
 import { byKind, channelHref, channelLabel, KIND_LABEL } from '../logic/channels'
 import { LEAD_LABELS } from '../logic/labels'
 import { theirTime } from '../logic/localTime'
@@ -175,11 +176,15 @@ function PersonHead({ person }: { person: PersonResponse }) {
       {projects.length > 0 && (
         <span className="flex items-center gap-1 text-meta text-subtle">
           In
-          {projects.map((p) => (
+          {/* Five, the one that moved last first; the rest are "+N" (FR-061). */}
+          {projects.slice(0, SHOWN_PROJECTS).map((p) => (
             <Link key={p.id} to={`/projects/${p.id}`} title={p.name}>
               <ProjectSquare project={p} />
             </Link>
           ))}
+          {projects.length > SHOWN_PROJECTS && (
+            <MoreProjects person={person} more={projects.length - SHOWN_PROJECTS} />
+          )}
         </span>
       )}
       <Link to={`/people/${person.id}/edit`} className={BUTTON.secondary}>
