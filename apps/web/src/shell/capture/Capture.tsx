@@ -83,9 +83,11 @@ export function Capture() {
       box.current?.focus()
     },
   })
+  // And again once the box can take it: opened before the inbox is read, it is still disabled.
+  const ready = Boolean(fallback?.target)
   useEffect(() => {
     if (open) box.current?.focus()
-  }, [open])
+  }, [open, ready])
   useEffect(() => {
     const onOpen = (e: Event) => {
       setSwitched((e as CustomEvent<Kind>).detail)
