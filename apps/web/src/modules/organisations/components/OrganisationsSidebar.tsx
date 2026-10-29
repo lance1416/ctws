@@ -34,7 +34,10 @@ export function OrganisationsSidebar() {
     ...(overview.data?.untyped ? [OTHER] : []),
   ]
   return (
-    <nav aria-label="Organisations" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+    <nav
+      aria-label="Organisations"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
+    >
       <div role="group" aria-label="Type" className="flex flex-wrap gap-0.5 px-2.5 pb-1.5">
         <TypeTab to="/organisations" on={type === null}>
           All

@@ -52,8 +52,9 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
     const at = new Date(m.startsAt)
     const day = ymd(at, timeZone)
     const near = day >= addDays(today, -6) && day <= addDays(today, 6)
-    // Another year's says its year: a meeting from 2022 is not this March's.
-    return `${near ? weekdayOf(day, true) : shortDay(day, today)} ${clockTime(at, timeZone)}`
+    // Within a week its weekday and time; further, the day alone (its year when another year's),
+    // so the column keeps one width and the names line up (U-18).
+    return near ? `${weekdayOf(day, true)} ${clockTime(at, timeZone)}` : shortDay(day, today)
   }
   return {
     things: [

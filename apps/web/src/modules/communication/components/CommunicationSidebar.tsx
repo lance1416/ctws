@@ -31,7 +31,10 @@ export function CommunicationSidebar() {
   const timeZone = useTimeZone()
   const waiting = new Set((awaiting.data ?? []).map((m) => m.id as string))
   return (
-    <nav aria-label="Communication" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+    <nav
+      aria-label="Communication"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
+    >
       <section aria-label="Awaiting reply">
         <h3 className="flex items-center px-3.5 pt-1 pb-1 text-meta text-muted">
           <span className="flex-1">Awaiting reply</span>

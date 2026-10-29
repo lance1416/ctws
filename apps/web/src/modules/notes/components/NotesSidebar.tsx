@@ -13,7 +13,10 @@ const ROW = ({ isActive }: { isActive: boolean }) =>
 export function NotesSidebar() {
   const notes = useQuery(notesQuery())
   return (
-    <nav aria-label="Notes" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+    <nav
+      aria-label="Notes"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
+    >
       <ul className="flex flex-col gap-px">
         {(notes.data ?? []).map((n) => (
           <li key={n.id} data-note-row={n.id}>

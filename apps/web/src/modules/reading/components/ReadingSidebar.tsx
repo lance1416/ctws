@@ -32,7 +32,10 @@ export function ReadingSidebar() {
         { label: 'To read', rows: of('todo') },
       ]
   return (
-    <nav aria-label="Reading" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+    <nav
+      aria-label="Reading"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
+    >
       {finished && (
         <div className="mx-1.5 mb-1 flex h-8 items-center gap-1.5">
           <Link to="/reading" aria-label="Back to what is being read" className={ICON_BUTTON}>

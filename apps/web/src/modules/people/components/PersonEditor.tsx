@@ -417,7 +417,7 @@ export function PersonEditor({
             }
           >
             {d.roles.length > 0 && (
-              <div className="grid grid-cols-[minmax(6.5rem,1fr)_minmax(9.5rem,1.2fr)_7rem_auto_auto] items-center gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_6rem_6rem_auto] items-center gap-2">
                 {['Organisation', 'Role', 'From', 'To'].map((h) => (
                   <span key={h} aria-hidden="true" className={label}>
                     {h}
@@ -710,6 +710,7 @@ function RoleRow({
       />
       <DayField
         mode="month"
+        bare
         label={`Role ${at} from`}
         value={role.from}
         today={today}
@@ -720,30 +721,23 @@ function RoleRow({
           type="button"
           aria-label={`Role ${at} to: now. Set an end`}
           onClick={() => onChange({ to: today.slice(0, 7) })}
-          className="inline-flex h-7.5 items-center"
+          className={`${boxed} flex items-center text-left`}
         >
           <span className="inline-flex h-5.5 items-center rounded-control bg-go-bg px-2 text-meta font-medium text-go-t">
             Now
           </span>
         </button>
       ) : (
-        <div className="flex min-w-0 items-center gap-1">
-          <DayField
-            mode="month"
-            label={`Role ${at} to`}
-            value={role.to}
-            today={today}
-            clearable={false}
-            onChange={(to) => onChange({ to })}
-          />
-          <button
-            type="button"
-            onClick={() => onChange({ to: null })}
-            className="shrink-0 rounded-control px-1.5 text-meta text-muted hover:bg-hover hover:text-ink"
-          >
-            Now
-          </button>
-        </div>
+        // Emptied, it is Now again: the box says so when there is nothing in it.
+        <DayField
+          mode="month"
+          bare
+          label={`Role ${at} to`}
+          placeholder="Now"
+          value={role.to}
+          today={today}
+          onChange={(to) => onChange({ to })}
+        />
       )}
       <Remove what={`role ${at}`} onRemove={onRemove} />
     </>

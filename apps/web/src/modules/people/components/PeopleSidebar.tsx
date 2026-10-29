@@ -48,7 +48,10 @@ function Everyone({ circle }: { circle: string | null }) {
     a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b),
   )
   return (
-    <nav aria-label="People" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+    <nav
+      aria-label="People"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
+    >
       {circle && (
         <Narrowed label={picked ? `In ${picked.name}` : 'In a circle'} count={shown.length} />
       )}
@@ -86,7 +89,10 @@ function BirthdayList() {
   const [params] = useSearchParams()
   const rows = [...(birthdays.data?.coming ?? []), ...(birthdays.data?.later ?? [])]
   return (
-    <nav aria-label="Birthdays" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+    <nav
+      aria-label="Birthdays"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
+    >
       <Narrowed label="Birthdays" count={rows.length} />
       <ul className="flex flex-col gap-px">
         {rows.map((r) => (

@@ -50,7 +50,10 @@ function Everything() {
   const past = [...latest.values()].sort((a, b) => b.startsAt.localeCompare(a.startsAt))
   const active = (m: MeetingOccurrence) => at === m.recurrenceId
   return (
-    <nav aria-label="Meetings" className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+    <nav
+      aria-label="Meetings"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
+    >
       <section aria-label="Coming">
         <h3 className="px-3.5 pt-1 pb-1 text-meta text-muted">Coming</h3>
         <ul className="flex flex-col gap-px">
@@ -124,7 +127,7 @@ function Series({ id }: { id: string }) {
   return (
     <nav
       aria-label={`${title} series`}
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
     >
       <div className="mx-1.5 mb-1 flex h-8 items-center gap-1.5">
         <Link

@@ -1,12 +1,13 @@
 import type { PersonResponse } from '@ctws/contracts'
 import { avatarInitials } from '@ctws/core'
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { fullDay, MONTHS, weekdayOf } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Avatar } from '../../../platform/ui/Avatar'
+import { useColumns } from '../../../platform/ui/columns'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
 import {
   CakeIcon,
@@ -60,6 +61,12 @@ export function PersonPage({ person }: { person: PersonResponse }) {
     sayAdd: true,
   })
   const profiled = hasProfile(person)
+  // Across as many columns of at least 360 as the blocks' own width holds, three at most: one
+  // with the inspector open beside a 1440 page, more on a wide screen (U-07, DES-001 "宽度和断点").
+  const holder = useRef<HTMLDivElement>(null)
+  const across = Math.max(1, Math.min(3, useColumns(holder), full || 1))
+  // A last full row with a hole in it: its last block takes the rest of the row (FR-011 rule 2).
+  const rest = full % across === 0 ? 1 : across - (full % across) + 1
   return (
     <div className="flex flex-col gap-4">
       <PersonHead person={person} />
@@ -69,16 +76,18 @@ export function PersonPage({ person }: { person: PersonResponse }) {
       >
         {profiled && <Profile person={person} />}
         <div className="flex min-w-0 flex-col gap-4">
-          {/* Two across; an odd last full block takes the row, and the empty ones follow it. Full
-              blocks side by side are as tall as each other (FR-011 rule 1, BUG-047); an empty one
-              keeps the height of its head. */}
-          <div className="grid gap-3 xl:grid-cols-2">
+          {/* The full blocks first, the empty ones after them. Full blocks side by side are as tall
+              as each other (FR-011 rule 1, BUG-047); an empty one keeps the height of its head. */}
+          <div
+            ref={holder}
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${across}, minmax(0, 1fr))` }}
+          >
             {blocks.map((block, i) => (
               <div
                 key={i}
-                className={`min-w-0 ${
-                  i < full ? 'flex flex-col *:flex-1' : 'self-start'
-                } ${full % 2 === 1 && i === full - 1 ? 'xl:col-span-2' : ''}`}
+                className={`min-w-0 ${i < full ? 'flex flex-col *:flex-1' : 'self-start'}`}
+                style={i === full - 1 && rest > 1 ? { gridColumn: `span ${rest}` } : undefined}
               >
                 {block}
               </div>

@@ -1,10 +1,9 @@
-import type { PersonResponse } from '@ctws/contracts'
 import { avatarInitials } from '@ctws/core'
 import { useQuery } from '@tanstack/react-query'
 import { useContext, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { EditCircles } from '../components/EditCircles'
-import { nearDay, shortDay, weekdayDay, ymd } from '../../../platform/time/dates'
+import { weekdayDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Avatar } from '../../../platform/ui/Avatar'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
@@ -12,20 +11,18 @@ import {
   CakeIcon,
   CirclesIcon,
   InTouchIcon,
-  KIND_ICON,
   NewIcon,
   OutOfTouchIcon,
-  ReceivedIcon,
-  SentIcon,
   type IconComponent,
 } from '../../../platform/ui/icons'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { useTimeZone } from '../../../shell/auth'
+import { AllInInspector } from '../../../shell/inspector'
 import { NewContext } from '../../../shell/creates'
 import { ModuleEmpty } from '../../../shell/layout'
 import { useRegistry } from '../../../shell/registry'
-import { birthdaysQuery, circlesQuery, peopleQuery, touchQuery } from '../api'
-import { sinceWords } from '../logic/since'
+import { birthdaysQuery, circlesQuery, peopleQuery } from '../api'
+import { HOW, Mark, PEOPLE_LISTS, useTouchDay, useTouchRows } from '../components/TouchLists'
 
 /** The birthday block's window (FR-060). */
 const SOON_DAYS = 30
@@ -40,7 +37,6 @@ export function PeopleOverview() {
   const creator = useRegistry().creates.find((c) => c.kind === 'person')
   // Nobody yet: the badge, a line and New person, nothing else (FR-030, artboard 23).
   if (people.isSuccess && people.data.length === 0) return <ModuleEmpty kind="person" />
-  const byId = new Map((people.data ?? []).map((p) => [p.id as string, p]))
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-3">
@@ -58,10 +54,11 @@ export function PeopleOverview() {
           </button>
         )}
       </div>
-      <div className="grid items-start gap-3 lg:grid-cols-2">
+      {/* Side by side, a row's two blocks are as tall as each other (FR-011 rule 1). */}
+      <div className="grid gap-3 lg:grid-cols-2">
         <Birthdays />
-        <InTouch byId={byId} />
-        <OutOfTouch byId={byId} />
+        <InTouch />
+        <OutOfTouch />
         <Circles />
       </div>
     </div>
@@ -163,7 +160,7 @@ function Birthdays() {
       }
     >
       <ul>
-        {soon.map((r) => (
+        {soon.slice(0, SHOWN).map((r) => (
           <PersonRow
             key={r.personId}
             id={r.personId}
@@ -186,29 +183,16 @@ function Birthdays() {
   )
 }
 
-const HOW: Record<
-  'sent' | 'received' | 'meeting',
-  { icon: IconComponent; tint: string; word: string }
-> = {
-  sent: { icon: SentIcon, tint: 'bg-communication-bg text-communication', word: 'Message sent' },
-  received: {
-    icon: ReceivedIcon,
-    tint: 'bg-communication-bg text-communication',
-    word: 'Message received',
-  },
-  meeting: { icon: KIND_ICON.meeting, tint: 'bg-meeting-bg text-meeting', word: 'Met' },
-}
+/** A block's rows before its "All N", which opens the rest in the inspector (FR-011 rule 3). */
+const SHOWN = 5
 
-type People = Map<string, PersonResponse>
+/** A block's "All N", a row at its foot. */
+const ALL_ROW =
+  'flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink'
 
-function InTouch({ byId }: { byId: People }) {
-  const touch = useQuery(touchQuery())
-  const timeZone = useTimeZone()
-  const today = ymd(useNow(), timeZone)
-  const rows = (touch.data?.recent ?? []).flatMap((t) => {
-    const p = byId.get(t.personId)
-    return p ? [{ ...t, person: p }] : []
-  })
+function InTouch() {
+  const { rows } = useTouchRows('recent')
+  const day = useTouchDay()
   return (
     <Block
       empty={rows.length === 0 ? 'None' : null}
@@ -217,46 +201,29 @@ function InTouch({ byId }: { byId: People }) {
       tint="bg-hover text-muted"
     >
       <ul>
-        {rows.map((t) => {
-          const how = HOW[t.kind]
-          const day = ymd(new Date(t.at), timeZone)
-          return (
-            <PersonRow
-              key={t.personId}
-              id={t.personId}
-              name={t.person.name}
-              initials={avatarInitials(t.person)}
-              strong
-            >
-              <Mark icon={how.icon} tint={how.tint} word={how.word} />
-              <span className="w-16 text-right font-mono text-meta text-muted">
-                {nearDay(day, today) ?? shortDay(day, today)}
-              </span>
-            </PersonRow>
-          )
-        })}
+        {rows.slice(0, SHOWN).map((t) => (
+          <PersonRow
+            key={t.personId}
+            id={t.personId}
+            name={t.person.name}
+            initials={avatarInitials(t.person)}
+            strong
+          >
+            <Mark {...HOW[t.kind]} />
+            <span className="w-16 text-right font-mono text-meta text-muted">{day.near(t.at)}</span>
+          </PersonRow>
+        ))}
       </ul>
+      {rows.length > SHOWN && (
+        <AllInInspector list={PEOPLE_LISTS.inTouch} count={rows.length} className={ALL_ROW} />
+      )}
     </Block>
   )
 }
 
-function Mark({ icon: Icon, tint, word }: { icon: IconComponent; tint: string; word: string }) {
-  return (
-    <span title={word} className={`grid size-6 place-items-center rounded-control ${tint}`}>
-      <Icon size={14} />
-      <span className="sr-only">{word}</span>
-    </span>
-  )
-}
-
-function OutOfTouch({ byId }: { byId: People }) {
-  const touch = useQuery(touchQuery())
-  const timeZone = useTimeZone()
-  const today = ymd(useNow(), timeZone)
-  const rows = (touch.data?.quiet ?? []).flatMap((t) => {
-    const p = byId.get(t.personId)
-    return p ? [{ ...t, person: p }] : []
-  })
+function OutOfTouch() {
+  const { rows } = useTouchRows('quiet')
+  const day = useTouchDay()
   return (
     <Block
       empty={rows.length === 0 ? 'None' : null}
@@ -265,19 +232,20 @@ function OutOfTouch({ byId }: { byId: People }) {
       tint="bg-hover text-muted"
     >
       <ul>
-        {rows.map((t) => (
+        {rows.slice(0, SHOWN).map((t) => (
           <PersonRow
             key={t.personId}
             id={t.personId}
             name={t.person.name}
             initials={avatarInitials(t.person)}
           >
-            <span className="text-meta text-subtle">
-              {sinceWords(ymd(new Date(t.at), timeZone), today)}
-            </span>
+            <span className="text-meta text-subtle">{day.since(t.at)}</span>
           </PersonRow>
         ))}
       </ul>
+      {rows.length > SHOWN && (
+        <AllInInspector list={PEOPLE_LISTS.quiet} count={rows.length} className={ALL_ROW} />
+      )}
     </Block>
   )
 }

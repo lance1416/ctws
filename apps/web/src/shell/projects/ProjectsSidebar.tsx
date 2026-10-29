@@ -50,7 +50,11 @@ export function ProjectsSidebar() {
       >
         {projects.data && others.length}
       </SidebarHead>
-      <nav aria-label="Projects" className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto">
+      {/* Every row keeps its height; past the bottom the list scrolls in here (U-06). */}
+      <nav
+        aria-label="Projects"
+        className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-2 *:shrink-0"
+      >
         {inbox && (
           <NavLink to={`/projects/${inbox.id}`} className={row}>
             <ProjectSquare project={inbox} />

@@ -36,6 +36,7 @@ export function DayField({
   accent,
   className = '',
   clearable = true,
+  bare = false,
   onRefusal,
 }: {
   value: string | null
@@ -50,6 +51,11 @@ export function DayField({
   accent?: string
   className?: string
   clearable?: boolean
+  /**
+   * A cell in a table of them (a role's From and To, artboard 11): just the box, its calendar
+   * opened by a click in it or ↓, so a narrow column shows the whole month.
+   */
+  bare?: boolean
   /**
    * Where a refusal is said instead of under the field, for a row the field must not grow (the
    * capture box): the reason, or null once it is read.
@@ -137,12 +143,13 @@ export function DayField({
           onFocus={() => {
             if (value) setShown(value.slice(0, mode === 'month' ? 4 : 7))
           }}
+          onClick={bare ? () => setOpen(true) : undefined}
           aria-label={label}
           aria-invalid={refused || undefined}
           placeholder={placeholder ?? (mode === 'month' ? 'Mar 2023' : 'Oct 29')}
           className="min-w-0 flex-1 bg-transparent placeholder:text-subtle"
         />
-        {clearable && value !== null && (
+        {!bare && clearable && value !== null && (
           <button
             type="button"
             onClick={() => onChange(null)}
@@ -152,15 +159,17 @@ export function DayField({
             <CloseIcon size={14} aria-hidden="true" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          aria-label={open ? 'Close the calendar' : 'Open the calendar'}
-          aria-expanded={open}
-          className={`${ICON_BUTTON} size-6`}
-        >
-          <PLACE_ICON.calendar size={14} aria-hidden="true" />
-        </button>
+        {!bare && (
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-label={open ? 'Close the calendar' : 'Open the calendar'}
+            aria-expanded={open}
+            className={`${ICON_BUTTON} size-6`}
+          >
+            <PLACE_ICON.calendar size={14} aria-hidden="true" />
+          </button>
+        )}
       </div>
       {refused && !onRefusal && (
         <p role="alert" className="mt-1 flex items-start gap-1 text-meta text-stop-t">

@@ -16,6 +16,7 @@ import { PEOPLE_ID } from './logic/id'
 import { PeopleSidebar } from './components/PeopleSidebar'
 import { People } from './pages/People'
 import { Person, PersonEdit, PersonNew } from './pages/Person'
+import { peopleLists } from './components/TouchLists'
 
 // For other modules: a meeting picks its attendees from this list.
 export { usePeople } from './hooks/usePeople'
@@ -71,6 +72,7 @@ export const peopleModule: WorkspaceModule = {
   today: [{ id: 'birthdays', order: 40, Block: BirthdaysToday }],
   // A project's page lists the people on it (FR-055).
   project: { Things: { kind: 'person', useThings: useProjectPeople } },
+  lists: peopleLists,
   relations: [
     {
       type: 'person',

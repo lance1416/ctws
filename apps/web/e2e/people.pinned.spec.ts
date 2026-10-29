@@ -80,7 +80,8 @@ test('their Meetings block has what is coming, then what was held, however long 
     /Thu 14:00\s*Stripe phone screen/,
     /Fri 10:30\s*rust-analyzer sync/,
     /Fri 10:30\s*rust-analyzer sync/,
-    /Mar 3, 2022 14:00\s*Payments platform review/,
+    // Past the week, the day alone: the column keeps one width (U-18).
+    /Mar 3, 2022\s*Payments platform review/,
   ])
 
   // Side by side, the full blocks are as tall as each other (FR-011 rule 1, BUG-047).
