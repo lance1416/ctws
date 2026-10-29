@@ -102,6 +102,35 @@ async function task(projectId, title, { status, ...fields } = {}) {
 }
 const at = (day, clock = '18:00') => `${day}T${clock}:00+01:00`
 
+/** A project's stages by name, keeping any already there (a history day may have made them). */
+async function stagesOf(projectId, list) {
+  const had = (await call('GET', '/projects?archived=false')).projects.find(
+    (p) => p.id === projectId,
+  ).stages
+  const { stages } = await put(`/projects/${projectId}/stages`, {
+    stages: list.map(({ name, collapsed }) => {
+      const kept = had.find((s) => s.name === name)
+      return { ...(kept ? { id: kept.id } : {}), name, ...(collapsed ? { collapsed } : {}) }
+    }),
+  })
+  return Object.fromEntries(stages.map((s) => [s.name, s.id]))
+}
+const JOB_STAGES = [
+  { name: 'Applied' },
+  { name: 'Phone screen' },
+  { name: 'Onsite' },
+  { name: 'Rejected', collapsed: true },
+]
+
+/**
+ * A Job hunt company's two steps, the application sent today: a history day makes only the
+ * company, at Applied since then, so the weeks it falls in finish nothing more.
+ */
+async function steps(jobHunt, parentId) {
+  await task(jobHunt, 'Send the application', { parentId, status: 'done' })
+  await task(jobHunt, 'Follow up with the recruiter', { parentId })
+}
+
 /** A book or a link, then its fields: a new one is "to read". */
 async function reading(title, fields = {}) {
   const item = await post('/reading', { kind: 'book', title })
@@ -120,7 +149,9 @@ const HISTORY = {
   '2026-09-16': { done: 6 },
   '2026-09-23': { done: 10 },
   '2026-09-30': { done: 8 },
-  '2026-10-07': { done: 14 },
+  // GitLab has sat at Applied 21 days by the 22nd, Datadog 15 (acceptance-data.md, BUG-081).
+  '2026-10-01': { applied: 'GitLab' },
+  '2026-10-07': { done: 14, applied: 'Datadog' },
   '2026-10-13': { done: 25, dropped: 2, movingFlat: true },
 }
 if (opt.history) {
@@ -132,7 +163,12 @@ if (opt.history) {
     (t) => t.title === 'Earlier work' && t.parentId === null,
   )
   const parent = earlier ? earlier.id : (await task(ctws, 'Earlier work')).id
-  for (let i = 1; i <= step.done; i++)
+  if (step.applied) {
+    const jh = await project('Job hunt', 'amber')
+    const stage = await stagesOf(jh, JOB_STAGES)
+    await task(jh, step.applied, { stageId: stage.Applied })
+  }
+  for (let i = 1; i <= (step.done ?? 0); i++)
     await task(ctws, `Finished in the week of ${opt.history} (${i})`, {
       parentId: parent,
       status: 'done',
@@ -321,16 +357,12 @@ for (let i = 0; i < 37; i++) {
 }
 
 // ---- Job hunt: companies are parents, at a stage ----------------------------------------------
-const { stages } = await put(`/projects/${P['Job hunt']}/stages`, {
-  stages: [
-    { name: 'Applied' },
-    { name: 'Phone screen' },
-    { name: 'Onsite' },
-    { name: 'Rejected', collapsed: true },
-  ],
-})
-const stage = Object.fromEntries(stages.map((s) => [s.name, s.id]))
 const JH = P['Job hunt']
+const stage = await stagesOf(JH, JOB_STAGES)
+// GitLab and Datadog came on their history days, when they were applied to.
+const already = new Map(
+  (await call('GET', `/tasks?projectId=${JH}`)).tasks.map((t) => [t.title, t.id]),
+)
 for (const [company, fields] of [
   ['Notion', {}],
   ['Monzo', { dueAt: at('2026-10-31') }],
@@ -342,9 +374,9 @@ for (const [company, fields] of [
   ['Deliveroo', {}],
   ['Ocado', {}],
 ]) {
-  const parent = await task(JH, company, { stageId: stage.Applied, ...fields })
-  await task(JH, 'Send the application', { parentId: parent.id, status: 'done' })
-  await task(JH, 'Follow up with the recruiter', { parentId: parent.id })
+  const id =
+    already.get(company) ?? (await task(JH, company, { stageId: stage.Applied, ...fields })).id
+  await steps(JH, id)
 }
 const stripeTask = await task(JH, 'Stripe', { stageId: stage['Phone screen'] })
 await task(JH, 'Phone screen prep', {
@@ -360,6 +392,12 @@ const prepare = await task(JH, 'Prepare the system design round', {
   parentId: sde.id,
   status: 'in_progress',
   notes: `Ask [@Mira Chen](ctws://person/${mira.id}) which questions came up.`,
+})
+// The task just back from its Google Doc (UAT-012).
+await post('/resources', {
+  owner: { type: 'task', id: prepare.id },
+  url: 'https://docs.google.com/document/d/1sysdesign/edit',
+  name: 'System design prep',
 })
 const flights = await task(JH, 'Book flights to Seattle', { parentId: sde.id })
 await put(`/tasks/${flights.id}/dependencies/${prepare.id}`)
@@ -434,6 +472,24 @@ await task(P.Atlas, 'Record the walkthrough', { parentId: demo.id })
 await task(P.Atlas, 'Send the agenda', { parentId: demo.id })
 await task(P.Thesis, 'Email the supervisor', { scheduledOn: '2026-10-18' })
 await task(P['Find a lawyer'], 'Send the lease to Harbour & Lane', { dueAt: at('2026-10-15') })
+// The firms are nodes at a stage; Harbour & Lane moved on to Shortlisted (acceptance-data.md).
+const lawyerStage = await stagesOf(P['Find a lawyer'], [
+  { name: 'Contacted' },
+  { name: 'Shortlisted' },
+  { name: 'Engaged' },
+])
+for (const [firm, at_] of [
+  ['Harbour & Lane LLP', 'Shortlisted'],
+  ['Morrow Legal', 'Contacted'],
+  ['Clifford Rowe', 'Contacted'],
+]) {
+  const node = await task(P['Find a lawyer'], firm, { stageId: lawyerStage.Contacted })
+  if (at_ !== 'Contacted') await patch(`/tasks/${node.id}`, { stageId: lawyerStage[at_] })
+  await post('/relations', {
+    from: { type: 'task', id: node.id },
+    to: { type: 'organisation', id: O[firm] },
+  })
+}
 await task(P.Thesis, 'Draft the related-work section', { dueAt: at('2026-10-20') })
 await task(P.Thesis, 'Fix the figure numbering', {})
 await task(P['rust-analyzer'], 'Look at the flaky test', {})
@@ -575,6 +631,15 @@ await message({
   body: 'Would you be able to look at a residential lease this month?',
   occurredAt: '2026-10-13T09:00:00Z',
   projectId: P['Find a lawyer'],
+  // Not waited on: its Next is "No reply, 9 days" (UAT-011).
+})
+// Waited on, to be followed up tomorrow: the three waiting are past, tomorrow and next week.
+await message({
+  direction: 'sent',
+  parties: [{ type: 'person', id: lena.id }],
+  subject: 'Intro to the Toronto team',
+  body: 'Would you mind introducing me to someone on the platform team?',
+  occurredAt: '2026-10-19T14:00:00Z',
   awaitingReply: true,
   followUpOn: '2026-10-23',
 })
@@ -731,6 +796,53 @@ for (let i = 1; i <= 200; i++) {
   await person({
     givenName: FIRST[i % FIRST.length],
     familyName: `${LAST[i % LAST.length]}-${String.fromCharCode(65 + (i % 26))}`,
+  })
+}
+
+// One word every kind has a dozen or more of, for search's groups (BUG-081): "Atlas".
+const ATLAS = [
+  'Freight',
+  'Robotics',
+  'Health',
+  'Capital',
+  'Studio',
+  'Labs',
+  'Logistics',
+  'Energy',
+  'Media',
+  'Partners',
+  'Analytics',
+  'Works',
+  'Systems',
+  'Ventures',
+]
+const atlasProject = (await post('/projects', { name: 'Atlas rollout', color: 'teal' })).id
+for (const [i, word] of ATLAS.entries()) {
+  await post('/projects', { name: `Atlas ${word} pilot` })
+  await task(atlasProject, `Atlas ${word}: send the contract`)
+  await post('/organisations', { name: `Atlas ${word}`, type: 'Company' })
+  await person({
+    givenName: FIRST[i % FIRST.length],
+    familyName: `${LAST[(i + 5) % LAST.length]}-Atlas`,
+    channels: [{ kind: 'email', value: `${word.toLowerCase()}@atlas.example` }],
+  })
+  await post('/meetings', {
+    title: `Atlas ${word} check-in`,
+    startsLocal: `2026-10-${String(5 + i).padStart(2, '0')}T11:00`,
+    timeZone: ZONE,
+    durationMinutes: 30,
+  })
+  await message({
+    direction: i % 2 ? 'sent' : 'received',
+    parties: [{ type: 'organisation', id: busyOrg }],
+    subject: `Atlas ${word}: next steps`,
+    occurredAt: new Date(Date.UTC(2026, 9, 1 + i, 10)).toISOString(),
+  })
+  await reading(`Atlas of ${word}`)
+  await post('/notes', {
+    title: `Atlas ${word}`,
+    body: `What we know of Atlas ${word} so far.`,
+    anchor: null,
   })
 }
 
