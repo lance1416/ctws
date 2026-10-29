@@ -54,6 +54,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      # The data migration runs before it listens: about six minutes on 43,000 workspaces. Until
+      # then a failed check is not counted, so `up --wait` waits instead of calling it unhealthy.
+      start_period: 15m
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,6 +88,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      # The data migration runs before it listens: about six minutes on 43,000 workspaces. Until
+      # then a failed check is not counted, so `up --wait` waits instead of calling it unhealthy.
+      start_period: 15m
     depends_on:
       api:
         condition: service_healthy
