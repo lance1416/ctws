@@ -6,8 +6,14 @@ import { longDay, ymd } from '../../../../platform/time/dates'
 import { useNow } from '../../../../platform/time/useNow'
 import { BottomSheet } from '../../../../platform/ui/BottomSheet'
 import { BlockFailed, SkeletonRows } from '../../../../platform/ui/Block'
-import { ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
-import { CarriedIcon, FlagIcon, InProgressIcon, PLACE_ICON } from '../../../../platform/ui/icons'
+import { ICON_BUTTON, SWIPE } from '../../../../platform/ui/buttonStyles'
+import {
+  CarriedIcon,
+  DoneIcon,
+  FlagIcon,
+  InProgressIcon,
+  PLACE_ICON,
+} from '../../../../platform/ui/icons'
 import { PhoneSection } from '../../../../platform/ui/PhoneSection'
 import { StatusMark } from '../../../../platform/ui/StatusMark'
 import { useTimeZone } from '../../../../shell/auth'
@@ -220,33 +226,16 @@ function PhoneTaskRow({
   return (
     <li data-phone-row={t.id} className="relative overflow-hidden">
       {leaf && (
-        <div className="absolute inset-y-0 right-0 flex" aria-hidden={!open}>
-          <button
-            type="button"
-            tabIndex={open ? 0 : -1}
-            onClick={onTomorrow}
-            aria-label={`Move “${t.title}” to tomorrow`}
-            className="flex w-21 flex-col items-center justify-center gap-1 bg-warn text-meta font-medium text-on-project"
-          >
-            <PLACE_ICON.calendar size={16} aria-hidden="true" />
-            Tomorrow
-          </button>
-          <button
-            type="button"
-            tabIndex={open ? 0 : -1}
-            onClick={onPick}
-            aria-label={`Pick a date for “${t.title}”`}
-            className="flex w-21 flex-col items-center justify-center gap-1 bg-muted text-meta font-medium text-on-project"
-          >
-            <PLACE_ICON.calendar size={16} aria-hidden="true" />
-            Pick a date
-          </button>
+        // What a right swipe uncovers: it is done (the circle says the same to a screen reader).
+        <div aria-hidden="true" className={`absolute inset-y-0 left-0 w-full ${SWIPE.done}`}>
+          <DoneIcon size={16} />
+          Done
         </div>
       )}
       <div
         {...swipe.bind}
         style={swipe.style}
-        className="relative flex min-h-16 touch-pan-y items-center gap-1 bg-panel pr-3.5 transition-transform"
+        className="relative z-10 flex min-h-16 touch-pan-y items-center gap-1 bg-panel pr-3.5 transition-transform"
       >
         {leaf ? (
           <button
@@ -292,6 +281,36 @@ function PhoneTaskRow({
           </span>
         )}
       </div>
+      {leaf && (
+        <div
+          className="absolute inset-y-0 right-0 flex"
+          // The swipe is a shortcut: a screen reader and a keyboard reach these as they are, and
+          // reaching one slides the row open on it (DES-001 "滑动只是快捷方式").
+          onFocus={() => setOpen(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false)
+          }}
+        >
+          <button
+            type="button"
+            onClick={onTomorrow}
+            aria-label={`Move “${t.title}” to tomorrow`}
+            className={SWIPE.later}
+          >
+            <PLACE_ICON.calendar size={16} aria-hidden="true" />
+            Tomorrow
+          </button>
+          <button
+            type="button"
+            onClick={onPick}
+            aria-label={`Pick a date for “${t.title}”`}
+            className={SWIPE.pick}
+          >
+            <PLACE_ICON.calendar size={16} aria-hidden="true" />
+            Pick a date
+          </button>
+        </div>
+      )}
     </li>
   )
 }

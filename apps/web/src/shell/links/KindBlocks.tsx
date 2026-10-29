@@ -261,7 +261,7 @@ function KindBlock({
             type="button"
             onClick={add.run}
             aria-label={add.label}
-            className="inline-flex h-7 items-center gap-1 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
+            className="inline-flex h-7 items-center gap-1 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink max-lg:min-h-11"
           >
             <NewIcon size={14} aria-hidden="true" />
             {addSays}

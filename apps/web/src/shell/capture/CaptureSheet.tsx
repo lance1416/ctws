@@ -65,7 +65,7 @@ export function CaptureSheet({
   const [soon, setSoon] = useState(false)
   const project = landing.projectId ? projects.find((p) => p.id === landing.projectId) : undefined
   const chip =
-    'inline-flex h-8 min-w-0 items-center gap-1.5 rounded-control px-2.5 text-ui font-medium'
+    'inline-flex h-11 min-w-0 items-center gap-1.5 rounded-control px-2.5 text-ui font-medium'
   return (
     <BottomSheet title="Capture" onClose={onClose} initialFocus={box}>
       <div className="flex flex-col gap-3 px-4 pt-1 pb-4">
@@ -220,7 +220,7 @@ function Segment({
       aria-checked={on}
       tabIndex={on ? 0 : -1}
       onClick={onClick}
-      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-control text-ui font-medium ${
+      className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-control text-ui font-medium ${
         on ? 'bg-panel text-ink ring-1 ring-line' : soon ? 'text-subtle opacity-60' : 'text-muted'
       }`}
     >

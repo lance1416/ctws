@@ -148,7 +148,7 @@ export function Timeline({
                 aria-controls={shown}
                 tabIndex={filter.id === f.id ? 0 : -1}
                 onClick={() => setFilter(f)}
-                className="inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium text-muted hover:bg-hover hover:text-ink aria-selected:bg-select aria-selected:text-ink"
+                className="inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium text-muted max-lg:min-h-11 hover:bg-hover hover:text-ink aria-selected:bg-select aria-selected:text-ink"
               >
                 {f.id !== 'all' && f.id !== 'change' && <FilterIcon kind={f.id} />}
                 {f.label}

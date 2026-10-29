@@ -42,6 +42,14 @@ test('the capture sheet: a link turns it to Reading, Add keeps it open and empty
   const sheet = page.getByRole('dialog', { name: 'Capture' })
   const box = sheet.getByRole('textbox', { name: 'Capture' })
   await expect(box).toBeFocused()
+  // Every control is at least 44 to touch (FR-082, BUG-066).
+  for (const control of await sheet.getByRole('button').all()) {
+    const size = (await control.boundingBox())!
+    const name = (await control.getAttribute('aria-label')) ?? (await control.innerText())
+    expect(Math.min(size.width, size.height), name).toBeGreaterThanOrEqual(44)
+  }
+  for (const control of await sheet.getByRole('radio').all())
+    expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44)
 
   await box.fill('https://martinfowler.com/articles/patterns')
   await expect(sheet.getByRole('radio', { name: 'Reading' })).toHaveAttribute(
@@ -334,4 +342,37 @@ test('on a phone a delete asks from the foot, its answers across it, Delete firs
   expect(first.width).toBeGreaterThan(PHONE.width - 60)
   await answers.nth(1).click()
   await expect(ask).toHaveCount(0)
+})
+
+test('the swipe is only a shortcut: a row’s actions are reached as they are, and in its sheet (FR-083)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const today = dayInZone(await accountZone(page))
+  const p = await makeProject(page, 'Moving flat')
+  for (const title of ['Book the van', 'Pack the books'])
+    await makeTask(page, p, title, { scheduledOn: today })
+  await page.reload()
+  const planned = page.getByRole('region', { name: 'Planned for today' })
+
+  // Reached by the keyboard or a screen reader, not hidden behind the swipe; reaching it opens the row.
+  const later = planned.getByRole('button', { name: 'Move “Book the van” to tomorrow' })
+  await later.focus()
+  await expect(later).toBeInViewport()
+  await later.press('Enter')
+  await expect(planned.getByText('Book the van')).toHaveCount(0)
+
+  // In the sheet its name opens: Tomorrow and Pick a date under the plan.
+  await planned.getByRole('button', { name: /^Pack the books/ }).click()
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await sheet.getByRole('button', { name: 'Move “Pack the books” to tomorrow' }).click()
+  await expect
+    .poll(
+      async () =>
+        (await serverTasks(page, p)).find((t) => t.title === 'Pack the books')!.scheduledOn,
+    )
+    .toBe(addDays(today, 1))
+  await expect(
+    sheet.getByRole('button', { name: 'Pick a date for “Pack the books”' }),
+  ).toBeVisible()
 })

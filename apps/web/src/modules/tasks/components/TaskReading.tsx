@@ -1,4 +1,8 @@
-import { useContext, type ReactNode } from 'react'
+import { useContext, useState, type ReactNode } from 'react'
+import { addDays } from '@ctws/core/day'
+import { BottomSheet } from '../../../platform/ui/BottomSheet'
+import { DayGrid, monthOf } from '../../../shell/dates'
+import { isFinished } from '../logic/status'
 import { InSheet } from '../../../platform/ui/phone'
 import type { TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
@@ -6,7 +10,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { NoteBody } from '../../../platform/notes/NoteBody'
 import { dayPhrase, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
+import { BUTTON, ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { DetailHead } from '../../../platform/ui/DetailPane'
 import { label } from '../../../platform/ui/formStyles'
 import { EditIcon, FlagIcon, OpenFullIcon, PLACE_ICON } from '../../../platform/ui/icons'
@@ -64,6 +68,11 @@ export function TaskReading({
   /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
   const setStatus = useMutation({
     mutationFn: (status: TaskStatus) => patchTask(task.id, { status }),
+    meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
+  })
+  // Its plan moved, not its deadline (DES-001 "Pick a date").
+  const plan = useMutation({
+    mutationFn: (day: string) => patchTask(task.id, { scheduledOn: day }),
     meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
   })
 
@@ -155,6 +164,16 @@ export function TaskReading({
             </span>
           </Field>
         )}
+        {/* On a phone's sheet, a row's swipe as buttons under its plan: the swipe is only a
+            shortcut (DES-001 "滑动只是快捷方式"). Done is the status above. */}
+        {inSheet && !counts && !isFinished(task.status) && (
+          <PlanAgain
+            title={task.title}
+            today={today}
+            busy={plan.isPending}
+            onPlan={(day) => plan.mutate(day)}
+          />
+        )}
         {dueReading && (
           <Field icon={<FlagIcon size={16} aria-hidden="true" />} name="Due">
             <span
@@ -213,6 +232,60 @@ export function TaskReading({
       />
 
       <Timeline of={{ type: 'task', id: task.id }} />
+    </div>
+  )
+}
+
+/** Tomorrow and Pick a date, a phone's swipe on the row, under the plan in the sheet. */
+function PlanAgain({
+  title,
+  today,
+  busy,
+  onPlan,
+}: {
+  title: string
+  today: string
+  busy: boolean
+  onPlan: (day: string) => void
+}) {
+  const [picking, setPicking] = useState(false)
+  const [month, setMonth] = useState(monthOf(today))
+  return (
+    <div className="col-span-full flex gap-2 pt-1">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onPlan(addDays(today, 1))}
+        aria-label={`Move “${title}” to tomorrow`}
+        className={BUTTON.secondary}
+      >
+        Tomorrow
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => setPicking(true)}
+        aria-label={`Pick a date for “${title}”`}
+        className={BUTTON.secondary}
+      >
+        Pick a date
+      </button>
+      {picking && (
+        <BottomSheet title="Move to" about={title} onClose={() => setPicking(false)}>
+          <div className="px-3 pb-4">
+            <DayGrid
+              month={month}
+              setMonth={setMonth}
+              value={null}
+              today={today}
+              onPick={(day) => {
+                setPicking(false)
+                onPlan(day)
+              }}
+            />
+          </div>
+        </BottomSheet>
+      )}
     </div>
   )
 }
