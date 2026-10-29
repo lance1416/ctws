@@ -505,7 +505,10 @@ test('a task created while the project is still loading appears', async ({ page 
   await heldStale
   // The list is asked for before the page is drawn (its loader), so its being held says nothing
   // of the page: N T made before the page knows its project would make the task in the Inbox.
-  await expect(page.getByRole('heading', { level: 1, name: 'P' })).toBeVisible()
+  // Exactly "P": a name is matched as a part by default, and the overview's "Projects" has a p in
+  // it, so N T would go while the overview was still drawn and rightly make the task in the Inbox
+  // (BUG-092).
+  await expect(page.getByRole('heading', { level: 1, name: 'P', exact: true })).toBeVisible()
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   const dialog = page.getByRole('dialog', { name: 'New task' })
