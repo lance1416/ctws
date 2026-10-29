@@ -2,3 +2,8 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'tools/palette'
+
+# A lint tool's dependency, pinned past the security advisories on 4.7.9 (GHSA-p8wg-vrv2-v86f,
+# GHSA-8r5x-fm3f-whwj, GHSA-xw65-4hp5-5hc7) until eslint-plugin-boundaries asks for it.
+overrides:
+  handlebars: 4.7.10

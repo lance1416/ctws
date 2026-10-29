@@ -52,7 +52,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "fontkit": "2.0.4",
     "tailwindcss": "4.3.3",
-    "vite": "8.3.1",
+    "vite": "8.3.5",
     "vitest": "5.0.3"
   }
 }
