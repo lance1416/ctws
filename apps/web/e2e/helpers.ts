@@ -736,3 +736,17 @@ export async function keyAsShown(page: Page, keys: string): Promise<string> {
   const mac = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform))
   return mac ? keys.replace(/\bCtrl\b/g, '⌘').replace(/\bAlt\b/g, '⌥') : keys
 }
+
+/**
+ * A meeting's start as a person gives it: the day in the shared date picker, then the time, each
+ * box left with Tab, which is when the picker reads what was typed (FR-034).
+ */
+export async function fillStart(scope: Page | Locator, day: string, time?: string): Promise<void> {
+  const date = scope.getByLabel('Date', { exact: true })
+  await date.fill(day)
+  await date.press('Tab')
+  if (time === undefined) return
+  const clock = scope.getByLabel('Start time')
+  await clock.fill(time)
+  await clock.press('Tab')
+}

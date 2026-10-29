@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { apiPost, registerFreshUser } from './helpers'
+import { apiPost, registerFreshUser, fillStart } from './helpers'
 import { dayOffset } from './days'
 
 /**
@@ -161,7 +161,7 @@ test('a project’s blocks: what is in it first, the empty ones as their heads, 
   await expect(dialog).toContainText('Job hunt')
   // FR-026: made from the page's block, it stays on the page and shows in that block.
   await dialog.getByLabel('Title').fill('Onsite')
-  await dialog.getByLabel('Date').fill(dayOffset(1))
+  await fillStart(dialog, dayOffset(1))
   await dialog.getByLabel('Start time').fill('10:00')
   await dialog.getByRole('button', { name: 'Create' }).click()
   await expect(dialog).toHaveCount(0)

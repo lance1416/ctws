@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { apiPost, registerFreshUser, WEB } from './helpers'
+import { apiPost, registerFreshUser, WEB, fillStart } from './helpers'
 
 /**
  * MEETINGS NOT TODAY (FR-066 to FR-069), on the server pinned at Thursday, October 22, 2026, 00:30
@@ -260,7 +260,7 @@ test('Edit on a repeating meeting asks which; from this one on leaves the earlie
   await expect(page).toHaveURL(/\/edit\?.*scope=following/)
   await expect(title(page)).toHaveText('Edit Weekly sync')
   await expect(page.getByText('Changing: This one and every one after')).toBeVisible()
-  await page.getByLabel('Start', { exact: true }).fill('2026-10-29T11:00')
+  await fillStart(page, '2026-10-29', '11:00')
   await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).not.toHaveURL(/\/edit/)
 

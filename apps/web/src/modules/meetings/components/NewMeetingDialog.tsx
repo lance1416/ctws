@@ -23,6 +23,7 @@ import {
   RepeatPicker,
   ZonePicker,
 } from './MeetingControls'
+import { DayField } from '../../../shell/dates'
 
 /**
  * A new meeting in one act: it needs a time, a zone and usually people, so unlike the rest of the
@@ -115,12 +116,14 @@ export function NewMeetingDialog({
         <div>
           <span className={label}>Starts</span>
           <div className="mt-1.5 flex flex-wrap gap-2">
-            <input
-              aria-label="Date"
-              type="date"
-              value={day}
-              onChange={(e) => setStart(e.target.value, clock)}
-              className={`${boxed} min-w-[9rem] flex-1`}
+            {/* The shared date picker, as every date in the app (FR-034, U-21). */}
+            <DayField
+              label="Date"
+              value={day || null}
+              today={today}
+              clearable={false}
+              onChange={(next) => next && setStart(next, clock)}
+              className="min-w-[9rem] flex-1"
             />
             <input
               aria-label="Start time"

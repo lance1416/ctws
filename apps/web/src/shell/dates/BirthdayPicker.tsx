@@ -144,6 +144,11 @@ export function BirthdayPicker({
           anchor={anchor}
           setAnchor={setAnchor}
           value={picked ? lunarSolar : null}
+          chosen={
+            picked && value.calendar === 'lunar'
+              ? { month: value.month, day: value.day, leapMonth: value.leapMonth ?? false }
+              : null
+          }
           today={today}
           onPick={(p) => {
             setLunarSolar(p.solar)

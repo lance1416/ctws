@@ -199,6 +199,7 @@ export function LunarGrid({
   anchor,
   setAnchor,
   value,
+  chosen = null,
   today,
   onPick,
   accent = 'bg-person',
@@ -207,6 +208,11 @@ export function LunarGrid({
   setAnchor: (day: string) => void
   /** The chosen day as a solar day, when it is one of the visible month's. */
   value: string | null
+  /**
+   * The chosen day by its lunar month and day, when there is no solar day for it yet (a birthday
+   * whose year is not known): every year's month of that name marks that day (U-14).
+   */
+  chosen?: { month: number; day: number; leapMonth: boolean } | null
   today: string
   onPick: (pick: { solar: string; month: number; day: number; leapMonth: boolean }) => void
   accent?: string
@@ -255,7 +261,13 @@ export function LunarGrid({
               key={d.solar}
               big={d.name}
               small={small}
-              selected={d.solar === value}
+              selected={
+                d.solar === value ||
+                (chosen !== null &&
+                  chosen.month === number &&
+                  chosen.day === i + 1 &&
+                  chosen.leapMonth === leapMonth)
+              }
               today={d.solar === today}
               accent={accent}
               label={`${month.name}${d.name}`}

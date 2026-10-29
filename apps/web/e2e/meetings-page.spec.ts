@@ -2,7 +2,15 @@ import { expect, test, type Page } from '@playwright/test'
 import { TZDate } from '@date-fns/tz'
 import { format } from 'date-fns'
 import { addDaysYmd, dayOffset, weekdayFrom } from './days'
-import { accountZone, apiPost, navLink, pickOne, registerFreshUser, WEB } from './helpers'
+import {
+  accountZone,
+  apiPost,
+  navLink,
+  pickOne,
+  registerFreshUser,
+  WEB,
+  fillStart,
+} from './helpers'
 
 /**
  * MEETINGS (FR-066, FR-067, FR-068) -- the module's own destination: an overview, a page for each
@@ -73,7 +81,7 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await page.getByRole('main').getByRole('button', { name: 'New meeting' }).click()
 
   await dialog(page).getByLabel('Title').fill('Second interview')
-  await dialog(page).getByLabel('Date').fill(dayOffset(1))
+  await fillStart(dialog(page), dayOffset(1))
   await dialog(page).getByLabel('Start time').fill('21:00')
   await pickOne(dialog(page), 'Time zone', /Toronto/)
   await pickOne(dialog(page), 'Length', '1.5 h')
@@ -137,7 +145,7 @@ test('a repeat can be given an end date, and the series really stops there', asy
 
   const form = dialog(page)
   await form.getByLabel('Title').fill('Weekly sync')
-  await form.getByLabel('Date').fill(first)
+  await fillStart(form, first)
   await form.getByLabel('Start time').fill('09:00')
   await form.getByLabel('Location').fill('https://meet.example.test/abc')
   await pickOne(form, 'Repeats', 'Weekly on Tuesday')
@@ -261,7 +269,7 @@ test('backing out of "Change which?" or the edit page saves nothing', async ({ p
 
   await editFromPage(page, 'Only this one')
   await page.getByLabel('Title', { exact: true }).fill('Renamed sync')
-  await page.getByLabel('Start', { exact: true }).fill(`${day}T10:00`)
+  await fillStart(page, day, '10:00')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
   // What was typed is asked about first (FR-063's guard), then let go.
   await page.getByRole('button', { name: 'Discard changes' }).click()
@@ -305,7 +313,7 @@ test('a one-off meeting moved on its edit page opens at its new time', async ({ 
   await editFromPage(page)
   // A one-off is changed whole: nothing to ask, and nothing said about which.
   await expect(page.getByText(/^Changing:/)).toHaveCount(0)
-  await page.getByLabel('Start', { exact: true }).fill(`${day}T11:00`)
+  await fillStart(page, day, '11:00')
   await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`/meetings/${made.meetingId}\\?at=${day}T11(%3A|:)00`))
   await expect(when(page)).toContainText('11:00 to 11:30')
@@ -324,7 +332,7 @@ test('this one and every one after, moved, opens on the new series', async ({ pa
   await page.goto(`/meetings/${made.meetingId}?at=${next}T09:00`)
   await editFromPage(page, 'This one and every one after')
   await expect(page.getByText('Changing: This one and every one after')).toBeVisible()
-  await page.getByLabel('Start', { exact: true }).fill(`${next}T10:00`)
+  await fillStart(page, next, '10:00')
   await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`at=${next}T10(%3A|:)00`))
   await expect(when(page)).toContainText('10:00 to 10:30')
@@ -459,7 +467,8 @@ test('a meeting with no start cannot be saved', async ({ page }) => {
   const made = await meeting(page, { title: 'Somewhen', startsLocal: `${dayOffset(1)}T09:00` })
   await page.goto(`/meetings/${made.meetingId}`)
   await editFromPage(page)
-  await page.getByLabel('Start', { exact: true }).fill('')
+  // A day always stays in the picker; a start with no time is no start.
+  await page.getByLabel('Start time').fill('')
   await expect(page.getByRole('button', { name: /^Save/ })).toBeDisabled()
 })
 
@@ -481,7 +490,7 @@ test('this one and every one after is one write, and leaves the earlier ones as 
     if (r.method() !== 'GET') writes.push(`${r.method()} ${new URL(r.url()).pathname}`)
   })
   await page.getByLabel('Title', { exact: true }).fill('Weekly, later')
-  await page.getByLabel('Start', { exact: true }).fill(`${later}T10:00`)
+  await fillStart(page, later, '10:00')
   await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).not.toHaveURL(/\/edit/)
 
@@ -523,10 +532,10 @@ test('the repeat chosen follows a new start day, and the menu says which is chos
   await page.getByRole('main').getByRole('button', { name: 'New meeting' }).click()
   await dialog(page).getByLabel('Title').fill('Weekly sync')
   // A Tuesday, then the Thursday of that week: fixed days, so no run hangs on the clock.
-  await dialog(page).getByLabel('Date').fill('2027-01-05')
+  await fillStart(dialog(page), '2027-01-05')
   await dialog(page).getByLabel('Start time').fill('10:00')
   await pickOne(dialog(page), 'Repeats', 'Every other Tuesday')
-  await dialog(page).getByLabel('Date').fill('2027-01-07')
+  await fillStart(dialog(page), '2027-01-07')
   const repeats = dialog(page).getByRole('button', { name: /^Repeats/ })
   await expect(repeats).toHaveAccessibleName('Repeats: Every other Thursday')
 

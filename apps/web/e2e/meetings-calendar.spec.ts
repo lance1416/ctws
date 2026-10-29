@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { dayOffset, MONTHS } from './days'
-import { registerFreshUser, apiPost } from './helpers'
+import { registerFreshUser, apiPost, fillStart } from './helpers'
 
 /**
  * MEETINGS -- the fourth module, through the browser.
@@ -85,7 +85,7 @@ test('a repeating meeting asks which occurrences a move touches', async ({ page 
 
   // Edited like a person or a task: Edit opens the form, and one Save writes it back.
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
-  await pane(page).getByLabel('Start').fill('2026-10-27T15:00')
+  await fillStart(pane(page), '2026-10-27', '15:00')
   await pane(page).getByRole('button', { name: 'Save' }).click()
   // The repeat question is asked once for the whole form.
   await expect(page.getByRole('alertdialog', { name: 'This meeting repeats' })).toBeVisible()
@@ -124,7 +124,7 @@ test('a one-off meeting moved from the calendar stays open at its new time', asy
   await openPane(page, m, '2026-10-20T09:00')
   await openOctober(page)
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
-  await pane(page).getByLabel('Start').fill('2026-10-20T11:00')
+  await fillStart(pane(page), '2026-10-20', '11:00')
   await pane(page).getByRole('button', { name: 'Save' }).click()
   await expect(pane(page).getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(pane(page)).toContainText('Oct 20, 11:00')
@@ -234,7 +234,7 @@ test('a one-off meeting moved from the calendar keeps its pane rather than reope
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
   // A mark on the pane's own element: a pane closed and opened again is a new one, without it.
   await pane(page).evaluate((el) => el.setAttribute('data-test-mark', ''))
-  await pane(page).getByLabel('Start').fill('2026-10-20T11:00')
+  await fillStart(pane(page), '2026-10-20', '11:00')
   await pane(page).getByRole('button', { name: 'Save' }).click()
   await expect(pane(page)).toContainText('Oct 20, 11:00')
   await expect(pane(page)).toHaveAttribute('data-test-mark', '')

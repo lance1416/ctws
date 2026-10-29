@@ -109,9 +109,8 @@ test.describe('on the 27-inch screen', () => {
     await page.goto('/calendar?day=2026-10-27')
 
     await page.getByRole('button', { name: 'New meeting' }).click()
-    await expect(page.getByRole('dialog').getByLabel('Date', { exact: true })).toHaveValue(
-      '2026-10-27',
-    )
+    // The shared date picker says the day in words (FR-034).
+    await expect(page.getByRole('dialog').getByLabel('Date', { exact: true })).toHaveValue(/Oct 27/)
   })
 
   test('a busy day shows three and says how many more', async ({ page }) => {
