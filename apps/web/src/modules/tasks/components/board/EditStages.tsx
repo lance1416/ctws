@@ -8,6 +8,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
+import { useComposing } from '../../../../platform/keyboard/composition'
 import { problemText } from '../../../../platform/http/api'
 import { Button } from '../../../../platform/ui/Button'
 import { DetailHead, DetailPane } from '../../../../platform/ui/DetailPane'
@@ -170,6 +171,7 @@ function StageRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: stage.id,
   })
+  const composing = useComposing()
   const [naming, setNaming] = useState<string | null>(null)
   // The box is left one way, its blur: Enter blurs it, Esc says first that it is not kept.
   const undo = useRef(false)
@@ -224,8 +226,9 @@ function StageRow({
             value={naming}
             onChange={(e) => setNaming(e.target.value)}
             onBlur={keep}
+            {...composing.bind}
             onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing) return
+              if (composing.composingNow(e)) return
               if (e.key !== 'Enter' && e.key !== 'Escape') return
               e.preventDefault()
               e.stopPropagation()
@@ -297,6 +300,7 @@ function StageRow({
 
 /** A new stage's name, typed where it will be: Enter adds it, Esc or an empty box does not. */
 function NewStage({ onAdd, onCancel }: { onAdd: (name: string) => void; onCancel: () => void }) {
+  const composing = useComposing()
   const [name, setName] = useState('')
   // Left by its blur alone, as a stage's name is: Enter blurs it, Esc says first it is not kept.
   const undo = useRef(false)
@@ -306,8 +310,9 @@ function NewStage({ onAdd, onCancel }: { onAdd: (name: string) => void; onCancel
       value={name}
       onChange={(e) => setName(e.target.value)}
       onBlur={() => (name.trim() && !undo.current ? onAdd(name.trim()) : onCancel())}
+      {...composing.bind}
       onKeyDown={(e) => {
-        if (e.nativeEvent.isComposing || (e.key !== 'Enter' && e.key !== 'Escape')) return
+        if (composing.composingNow(e) || (e.key !== 'Enter' && e.key !== 'Escape')) return
         e.preventDefault()
         e.stopPropagation()
         if (e.key === 'Escape') undo.current = true

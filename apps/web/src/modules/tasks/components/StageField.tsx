@@ -1,6 +1,7 @@
 import type { ProjectId, StageId, StageResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
+import { useComposing } from '../../../platform/keyboard/composition'
 import { boxed } from '../../../platform/ui/formStyles'
 import { ExpandIcon } from '../../../platform/ui/icons'
 import { putStages } from '../../../shell/projects'
@@ -34,6 +35,7 @@ export function StagePicker({
   /** A new stage is being added: the edit's Save waits for it, or it would save without it. */
   onBusy: (busy: boolean) => void
 }) {
+  const composing = useComposing()
   const list = useId()
   const [text, setText] = useState(stages.find((s) => s.id === value)?.name ?? '')
   const add = useMutation({
@@ -78,9 +80,10 @@ export function StagePicker({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onBlur={() => void commit()}
+          {...composing.bind}
           onKeyDown={(e) => {
             // Enter takes the name here; Ctrl Enter is still the form's Save.
-            if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return
+            if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || composing.composingNow(e)) return
             e.preventDefault()
             void commit()
           }}

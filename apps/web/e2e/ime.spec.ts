@@ -18,20 +18,26 @@ import { makeProject, registerFreshUser, captureBox, openCapture } from './helpe
 
 /**
  * Types `text` into the focused element as an IME would, then presses Enter to commit it,
- * dispatching the events in Safari's order.
+ * dispatching the events in Safari's order. The letters go in first and the page draws them, as
+ * it would while someone types; only the Enter that commits them comes with `compositionend`.
  */
 async function commitWithIme(page: Page, selector: string, text: string) {
   await page.locator(selector).focus()
   await page.evaluate(
     ([sel, value]) => {
       const el = document.querySelector(sel as string) as HTMLInputElement | HTMLTextAreaElement
-      const set = (v: string) => {
-        const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement : HTMLInputElement
-        Object.getOwnPropertyDescriptor(proto.prototype, 'value')!.set!.call(el, v)
-        el.dispatchEvent(new Event('input', { bubbles: true }))
-      }
       el.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
-      set(value as string)
+      const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement : HTMLInputElement
+      Object.getOwnPropertyDescriptor(proto.prototype, 'value')!.set!.call(el, value as string)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    },
+    [selector, text],
+  )
+  // Drawn: what the Enter sees is the text, as it is for a person.
+  await expect(page.locator(selector)).toHaveValue(text)
+  await page.evaluate(
+    ([sel, value]) => {
+      const el = document.querySelector(sel as string) as HTMLInputElement | HTMLTextAreaElement
       // Safari's order: the composition ends, and only THEN does the Enter arrive.
       el.dispatchEvent(
         new CompositionEvent('compositionend', { bubbles: true, data: value as string }),
@@ -65,6 +71,11 @@ test('committing English out of an IME does not file the capture', async ({ page
   await openCapture(page)
   await commitWithIme(page, 'textarea[aria-label="Capture"]', 'hello')
   await expect(captureBox(page)).toHaveValue('hello')
+  // Nothing sent for the IME's Enter: two frames are past any add it would have started.
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+  )
+  expect(writes).toEqual([])
 
   const filed = answered(page, 'POST', /^\/api\/v1\/tasks$/)
   await captureBox(page).press('Enter')
@@ -81,6 +92,10 @@ test('committing English out of an IME does not create a task', async ({ page })
 
   await commitWithIme(page, 'input[aria-label="New task"]', 'ship it')
   await expect(page.getByLabel('New task')).toHaveValue('ship it')
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+  )
+  expect(writes).toEqual([])
 
   const created = answered(page, 'POST', /^\/api\/v1\/tasks$/)
   await page.getByLabel('New task').press('Enter')
