@@ -33,8 +33,13 @@
  *
  * Search is a dialog, not a page, so its clock starts when the word is typed into the search box
  * (however the box was opened: `f` before the redesign, Ctrl+K after it; the opening is not timed)
- * and ends when the results list (`[role=listbox]`) shows at least one option and every search
- * request has been answered. The app's 150 ms typing pause is inside the number.
+ * and ends when the results list (`[role=listbox]`) shows at least one option, at least one API
+ * request begun after the typing has been answered, and every request since the typing has been
+ * answered with none new in the 300 ms after (the window counts from the typing at the earliest).
+ * The app's 150 ms typing pause is inside the number. The list alone is not enough: places such as
+ * "Go to" match the word before any request leaves, and a run that ended there would time nothing.
+ * A version that searched without asking the server would fail this run loudly rather than report
+ * a number for work it never measured.
  *
  * Each page gets one extra run first that is not recorded: the browser's first page of a session
  * carries its own start-up cost, which is not the page's.
@@ -104,11 +109,13 @@ function watchApi(page, since) {
   page.on('request', (req) => {
     if (!req.url().includes('/api/')) return
     inFlight++
+    const at = performance.now()
     const entry = {
       method: req.method(),
       path: shape(req.url()),
-      started: performance.now() - since,
+      started: at - since,
     }
+    Object.defineProperty(entry, 'at', { value: at }) // absolute, kept out of the JSON
     seen.push(entry)
     req.response().then(async (res) => {
       entry.status = res?.status() ?? null
@@ -122,18 +129,26 @@ function watchApi(page, since) {
         t.responseStart >= 0 && t.requestStart >= 0 ? round(t.responseStart - t.requestStart) : null
       entry.transfer =
         t.responseEnd >= 0 && t.responseStart >= 0 ? round(t.responseEnd - t.responseStart) : null
-      entry.done = performance.now() - since
       lastDone = performance.now()
+      entry.done = lastDone - since
+      Object.defineProperty(entry, 'doneAt', { value: lastDone })
       inFlight--
     })
   })
   return {
     requests: seen,
-    /** Resolves when nothing is in flight and nothing new began for SETTLE_MS; gives the last answer's time. */
-    async settled(deadline) {
+    /**
+     * Resolves when nothing is in flight and nothing new began for SETTLE_MS, counted from the last
+     * answer or from `from`, whichever is later; gives that moment. With `atLeast`, that many
+     * requests begun at or after `from` must have been answered first.
+     */
+    async settled(deadline, { from = since, atLeast = 0 } = {}) {
       for (;;) {
         if (performance.now() > deadline) throw new Error('API requests did not settle in time')
-        if (inFlight === 0 && performance.now() - lastDone >= SETTLE_MS) return lastDone
+        const answered = seen.filter((e) => e.at >= from && e.doneAt !== undefined).length
+        const quietSince = Math.max(lastDone, from)
+        if (inFlight === 0 && answered >= atLeast && performance.now() - quietSince >= SETTLE_MS)
+          return quietSince
         await new Promise((r) => setTimeout(r, 20))
       }
     },
@@ -202,7 +217,7 @@ async function runPage(browser, cookies, spec) {
       await box.fill(spec.search)
       await page.waitForFunction(optionsDrawn, null, { timeout: TIMEOUT_MS })
       rowsAt = performance.now() - t1
-      apiDoneAt = (await api.settled(t1 + TIMEOUT_MS)) - t1
+      apiDoneAt = (await api.settled(t1 + TIMEOUT_MS, { from: t1, atLeast: 1 })) - t1
       for (const r of api.requests) {
         r.started = round(r.started - (t1 - t0))
         r.done = round(r.done - (t1 - t0))
