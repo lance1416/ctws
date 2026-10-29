@@ -216,8 +216,10 @@ function Writer({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a save per pause in the typing.
   }, [text])
   const finish = () => {
-    if (typed.current !== (made.current?.body ?? '') && typed.current.trim() !== '')
-      save.mutate(typed.current)
+    // Emptied, a note that was written is saved empty too, mentions and all gone (BUG-089); one
+    // never written is not made for nothing.
+    const changed = typed.current !== (made.current?.body ?? '')
+    if (changed && (made.current || typed.current.trim() !== '')) save.mutate(typed.current)
     void qc.invalidateQueries({ queryKey: meetingKeys.notes(m.meetingId) })
     onDone()
   }

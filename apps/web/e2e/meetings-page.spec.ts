@@ -558,3 +558,32 @@ test('the repeat chosen follows a new start day, and the menu says which is chos
   const body = (await made).request().postDataJSON() as Record<string, unknown>
   expect(body.rrule).toBe('FREQ=WEEKLY;INTERVAL=2;BYDAY=TH')
 })
+
+test('notes emptied and Done at once are saved empty, not brought back (BUG-089)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const made = await apiPost<{ meetingId: string }>(page, '/meetings', {
+    title: 'rust-analyzer sync',
+    startsLocal: '2026-09-11T10:30',
+    timeZone: 'Europe/London',
+    durationMinutes: 30,
+  })
+  const note = await apiPost<{ id: string }>(page, '/notes', {
+    title: null,
+    body: 'The proc-macro server crashes less.',
+    anchor: { type: 'meeting', id: made.meetingId, occurrenceId: '2026-09-11T10:30' },
+  })
+  await page.goto(`/meetings/${made.meetingId}?at=2026-09-11T10:30`)
+  await page.getByRole('button', { name: 'Edit the notes' }).click()
+  const box = page.getByRole('textbox', { name: 'Notes for this meeting' })
+  await box.fill('')
+  // At once, well inside the pause after which typing saves by itself.
+  const saved = page.waitForResponse(
+    (r) => r.request().method() === 'PATCH' && r.url().endsWith(`/notes/${note.id}`) && r.ok(),
+  )
+  await page.getByRole('button', { name: 'Done' }).click()
+  await saved
+  const read = await page.request.get(`/api/v1/notes/${note.id}`, { headers: WEB })
+  expect(((await read.json()) as { body: string }).body).toBe('')
+})
