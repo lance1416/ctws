@@ -10,6 +10,9 @@ import { LINK } from '../../platform/ui/buttonStyles'
 import { Button } from '../../platform/ui/Button'
 import { textbox } from '../../platform/ui/formStyles'
 
+/** Something, an @, something, a dot, something: enough to catch a slip, as the server's is the rule. */
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export function Login() {
   const qc = useQueryClient()
   const navigate = useNavigate()
@@ -20,6 +23,8 @@ export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  // A field's own problem, said under it (FR-032); `error` is the answer's, under both.
+  const [wrong, setWrong] = useState<{ email?: string; password?: string }>({})
 
   const act = useMutation({
     mutationFn: (how: 'register' | 'login') =>
@@ -30,6 +35,7 @@ export function Login() {
     meta: { refresh: false, ownsError: true },
     onSuccess: (user) => {
       setError('')
+      setWrong({})
       // A session that ended under an open page left that account's reads in the cache, and
       // this may be someone else.
       qc.clear()
@@ -47,14 +53,26 @@ export function Login() {
           : (problemText(e) ?? ''),
       ),
   })
-  /** Asks only once both are filled in; an empty one is said here, not sent. */
+  /** Asks only once both read right; what does not is said under its box, and nothing is sent. */
   const ask = (how: 'register' | 'login') => {
     if (act.isPending) return
-    if (email.trim() === '') return setError('Enter your email.')
-    if (password === '') return setError('Enter your password.')
-    // The account's rule, said before asking: a new password is twelve or more.
-    if (how === 'register' && password.length < 12)
-      return setError('Use a password of at least 12 characters.')
+    const typed = email.trim()
+    const next = {
+      ...(typed === ''
+        ? { email: 'Enter your email.' }
+        : !EMAIL.test(typed)
+          ? { email: 'That doesn’t look like an email address.' }
+          : {}),
+      ...(password === ''
+        ? { password: 'Enter your password.' }
+        : // The account's rule, said before asking: a new password is twelve or more.
+          how === 'register' && password.length < 12
+          ? { password: 'Use a password of at least 12 characters.' }
+          : {}),
+    }
+    setWrong(next)
+    setError('')
+    if (next.email || next.password) return
     act.mutate(how)
   }
 
@@ -70,7 +88,9 @@ export function Login() {
         </div>
         <p className="mt-2 text-ui text-muted">Your personal workbench</p>
 
+        {/* `noValidate`: the page says what is wrong, under the box, in its own words (FR-032). */}
         <form
+          noValidate
           className="mt-10 flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
@@ -87,8 +107,15 @@ export function Login() {
               autoComplete="username"
               className={`mt-1.5 w-full bg-panel ${textbox}`}
               value={email}
+              aria-invalid={wrong.email ? true : undefined}
+              aria-describedby={wrong.email ? 'login-email-wrong' : undefined}
               onChange={(e) => setEmail(e.target.value)}
             />
+            {wrong.email && (
+              <p id="login-email-wrong" role="alert" className="mt-1.5 text-ui text-stop-t">
+                {wrong.email}
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="login-password" className="block text-meta text-muted">
@@ -100,8 +127,15 @@ export function Login() {
               autoComplete="current-password"
               className={`mt-1.5 w-full bg-panel ${textbox}`}
               value={password}
+              aria-invalid={wrong.password ? true : undefined}
+              aria-describedby={wrong.password ? 'login-password-wrong' : undefined}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {wrong.password && (
+              <p id="login-password-wrong" role="alert" className="mt-1.5 text-ui text-stop-t">
+                {wrong.password}
+              </p>
+            )}
           </div>
           {error && (
             <p role="alert" className="text-ui text-stop-t">

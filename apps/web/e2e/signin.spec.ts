@@ -114,6 +114,13 @@ test('an empty field or a short new password is said plainly, and nothing is sen
   await page.getByLabel('Email').fill('someone@example.com')
   await page.getByRole('button', { name: 'Create an account' }).click()
   await expect(page.getByRole('alert')).toHaveText('Use a password of at least 12 characters.')
+  await page.getByLabel('Email').fill('someone')
+  await page.getByLabel('Password').fill('correct horse battery')
+  await page.getByLabel('Password').press('Enter')
+  // Under its own box (FR-032).
+  await expect(page.getByLabel('Email')).toHaveAccessibleDescription(
+    'That doesn’t look like an email address.',
+  )
   expect(sent).toHaveLength(0)
   // Never the validator's own words.
   await expect(page.getByRole('alert')).not.toContainText('body/')
