@@ -464,7 +464,8 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
           className={`flex items-center gap-2.5 border-b border-line px-4 ${pick ? 'h-11' : 'h-13'}`}
         >
           {pick ? (
-            <LinkIcon size={16} aria-hidden="true" className="shrink-0 text-muted" />
+            // A pick that goes into things is a move (Move to…), not a link: no link mark.
+            !pick.drill && <LinkIcon size={16} aria-hidden="true" className="shrink-0 text-muted" />
           ) : (
             <PLACE_ICON.search size={20} aria-hidden="true" className="shrink-0 text-muted" />
           )}
@@ -970,7 +971,10 @@ function SearchRow({
             'grid-cols-[24px_minmax(0,1fr)_180px_92px] max-lg:grid-cols-[24px_minmax(0,1fr)_auto] max-lg:py-1.5'
       }`}
     >
-      <span className="inline-grid size-6 place-items-center max-lg:row-span-2 max-lg:self-start">
+      {/* A phone's two-line row hangs its mark at the top; a picker's row is one line. */}
+      <span
+        className={`inline-grid size-6 place-items-center ${compact ? '' : 'max-lg:row-span-2 max-lg:self-start'}`}
+      >
         {apart ?? row.mark ?? <KindBadge type={row.type} />}
       </span>
       <span data-said className={`truncate ${compact ? '' : 'max-lg:col-span-2'}`}>
