@@ -128,7 +128,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       name: 'Ying',
       org: 'Acme',
       note: null,
-      projects: [{ id: projectId, name: 'Work' }],
+      projects: [{ id: projectId, name: 'Work', openTasks: 0, lastActivityAt: null }],
       channels: [{ kind: 'email', value: 'ying@example.com', label: 'work' }],
       birthday: null,
       gender: null,
