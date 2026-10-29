@@ -1,8 +1,18 @@
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { idFrom, projectId, taskId, type TaskId } from '@ctws/contracts'
 import { EditStagesSheet, PhoneProjectTree } from './components/PhoneProjectTree'
 import type { WorkspaceModule } from '../../shell/contract'
-import { topPage } from '../../shell/layout'
-import { patchTask, projectTasksQuery, taskKeys } from './api'
+import { prefetchLunarName } from '../../shell/calendar'
+import { topPage, type PageHandle } from '../../shell/layout'
+import {
+  movementQuery,
+  patchTask,
+  projectTasksQuery,
+  readyQuery,
+  taskCalendarQuery,
+  taskKeys,
+  todayQuery,
+} from './api'
 import { PROJECT_VIEWS, ProjectTasks } from './components/ProjectBlock'
 import { openOf, PersonTaskRow } from './components/PersonTaskRow'
 import { ProjectOutline } from './components/ProjectOutline'
@@ -23,10 +33,10 @@ import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
 import { TaskNarrow } from './components/TaskNarrow'
 import { ProjectNarrowTasks } from './components/ProjectNarrowTasks'
-import { Review } from './pages/Review'
 import { ReviewWeeks } from './pages/ReviewWeeks'
 import { Today } from './pages/Today'
 import { NowWidget } from './widgets/Now'
+const Review = lazyPage(() => import('./pages/Review').then((m) => m.Review))
 
 // Today and Review live here, not in the shell: they are defined by task semantics.
 
@@ -70,7 +80,21 @@ export const taskModule: WorkspaceModule = {
   },
   // Today and Review are pages across kinds, at the root (FR-019); a task's own address stays here.
   places: [
-    { path: '/today', element: <Today />, handle: topPage('Today') },
+    {
+      path: '/today',
+      element: <Today />,
+      handle: {
+        ...topPage('Today'),
+        // Today's own rows, every module's blocks and day entries, and its lunar name: started
+        // together, as soon as the session is known (baseline.md §8).
+        prefetch: ({ qc, today, registry }) => {
+          void qc.prefetchQuery(todayQuery(today))
+          for (const block of registry.todayBlocks) block.prefetch?.(qc, today)
+          for (const p of registry.calendar) p.prefetch?.(qc, { from: today, to: today })
+          prefetchLunarName(qc, today)
+        },
+      } satisfies PageHandle,
+    },
     { path: '/review', element: <Review />, handle: topPage('Review') },
   ],
   routes: [{ path: ':id', element: <OpenTask /> }],
@@ -90,6 +114,7 @@ export const taskModule: WorkspaceModule = {
   calendar: {
     label: 'Tasks',
     useEntries: useTaskEntries,
+    prefetch: (qc, range) => void qc.prefetchQuery(taskCalendarQuery(range)),
     // `planned` and `due` are the words too. A task opens in its project, where every task is.
     show: (e) => ({
       to: e.projectId ? `/projects/${e.projectId}?task=${e.id}` : taskPage(e.id),
@@ -104,6 +129,7 @@ export const taskModule: WorkspaceModule = {
       Component: ProjectTasks,
       views: PROJECT_VIEWS,
       Phone: PhoneProjectTree,
+      prefetch: (qc, projectId) => void qc.prefetchQuery(projectTasksQuery(projectId)),
       phoneMore: [{ label: 'Edit stages', Sheet: EditStagesSheet }],
     },
     Card: { Moved: ProjectMoved, Facts: ProjectCardFacts, useOrder: useProjectOrder },
@@ -120,8 +146,18 @@ export const taskModule: WorkspaceModule = {
   keys: TASK_KEYS,
   // No page of its own: a task's address opens its tree, where its parent and siblings are.
   today: [
-    { id: 'ready', order: 20, Block: ReadyBlock },
-    { id: 'week', order: 30, Block: WeekBlock },
+    {
+      id: 'ready',
+      order: 20,
+      Block: ReadyBlock,
+      prefetch: (qc, today) => void qc.prefetchQuery(readyQuery(today)),
+    },
+    {
+      id: 'week',
+      order: 30,
+      Block: WeekBlock,
+      prefetch: (qc, today) => void qc.prefetchQuery(movementQuery(today)),
+    },
   ],
   lists: todayLists,
   relations: [

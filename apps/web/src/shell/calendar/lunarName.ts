@@ -1,5 +1,5 @@
 import { addDays } from '@ctws/core'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { calendarDaysQuery } from './api'
 
 /**
@@ -17,8 +17,16 @@ export function lunarFullName(days: Record<string, string>, day: string): string
   return first ? `${days[first]!.replace(/初一$/, '')}${own}` : null
 }
 
-/** `lunarFullName` for one day, asking for the month before it (a lunar month is at most 30). */
+/** The days `useLunarName` reads for `day`: the month before it (a lunar month is at most 30). */
+const lunarWindow = (day: string) => calendarDaysQuery({ from: addDays(day, -30), to: day })
+
+/** `lunarFullName` for one day. */
 export function useLunarName(day: string): string | null {
-  const window = useQuery(calendarDaysQuery({ from: addDays(day, -30), to: day }))
+  const window = useQuery(lunarWindow(day))
   return window.data ? lunarFullName(window.data, day) : null
+}
+
+/** Starts what `useLunarName` will read for `day`, before the page is drawn. */
+export function prefetchLunarName(qc: QueryClient, day: string): void {
+  void qc.prefetchQuery(lunarWindow(day))
 }

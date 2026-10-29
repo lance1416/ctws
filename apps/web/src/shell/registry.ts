@@ -104,6 +104,7 @@ type CalendarProvider = {
     retry: () => void
   }
   opens?: CalendarContribution['opens']
+  prefetch?: CalendarContribution['prefetch']
 }
 
 /** One entry's name on a grid: which thing, which date of it, and which occurrence. */
@@ -131,6 +132,7 @@ function calendarProvider(moduleId: string, c: CalendarContribution): CalendarPr
     moduleId,
     label: c.label,
     ...(c.opens ? { opens: c.opens } : {}),
+    ...(c.prefetch ? { prefetch: c.prefetch } : {}),
     useEntries: function useShownEntries(range) {
       const accountZone = useTimeZone()
       const { entries, isError, retry } = c.useEntries(range)

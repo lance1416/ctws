@@ -1,9 +1,10 @@
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { thingPage, topPage } from '../../shell/layout'
 import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
-import { useMeetingsWith } from './hooks/personThings'
-import { useProjectMeetings } from './hooks/projectThings'
-import { meetingKeys } from './api'
+import { prefetchMeetingsWith, useMeetingsWith } from './hooks/personThings'
+import { prefetchProjectMeetings, useProjectMeetings } from './hooks/projectThings'
+import { meetingCalendarQuery, meetingKeys } from './api'
 import { CalendarOccurrence } from './components/OccurrencePane'
 import { MeetingsMoreCount, NextMeetingLine } from './components/MeetingsKind'
 import { useMeetingEntries } from './hooks/contributions'
@@ -13,8 +14,10 @@ import { MeetingFact } from './components/MeetingFact'
 import { NewMeeting } from './components/NewMeeting'
 import { MeetingsSidebar } from './components/MeetingsSidebar'
 import { Meeting, MeetingEdit } from './pages/Meeting'
-import { MeetingsOverview } from './pages/MeetingsOverview'
 import { NextMeetings } from './widgets/NextMeetings'
+const MeetingsOverview = lazyPage(() =>
+  import('./pages/MeetingsOverview').then((m) => m.MeetingsOverview),
+)
 
 /**
  * Meetings: a page of its own, timed calendar entries, and the workbench's next meetings. No search
@@ -56,6 +59,7 @@ export const meetingModule: WorkspaceModule = {
   calendar: {
     label: 'Meetings',
     useEntries: useMeetingEntries,
+    prefetch: (qc, range) => void qc.prefetchQuery(meetingCalendarQuery(range)),
     // A meeting agreed elsewhere says where, and its time on that clock.
     // Its page is the occurrence's; clicked, it opens there in the inspector (FR-022).
     show: (e) => ({
@@ -71,8 +75,20 @@ export const meetingModule: WorkspaceModule = {
   weekCounts: [{ key: 'meetingsHeld', label: 'Meetings held', icon: KIND_ICON.meeting, order: 10 }],
   widgets: [{ place: 'meetings', Component: NextMeetings }],
   // A project's page lists the meetings coming up in it (FR-055).
-  project: { Things: { kind: 'meeting', useThings: useProjectMeetings } },
-  person: { Things: { kind: 'meeting', useThings: useMeetingsWith } },
+  project: {
+    Things: {
+      kind: 'meeting',
+      useThings: useProjectMeetings,
+      prefetch: (qc, _, today) => prefetchProjectMeetings(qc, today),
+    },
+  },
+  person: {
+    Things: {
+      kind: 'meeting',
+      useThings: useMeetingsWith,
+      prefetch: prefetchMeetingsWith,
+    },
+  },
   relations: [
     {
       type: 'meeting',

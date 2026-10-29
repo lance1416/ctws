@@ -1,4 +1,4 @@
-import type { PersonResponse } from '@ctws/contracts'
+import { personId, type ObjectType, type PersonResponse } from '@ctws/contracts'
 import { calledBy } from '../logic/calledBy'
 import { avatarInitials } from '@ctws/core'
 import { useQuery } from '@tanstack/react-query'
@@ -20,11 +20,12 @@ import {
   type IconComponent,
 } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
-import { useKindBlocks } from '../../../shell/links'
+import type { PrefetchAt } from '../../../shell/layout'
+import { prefetchLinks, useKindBlocks } from '../../../shell/links'
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
-import { useRegistry } from '../../../shell/registry'
-import { Timeline } from '../../../shell/timeline'
-import { circlesQuery } from '../api'
+import { useRegistry, type Registry } from '../../../shell/registry'
+import { prefetchTimeline, Timeline } from '../../../shell/timeline'
+import { circlesQuery, peopleQuery } from '../api'
 import { usePhone } from '../hooks/usePhone'
 import { usePhone as usePhoneFrame } from '../../../platform/ui/phone'
 import { PhonePerson } from './PhonePerson'
@@ -49,15 +50,35 @@ export function PersonPage({ person }: { person: PersonResponse }) {
   return usePhoneFrame() ? <PhonePerson person={person} /> : <DeskPerson person={person} />
 }
 
+/** The kinds of a person's blocks, those of these some module draws. */
+const personLinkKinds = (registry: Registry): ObjectType[] =>
+  (['meeting', 'task', 'reading'] as const).filter((k) =>
+    registry.relations.some((r) => r.type === k),
+  )
+
+/**
+ * What a person's page reads, started as soon as the session is known (baseline.md §8): them
+ * among everyone, the circles, their blocks' links and each module's things with them, and their
+ * timeline, all at once rather than each after the last.
+ */
+export function prefetchPerson({ qc, params, today, registry }: PrefetchAt): void {
+  const parsed = personId.safeParse(params.id)
+  if (!parsed.success) return
+  const id = parsed.data
+  void qc.prefetchQuery(peopleQuery())
+  void qc.prefetchQuery(circlesQuery())
+  prefetchLinks(qc, { type: 'person', id }, personLinkKinds(registry))
+  for (const things of registry.personThings) things.prefetch?.(qc, id, today)
+  prefetchTimeline(qc, { type: 'person', id })
+}
+
 function DeskPerson({ person }: { person: PersonResponse }) {
   const registry = useRegistry()
   // One hook per module that lists its own things with a person: the registry's list is fixed.
   const owned = registry.personThings.map((t) => ({ kind: t.kind, ...t.useThings(person.id) }))
   const { blocks, full, picker } = useKindBlocks({
     of: { type: 'person', id: person.id },
-    kinds: (['meeting', 'task', 'reading'] as const).filter((k) =>
-      registry.relations.some((r) => r.type === k),
-    ),
+    kinds: personLinkKinds(registry),
     owned,
     none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${calledBy(person)} yet`,
     titles: { reading: 'Recommended reading' },

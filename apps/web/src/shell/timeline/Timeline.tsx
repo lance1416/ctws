@@ -1,6 +1,6 @@
 import { api, type ObjectType, type TimelineEntry, type TimelineKind } from '@ctws/contracts'
 import { linkWords } from '@ctws/core'
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, type QueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useContext, useId, useState, type ReactNode } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
@@ -66,6 +66,11 @@ const timelineQuery = (thing: Thing, filter: Filter) =>
         )
       ).entries,
   })
+
+/** Starts what a thing's timeline reads first (All), before its page is drawn (baseline.md §8). */
+export function prefetchTimeline(qc: QueryClient, thing: Thing): void {
+  void qc.prefetchQuery(timelineQuery(thing, FILTERS[0]))
+}
 
 /**
  * A THING'S TIMELINE (FR-045, artboards 8 and 14): what happened to it and what was said, held or

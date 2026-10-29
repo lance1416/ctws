@@ -1,5 +1,5 @@
 import { api, type MeResponse } from '@ctws/contracts'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, call } from '../../platform/http/api'
 import { setShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { browserZone, ymd } from '../../platform/time/dates'
@@ -13,8 +13,8 @@ export const meKey = ['me'] as const
  * The signed-in user, or null when there is no valid session. Only a 401 means signed out; any
  * other failure throws, so the shell can say the server is unreachable.
  */
-export function useMe() {
-  return useQuery<MeResponse | null>({
+export const meQuery = () =>
+  queryOptions<MeResponse | null>({
     queryKey: meKey,
     queryFn: async ({ signal }) => {
       try {
@@ -32,6 +32,9 @@ export function useMe() {
     },
     retry: false,
   })
+
+export function useMe() {
+  return useQuery(meQuery())
 }
 
 /**

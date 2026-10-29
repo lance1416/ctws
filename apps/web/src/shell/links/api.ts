@@ -1,5 +1,5 @@
 import { api, type ObjectType, type RelationId } from '@ctws/contracts'
-import { queryOptions } from '@tanstack/react-query'
+import { queryOptions, type QueryClient } from '@tanstack/react-query'
 import { call } from '../../platform/http/api'
 
 export type Endpoint = { type: ObjectType; id: string }
@@ -55,3 +55,8 @@ export const candidatesQuery = (of: Endpoint | null, q: string, kinds?: readonly
         )
       ).candidates,
   })
+
+/** Starts what `useLinked` will read for `of`, before its page is drawn (baseline.md §8). */
+export function prefetchLinks(qc: QueryClient, of: Endpoint, types?: Kinds): void {
+  void qc.prefetchQuery(linksQuery(of, types))
+}

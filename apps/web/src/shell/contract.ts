@@ -86,6 +86,8 @@ export type ProjectContribution = {
       label: string
       Sheet: ComponentType<{ projectId: ProjectId; onClose: () => void }>
     }[]
+    /** Starts what `Component` will read, when the project's page is opened (baseline.md §8). */
+    prefetch?: (qc: QueryClient, projectId: ProjectId) => void
   }
   /**
    * This module's own things in a project, for their block on its page (FR-055): the meetings
@@ -96,6 +98,8 @@ export type ProjectContribution = {
     kind: ObjectType
     /** A hook: called once per page, in registry order. */
     useThings: (projectId: ProjectId) => OwnThings
+    /** Starts what `useThings` will read, when the project's page is opened. */
+    prefetch?: (qc: QueryClient, projectId: ProjectId, today: string) => void
   }
   /**
    * A project's card on the overview (FR-051, artboard 18), at most one module's: `Moved` beside
@@ -167,6 +171,8 @@ export type PersonContribution = {
     kind: ObjectType
     /** A hook: called once per page, in registry order. */
     useThings: (personId: PersonId) => OwnThings
+    /** Starts what `useThings` will read, when the person's page is opened. */
+    prefetch?: (qc: QueryClient, personId: PersonId, today: string) => void
   }
   /**
    * How a linked thing of this module's kind is drawn on a person's page (artboard 5): a task
@@ -298,6 +304,8 @@ export type TodayBlock = {
   Block: ComponentType<{ today: string }>
   /** What it is on a phone's Today, after Overdue (FR-083); without one it is not on a phone. */
   Phone?: ComponentType<{ today: string }>
+  /** Starts what the block will read, when Today is opened (baseline.md §8). */
+  prefetch?: (qc: QueryClient, today: string) => void
 }
 
 /** A module's half of the calendar; the shell merges them. */
@@ -311,6 +319,8 @@ export type CalendarContribution = {
     /** Reads them again, after a failure. */
     retry: () => void
   }
+  /** Starts what `useEntries` will read for the range, before the page is drawn. */
+  prefetch?: (qc: QueryClient, range: { from: string; to: string }) => void
   /**
    * Where an entry goes and the words for its date, and its title when the module words it: the
    * server says only what and which it is.

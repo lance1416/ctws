@@ -1,7 +1,7 @@
 import type { MeetingOccurrence, PersonId } from '@ctws/contracts'
 import { clockTime } from '@ctws/core/clock'
 import { addDays } from '@ctws/core/day'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery, type QueryClient } from '@tanstack/react-query'
 import { shortDay, weekdayOf, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth'
@@ -23,11 +23,28 @@ const HELD = 12
  * occurrence, then those held, each series once at its latest, the latest first. Said by day and
  * time on the account's clock, a weekday within a week of today and a date beyond.
  */
+/** The meetings the block reads: from today, AHEAD_DAYS on. */
+const comingQuery = (today: string) =>
+  meetingsQuery({ from: today, to: addDays(today, AHEAD_DAYS) })
+
+/** Starts what the block will read, when its page is opened (baseline.md §8). */
+export function prefetchMeetingsWith(qc: QueryClient, personId: PersonId, today: string): void {
+  void qc.prefetchQuery(comingQuery(today))
+  // The held ones' occurrences the moment it is known which they are, not once the block is drawn.
+  void qc.fetchQuery(heldWithQuery(personId)).then(
+    (held) => {
+      for (const h of held.slice(0, HELD))
+        void qc.prefetchQuery(occurrenceQuery(h.meetingId, h.recurrenceId))
+    },
+    () => undefined,
+  )
+}
+
 export function useMeetingsWith(personId: PersonId): OwnThings {
   const timeZone = useTimeZone()
   const now = useNow()
   const today = ymd(now, timeZone)
-  const window = useQuery(meetingsQuery({ from: today, to: addDays(today, AHEAD_DAYS) }))
+  const window = useQuery(comingQuery(today))
   const theirs = (window.data ?? []).filter((m) => m.attendees.some((a) => a.id === personId))
   const over = (m: MeetingOccurrence) => new Date(m.endsAt).getTime() <= now.getTime()
   const coming = nextOfEach(

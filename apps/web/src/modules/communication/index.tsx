@@ -1,8 +1,9 @@
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { thingPage, topPage } from '../../shell/layout'
 import { MessageNarrow } from './components/MessageNarrow'
 import { ReceivedIcon, SentIcon } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
-import { communicationKeys } from './api'
+import { awaitingQuery, communicationKeys, followUpsQuery } from './api'
 import { AwaitingCount, AwaitingMoreCount } from './components/CommunicationFacts'
 import { CommunicationSidebar } from './components/CommunicationSidebar'
 import { FollowUpsPhone, FollowUpsToday } from './components/FollowUpsToday'
@@ -11,10 +12,12 @@ import { NewMessage } from './components/NewMessage'
 import { useFollowUpEntries } from './hooks/followUpEntries'
 import { useProjectAwaiting } from './hooks/projectThings'
 import { COMMUNICATION_ID } from './logic/id'
-import { CommunicationOverview } from './pages/CommunicationOverview'
-import { Message } from './pages/Message'
 import { AwaitingReply } from './widgets/AwaitingReply'
 import { followUpLists } from './components/FollowUpsToday'
+const Message = lazyPage(() => import('./pages/Message').then((m) => m.Message))
+const CommunicationOverview = lazyPage(() =>
+  import('./pages/CommunicationOverview').then((m) => m.CommunicationOverview),
+)
 
 const PAGE = topPage('Communication')
 /** One of them, under its kind in the breadcrumbs (FR-018). */
@@ -56,16 +59,31 @@ export const communicationModule: WorkspaceModule = {
     { key: 'messagesSent', label: 'Messages sent', icon: SentIcon, order: 30 },
     { key: 'messagesReceived', label: 'Messages received', icon: ReceivedIcon, order: 40 },
   ],
-  today: [{ id: 'follow-up', order: 10, Block: FollowUpsToday, Phone: FollowUpsPhone }],
+  today: [
+    {
+      id: 'follow-up',
+      order: 10,
+      Block: FollowUpsToday,
+      Phone: FollowUpsPhone,
+      prefetch: (qc) => void qc.prefetchQuery(followUpsQuery()),
+    },
+  ],
   widgets: [{ place: 'awaiting', Component: AwaitingReply }],
   // The day each is to be chased (FR-080); the workbench's week shows them too (FR-076).
   calendar: {
     label: 'Follow-ups',
     useEntries: useFollowUpEntries,
+    prefetch: (qc) => void qc.prefetchQuery(awaitingQuery()),
     show: (e) => ({ to: `/${COMMUNICATION_ID}/${e.id}`, label: 'follow up' }),
   },
   // A project's page lists who is waiting for a reply in it (FR-055).
-  project: { Things: { kind: 'communication', useThings: useProjectAwaiting } },
+  project: {
+    Things: {
+      kind: 'communication',
+      useThings: useProjectAwaiting,
+      prefetch: (qc) => void qc.prefetchQuery(awaitingQuery()),
+    },
+  },
   lists: followUpLists,
   relations: [
     {

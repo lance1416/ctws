@@ -1,4 +1,6 @@
-import { useMatches } from 'react-router-dom'
+import type { QueryClient } from '@tanstack/react-query'
+import { useMatches, type Params } from 'react-router-dom'
+import type { Registry } from '../registry'
 import { useSubject } from './subject'
 
 /** Where a step of a page's path links. */
@@ -17,6 +19,21 @@ export type PageHandle = {
    * data can read it; the frame calls it once per page.
    */
   useCrumbs?: () => Crumbs
+  /**
+   * What the page will ask for, started as soon as the session is known, before anything is drawn
+   * (baseline.md §8): the same queries its parts make, so they find them in flight. The router
+   * gives each page that has one a loader (app/router.tsx).
+   */
+  prefetch?: (at: PrefetchAt) => void
+}
+
+/** What a page's `prefetch` is given: the cache, the address's params, and the account's today. */
+export type PrefetchAt = {
+  qc: QueryClient
+  params: Params
+  /** `YYYY-MM-DD` in the account's zone, as `useAccountToday` says it. */
+  today: string
+  registry: Registry
 }
 
 /** The deepest matched route's say on `key`, and that route's id. */

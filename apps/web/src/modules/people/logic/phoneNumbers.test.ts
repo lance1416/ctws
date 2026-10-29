@@ -7,7 +7,7 @@ import {
   regionFromLocale,
   retype,
   toE164,
-} from './phone'
+} from './phoneNumbers'
 
 describe('formatPhone', () => {
   it('lays out a number with a country code in international form', () => {

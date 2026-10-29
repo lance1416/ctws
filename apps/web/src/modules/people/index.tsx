@@ -1,10 +1,11 @@
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { Navigate } from 'react-router-dom'
 import { PersonNarrow } from './components/PersonNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
 import { thingPage, topPage } from '../../shell/layout'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useProjectPeople } from './hooks/projectThings'
-import { peopleKeys } from './api'
+import { birthdayCalendarQuery, birthdaysQuery, peopleKeys, peopleQuery } from './api'
 import { UpcomingBirthdays } from './widgets/UpcomingBirthdays'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
 import { BirthdaysPhone, BirthdaysToday } from './components/BirthdaysToday'
@@ -14,9 +15,10 @@ import { useBirthdayEntries } from './hooks/contributions'
 import { describePersonChange } from './logic/describeChange'
 import { PEOPLE_ID } from './logic/id'
 import { PeopleSidebar } from './components/PeopleSidebar'
-import { People } from './pages/People'
 import { Person, PersonEdit, PersonNew } from './pages/Person'
 import { peopleLists } from './components/TouchLists'
+import { prefetchPerson } from './pages/PersonPage'
+const People = lazyPage(() => import('./pages/People').then((m) => m.People))
 
 // For other modules: a meeting picks its attendees from this list.
 export { usePeople } from './hooks/usePeople'
@@ -49,12 +51,13 @@ export const peopleModule: WorkspaceModule = {
     { path: 'birthdays', element: <Navigate to="/people?list=birthdays" replace /> },
     // Before `:id`, which would take `new` for an id.
     { path: 'new', element: <PersonNew />, handle: PAGE },
-    { path: ':id', element: <Person />, handle: THING },
+    { path: ':id', element: <Person />, handle: { ...THING, prefetch: prefetchPerson } },
     { path: ':id/edit', element: <PersonEdit />, handle: PAGE },
   ],
   calendar: {
     label: 'Birthdays',
     useEntries: useBirthdayEntries,
+    prefetch: (qc, range) => void qc.prefetchQuery(birthdayCalendarQuery(range)),
     // The name only (CA-02); the day itself says the age it turns, when the year is known.
     show: (e) => ({ to: `/people/${e.id}`, label: 'Birthday' }),
   },
@@ -71,9 +74,23 @@ export const peopleModule: WorkspaceModule = {
       was: 'g n',
     },
   ],
-  today: [{ id: 'birthdays', order: 40, Block: BirthdaysToday, Phone: BirthdaysPhone }],
+  today: [
+    {
+      id: 'birthdays',
+      order: 40,
+      Block: BirthdaysToday,
+      Phone: BirthdaysPhone,
+      prefetch: (qc) => void qc.prefetchQuery(birthdaysQuery()),
+    },
+  ],
   // A project's page lists the people on it (FR-055).
-  project: { Things: { kind: 'person', useThings: useProjectPeople } },
+  project: {
+    Things: {
+      kind: 'person',
+      useThings: useProjectPeople,
+      prefetch: (qc) => void qc.prefetchQuery(peopleQuery()),
+    },
+  },
   lists: peopleLists,
   relations: [
     {

@@ -3,7 +3,7 @@ import { useEveryProject } from './api'
 import { useNavigate } from 'react-router-dom'
 import { inColumns } from '../../platform/ui/columns'
 import { useKindBlocks } from '../links/KindBlocks'
-import { useRegistry } from '../registry'
+import { useRegistry, type Registry } from '../registry'
 
 /** A project's blocks in FR-055's order; a kind no module draws yet is left out. */
 const ORDER: readonly ObjectType[] = [
@@ -14,6 +14,10 @@ const ORDER: readonly ObjectType[] = [
   'reading',
   'note',
 ]
+
+/** The kinds of the project's blocks: those in FR-055's order some module draws. */
+export const projectLinkKinds = (registry: Registry): ObjectType[] =>
+  ORDER.filter((k) => registry.relations.some((r) => r.type === k))
 
 /**
  * THE PROJECT'S BLOCKS (FR-055, DES-001 section 4): the meetings coming up, who is waiting for a
@@ -34,7 +38,7 @@ export function ProjectLinked({
 }) {
   const registry = useRegistry()
   const navigate = useNavigate()
-  const kinds = ORDER.filter((k) => registry.relations.some((r) => r.type === k))
+  const kinds = projectLinkKinds(registry)
   // One hook per module that lists its own things: the registry's list is fixed.
   const owned = registry.projectThings.map((t) => ({ kind: t.kind, ...t.useThings(projectId) }))
   const name = useEveryProject().data?.find((p) => p.id === projectId)?.name

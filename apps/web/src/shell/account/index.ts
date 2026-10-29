@@ -1,4 +1,2 @@
-/** The account page and the migration report, for the app's router; the workbench's prompt. */
-export { Account } from './Account'
-export { MigrationReport } from './MigrationReport'
+/** The workbench's prompt to read the migration report; the pages themselves load on demand. */
 export { MovedPrompt } from './MovedPrompt'

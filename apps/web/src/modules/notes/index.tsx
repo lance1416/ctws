@@ -1,3 +1,4 @@
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { thingPage, topPage } from '../../shell/layout'
 import { NoteNarrow } from './components/NoteNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
@@ -5,8 +6,8 @@ import type { WorkspaceModule } from '../../shell/contract'
 import { noteKeys } from './api'
 import { NotesCount, NotesSidebar } from './components/NotesSidebar'
 import { NOTES_ID } from './logic/id'
-import { Note } from './pages/Note'
-import { NotesOverview } from './pages/NotesOverview'
+const Note = lazyPage(() => import('./pages/Note').then((m) => m.Note))
+const NotesOverview = lazyPage(() => import('./pages/NotesOverview').then((m) => m.NotesOverview))
 
 const PAGE = topPage('Notes')
 /** One of them, under its kind in the breadcrumbs (FR-018). */

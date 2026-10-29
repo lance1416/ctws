@@ -1,3 +1,4 @@
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { thingPage, topPage } from '../../shell/layout'
 import { OrganisationNarrow } from './components/OrganisationNarrow'
 import type { WorkspaceModule } from '../../shell/contract'
@@ -11,7 +12,9 @@ import { OrganisationsSidebar } from './components/OrganisationsSidebar'
 import { describeOrganisationChange } from './logic/describeChange'
 import { ORGANISATIONS_ID } from './logic/id'
 import { Organisation, OrganisationEdit, OrganisationNew } from './pages/Organisation'
-import { OrganisationsOverview } from './pages/OrganisationsOverview'
+const OrganisationsOverview = lazyPage(() =>
+  import('./pages/OrganisationsOverview').then((m) => m.OrganisationsOverview),
+)
 
 // For other modules: a message names organisations among those it was with.
 export { OrganisationMark } from './components/OrganisationMark'

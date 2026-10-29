@@ -1,10 +1,11 @@
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { thingPage, topPage } from '../../shell/layout'
 import { ReadingNarrow } from './components/ReadingNarrow'
 import { KIND_ICON } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { useRecommendedBy } from './hooks/personThings'
 import { useProjectReading } from './hooks/projectThings'
-import { readingKeys } from './api'
+import { readingCalendarQuery, readingKeys, readingQuery } from './api'
 import { UnfiledLine } from './components/ReadingKind'
 import { ReadingNow } from './widgets/ReadingNow'
 import { useReadingCapture, useReadingEntries } from './hooks/contributions'
@@ -14,7 +15,9 @@ import { READING_ID } from './logic/id'
 import { isReadingUrl } from './logic/readingUrl'
 import { ReadingMoreCount, ReadingSidebar } from './components/ReadingSidebar'
 import { ReadingEdit, ReadingItem } from './pages/ReadingItem'
-import { ReadingOverview } from './pages/ReadingOverview'
+const ReadingOverview = lazyPage(() =>
+  import('./pages/ReadingOverview').then((m) => m.ReadingOverview),
+)
 
 const PAGE = topPage('Reading')
 /** One of them, under its kind in the breadcrumbs (FR-018). */
@@ -64,6 +67,7 @@ export const readingModule: WorkspaceModule = {
   calendar: {
     label: 'Reading',
     useEntries: useReadingEntries,
+    prefetch: (qc, range) => void qc.prefetchQuery(readingCalendarQuery(range)),
     show: (e) => ({ to: `/${READING_ID}/${e.id}`, label: 'to read' }),
   },
   weekCounts: [
@@ -71,8 +75,20 @@ export const readingModule: WorkspaceModule = {
   ],
   widgets: [{ place: 'reading', Component: ReadingNow }],
   // A project's page lists its reading (FR-055).
-  project: { Things: { kind: 'reading', useThings: useProjectReading } },
-  person: { Things: { kind: 'reading', useThings: useRecommendedBy } },
+  project: {
+    Things: {
+      kind: 'reading',
+      useThings: useProjectReading,
+      prefetch: (qc) => void qc.prefetchQuery(readingQuery()),
+    },
+  },
+  person: {
+    Things: {
+      kind: 'reading',
+      useThings: useRecommendedBy,
+      prefetch: (qc) => void qc.prefetchQuery(readingQuery()),
+    },
+  },
   relations: [
     {
       type: 'reading',
