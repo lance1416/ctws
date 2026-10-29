@@ -95,6 +95,8 @@ test('their Meetings block has what is coming, then what was held, however long 
   await page.reload()
   const tasks = page.getByRole('region', { name: 'Tasks' })
   await expect(tasks).toContainText('Send the CV')
+  // Both drawn before either is measured: a block still loading is shorter.
+  await expect(rows).toHaveCount(4)
   const meetingsBox = await page.getByRole('region', { name: 'Meetings' }).boundingBox()
   const tasksBox = await tasks.boundingBox()
   expect(tasksBox!.y).toBe(meetingsBox!.y)
