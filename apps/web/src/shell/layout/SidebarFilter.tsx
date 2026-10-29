@@ -1,7 +1,7 @@
 import { CloseIcon, PLACE_ICON } from '../../platform/ui/icons'
 
 /** A sidebar long enough to need it gets the box (FR-015 "多"): past this many rows. */
-export const FILTER_FROM = 12
+export const FILTER_FROM = 8
 
 /** Whether a name holds what was typed, as the sidebar filters: case and spaces aside. */
 export const matches = (name: string, typed: string) =>
