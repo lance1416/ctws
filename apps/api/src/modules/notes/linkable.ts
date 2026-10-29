@@ -1,7 +1,7 @@
 import { idFrom, noteId } from '@ctws/contracts'
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { scoped, within } from '../../platform/db/scope'
-import { countWhere, matching, wanted, type Linkable } from '../../shell/links'
+import { countWhere, matchingOr, wanted, type Linkable } from '../../shell/links'
 import { notes } from './tables'
 
 /** What a text is looked for in. */
@@ -9,8 +9,35 @@ const TEXT = ['notes.title', 'notes.body']
 
 export const noteLinkable: Linkable = {
   type: 'note',
-  count: (q, workspaceId, text) =>
-    countWhere(q, notes, within(scoped(notes, workspaceId), matching(TEXT, text))),
+  count: (q, workspaceId, text, also) =>
+    countWhere(
+      q,
+      notes,
+      within(scoped(notes, workspaceId), matchingOr(TEXT, text, notes.id, also)),
+    ),
+  // An untitled note on a meeting is called by the meeting's name (`retitle`), so that name finds
+  // it too: "Atlas weekly" finds the series' notes (FR-050).
+  alsoFound: async (q, workspaceId, text, registry) => {
+    const meetings = await registry.of('meeting').rows(q, workspaceId, { text, limit: 50 })
+    if (meetings.length === 0) return []
+    const found = await q
+      .select({ id: notes.id })
+      .from(notes)
+      .where(
+        within(
+          scoped(notes, workspaceId),
+          and(
+            isNull(notes.title),
+            eq(notes.anchorType, 'meeting'),
+            inArray(
+              notes.anchorId,
+              meetings.map((m) => m.id),
+            ),
+          )!,
+        ),
+      )
+    return found.map((r) => r.id)
+  },
   rows: async (q, workspaceId, want) => {
     const { where, orderBy, limit, offset } = wanted(
       want,

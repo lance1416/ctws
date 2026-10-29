@@ -8,7 +8,7 @@ import {
   type ProjectStanding,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { asc, inArray, sql, type SQL } from 'drizzle-orm'
+import { asc, inArray, or, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
 import { textMatches } from '../../platform/db/sql'
@@ -36,8 +36,27 @@ export type Linkable = {
     rows: LinkCandidate[],
     registry: LinkRegistry,
   ) => Promise<LinkCandidate[]>
-  /** How many of them a text matches, as `rows` would find them all: search's totals (FR-024). */
-  count: (q: Queryable, workspaceId: WorkspaceId, text: string) => Promise<number>
+  /**
+   * How many of them a text matches, as `rows` would find them all: search's totals (FR-024).
+   * `also` are found whatever their text, as `alsoFound` gave them.
+   */
+  count: (
+    q: Queryable,
+    workspaceId: WorkspaceId,
+    text: string,
+    also?: readonly string[],
+  ) => Promise<number>
+  /**
+   * Its own things a text finds through what another module names (a note on a meeting is found
+   * by the meeting's name, as it is called by it: FR-050), by id. The registry asks before every
+   * search by text and passes them to `rows` and `count` as `also`.
+   */
+  alsoFound?: (
+    q: Queryable,
+    workspaceId: WorkspaceId,
+    text: string,
+    registry: LinkRegistry,
+  ) => Promise<string[]>
   /**
    * For a module with things still to come, its part of what comes next about each of these other
    * things, by their id (FR-058): a meeting's next occurrence, a reply's follow-up day. What is
@@ -80,7 +99,8 @@ export type NextAt = { now: Date; projectId: ProjectId }
  * text asks for those alone.
  */
 export type Want =
-  { ids: readonly string[]; limit: number } | { text: string; limit: number; offset?: number }
+  | { ids: readonly string[]; limit: number }
+  | { text: string; limit: number; offset?: number; also?: readonly string[] }
 
 /** A module's columns, as a `Want` reads them. */
 type Columns = {
@@ -114,8 +134,9 @@ export function wanted(
       offset: 0,
     }
   }
+  const also = want.also ?? []
   return {
-    where: matching(columns.text, want.text),
+    where: matchingOr(columns.text, want.text, columns.id, also),
     orderBy: [...likely],
     limit: want.limit,
     offset: want.offset ?? 0,
@@ -125,6 +146,17 @@ export function wanted(
 /** What a text matches in these columns: everything for no text. `count` and `rows` share it. */
 export const matching = (text: readonly string[], words: string): SQL | undefined =>
   words === '' ? undefined : textMatches(text, words)
+
+/** `matching`, and these ids too: what another module's names found (`alsoFound`). */
+export const matchingOr = (
+  text: readonly string[],
+  words: string,
+  id: AnyPgColumn,
+  also: readonly string[] = [],
+): SQL | undefined =>
+  words === '' || also.length === 0
+    ? matching(text, words)
+    : or(textMatches(text, words), inArray(id, [...also]))
 
 /** How many rows of `from` meet `where`: a kind's total for search (FR-024). */
 export async function countWhere(

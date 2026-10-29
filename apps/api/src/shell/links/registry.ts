@@ -21,15 +21,28 @@ export function linkRegistry(linkables: readonly Linkable[]): LinkRegistry {
     ]
     throw new Error(`every object type needs exactly one linkable; ${problems.join('; ')}`)
   }
-  // A linkable that names its rows by another's knowledge has them named on every way out.
-  const named = (l: Linkable): Linkable =>
-    l.retitle
+  // A linkable that names its rows by another's knowledge has them named on every way out, and
+  // found by those names too.
+  const named = (l: Linkable): Linkable => {
+    const also = async (
+      q: Parameters<Linkable['rows']>[0],
+      workspaceId: Parameters<Linkable['rows']>[1],
+      text: string,
+    ) => (l.alsoFound && text !== '' ? l.alsoFound(q, workspaceId, text, registry) : [])
+    const rows: Linkable['rows'] = async (q, workspaceId, want) => {
+      const asked = 'text' in want ? { ...want, also: await also(q, workspaceId, want.text) } : want
+      const found = await l.rows(q, workspaceId, asked)
+      return l.retitle ? l.retitle(q, workspaceId, found, registry) : found
+    }
+    return l.retitle || l.alsoFound
       ? {
           ...l,
-          rows: async (q, workspaceId, want) =>
-            l.retitle!(q, workspaceId, await l.rows(q, workspaceId, want), registry),
+          rows,
+          count: async (q, workspaceId, text) =>
+            l.count(q, workspaceId, text, await also(q, workspaceId, text)),
         }
       : l
+  }
   const wrapped = new Map([...byType].map(([t, l]) => [t, named(l)]))
   const registry: LinkRegistry = {
     all: linkables.map(named),

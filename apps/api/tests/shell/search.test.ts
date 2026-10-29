@@ -102,5 +102,13 @@ describe('GET /search', () => {
       'Atlas weekly, Oct 19',
       'Importer plan',
     ])
+    // Called by the meeting's name, it is found by it too, and counted; the meeting as well.
+    const byName = await search(ctx, 'q=atlas%20weekly')
+    const notes = byName.groups.find((g) => g.type === 'note')!
+    expect(notes.items.map((i) => i.title)).toEqual(['Atlas weekly, Oct 19'])
+    expect(notes.total).toBe(1)
+    expect(byName.groups.find((g) => g.type === 'meeting')!.items.map((i) => i.title)).toEqual([
+      'Atlas weekly',
+    ])
   })
 })
