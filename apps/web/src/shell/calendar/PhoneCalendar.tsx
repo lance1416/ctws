@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { longDay, ymd } from '../../platform/time/dates'
 import { useNow } from '../../platform/time/useNow'
@@ -12,7 +12,9 @@ import { PhoneHead } from '../layout/PhoneHead'
 import { useEveryProject } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
 import { useRegistry } from '../registry'
+import { useInspector } from '../layout/inspectorAddress'
 import { lunarWindowQuery } from './api'
+import { useLunarName } from './lunarName'
 import { dayParts, type Placed } from './dayParts'
 import { lunarSquareName, monthRange, monthSquares, shiftMonth, WEEKDAYS } from './monthGrid'
 
@@ -79,7 +81,8 @@ export function PhoneCalendar() {
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(y, m - 1, 1)))
   const parts = dayParts(byDay.get(chosen) ?? [])
-  const chosenLunar = lunar.data?.days[chosen]
+  // The chosen day's lunar name in full, its month too (P4-05).
+  const chosenLunar = useLunarName(chosen)
 
   return (
     <div className="flex flex-col gap-3">
@@ -192,11 +195,7 @@ function DayList({ parts }: { parts: ReturnType<typeof dayParts> }) {
                 : 'bg-person'
         return (
           <li key={e.key}>
-            <Link
-              to={e.to}
-              data-day-entry={e.kind}
-              className="flex min-h-14 items-center gap-3 px-3.5 py-2"
-            >
+            <Opens entry={e} className="flex min-h-14 items-center gap-3 px-3.5 py-2">
               <span aria-hidden="true" className={`w-1 self-stretch rounded-full ${edge}`} />
               <span className="flex w-12 shrink-0 flex-col font-mono text-ui">
                 {e.kind === 'occurrence' ? (
@@ -224,10 +223,42 @@ function DayList({ parts }: { parts: ReturnType<typeof dayParts> }) {
                 )}
               </span>
               {project && <ProjectSquare project={project} />}
-            </Link>
+            </Opens>
           </li>
         )
       })}
     </ul>
+  )
+}
+
+/**
+ * Where a day's row goes: a meeting to its page, where Join is (FR-086); the rest into the sheet
+ * over the page where their kind has a narrow page, else to their page.
+ */
+function Opens({
+  entry: e,
+  className,
+  children,
+}: {
+  entry: Placed
+  className: string
+  children: ReactNode
+}) {
+  const registry = useRegistry()
+  const show = useInspector().show
+  const narrow = e.kind !== 'occurrence' && Boolean(registry.relationFor(e.type).Narrow)
+  return (
+    <Link
+      to={e.to}
+      data-day-entry={e.kind}
+      className={className}
+      onClick={(event) => {
+        if (!narrow) return
+        event.preventDefault()
+        show({ type: e.type, id: e.id })
+      }}
+    >
+      {children}
+    </Link>
   )
 }

@@ -550,7 +550,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
         {totals.size > 0 && scope === null && !scoping && !pick && (
           <div
             role="tablist"
-            className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5"
+            className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5 max-lg:flex-wrap"
           >
             {tabs.map((t) => {
               // Totals, from the server (FR-024); a big one is said as 999+.
@@ -948,16 +948,20 @@ function SearchRow({
           ? onInto
             ? 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)_24px] pr-2'
             : 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)]'
-          : 'grid-cols-[24px_minmax(0,1fr)_180px_92px]'
+          : // A phone's row is two lines: its name, then its fact and its kind (DES-001 "搜索").
+            'grid-cols-[24px_minmax(0,1fr)_180px_92px] max-lg:grid-cols-[24px_minmax(0,1fr)_auto] max-lg:py-1.5'
       }`}
     >
-      <span className="inline-grid size-6 place-items-center">
+      <span className="inline-grid size-6 place-items-center max-lg:row-span-2 max-lg:self-start">
         {row.mark ?? <KindBadge type={row.type} />}
       </span>
-      <span data-said className="truncate">
+      <span data-said className={`truncate ${compact ? '' : 'max-lg:col-span-2'}`}>
         <Matched text={row.title} words={words} />
       </span>
-      <span data-said className={`min-w-0 truncate text-muted ${compact ? 'max-w-40' : ''}`}>
+      <span
+        data-said
+        className={`min-w-0 truncate text-muted ${compact ? 'max-w-40' : 'max-lg:text-meta'}`}
+      >
         {row.meta}
       </span>
       {/* The picker has no room for the word; its icon is aria-hidden, so the word is still said. */}

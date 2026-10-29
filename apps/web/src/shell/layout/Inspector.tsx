@@ -17,6 +17,8 @@ import {
   type IconComponent,
 } from '../../platform/ui/icons'
 import { KIND_TEXT } from '../../platform/ui/kinds'
+import { InSheet, usePhone } from '../../platform/ui/phone'
+import { usePullToClose } from '../../platform/ui/BottomSheet'
 import { InspectorContext, type ListAct } from '../inspector/narrow'
 import { LINKED_LIST, LinkedList } from '../inspector/LinkedList'
 import { useRegistry, type RegisteredRelation, type Registry } from '../registry'
@@ -50,6 +52,10 @@ export function Inspector() {
   const head = useRef<HTMLDivElement>(null)
   const [behind, setBehind] = useState<Behind[]>([])
   const [title, setTitle] = useState('')
+  // On a phone it is a sheet over the whole screen, its bar pulled down to close (DES-001).
+  const phone = usePhone()
+  const sheet = useRef<HTMLElement>(null)
+  const pull = usePullToClose(sheet, close)
   // The thing shown, as the address says; a change not made here starts afresh.
   const shown = open ? formatInspect(open) : null
   const ours = useRef<string | null>(null)
@@ -137,6 +143,98 @@ export function Inspector() {
     e.preventDefault()
     close()
   }
+  const content = (
+    <>
+      {Narrow || view.list ? (
+        <InspectorContext.Provider value={context}>
+          {Narrow ? (
+            <Narrow key={shown} id={open.id} at={open.at} />
+          ) : (
+            <div key={shown} className="contents">
+              {view.list}
+            </div>
+          )}
+        </InspectorContext.Provider>
+      ) : (
+        <div className="flex flex-col gap-4 p-4">
+          <h2 className="text-subject text-ink">{relation?.kind ?? view.label}</h2>
+          <button type="button" onClick={openFull} className={`self-start ${BUTTON.secondary}`}>
+            Open full page
+          </button>
+        </div>
+      )}
+    </>
+  )
+
+  if (phone)
+    return (
+      <aside
+        ref={sheet}
+        aria-label="Inspector"
+        onKeyDown={onKeyDown}
+        className="fixed inset-x-0 top-[env(safe-area-inset-top)] bottom-0 z-40 flex flex-col rounded-t-phone-sheet bg-float shadow-float"
+      >
+        {/* × to close; ‹ beside it once something was opened in it; the kind; Edit. No "Open full
+            page": on a phone the sheet is the thing's page (DES-001 "从底部弹出的面板"). */}
+        <div
+          ref={head}
+          tabIndex={-1}
+          {...pull}
+          className="flex h-13 shrink-0 touch-none items-center gap-0.5 border-b border-line px-1.5 focus:outline-none"
+        >
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close"
+            className={`${ICON_BUTTON} size-11`}
+          >
+            <CloseIcon size={20} aria-hidden="true" />
+          </button>
+          {last && (
+            <button
+              type="button"
+              onClick={back}
+              aria-label={`Back to ${last.title || last.thing.type}`}
+              className={`${ICON_BUTTON} size-11`}
+            >
+              <BackIcon size={20} aria-hidden="true" />
+            </button>
+          )}
+          <span className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-ui font-medium text-ink">
+            {Icon && (
+              <Icon
+                size={16}
+                aria-hidden="true"
+                className={KIND_TEXT[open.type as keyof typeof KIND_TEXT] ?? 'text-muted'}
+              />
+            )}
+            <span className="truncate">{relation?.kind ?? view.label}</span>
+            {where}
+          </span>
+          {edit ? (
+            <button
+              type="button"
+              onClick={() => {
+                close()
+                navigate(edit(open.id, open.at))
+              }}
+              className="min-h-11 px-3 text-ui font-medium text-task-t"
+            >
+              Edit
+            </button>
+          ) : (
+            <span aria-hidden="true" className="w-11" />
+          )}
+        </div>
+        <div
+          ref={body}
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-[env(safe-area-inset-bottom)]"
+        >
+          <InSheet.Provider value>{content}</InSheet.Provider>
+        </div>
+      </aside>
+    )
+
   return (
     <aside
       aria-label="Inspector"
@@ -230,24 +328,7 @@ export function Inspector() {
         </div>
       )}
       <div ref={body} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        {Narrow || view.list ? (
-          <InspectorContext.Provider value={context}>
-            {Narrow ? (
-              <Narrow key={shown} id={open.id} at={open.at} />
-            ) : (
-              <div key={shown} className="contents">
-                {view.list}
-              </div>
-            )}
-          </InspectorContext.Provider>
-        ) : (
-          <div className="flex flex-col gap-4 p-4">
-            <h2 className="text-subject text-ink">{relation?.kind ?? view.label}</h2>
-            <button type="button" onClick={openFull} className={`self-start ${BUTTON.secondary}`}>
-              Open full page
-            </button>
-          </div>
-        )}
+        {content}
       </div>
     </aside>
   )

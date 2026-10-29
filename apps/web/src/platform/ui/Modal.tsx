@@ -93,7 +93,7 @@ export function Modal({
 
   const guard = useCloseGuard(unsaved, onClose)
   // On a phone a picker or search takes the whole screen (FR-088), over a sheet it came from.
-  const full = usePhone() && (picker || palette)
+  const full = usePhone() && (picker || (palette && !narrow))
 
   return (
     <Dialog.Root

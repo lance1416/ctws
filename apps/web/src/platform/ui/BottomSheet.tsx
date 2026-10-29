@@ -32,29 +32,12 @@ export function BottomSheet({
   children: ReactNode
 }) {
   const panel = useRef<HTMLDivElement>(null)
-  const pull = useRef<{ from: number; by: number } | null>(null)
+  const grab = usePullToClose(panel, onClose)
   // The document's single keys stand down while it is up, as under any layer.
   useEffect(() => {
     enterOverlay()
     return exitOverlay
   }, [])
-  const grab = {
-    onPointerDown: (e: React.PointerEvent) => {
-      pull.current = { from: e.clientY, by: 0 }
-      e.currentTarget.setPointerCapture(e.pointerId)
-    },
-    onPointerMove: (e: React.PointerEvent) => {
-      if (!pull.current || !panel.current) return
-      pull.current.by = Math.max(0, e.clientY - pull.current.from)
-      panel.current.style.transform = `translateY(${pull.current.by}px)`
-    },
-    onPointerUp: () => {
-      const by = pull.current?.by ?? 0
-      pull.current = null
-      if (by > CLOSE_AFTER_PX) onClose()
-      else if (panel.current) panel.current.style.transform = ''
-    },
-  }
   return (
     <Dialog.Root
       open
@@ -99,4 +82,32 @@ export function BottomSheet({
       </Dialog.Portal>
     </Dialog.Root>
   )
+}
+
+/**
+ * A sheet's head pulled down: the sheet follows the finger, and lets go past CLOSE_AFTER_PX to
+ * close, else springs back. Spread on the part that is held (its bar).
+ */
+export function usePullToClose(panel: RefObject<HTMLElement | null>, onClose: () => void) {
+  const pull = useRef<{ from: number; by: number } | null>(null)
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      // A press on a control in the bar is that control's.
+      if ((e.target as HTMLElement).closest('button, a')) return
+      pull.current = { from: e.clientY, by: 0 }
+      e.currentTarget.setPointerCapture(e.pointerId)
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (!pull.current || !panel.current) return
+      pull.current.by = Math.max(0, e.clientY - pull.current.from)
+      panel.current.style.transform = `translateY(${pull.current.by}px)`
+    },
+    onPointerUp: () => {
+      if (!pull.current) return
+      const by = pull.current.by
+      pull.current = null
+      if (by > CLOSE_AFTER_PX) onClose()
+      else if (panel.current) panel.current.style.transform = ''
+    },
+  }
 }

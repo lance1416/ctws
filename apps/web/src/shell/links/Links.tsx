@@ -4,6 +4,7 @@ import { BlockFailed } from '../../platform/ui/Block'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { CloseIcon, KIND_ICON, NewIcon } from '../../platform/ui/icons'
 import { KIND_ON_TINT, KIND_TINT } from '../../platform/ui/kinds'
+import { OpensBeside } from '../inspector/narrow'
 import { useRegistry } from '../registry'
 import { type Item, type Linked, useLinked } from './useLinked'
 
@@ -126,13 +127,16 @@ function LinkedChip({ item, onUnlink }: { item: Item; onUnlink: (() => void) | u
       data-linked={item.id}
       className={`group inline-flex h-5.5 max-w-full items-center rounded-control text-meta font-medium ${KIND_TINT[item.type]} ${KIND_ON_TINT[item.type]}`}
     >
-      <Link
+      {/* In the inspector it takes the inspector's place, ‹ back to this; elsewhere it opens beside
+          the page where its kind has a narrow page (FR-022). */}
+      <OpensBeside
+        thing={{ type: item.type, id: item.id }}
         to={where.to(item.id)}
         className={`inline-flex min-w-0 items-center gap-1.25 pl-2 hover:underline ${onUnlink ? 'pr-1' : 'pr-2'}`}
       >
         <Icon size={12} aria-hidden="true" className="shrink-0" />
         <span className="truncate">{item.title}</span>
-      </Link>
+      </OpensBeside>
       {onUnlink && (
         <button
           type="button"

@@ -271,3 +271,67 @@ test('a person on a phone: a tap to reach them, their clock, the rest under More
   await expect(sheet.getByRole('button', { name: 'Close' })).toBeVisible()
   await expect(sheet.getByRole('button', { name: 'Delete 王磊' })).toBeVisible()
 })
+
+test('on a phone the inspector is a sheet over the whole screen: ×, ‹ once deeper, Edit (FR-088)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const today = dayInZone(await accountZone(page))
+  const p = await makeProject(page, 'Moving flat')
+  const priya = await apiPost(page, '/people', { givenName: 'Priya', familyName: 'Nair' })
+  const task = await makeTask(page, p, 'Book the van', { scheduledOn: today })
+  await apiPost(page, '/relations', {
+    from: { type: 'task', id: task },
+    to: { type: 'person', id: priya.id },
+  })
+  await page.reload()
+
+  await page
+    .locator('[data-phone-row]')
+    .filter({ hasText: 'Book the van' })
+    .getByRole('button', { name: /^Book the van/ })
+    .click()
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(sheet).toBeVisible()
+  // It covers the tab bar: the whole screen but the status bar.
+  const box = (await sheet.boundingBox())!
+  expect(box.y + box.height).toBeGreaterThanOrEqual(PHONE.height - 1)
+  await expect(sheet.getByRole('button', { name: 'Close' })).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(1)
+  await expect(sheet.getByRole('button', { name: 'Open full page' })).toHaveCount(0)
+
+  // Something opened in it takes its place, with ‹ back beside ×.
+  await sheet
+    .locator('[data-linked]')
+    .filter({ hasText: 'Priya Nair' })
+    .getByText('Priya Nair')
+    .click()
+  const back = sheet.getByRole('button', { name: /^Back to/ })
+  await expect(back).toBeVisible()
+  await back.click()
+  await expect(back).toHaveCount(0)
+  await sheet.getByRole('button', { name: 'Close' }).click()
+  await expect(sheet).toHaveCount(0)
+})
+
+test('on a phone a delete asks from the foot, its answers across it, Delete first (DES-001)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const mira = await apiPost(page, '/people', { givenName: 'Mira', familyName: 'Chen' })
+  await page.goto(`/people/${mira.id as string}`)
+  await page.getByRole('button', { name: 'More', exact: true }).click()
+  await page.getByRole('button', { name: 'Delete Mira Chen' }).click()
+  const ask = page.getByRole('alertdialog', { name: 'Delete Mira Chen' })
+  await expect(ask).toContainText('Delete Mira Chen?')
+  const answers = ask.getByRole('button')
+  await expect(answers).toHaveText(['Delete Mira Chen', 'Cancel'])
+  const [first, second] = [
+    (await answers.nth(0).boundingBox())!,
+    (await answers.nth(1).boundingBox())!,
+  ]
+  expect(first.y).toBeLessThan(second.y)
+  expect(first.width).toBeGreaterThan(PHONE.width - 60)
+  await answers.nth(1).click()
+  await expect(ask).toHaveCount(0)
+})

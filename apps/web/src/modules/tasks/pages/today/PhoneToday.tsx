@@ -19,8 +19,7 @@ import { useRegistry } from '../../../../shell/registry'
 import { SearchDialog } from '../../../../shell/search'
 import { todayQuery } from '../../api'
 import { ProgressSquare } from '../../components/ProgressSquare'
-import { TaskDetail } from '../../components/TaskDetail'
-import { useTaskParam } from '../../components/tree/useTreeParams'
+import { useShowInInspector } from '../../../../shell/inspector'
 import { useTaskActions } from '../../hooks/useTaskActions'
 import { carriedFrom, dueMark } from '../../logic/todayMarks'
 import { todaySegments } from '../../logic/today'
@@ -47,10 +46,10 @@ export function PhoneToday() {
   const [searching, setSearching] = useState(false)
   const [opened, setOpened] = useState<TaskId | null>(null)
   const [picking, setPicking] = useState<TodayTaskResponse | null>(null)
-  const { openId, setOpenId } = useTaskParam()
+  // Its name opens it in the sheet over the page, a phone's inspector (DES-001).
+  const inspect = useShowInInspector()
   const rows = today.data ?? []
   const { inProgress, planned, overdue } = todaySegments(rows)
-  const openTask = rows.find((t) => t.id === openId)
 
   const row = (t: TodayTaskResponse) => (
     <PhoneTaskRow
@@ -63,7 +62,7 @@ export function PhoneToday() {
       onDone={() => actions.setStatus(t.id, 'done')}
       onTomorrow={() => actions.patch(t.id, { scheduledOn: addDays(day, 1) })}
       onPick={() => setPicking(t)}
-      onOpen={() => setOpenId(t.id)}
+      onOpen={() => inspect({ type: 'task', id: t.id })}
     />
   )
 
@@ -154,7 +153,6 @@ export function PhoneToday() {
         />
       )}
       {searching && <SearchDialog onClose={() => setSearching(false)} />}
-      {openTask && <TaskDetail key={openTask.id} task={openTask} onClose={() => setOpenId(null)} />}
     </div>
   )
 }

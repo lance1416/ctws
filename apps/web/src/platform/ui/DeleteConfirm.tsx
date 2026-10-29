@@ -1,4 +1,6 @@
 import { useRef } from 'react'
+import { BottomSheet } from './BottomSheet'
+import { usePhone } from './phone'
 import { Button } from './Button'
 import { Modal } from './Modal'
 
@@ -29,7 +31,36 @@ export function DeleteConfirm({
   /** The way out's word. "Cancel" beside "Cancel meeting" would mean its opposite. */
   back?: string | undefined
 }) {
+  const phone = usePhone()
   const cancel = useRef<HTMLButtonElement>(null)
+  // On a phone the question rises from the foot, its answers across it, the one that acts first
+  // (DES-001 "会议页、机构页…"): the thumb finds them, and Cancel is never the one under it.
+  if (phone)
+    return (
+      <BottomSheet title={label} onClose={onCancel} initialFocus={cancel} head={false}>
+        <div role="alertdialog" aria-label={label} className="flex flex-col gap-4 px-4 pt-2 pb-4">
+          <p className="text-prose text-ink">{message}</p>
+          <div className="flex flex-col gap-2">
+            <Button
+              look="destructive"
+              disabled={busy}
+              onClick={onConfirm}
+              className="min-h-12 w-full justify-center"
+            >
+              {confirm}
+            </Button>
+            <Button
+              ref={cancel}
+              look="secondary"
+              onClick={onCancel}
+              className="min-h-12 w-full justify-center"
+            >
+              {back}
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
+    )
   return (
     <Modal title={label} onClose={onCancel} initialFocus={cancel} palette narrow>
       <div role="alertdialog" aria-label={label} className="flex flex-col gap-4 px-5 py-5">

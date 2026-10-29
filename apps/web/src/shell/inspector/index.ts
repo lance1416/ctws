@@ -11,6 +11,7 @@ export {
   useInspectorGo,
   useListAct,
   useNarrowName,
+  useShowInInspector,
 } from './narrow'
 export { useCloseInspector } from './close'
 export { ListHead } from './ListHead'

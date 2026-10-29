@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useContext, type ReactNode } from 'react'
+import { InSheet } from '../../../platform/ui/phone'
 import type { TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router-dom'
@@ -76,6 +77,7 @@ export function TaskReading({
     return late ? `${exact}, ${late}` : exact
   })()
 
+  const inSheet = useContext(InSheet)
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -94,7 +96,7 @@ export function TaskReading({
             <>
               {/* No page of its own: its full page is its project's, with it open there. Not
                   offered on that page, where it already is. */}
-              {pathname !== `/projects/${task.projectId}` && (
+              {pathname !== `/projects/${task.projectId}` && !inSheet && (
                 <Link
                   to={openHref(task.projectId, task.id)}
                   aria-label="Open full page"

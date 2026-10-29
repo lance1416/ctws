@@ -1,4 +1,5 @@
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -10,6 +11,7 @@ import { tabbable } from 'tabbable'
 import { useWidePane } from './paneLayout'
 import { CloseIcon } from './icons'
 import { LAYER } from './layers'
+import { InSheet } from './phone'
 
 /**
  * The shell's frame for one open item; the module renders the body. At >=1280 it is a column beside
@@ -116,12 +118,13 @@ export function DetailHead({
   onClose: () => void
   trailing?: ReactNode
 }) {
+  const inSheet = useContext(InSheet)
   return (
     <div className="flex min-w-0 items-start justify-between gap-3">
       <div className="flex min-w-0 items-center gap-1.5">{kind}</div>
       <div className="-mt-1 flex shrink-0 items-center gap-1">
         {trailing}
-        <CloseButton onClick={onClose} />
+        {!inSheet && <CloseButton onClick={onClose} />}
       </div>
     </div>
   )

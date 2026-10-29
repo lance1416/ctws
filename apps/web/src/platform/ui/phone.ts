@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { createContext, useEffect, useState } from 'react'
 
 /**
  * Below this width the app wears the phone's frame (DES-001 "宽度和断点"): five tabs at the foot,
@@ -20,3 +20,9 @@ export function usePhone(): boolean {
   }, [])
   return phone
 }
+
+/**
+ * Inside a phone's sheet over the whole screen (the inspector on a phone): its bar closes it and
+ * there is no fuller page to open, so what draws its own close or "Open full page" leaves them out.
+ */
+export const InSheet = createContext(false)

@@ -292,3 +292,8 @@ export function AllInInspector({
     </button>
   )
 }
+
+/** Opens a thing in the inspector from a page: a phone's sheet, the desk's column (FR-022, FR-088). */
+export function useShowInInspector(): (thing: Inspectable) => void {
+  return useInspector().show
+}
