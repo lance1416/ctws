@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { makeProject, makeTask, openDetail, registerFreshUser, sidewaysScroll } from './helpers'
+import { makeProject, makeTask, registerFreshUser, sidewaysScroll } from './helpers'
 
 // The three-pane shell: the left rail's counts, and no sideways scroll at the narrow end.
 
@@ -74,9 +74,13 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
     expect(await overflow(), name).toEqual({ doc: 0, body: 0 })
   }
 
-  // And with the detail open, which at this width is a layer over the page.
+  // And with the task open, which on a phone is the sheet over the page (FR-088).
   await page.goto(`/projects/${pid}`)
-  await openDetail(page, '逾期的那条')
-  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+  await page
+    .locator('[data-phone-tree-row]')
+    .filter({ hasText: '逾期的那条' })
+    .getByRole('button', { name: /^逾期的那条/ })
+    .click()
+  await expect(page.getByRole('complementary', { name: 'Inspector' })).toBeVisible()
   expect(await overflow(), 'with the detail open').toEqual({ doc: 0, body: 0 })
 })

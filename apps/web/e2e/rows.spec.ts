@@ -356,8 +356,8 @@ test.describe('the tree on a phone', () => {
     await makeTask(page, pid, '第三层上的一条很长的别的标题', {}, b)
 
     await page.goto(`/projects/${pid}`)
-    const row = (title: string) =>
-      page.locator('[data-task-tree] li[data-depth]').filter({ hasText: title })
+    // A phone's tree (FR-088): a row a task, its tags on a second line.
+    const row = (title: string) => page.locator('[data-phone-tree-row]').filter({ hasText: title })
     await expect(row('第三层上的一条很长的任务标题')).toBeVisible()
     const titleWidth = (title: string) =>
       row(title)
@@ -367,7 +367,7 @@ test.describe('the tree on a phone', () => {
     expect(dated, 'the due column takes nothing from the title').toBe(
       await titleWidth('第三层上的一条很长的别的标题'),
     )
-    // Three levels in, past the indent, the fold and the mark, with the due column beside it.
+    // Three levels in, past the indent and the mark; the date is on the line under it.
     expect(dated).toBeGreaterThan(100)
     // The date is still shown: the title did not get its width by losing it.
     await expect(row('第三层上的一条很长的任务标题').locator('[data-row-due]')).toBeVisible()

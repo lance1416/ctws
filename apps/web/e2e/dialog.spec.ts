@@ -56,7 +56,7 @@ async function seed(page: Page, name = 'P'): Promise<{ pid: string; rootId: stri
   const pid = await makeProject(page, name)
   const rootId = await makeTask(page, pid, '放在我下面')
   await page.goto(`/projects/${pid}`)
-  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.locator('[data-task-tree]').getByText('放在我下面')).toBeVisible()
   return { pid, rootId }
 }
 

@@ -28,7 +28,12 @@ async function seedNote(page: Page, notes: string, title = '读一下') {
   await makeTask(page, pid, title, { notes })
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
-  await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()
+  // The pane beside the tree; on a phone, the sheet over the page (FR-088).
+  await expect(
+    page
+      .getByRole('dialog', { name: 'Task details' })
+      .or(page.getByRole('complementary', { name: 'Inspector' })),
+  ).toBeVisible()
   return pid
 }
 
