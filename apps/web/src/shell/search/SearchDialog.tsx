@@ -190,14 +190,19 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   // Every kind from one question (FR-024, `GET /search`): All, and the counts on the tabs; a kind
   // looked at alone is read a page at a time as the list is scrolled.
   const kindView: ObjectType | null = pick ? null : (scope ?? (tab === 'all' ? null : tab))
+  // Read once when the dialog opens: the list must not reshuffle under the reader. It also puts
+  // what was opened lately first among equally good matches (FR-024).
+  const userId = useMe().data?.id
+  const [recent] = useState(() => (userId ? recentList(userId) : []))
+  const recentIds = recent.map((r) => r.id)
   const everything = useQuery({
-    ...everythingQuery(debounced),
+    ...everythingQuery(debounced, recentIds),
     enabled: !pick && debounced.length > 0 && scope === null,
     // While the words change, the last answer stays until the next is in (DES-001).
     placeholderData: keepPreviousData,
   })
   const oneKind = useInfiniteQuery({
-    ...kindQuery(debounced, kindView ?? 'task'),
+    ...kindQuery(debounced, kindView ?? 'task', recentIds),
     enabled: !pick && debounced.length > 0 && kindView !== null,
     placeholderData: keepPreviousData,
   })
@@ -237,10 +242,6 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   // A task made from here goes to the inbox, as a captured line does.
   const capture = registry.captures.find((c) => c.moduleId === registry.captureModuleId)!
   const inbox = capture.capture.useTarget()
-  // Read once when the dialog opens: the list must not reshuffle under the reader.
-  const userId = useMe().data?.id
-  const [recent] = useState(() => (userId ? recentList(userId) : []))
-
   const typing = query.trim()
   const typed = typing.toLocaleLowerCase()
   const scoping = scope === null && query.startsWith('/')

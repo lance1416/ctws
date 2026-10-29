@@ -11,7 +11,7 @@ import {
 import { asc, inArray, or, sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type { Queryable } from '../../platform/db/client'
-import { textMatches } from '../../platform/db/sql'
+import { matchTier, textMatches } from '../../platform/db/sql'
 
 /**
  * How a module names its own objects for the shell, which owns the edges but not the tables at
@@ -100,7 +100,14 @@ export type NextAt = { now: Date; projectId: ProjectId }
  */
 export type Want =
   | { ids: readonly string[]; limit: number }
-  | { text: string; limit: number; offset?: number; also?: readonly string[] }
+  | {
+      text: string
+      limit: number
+      offset?: number
+      also?: readonly string[]
+      /** Opened lately, newest first: first among equally good matches (FR-024). */
+      recent?: readonly string[]
+    }
 
 /** A module's columns, as a `Want` reads them. */
 type Columns = {
@@ -109,6 +116,8 @@ type Columns = {
   title: SQL | AnyPgColumn
   /** What a text match looks in, as `table.column`. */
   text: readonly string[]
+  /** True for a row another of its names starts with the text (a person's alias). */
+  alsoStarts?: (text: string) => SQL
 }
 
 /** By title, by code point as an object page lists them, then by id. */
@@ -137,7 +146,21 @@ export function wanted(
   const also = want.also ?? []
   return {
     where: matchingOr(columns.text, want.text, columns.id, also),
-    orderBy: [...likely],
+    // Those it starts, then those a word of starts, then the rest (FR-024); each the module's way.
+    orderBy: [
+      ...(want.text === ''
+        ? []
+        : [matchTier(columns.title, want.text, columns.alsoStarts?.(want.text))]),
+      ...(want.recent?.length
+        ? [
+            sql`array_position(array[${sql.join(
+              want.recent.map((id) => sql`${id}`),
+              sql`, `,
+            )}]::uuid[], ${columns.id}) nulls last`,
+          ]
+        : []),
+      ...likely,
+    ],
     limit: want.limit,
     offset: want.offset ?? 0,
   }

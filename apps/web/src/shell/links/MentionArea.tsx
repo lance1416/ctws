@@ -17,7 +17,9 @@ import { KIND_ICON } from '../../platform/ui/icons'
 import { KIND_TEXT } from '../../platform/ui/kinds'
 import { LAYER } from '../../platform/ui/layers'
 import { useRegistry } from '../registry'
+import { useMe } from '../auth/useMe'
 import { everythingQuery } from '../search/api'
+import { recentList } from '../search/recent'
 import { KIND_ORDER, KIND_WORDS } from '../search/view'
 
 /** How many of each kind the list offers. */
@@ -65,8 +67,11 @@ export function MentionArea({
   const caretAfter = useRef<number | null>(null)
 
   const words = useDebouncedValue(asked?.words ?? '')
+  // What was opened lately comes first among equally good matches (FR-024).
+  const userId = useMe().data?.id
+  const [recent] = useState(() => (userId ? recentList(userId).map((r) => r.id) : []))
   const hits = useQuery({
-    ...everythingQuery(words),
+    ...everythingQuery(words, recent),
     enabled: words !== '',
     placeholderData: keepPreviousData,
   })

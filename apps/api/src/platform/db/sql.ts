@@ -10,6 +10,25 @@ export function likePattern(query: string): string {
   return `%${escaped}%`
 }
 
+/**
+ * How well `title` answers `query` (FR-024): 0 when it starts with it, 1 when one of its words
+ * does, 2 when it only has it inside. `alsoStarts`, when given, counts as a start too (an alias).
+ */
+export function matchTier(title: SQL | AnyPgColumn, query: string, alsoStarts?: SQL): SQL {
+  const escaped = query.replace(/[!%_]/g, (c) => LIKE_ESCAPE + c)
+  const start = sql`${title} ilike ${`${escaped}%`} escape ${LIKE_ESCAPE}`
+  const word = sql`${title} ilike ${`% ${escaped}%`} escape ${LIKE_ESCAPE}`
+  return sql`case when ${alsoStarts ? sql`(${start} or ${alsoStarts})` : start} then 0
+    when ${word} then 1 else 2 end`
+}
+
+/** Whether some value of `column` starts with `query`, case aside: for `matchTier`'s alias. */
+export function startsWith(column: string, query: string): SQL {
+  const escaped = query.replace(/[!%_]/g, (c) => LIKE_ESCAPE + c)
+  const name = sql.join(column.split('.').map(ident), sql`.`)
+  return sql`${name} ilike ${`${escaped}%`} escape ${LIKE_ESCAPE}`
+}
+
 /** `<column> ilike <pattern>` for each column, OR-ed. A column may be table-qualified. */
 export function textMatches(columns: readonly string[], query: string): SQL {
   const pattern = likePattern(query)

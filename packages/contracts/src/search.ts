@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { linkCandidate } from './link'
+import { objectId } from './id'
 import { objectType } from './object'
 import { pageInfo, pageQuery } from './page'
 
@@ -24,6 +25,15 @@ export const searchEverythingQuery = z
   .object({
     q: z.string().trim().max(200),
     kind: objectType.optional(),
+    /**
+     * What this person opened lately, newest first, comma-separated: among equally good matches
+     * these come first (FR-024). The browser keeps the list; the server only orders by it.
+     */
+    recent: z
+      .string()
+      .transform((s) => s.split(',').filter(Boolean))
+      .pipe(z.array(objectId).max(20))
+      .optional(),
     ...pageQuery(SEARCH_LIMIT, 30),
   })
   .strict()

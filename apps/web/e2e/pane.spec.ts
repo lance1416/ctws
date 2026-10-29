@@ -632,3 +632,19 @@ test('@ works in a message too; Esc puts the list away, not the form', async ({ 
     `Ask @Mir and [@Mira Chen](ctws://person/${mira.id})`,
   )
 })
+
+test('@Mi puts Mira, whose name starts so, before Femi, who has it inside (BUG-087)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'Job hunt')
+  for (const name of ['Femi Ford', 'Femi Gill', 'Femi Hale', 'Femi Ito', 'Mira Chen'])
+    await apiPost(page, '/people', { name })
+  await makeTask(page, pid, 'Update the CV')
+  await openTaskPane(page, pid, 'Update the CV')
+  const notes = page.getByRole('textbox', { name: 'Notes' })
+  await notes.click()
+  await notes.pressSequentially('@Mi')
+  const list = page.getByRole('listbox', { name: 'Mention' })
+  await expect(list.getByRole('option').first()).toHaveText(/Mira Chen$/)
+})

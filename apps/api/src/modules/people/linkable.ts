@@ -1,6 +1,6 @@
 import { avatarInitials, currentRole } from '@ctws/core'
 import { asc, sql, type SQL } from 'drizzle-orm'
-import { textMatches } from '../../platform/db/sql'
+import { startsWith, textMatches } from '../../platform/db/sql'
 import { scoped, within } from '../../platform/db/scope'
 import { countWhere, wanted, type Linkable } from '../../shell/links'
 import { rolesOf } from '../organisations'
@@ -35,10 +35,20 @@ export const personLinkable: Linkable = {
       orderBy,
       limit,
       offset,
-    } = wanted(want, { id: people.id, title: people.name, text: ['people.name'] }, [
-      asc(people.name),
-      asc(people.id),
-    ])
+    } = wanted(
+      want,
+      {
+        id: people.id,
+        title: people.name,
+        text: ['people.name'],
+        // "Wendy" starts 李雯's other name, so she is among the first (FR-024).
+        alsoStarts: (text) => sql`exists (
+          select 1 from person_aliases al
+          where al.person_id = people.id and ${startsWith('al.name', text)}
+        )`,
+      },
+      [asc(people.name), asc(people.id)],
+    )
     const where = 'text' in want ? byText(want.text) : byIds
     const found = await q
       .select({

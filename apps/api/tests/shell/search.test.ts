@@ -112,3 +112,37 @@ describe('GET /search', () => {
     ])
   })
 })
+
+describe('how matches rank (FR-024, BUG-087)', () => {
+  const people = (body: SearchEverythingResponse) =>
+    body.groups.find((g) => g.type === 'person')?.items.map((i) => i.title) ?? []
+
+  it('puts a name it starts first, then one a word of starts, then one with it inside', async () => {
+    const ctx = await setup()
+    for (const name of ['Femi Ford', 'Femi Gill', 'Ami Mirza', 'Mira Chen'])
+      await createPerson(ctx, { name })
+    // An alias that starts so counts as the name starting so: 李雯 goes by Wendy.
+    await createPerson(ctx, { name: '李雯', aliases: [{ name: 'Mimi Li' }] })
+    expect(people(await search(ctx, 'q=mi'))).toEqual([
+      'Mira Chen',
+      '李雯',
+      'Ami Mirza',
+      'Femi Ford',
+      'Femi Gill',
+    ])
+  })
+
+  it('puts what was opened lately first among equally good matches', async () => {
+    const ctx = await setup()
+    await createPerson(ctx, { name: 'Mira Chen' })
+    const later = await createPerson(ctx, { name: 'Miles Park' })
+    const femi = await createPerson(ctx, { name: 'Femi Ford' })
+    // Opened lately, newest first: Femi then Miles. Femi stays behind both who start "Mi".
+    const recent = [femi.id, later.id].join(',')
+    expect(people(await search(ctx, `q=mi&recent=${recent}`))).toEqual([
+      'Miles Park',
+      'Mira Chen',
+      'Femi Ford',
+    ])
+  })
+})
