@@ -450,3 +450,27 @@ test('a person on a project: Remove is a swipe away, and in their sheet, asked f
   await expect(sheet).toHaveCount(0)
   await expect(people.locator('[data-linked]')).toHaveCount(0)
 })
+
+test('a mention clicked in the sheet takes its place, ‹ back to what mentioned it (BUG-069)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const today = dayInZone(await accountZone(page))
+  const mira = await apiPost(page, '/people', { givenName: 'Mira', familyName: 'Chen' })
+  const p = await makeProject(page, 'Job hunt')
+  await makeTask(page, p, 'Prepare the round', {
+    scheduledOn: today,
+    notes: `Ask [@Mira Chen](ctws://person/${mira.id as string}) which questions came up.`,
+  })
+  await page.reload()
+  await page
+    .locator('[data-phone-row]')
+    .filter({ hasText: 'Prepare the round' })
+    .getByRole('button', { name: /^Prepare the round/ })
+    .click()
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await sheet.locator('[data-mention="person"]').click()
+  await expect(page).toHaveURL(/inspect=person/)
+  await sheet.getByRole('button', { name: /^Back to/ }).click()
+  await expect(page).toHaveURL(/inspect=task/)
+})

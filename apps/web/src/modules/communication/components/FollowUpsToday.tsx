@@ -64,7 +64,10 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
       data-follow-up={m.id}
       className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover"
     >
-      <Link to={`/communication/${m.id}`} className="flex min-w-0 items-center gap-2.5">
+      <Link
+        to={`/communication/${m.id}`}
+        className="flex min-w-0 items-center gap-2.5 max-lg:min-h-11"
+      >
         {person ? (
           <Avatar initials={known ? avatarInitials(known) : ([...person.name][0] ?? '')} />
         ) : (

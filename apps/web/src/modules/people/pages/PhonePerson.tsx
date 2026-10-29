@@ -186,7 +186,10 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
           )}
           {phone && (
             <Line icon={CHANNEL_ICON.call}>
-              <a href={channelHref('phone', phone.value)} className="font-mono text-prose text-ink">
+              <a
+                href={channelHref('phone', phone.value)}
+                className="flex min-h-11 items-center font-mono text-prose text-ink"
+              >
                 {say(phone.value)}
               </a>
             </Line>
