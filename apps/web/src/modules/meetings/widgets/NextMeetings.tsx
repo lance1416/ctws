@@ -36,10 +36,16 @@ export function NextMeetings() {
   const [next, ...after] = coming
   const when = (m: MeetingOccurrence) => {
     const day = ymd(new Date(m.startsAt), zone)
-    // A weekday within the week; past it a date, so next Monday is not read as this one's.
+    // Today and Tomorrow by name, a weekday within the week, past it a date (FR-076, v2.8).
     return {
       day:
-        day === today ? 'Today' : day <= addDays(today, 6) ? weekdayOf(day, true) : monthDay(day),
+        day === today
+          ? 'Today'
+          : day === addDays(today, 1)
+            ? 'Tomorrow'
+            : day <= addDays(today, 6)
+              ? weekdayOf(day, true)
+              : monthDay(day),
       time: clockTime(new Date(m.startsAt), zone),
     }
   }
@@ -66,7 +72,7 @@ export function NextMeetings() {
                     thing={{ type: 'meeting', id: m.meetingId, at: m.recurrenceId }}
                     to={occurrenceTo(m)}
                     data-next-meeting={m.meetingId}
-                    className="grid h-7.5 grid-cols-[36px_44px_minmax(0,1fr)] items-center gap-x-2.5 rounded-control px-2.5 hover:bg-hover"
+                    className="grid h-7.5 grid-cols-[4.25rem_44px_minmax(0,1fr)] items-center gap-x-2.5 rounded-control px-2.5 hover:bg-hover"
                   >
                     <span className="font-mono text-meta text-muted">{w.day}</span>
                     <span className="font-mono text-meta text-muted">{w.time}</span>
@@ -94,7 +100,7 @@ function NextOne({
   return (
     <div
       data-next-meeting-card={m.meetingId}
-      className="grid shrink-0 grid-cols-[52px_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 rounded-card bg-meeting-bg p-2.5"
+      className="grid shrink-0 grid-cols-[4.25rem_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 rounded-card bg-meeting-bg p-2.5"
     >
       <span className="flex flex-col font-mono text-meta font-medium text-meeting-t">
         <span>{when.day}</span>

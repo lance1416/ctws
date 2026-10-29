@@ -493,3 +493,48 @@ test('in progress and ready to start show five, and All N opens the rest beside 
   await expect(inspector.getByRole('heading', { name: 'Ready to start' })).toBeVisible()
   await expect(inspector.getByRole('listitem')).toHaveCount(6)
 })
+
+test('offline, what would save on Today is greyed and says why (FR-033)', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '离线')
+  await makeTask(page, pid, '晚了的', { dueAt: dueAgo(2) })
+  await makeTask(page, pid, '可以开始的')
+  await page.reload()
+  const overdue = block(page, 'Overdue')
+  await expect(overdue.locator('[data-today-row]')).toHaveCount(1)
+  await page.context().setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+
+  const today = overdue.getByRole('button', { name: /^Plan “晚了的” for today/ })
+  await expect(today).toHaveAttribute('aria-disabled', 'true')
+  await expect(today).toHaveAttribute('title', /Nothing can be saved/)
+  // Pressed anyway, nothing happens.
+  await today.dispatchEvent('click')
+  await expect(overdue.locator('[data-today-row]')).toHaveCount(1)
+  const start = block(page, 'Ready to start').getByRole('button', { name: 'Start “可以开始的”' })
+  await expect(start).toHaveAttribute('aria-disabled', 'true')
+
+  // Back online, they act again.
+  await page.context().setOffline(false)
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  await expect(today).not.toHaveAttribute('aria-disabled', 'true')
+})
+
+test('a row opened from the full list has the list’s action, and using it goes back to the list', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '很晚')
+  for (let i = 1; i <= 7; i++) await makeTask(page, pid, `晚${i}`, { dueAt: dueAgo(i) })
+  await page.reload()
+  await block(page, 'Overdue').getByRole('button', { name: 'All 7' }).click()
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await inspector.getByRole('button', { name: '晚3', exact: true }).click()
+  // The task's own page, with Overdue's plan buttons under its facts (U-29).
+  const plan = inspector.getByRole('button', { name: 'Plan “晚3” for today' })
+  await expect(plan).toBeVisible()
+  await plan.click()
+  // Off the list, and back on it.
+  await expect(inspector.getByRole('heading', { name: 'Overdue' })).toBeVisible()
+  await expect(inspector.getByRole('listitem')).toHaveCount(6)
+})

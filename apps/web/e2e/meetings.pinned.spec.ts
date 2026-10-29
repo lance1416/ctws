@@ -470,6 +470,8 @@ test('the workbench says a meeting past this week by its date, not a weekday', a
   await meet(page, { title: 'Climbing', startsLocal: '2026-10-24T10:00' })
   await meet(page, { title: 'Quarterly', startsLocal: '2026-10-30T10:00' })
   await page.reload()
+  // Tomorrow by name (FR-076, v2.8).
+  await expect(page.locator('[data-next-meeting-card]')).toContainText('Tomorrow')
   const rows = page.locator('[data-next-meeting]')
   await expect(rows.filter({ hasText: 'Climbing' })).toContainText('Sat')
   await expect(rows.filter({ hasText: 'Quarterly' })).toContainText('Oct 30')

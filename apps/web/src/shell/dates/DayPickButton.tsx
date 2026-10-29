@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
+import { useSaveGate } from '../../platform/http/online'
+import { GATED, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { PLACE_ICON } from '../../platform/ui/icons'
 import { LAYER } from '../../platform/ui/layers'
 import { DayGrid, monthOf } from './grids'
@@ -21,6 +22,8 @@ export function DayPickButton({
   text?: string
 }) {
   const [open, setOpen] = useState(false)
+  // Every day it gives is saved: offline it is greyed and says why (FR-033).
+  const save = useSaveGate()
   const [month, setMonth] = useState(monthOf(today))
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -46,20 +49,22 @@ export function DayPickButton({
       {text ? (
         <button
           type="button"
-          onClick={() => setOpen(!open)}
+          onClick={save.gate(() => setOpen(!open))}
+          {...save.props}
           aria-label={label}
           aria-expanded={open}
-          className="inline-flex h-7 items-center rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover"
+          className={`inline-flex h-7 items-center rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover ${GATED}`}
         >
           {text}
         </button>
       ) : (
         <button
           type="button"
-          onClick={() => setOpen(!open)}
+          onClick={save.gate(() => setOpen(!open))}
+          {...save.props}
           aria-label={label}
           aria-expanded={open}
-          className={`${ICON_BUTTON} size-6.5`}
+          className={`${ICON_BUTTON} size-6.5 ${GATED}`}
         >
           <PLACE_ICON.calendar size={14} aria-hidden="true" />
         </button>

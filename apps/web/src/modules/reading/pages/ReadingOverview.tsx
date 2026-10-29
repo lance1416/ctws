@@ -32,7 +32,7 @@ export function ReadingOverview() {
     : null
   const rows = items.data ?? []
   if (items.isSuccess && rows.length === 0 && !by)
-    return <ModuleEmpty kind="reading" onNew={() => openCapture('reading')} />
+    return <ModuleEmpty kind="reading" onNew={() => openCapture('reading')} says="Add reading" />
   const reading = rows.filter((i) => i.status === 'reading')
   // Read to the end, not given up on: what was dropped is apart in the sidebar (BUG-055).
   const finished = rows.filter((i) => i.status === 'done').length

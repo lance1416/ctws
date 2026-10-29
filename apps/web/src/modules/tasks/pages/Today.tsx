@@ -5,7 +5,6 @@ import { useRef, useState, type CSSProperties } from 'react'
 import { longDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { inColumns, splitColumns, useColumns } from '../../../platform/ui/columns'
 import { CarriedIcon, FlagIcon, InProgressIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
@@ -18,7 +17,7 @@ import { TaskDetail } from '../components/TaskDetail'
 import { useTaskParam } from '../components/tree/useTreeParams'
 import { useSavedFlash } from '../components/useSavedFlash'
 import { carriedFrom } from '../logic/todayMarks'
-import { todaySegments } from '../logic/today'
+import { offeredReady, todaySegments } from '../logic/today'
 import { DoneButton, LINE, TaskLine, TaskPath } from './today/TaskLine'
 import { Timeline } from './today/Timeline'
 import { MoveAllMenu, PlanButtons } from './today/planParts'
@@ -26,6 +25,7 @@ import { minutesOf, type TimedItem } from './today/dayLine'
 import { useOthersToday, useTodayRows } from './today/useTodayRows'
 import { ALL_ROW, TODAY_LISTS } from '../components/TodayLists'
 import { AllInInspector } from '../../../shell/inspector'
+import { RowAction } from '../components/RowAction'
 
 /** A block shows this many before its "All 12", which opens the rest beside it (FR-011). */
 const SHOWN = 5
@@ -266,8 +266,7 @@ function PlannedBlock({
     return (
       <Block badge={badge} title="Planned for today" count="Nothing yet">
         <ul className="p-1.5">
-          {(ready.data ?? [])
-            .filter((t) => !listed.some((l) => l.id === t.id))
+          {offeredReady(ready.data ?? [], listed)
             .slice(0, SHOWN)
             .map((t) => (
               <li key={t.id} data-plan-row={t.id} className={LINE}>
@@ -276,14 +275,13 @@ function PlannedBlock({
                 <span className="truncate text-ui text-ink">{t.title}</span>
                 <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
                 <span className="max-lg:hidden" />
-                <button
-                  type="button"
-                  onClick={() => onPlan(t.id)}
-                  aria-label={`Plan “${t.title}” for today`}
-                  className={`${BUTTON.secondary} h-6.5 justify-self-end px-2.5 text-meta`}
+                <RowAction
+                  label={`Plan “${t.title}” for today`}
+                  onPress={() => onPlan(t.id)}
+                  className="justify-self-end"
                 >
                   Plan
-                </button>
+                </RowAction>
               </li>
             ))}
         </ul>

@@ -13,10 +13,13 @@ import { KIND_WORDS } from '../search/view'
 export function ModuleEmpty({
   kind,
   onNew,
+  says,
 }: {
   kind: Kind
   /** What the button does where the module makes things in place rather than in a dialog. */
   onNew?: () => void
+  /** The button's words where the kind is added, not made: "Add reading" (FR-072). */
+  says?: string
 }) {
   const Icon = KIND_ICON[kind]
   const registry = useRegistry()
@@ -37,7 +40,7 @@ export function ModuleEmpty({
           className={`${BUTTON.primary} h-7 px-2.5 text-meta`}
         >
           <NewIcon size={14} aria-hidden="true" />
-          New {creator.label.toLocaleLowerCase()}
+          {says ?? `New ${creator.label.toLocaleLowerCase()}`}
           <kbd className={KEY_ON_INK}>N {creator.key.toUpperCase()}</kbd>
         </button>
       )}

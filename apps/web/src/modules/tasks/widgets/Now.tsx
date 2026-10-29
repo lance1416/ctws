@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
-import { BUTTON } from '../../../platform/ui/buttonStyles'
 import { GoOnIcon, InProgressIcon, ToDoIcon } from '../../../platform/ui/icons'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
 import { BackFromCard } from '../../../shell/resources'
@@ -10,8 +9,9 @@ import { useRowsThatFit } from '../../../shell/workbench'
 import { readyQuery, todayQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { nowRows } from '../logic/nowRows'
-import { todaySegments } from '../logic/today'
+import { offeredReady, todaySegments } from '../logic/today'
 import { DoneButton, DueChip, TaskPath } from '../pages/today/TaskLine'
+import { RowAction } from '../components/RowAction'
 
 /** Where Now has no height of its own (one column, on a phone): this many rows. */
 const ROWS_UNFIXED = 9
@@ -41,7 +41,7 @@ export function NowWidget() {
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)
   const inProgress = todaySegments(listed.data ?? []).inProgress.filter((t) => !t.children)
-  const startable = ready.data ?? []
+  const startable = offeredReady(ready.data ?? [], listed.data ?? [])
   const lists = (inProgress.length > 0 ? 1 : 0) + (startable.length > 0 ? 1 : 0)
   // What is left after the captions is rows, shared between the two lists.
   const [measured, rows] = useRowsThatFit(
@@ -114,14 +114,13 @@ export function NowWidget() {
                       </Link>
                       <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
                       <DueChip dueAt={t.dueAt} today={today} timeZone={timeZone} />
-                      <button
-                        type="button"
-                        onClick={() => actions.setStatus(t.id, 'in_progress')}
-                        aria-label={`Start “${t.title}”`}
-                        className={`${BUTTON.secondary} h-6.5 justify-self-end px-2.5 text-meta`}
+                      <RowAction
+                        label={`Start “${t.title}”`}
+                        onPress={() => actions.setStatus(t.id, 'in_progress')}
+                        className="justify-self-end"
                       >
                         Start
-                      </button>
+                      </RowAction>
                     </li>
                   ))}
                 </ul>

@@ -13,13 +13,26 @@ export type Inspectable = { type: ObjectType | 'list'; id: string; at?: string }
  * and say its own name, for the "‹" back to it. Null outside the inspector.
  */
 export const InspectorContext = createContext<{
-  /** Show it in the inspector's place; `among`, the list it was opened from, for ↑ ↓ and "3 of 7". */
-  go: (thing: Inspectable, among?: readonly Inspectable[]) => void
+  /**
+   * Show it in the inspector's place; `among`, the list it was opened from, for ↑ ↓ and "3 of 7";
+   * `act`, that list's action for a row, which the opened page offers too (U-29).
+   */
+  go: (thing: Inspectable, among?: readonly Inspectable[], act?: ListAct) => void
+  /** The list's action for what is shown, when it was opened from one. */
+  act?: ReactNode
+  /** Back to what was shown before: a list, once its action has taken the row off it. */
+  back: () => void
   name: (title: string) => void
 } | null>(null)
 
+/** A list's action for one of its rows, given the row; back when it has acted. */
+export type ListAct = (thing: Inspectable, back: () => void) => ReactNode
+
 /** Opening a thing in the inspector's place, from inside it; null outside the inspector. */
 export const useInspectorGo = () => useContext(InspectorContext)?.go ?? null
+
+/** The action of the list this was opened from, to put under its facts (U-29). */
+export const useListAct = () => useContext(InspectorContext)?.act ?? null
 
 /** A narrow page says what it is called, for the next one's way back to it. */
 export function useNarrowName(title: string | undefined) {

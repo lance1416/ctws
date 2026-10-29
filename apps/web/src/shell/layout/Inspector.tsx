@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ComponentType,
@@ -18,7 +17,7 @@ import {
   type IconComponent,
 } from '../../platform/ui/icons'
 import { KIND_TEXT } from '../../platform/ui/kinds'
-import { InspectorContext } from '../inspector/narrow'
+import { InspectorContext, type ListAct } from '../inspector/narrow'
 import { LINKED_LIST, LinkedList } from '../inspector/LinkedList'
 import { useRegistry, type RegisteredRelation, type Registry } from '../registry'
 import { formatInspect, useInspector, type Inspected } from './inspectorAddress'
@@ -30,6 +29,8 @@ type Behind = {
   scrollTop: number
   /** The list the next was opened from (artboard 32), for "3 of 7" and ↑ ↓ along it. */
   among?: readonly Inspected[]
+  /** That list's action for a row, which the opened page offers too (U-29). */
+  act?: ListAct
 }
 
 /**
@@ -59,36 +60,45 @@ export function Inspector() {
     if (shown) head.current?.focus()
   }, [shown])
 
-  const context = useMemo(
-    () => ({
-      go: (thing: Inspected, among?: readonly Inspected[]) => {
-        if (!open) return
-        setBehind((b) => [
-          ...b,
-          {
-            thing: open,
-            title,
-            scrollTop: body.current?.scrollTop ?? 0,
-            ...(among ? { among } : {}),
-          },
-        ])
-        ours.current = formatInspect(thing)
-        setTitle('')
-        swap(thing)
-        body.current?.scrollTo({ top: 0 })
-        // What was clicked is gone with the page it was on; focus stays in the inspector, where
-        // Esc and Alt ← still answer.
-        head.current?.focus()
-      },
-      name: setTitle,
-    }),
-    [open, title, swap],
-  )
+  const last = behind.at(-1)
+  const back = () => {
+    if (!last) return
+    setBehind((b) => b.slice(0, -1))
+    ours.current = formatInspect(last.thing)
+    swap(last.thing)
+    head.current?.focus()
+    requestAnimationFrame(() => body.current?.scrollTo({ top: last.scrollTop }))
+  }
+  const context = {
+    go: (thing: Inspected, among?: readonly Inspected[], act?: ListAct) => {
+      if (!open) return
+      setBehind((b) => [
+        ...b,
+        {
+          thing: open,
+          title,
+          scrollTop: body.current?.scrollTop ?? 0,
+          ...(among ? { among } : {}),
+          ...(act ? { act } : {}),
+        },
+      ])
+      ours.current = formatInspect(thing)
+      setTitle('')
+      swap(thing)
+      body.current?.scrollTo({ top: 0 })
+      // What was clicked is gone with the page it was on; focus stays in the inspector, where
+      // Esc and Alt ← still answer.
+      head.current?.focus()
+    },
+    name: setTitle,
+    back,
+    // Opened from a list: its action for this row, offered on the page too (U-29).
+    act: open && last?.act ? last.act(open, back) : undefined,
+  }
 
   if (!open) return null
   const view = viewOf(registry, open)
   const { relation, Narrow, Icon } = view
-  const last = behind.at(-1)
   // Opened from a list: where it is in it, and the ones either side (artboard 32).
   const place = last?.among ? last.among.findIndex((t) => formatInspect(t) === shown) : -1
   const along = (step: number) => {
@@ -104,14 +114,6 @@ export function Inspector() {
         {place + 1} of {last.among.length}
       </span>
     ) : null
-  const back = () => {
-    if (!last) return
-    setBehind((b) => b.slice(0, -1))
-    ours.current = formatInspect(last.thing)
-    swap(last.thing)
-    head.current?.focus()
-    requestAnimationFrame(() => body.current?.scrollTo({ top: last.scrollTop }))
-  }
   const openFull = () => {
     close()
     if (relation) navigate(relation.to(open.id))

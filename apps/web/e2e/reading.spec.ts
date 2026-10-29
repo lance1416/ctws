@@ -419,7 +419,10 @@ test('an empty Reading is the module empty state, whose button opens the capture
 }) => {
   await registerFreshUser(page, '/reading')
   await expect(page.getByRole('heading', { level: 2, name: 'No reading yet' })).toBeVisible()
-  await page.getByRole('main').getByRole('button', { name: /^New / }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /^Add reading/ })
+    .click()
   await expect(capture(page)).toBeFocused()
   await expect(page.getByRole('radio', { name: 'Reading' })).toHaveAttribute('aria-checked', 'true')
 })

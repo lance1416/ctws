@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Block, BlockFailed } from '../../../../platform/ui/Block'
-import { BUTTON } from '../../../../platform/ui/buttonStyles'
 import { ToDoIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, useEveryProject } from '../../../../shell/projects'
 import { readyQuery, todayQuery } from '../../api'
+import { offeredReady } from '../../logic/today'
 import { useTaskActions } from '../../hooks/useTaskActions'
 import { ALL_ROW, TODAY_LISTS } from '../../components/TodayLists'
 import { AllInInspector } from '../../../../shell/inspector'
+import { RowAction } from '../../components/RowAction'
 
 /** How many leaves the block offers; the rest are its "All N", beside it (FR-011). */
 const SHOWN = 5
@@ -19,11 +20,11 @@ const SHOWN = 5
 export function ReadyBlock({ today }: { today: string }) {
   const ready = useQuery(readyQuery(today))
   // What the left column already lists is not offered again here.
-  const listed = new Set((useQuery(todayQuery(today)).data ?? []).map((t) => t.id))
+  const listed = useQuery(todayQuery(today)).data ?? []
   const projects = useEveryProject()
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)
-  const offered = (ready.data ?? []).filter((t) => !listed.has(t.id))
+  const offered = offeredReady(ready.data ?? [], listed)
   const rows = offered.slice(0, SHOWN)
   const badge = { icon: ToDoIcon, tint: 'bg-task-bg text-task' }
   if (ready.isError)
@@ -57,14 +58,12 @@ export function ReadyBlock({ today }: { today: string }) {
                   <span className="truncate">{where}</span>
                 </span>
               </span>
-              <button
-                type="button"
-                onClick={() => actions.setStatus(t.id, 'in_progress')}
-                aria-label={`Start “${t.title}”`}
-                className={`${BUTTON.secondary} h-6.5 px-2.5 text-meta`}
+              <RowAction
+                label={`Start “${t.title}”`}
+                onPress={() => actions.setStatus(t.id, 'in_progress')}
               >
                 Start
-              </button>
+              </RowAction>
             </li>
           )
         })}

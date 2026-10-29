@@ -2,6 +2,8 @@ import type { CommunicationResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { problemText } from '../../../platform/http/api'
+import { useSaveGate } from '../../../platform/http/online'
+import { GATED } from '../../../platform/ui/buttonStyles'
 import { KIND_ICON } from '../../../platform/ui/icons'
 import { useAccountToday } from '../../../shell/auth'
 import { DayPickButton } from '../../../shell/dates'
@@ -9,8 +11,7 @@ import { communicationKeys, patchMessage } from '../api'
 import { nextMonday } from '../logic/followUp'
 import { LogMessage } from './LogMessage'
 
-const SMALL =
-  'inline-flex h-7 items-center gap-1.5 rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover'
+const SMALL = `inline-flex h-7 items-center gap-1.5 rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover ${GATED}`
 
 /** Moves a waiting message's follow-up day: "Later", "Follow up Mon" (FR-048, FR-079). */
 function useFollowUpOn(message: CommunicationResponse) {
@@ -35,12 +36,15 @@ export function AwaitingActions({
   const today = useAccountToday()
   const [replying, setReplying] = useState(false)
   const move = useFollowUpOn(message)
+  // Both save: offline they are greyed and say why (FR-033).
+  const save = useSaveGate()
   const about = message.subject ?? 'the message'
   return (
     <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
       <button
         type="button"
-        onClick={() => setReplying(true)}
+        onClick={save.gate(() => setReplying(true))}
+        {...save.props}
         aria-label={`Log the reply to ${about}`}
         className={SMALL}
       >
@@ -58,7 +62,8 @@ export function AwaitingActions({
         <button
           type="button"
           disabled={move.isPending}
-          onClick={() => move.mutate(nextMonday(today))}
+          onClick={save.gate(() => move.mutate(nextMonday(today)))}
+          {...save.props}
           aria-label={`Follow up on ${about} Monday`}
           className={SMALL}
         >

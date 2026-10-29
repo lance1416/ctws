@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { TaskResponse, TaskStatus } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router-dom'
@@ -44,10 +45,13 @@ export function TaskReading({
   task,
   onEdit,
   onClose,
+  act,
 }: {
   task: TaskResponse
   onEdit: () => void
   onClose: () => void
+  /** Opened from a list in the inspector: that list's action, under the facts (U-29). */
+  act?: ReactNode
 }) {
   const timeZone = useTimeZone()
   const now = useNow()
@@ -176,6 +180,7 @@ export function TaskReading({
           editing={false}
         />
       </dl>
+      {act && <div className="flex flex-wrap items-center gap-1.5">{act}</div>}
       {setStatus.isError && (
         <p role="alert" className="text-ui text-stop-t">
           Couldn't change the status

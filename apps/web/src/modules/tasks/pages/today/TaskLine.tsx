@@ -1,6 +1,7 @@
 import type { TaskId, TaskStatus, TodayTaskResponse } from '@ctws/contracts'
 import type { KeyboardEvent, ReactNode } from 'react'
-import { ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
+import { useSaveGate } from '../../../../platform/http/online'
+import { GATED, ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
 import { DoneIcon, FlagIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, useEveryProject } from '../../../../shell/projects'
 import { ProgressSquare } from '../../components/ProgressSquare'
@@ -156,13 +157,15 @@ export function DoneButton({
   title: string
   onDone: () => void
 }) {
+  const save = useSaveGate()
   return (
     <button
       type="button"
       data-done-button={id}
-      onClick={onDone}
+      onClick={save.gate(onDone)}
+      {...save.props}
       aria-label={`Mark “${title}” done`}
-      className={ICON_BUTTON}
+      className={`${ICON_BUTTON} ${GATED}`}
     >
       <DoneIcon size={16} aria-hidden="true" />
     </button>

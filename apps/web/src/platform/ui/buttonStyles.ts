@@ -34,3 +34,6 @@ export const KEY_ON_INK = `${KEY} border-on-ink/35 text-on-ink`
 /** An icon-only button (artboard 3 `.ib`): 28 square, grey until hovered. Give it `aria-label`. */
 export const ICON_BUTTON =
   'inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink disabled:opacity-50'
+
+/** A button greyed while it cannot act (`aria-disabled`): offline, a save (FR-033). */
+export const GATED = 'aria-disabled:cursor-default aria-disabled:opacity-45'

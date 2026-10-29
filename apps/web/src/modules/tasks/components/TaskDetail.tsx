@@ -1,6 +1,6 @@
 import { problemText } from '../../../platform/http/api'
 import type { TaskResponse } from '@ctws/contracts'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
 import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
@@ -17,6 +17,8 @@ type Props = {
   onClose: () => void
   /** The save was accepted by the server; the pane stays open and the owner acknowledges it. */
   onSaved?: () => void
+  /** Opened from a list in the inspector: that list's action, under the facts (U-29). */
+  act?: ReactNode
 }
 
 /** One task in the pane: reading by default, the form behind Edit. Saving returns to reading. */
@@ -32,7 +34,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
  * The task itself, wherever it is shown: the pane above, and the inspector, where it is edited in
  * place too (artboard 8, DES-001 "检查器里的窄版").
  */
-export function TaskDetailBody({ task, onClose, onSaved }: Props) {
+export function TaskDetailBody({ task, onClose, onSaved, act }: Props) {
   useRecordRecent({
     type: 'task',
     id: task.id,
@@ -109,6 +111,7 @@ export function TaskDetailBody({ task, onClose, onSaved }: Props) {
         ) : (
           <TaskReading
             task={task}
+            act={act}
             onEdit={() => {
               edit.start()
               setEditing(true)

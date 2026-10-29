@@ -9,6 +9,7 @@ export {
   PropRow,
   PropRows,
   useInspectorGo,
+  useListAct,
   useNarrowName,
 } from './narrow'
 export { useCloseInspector } from './close'

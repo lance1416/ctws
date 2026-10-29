@@ -2,7 +2,8 @@ import type { TaskId, TodayTaskResponse } from '@ctws/contracts'
 import { addDays } from '@ctws/core/day'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { nextMonday } from '../../../../platform/time/dates'
-import { BUTTON } from '../../../../platform/ui/buttonStyles'
+import { useSaveGate } from '../../../../platform/http/online'
+import { BUTTON, GATED } from '../../../../platform/ui/buttonStyles'
 import { ExpandIcon } from '../../../../platform/ui/icons'
 import { MENU_ITEM, MENU_SURFACE } from '../../../../platform/ui/menuSurface'
 import { DayPickButton } from '../../../../shell/dates'
@@ -24,15 +25,17 @@ export function PlanButtons({
   day: string
   onMove: (id: TaskId, to: string) => void
 }) {
+  const save = useSaveGate()
   return (
     <span className="inline-flex items-center gap-1">
       {planDays(day).map((d) => (
         <button
           key={d.label}
           type="button"
-          onClick={() => onMove(task.id, d.to)}
+          onClick={save.gate(() => onMove(task.id, d.to))}
+          {...save.props}
           aria-label={`Plan “${task.title}” for ${d.label === 'Mon' ? 'next Monday' : d.label.toLocaleLowerCase()}`}
-          className="inline-flex h-6.5 items-center rounded-control border border-line bg-panel px-2 text-meta font-medium text-ink hover:bg-hover"
+          className={`inline-flex h-6.5 items-center rounded-control border border-line bg-panel px-2 text-meta font-medium text-ink hover:bg-hover ${GATED}`}
         >
           {d.label}
         </button>
@@ -56,9 +59,14 @@ export function MoveAllMenu({
   day: string
   onMove: (id: TaskId, to: string) => void
 }) {
+  const save = useSaveGate()
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger className={`${BUTTON.quiet} h-7 px-2.5 text-meta`}>
+      <DropdownMenu.Trigger
+        disabled={!save.online}
+        title={save.props.title}
+        className={`${BUTTON.secondary} h-7 px-2.5 text-meta`}
+      >
         Move all to…
         <ExpandIcon size={12} aria-hidden="true" />
       </DropdownMenu.Trigger>
