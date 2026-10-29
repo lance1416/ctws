@@ -5,6 +5,7 @@ import { radioKeys } from '../../platform/ui/choiceKeys'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useComposing } from '../../platform/keyboard/composition'
 import { Link, useLocation } from 'react-router-dom'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
 import { BUTTON, KEY, KEY_ON_INK, LINK } from '../../platform/ui/buttonStyles'
@@ -47,6 +48,7 @@ export function openCapture(kind?: Kind): void {
  * closes it and keeps what was typed.
  */
 export function Capture() {
+  const composing = useComposing()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [switched, setSwitched] = useState<Kind | null>(null)
@@ -133,7 +135,8 @@ export function Capture() {
       setOpen(false)
       return
     }
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    // The Enter that commits IME text is not an add, in Safari's order too (`useComposing`).
+    if (e.key === 'Enter' && !e.shiftKey && !composing.composingNow(e)) {
       e.preventDefault()
       if (canAdd) add.mutate(line)
     }
@@ -262,6 +265,7 @@ export function Capture() {
               // What was said about the last line goes once the next one starts.
               setLanded(null)
             }}
+            {...composing.bind}
             onKeyDown={onKeyDown}
             rows={2}
             aria-label="Capture"
