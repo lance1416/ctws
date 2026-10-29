@@ -62,8 +62,9 @@ export function describeTaskChange(
     case 'notes_changed':
       return { mark: null, text: 'Notes edited' }
     case 'stage_changed': {
-      const stage = text(now)
-      return { mark: null, text: stage ? `Stage set to ${stage}` : 'Stage cleared' }
+      const [from, to] = [text(was), text(now)]
+      if (!to) return { mark: null, text: 'Stage cleared' }
+      return { mark: null, text: from ? `Stage ${from} → ${to}` : `Stage set to ${to}` }
     }
     case 'stage_renamed':
       return { mark: null, text: `Stage renamed ${text(was) ?? ''} → ${text(now) ?? ''}` }

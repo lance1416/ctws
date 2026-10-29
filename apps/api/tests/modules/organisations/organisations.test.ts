@@ -268,12 +268,15 @@ describe('roles are logged (BUG-007)', () => {
       'role_changed',
       'role_removed',
     ])
-    expect(
-      (events.rows[2] as { payload: { from: { title: string }; to: { title: string } } }).payload,
-    ).toMatchObject({
+    const payloads = events.rows.map((e) => (e as { payload: object }).payload)
+    // Each names the organisation, so the line can say where (BUG-083).
+    expect(payloads[1]).toMatchObject({ organisationName: 'Acme', title: 'Intern' })
+    expect(payloads[2]).toMatchObject({
+      organisationName: 'Acme',
       from: { title: 'Intern' },
       to: { title: 'Engineer' },
     })
+    expect(payloads[3]).toMatchObject({ organisationName: 'Acme', title: 'Engineer' })
   })
 })
 

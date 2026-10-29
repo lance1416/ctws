@@ -7,7 +7,7 @@ import {
   roleId,
   type UpdateOrganisationBody,
 } from '@ctws/contracts'
-import { eq, sql } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import type { Db, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { replaceRows } from '../../platform/db/replace'
@@ -177,6 +177,18 @@ export async function putRoles(
     to: r.to,
   })
   const wasAt = new Map(before.map((r) => [r.organisationId, r]))
+  // Each line names the organisation, as it is called now: "Staff engineer at Stripe".
+  const ids = [...new Set(roles.map((r) => r.organisationId))]
+  const named = new Map(
+    ids.length === 0
+      ? []
+      : (
+          await tx
+            .select({ id: organisations.id, name: organisations.name })
+            .from(organisations)
+            .where(within(scoped(organisations, ctx.workspaceId), inArray(organisations.id, ids)))
+        ).map((o) => [o.id, o.name]),
+  )
   const nowAt = new Map(
     roles.map((r) => [
       r.organisationId,
@@ -186,7 +198,11 @@ export async function putRoles(
   for (const [organisationId, next] of nowAt) {
     const was = wasAt.get(organisationId)
     if (!was) {
-      await log.append(person, 'role_added', { organisationId, ...next })
+      await log.append(person, 'role_added', {
+        organisationId,
+        organisationName: named.get(organisationId) ?? null,
+        ...next,
+      })
     } else if (
       was.title !== next.title ||
       monthOf(was.fromMonth) !== next.from ||
@@ -194,6 +210,7 @@ export async function putRoles(
     ) {
       await log.append(person, 'role_changed', {
         organisationId,
+        organisationName: named.get(organisationId) ?? was.organisationName,
         from: { title: was.title, from: monthOf(was.fromMonth), to: monthOf(was.toMonth) },
         to: shape(next),
       })
@@ -201,7 +218,11 @@ export async function putRoles(
   }
   for (const [organisationId, was] of wasAt) {
     if (!nowAt.has(organisationId)) {
-      await log.append(person, 'role_removed', { organisationId, title: was.title })
+      await log.append(person, 'role_removed', {
+        organisationId,
+        organisationName: was.organisationName,
+        title: was.title,
+      })
     }
   }
   await replaceRows(

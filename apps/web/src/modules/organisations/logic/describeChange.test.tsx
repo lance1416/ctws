@@ -41,7 +41,10 @@ describe('describeOrganisationChange', () => {
         taskTitle: 'Harbour & Lane',
         projectName: 'Find a lawyer',
       }),
-    ).toBe('Stage set to Shortlisted in Find a lawyer')
+    ).toBe('Stage Contacted → Shortlisted in Find a lawyer')
+    expect(
+      said('stage_changed', { from: null, to: 'Contacted', projectName: 'Find a lawyer' }),
+    ).toBe('Stage set to Contacted in Find a lawyer')
     expect(
       said('stage_changed', { from: 'Contacted', to: null, projectName: 'Find a lawyer' }),
     ).toBe('Stage cleared in Find a lawyer')
