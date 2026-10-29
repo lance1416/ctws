@@ -11,7 +11,10 @@ import { createProject, createTask } from '../../helpers/builders'
 
 const cleanups: (() => Promise<void>)[] = []
 
-const setup = (email = 'p@example.com') => setupWith(cleanups, email)
+/** The calendar's now: the first of October, before every plan these cases make. */
+const NOW = new Date('2026-10-01T09:00:00.000Z')
+const setup = (email = 'p@example.com', now = NOW) =>
+  setupWith(cleanups, email, { clock: () => now })
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
@@ -48,6 +51,19 @@ describe('the task calendar', () => {
       ['task', id],
     ])
     expect(got[0]).toMatchObject({ title: '发 v0.8.0', projectName: 'CTWS' })
+  })
+
+  it('carries a plan for a day gone by to today, as Today does, while it is open', async () => {
+    // Now is the 22nd: one planned for Sunday the 18th and not done is today's (U-10).
+    const ctx = await setup('carry@example.com', new Date('2026-10-22T08:10:00.000Z'))
+    const pid = await createProject(ctx, 'P')
+    const carried = await createTask(ctx, pid, '顺延的')
+    await patchTask(ctx, carried, { scheduledOn: '2026-10-18' })
+    const done = await createTask(ctx, pid, '做完的')
+    await patchTask(ctx, done, { scheduledOn: '2026-10-18', status: 'done' })
+
+    const got = await entries(ctx, '2026-10-01', '2026-10-31')
+    expect(got.map((e) => [e.title, e.day, e.kind])).toEqual([['顺延的', '2026-10-22', 'planned']])
   })
 
   it('decides the day in the ACCOUNT zone, not the server one', async () => {

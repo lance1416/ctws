@@ -36,7 +36,13 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
   serve(app, [
     on(api.tasks.calendar, async (req) => {
       const user = currentUser(req)
-      const rows = await listTaskCalendar(app.db, user.workspaceId, user.timezone, req.query)
+      const rows = await listTaskCalendar(
+        app.db,
+        user.workspaceId,
+        user.timezone,
+        req.query,
+        app.clock(),
+      )
       return { entries: rows.map(toCalendarEntry) }
     }),
 
