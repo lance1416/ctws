@@ -569,11 +569,19 @@ test('notes emptied and Done at once are saved empty, not brought back (BUG-089)
     timeZone: 'Europe/London',
     durationMinutes: 30,
   })
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
   const note = await apiPost<{ id: string }>(page, '/notes', {
     title: null,
-    body: 'The proc-macro server crashes less.',
+    body: `Ask [@Mira Chen](ctws://person/${mira.id}) about the proc-macro server.`,
     anchor: { type: 'meeting', id: made.meetingId, occurrenceId: '2026-09-11T10:30' },
   })
+  const relationsOfMira = async () =>
+    JSON.stringify(
+      await (
+        await page.request.get(`/api/v1/relations?type=person&id=${mira.id}`, { headers: WEB })
+      ).json(),
+    )
+  expect(await relationsOfMira()).toContain(note.id)
   await page.goto(`/meetings/${made.meetingId}?at=2026-09-11T10:30`)
   await page.getByRole('button', { name: 'Edit the notes' }).click()
   const box = page.getByRole('textbox', { name: 'Notes for this meeting' })
@@ -586,4 +594,6 @@ test('notes emptied and Done at once are saved empty, not brought back (BUG-089)
   await saved
   const read = await page.request.get(`/api/v1/notes/${note.id}`, { headers: WEB })
   expect(((await read.json()) as { body: string }).body).toBe('')
+  // Its mention went with its words (FR-042).
+  expect(await relationsOfMira()).not.toContain(note.id)
 })
