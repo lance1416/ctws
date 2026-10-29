@@ -14,6 +14,7 @@ import {
   InspectLink,
   NarrowBlocks,
   NarrowHead,
+  useListAct,
   PropRow,
   PropRows,
   useNarrowKindBlocks,
@@ -54,6 +55,7 @@ export function PersonNarrow({ id }: { id: string }) {
     none: (kind) => (kind === 'reading' ? 'None from them yet' : 'None with them yet'),
     linkedRows: registry.personLinked,
   })
+  const act = useListAct()
   if (people.isSuccess && !person)
     return <p className="p-4 text-ui text-muted">This person is not here any more.</p>
   if (!person) return null
@@ -123,6 +125,8 @@ export function PersonNarrow({ id }: { id: string }) {
           },
         ]}
       />
+      {/* What the block it was opened from offers: Remove from Job hunt (DES-001). */}
+      {act && <div className="px-4 pt-2 pb-4">{act}</div>}
     </>
   )
 }

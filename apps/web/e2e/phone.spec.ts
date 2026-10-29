@@ -229,6 +229,9 @@ test('the phone calendar: lunar names, a dot a kind, the chosen day listed (FR-0
   ])
   await day.getByRole('link', { name: /Stripe: first screen/ }).click()
   await expect(page.getByRole('link', { name: /Join/ }).first()).toBeVisible()
+  // A thing's page has its way back to its kind's list (FR-082).
+  await page.getByRole('main').getByRole('link', { name: 'Meetings', exact: true }).click()
+  await expect(page).toHaveURL(/\/meetings$/)
 
   // New event is a placeholder: it says so and opens nothing.
   await page.goto('/calendar')
@@ -375,4 +378,75 @@ test('the swipe is only a shortcut: a row’s actions are reached as they are, a
   await expect(
     sheet.getByRole('button', { name: 'Pick a date for “Pack the books”' }),
   ).toBeVisible()
+})
+
+test('a project on a phone: its tree alone, a row 44 and over, tags under its name (FR-088)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const jh = await makeProject(page, 'Job hunt')
+  const amazon = await makeTask(page, jh, 'Amazon')
+  await makeTask(page, jh, 'Phone screen', { dueAt: '2020-01-01T12:00:00.000Z' }, amazon)
+  await makeTask(page, jh, 'Onsite', {}, amazon)
+  await page.goto(`/projects/${jh}`)
+
+  await expect(page.getByRole('link', { name: 'Projects' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Job hunt' })).toBeVisible()
+  // One view: no Tree and Board to switch between.
+  await expect(page.getByRole('radio', { name: /Board/ })).toHaveCount(0)
+  const rows = page.locator('[data-phone-tree-row]')
+  await expect(rows).toHaveCount(3)
+  for (const row of await rows.all())
+    expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  await expect(rows.filter({ hasText: 'Amazon' })).toContainText('0/2')
+  await expect(rows.filter({ hasText: 'Phone screen' })).toContainText(/\w{3} \d+/)
+
+  // The circle finishes a leaf; the name opens it in the sheet.
+  await page.getByRole('button', { name: 'Done “Onsite”' }).click()
+  await expect(rows.filter({ hasText: 'Onsite' })).toHaveCount(0)
+  await rows
+    .filter({ hasText: 'Phone screen' })
+    .getByRole('button', { name: /^Phone screen/ })
+    .click()
+  await expect(page.getByRole('complementary', { name: 'Inspector' })).toBeVisible()
+  await page
+    .getByRole('complementary', { name: 'Inspector' })
+    .getByRole('button', { name: 'Close' })
+    .click()
+
+  // Edit stages is under "…".
+  await page.getByRole('button', { name: 'More', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Edit stages' }).click()
+  await expect(page.getByRole('dialog', { name: /Stages in Job hunt/ })).toBeVisible()
+})
+
+test('a person on a project: Remove is a swipe away, and in their sheet, asked first (DES-001)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const jh = await makeProject(page, 'Job hunt')
+  for (const [given, family] of [
+    ['Mira', 'Chen'],
+    ['Priya', 'Nair'],
+  ])
+    await apiPost(page, '/people', { givenName: given, familyName: family, projectIds: [jh] })
+  await page.goto(`/projects/${jh}`)
+  const people = page.getByRole('region', { name: 'People' })
+  await expect(people.locator('[data-linked]')).toHaveCount(2)
+
+  // Reached as it is, without the swipe: reaching it opens the row.
+  const remove = people.getByRole('button', { name: 'Remove Mira Chen from project' })
+  await remove.focus()
+  await expect(remove).toBeInViewport()
+  await remove.press('Enter')
+  await expect(people.locator('[data-linked]')).toHaveCount(1)
+
+  // Opened from the block, the sheet offers it at its foot, and asks first.
+  await people.getByText('Priya Nair').click()
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await sheet.getByRole('button', { name: 'Remove from Job hunt' }).click()
+  const ask = page.getByRole('alertdialog', { name: 'Remove Priya Nair from Job hunt' })
+  await ask.getByRole('button', { name: 'Remove from Job hunt' }).click()
+  await expect(sheet).toHaveCount(0)
+  await expect(people.locator('[data-linked]')).toHaveCount(0)
 })

@@ -53,4 +53,7 @@ export const SWIPE = {
     'flex w-21 flex-col items-center justify-center gap-1 bg-swipe-later text-meta font-medium text-on-ink',
   pick: 'flex w-21 flex-col items-center justify-center gap-1 bg-swipe-pick text-meta font-medium text-on-ink',
   done: 'flex items-center gap-1.5 bg-swipe-done pl-5 text-meta font-medium text-on-ink',
+  /** Remove: the hover × of the desk, a swipe away on a phone. */
+  remove:
+    'flex w-21 flex-col items-center justify-center gap-1 bg-stop text-meta font-medium text-on-stop',
 } as const

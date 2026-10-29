@@ -1,4 +1,5 @@
 import type { ObjectType, ProjectId } from '@ctws/contracts'
+import { useEveryProject } from './api'
 import { useNavigate } from 'react-router-dom'
 import { inColumns } from '../../platform/ui/columns'
 import { useKindBlocks } from '../links/KindBlocks'
@@ -36,8 +37,10 @@ export function ProjectLinked({
   const kinds = ORDER.filter((k) => registry.relations.some((r) => r.type === k))
   // One hook per module that lists its own things: the registry's list is fixed.
   const owned = registry.projectThings.map((t) => ({ kind: t.kind, ...t.useThings(projectId) }))
+  const name = useEveryProject().data?.find((p) => p.id === projectId)?.name
   const { blocks: nodes, picker } = useKindBlocks({
     of: { type: 'project', id: projectId },
+    ...(name ? { ofName: name } : {}),
     kinds,
     owned,
     // A project's messages are the ones awaiting a reply (artboard 8, U-12).

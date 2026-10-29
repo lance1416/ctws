@@ -22,7 +22,7 @@ import { usePullToClose } from '../../platform/ui/BottomSheet'
 import { InspectorContext, type ListAct } from '../inspector/narrow'
 import { LINKED_LIST, LinkedList } from '../inspector/LinkedList'
 import { useRegistry, type RegisteredRelation, type Registry } from '../registry'
-import { formatInspect, useInspector, type Inspected } from './inspectorAddress'
+import { formatInspect, openedAct, useInspector, type Inspected } from './inspectorAddress'
 
 /** One thing gone back past: what it was, its name, and where its page was scrolled to. */
 type Behind = {
@@ -99,7 +99,12 @@ export function Inspector() {
     name: setTitle,
     back,
     // Opened from a list: its action for this row, offered on the page too (U-29).
-    act: open && last?.act ? last.act(open, back) : undefined,
+    act: !open
+      ? undefined
+      : last
+        ? last.act?.(open, back)
+        : // Opened from a page's block: what that block offers (a person's Remove from Job hunt).
+          openedAct(open)?.(open, close),
   }
 
   if (!open) return null

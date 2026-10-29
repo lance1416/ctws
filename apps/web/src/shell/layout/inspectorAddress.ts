@@ -1,5 +1,6 @@
 import { OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import type { ListAct } from '../inspector/narrow'
 
 /**
  * THE INSPECTOR'S ADDRESS (FR-022): `?inspect=<type>:<id>` on whatever page is open, so a reload
@@ -27,10 +28,19 @@ export const formatInspect = ({ type, id, at }: Inspected): string =>
 
 /** The element that opened the inspector, so closing can hand focus back to it. */
 let opener: HTMLElement | null = null
+/**
+ * The action of the list or block a thing was opened from, from a page (Remove from Job hunt):
+ * the opened page offers it too, as one opened from a list in the inspector does (U-29).
+ */
+let openedWith: { key: string; act: ListAct } | null = null
+
+/** What the page it was opened from offers to do with the thing shown, if anything. */
+export const openedAct = (thing: Inspected): ListAct | null =>
+  openedWith?.key === formatInspect(thing) ? openedWith.act : null
 
 export function useInspector(): {
   open: Inspected | null
-  show: (thing: Inspected) => void
+  show: (thing: Inspected, act?: ListAct) => void
   /** What it shows, changed from inside it: the address keeps only the one shown (FR-022). */
   swap: (thing: Inspected) => void
   close: () => void
@@ -46,8 +56,9 @@ export function useInspector(): {
   }
   return {
     open,
-    show: (thing) => {
+    show: (thing, act) => {
       opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      openedWith = act ? { key: formatInspect(thing), act } : null
       withParams((next) => next.set(INSPECT, formatInspect(thing)))
     },
     swap: (thing) => withParams((next) => next.set(INSPECT, formatInspect(thing)), true),

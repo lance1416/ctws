@@ -2,7 +2,9 @@ import type { LinkCandidate, ObjectType } from '@ctws/contracts'
 import { useContext, useState, type ComponentType, type ReactNode } from 'react'
 import { Avatar } from '../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../platform/ui/Block'
-import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
+import { BUTTON, ICON_BUTTON, SWIPE } from '../../platform/ui/buttonStyles'
+import { DeleteConfirm } from '../../platform/ui/DeleteConfirm'
+import { SwipeRow } from '../../platform/ui/SwipeRow'
 import { CloseIcon, NewIcon, type Kind } from '../../platform/ui/icons'
 import type { Creator, Join, OwnThings } from '../contract'
 import { NewContext } from '../creates'
@@ -12,7 +14,7 @@ import { KIND_WORDS } from '../search/view'
 import type { Makes } from './LinkDialog'
 import { LinkedRow } from './LinkedRow'
 import { linkedListOf } from '../inspector/LinkedList'
-import { AllInInspector, atOf, OpensBeside } from '../inspector/narrow'
+import { AllInInspector, atOf, OpensBeside, type ListAct } from '../inspector/narrow'
 import { type Item, useLinked } from './useLinked'
 
 /** "an organisation", "a note": one of a kind, as a button's name says it. */
@@ -63,6 +65,8 @@ type KindBlockProps = {
   join?: Join
   /** What a row is taken off, in place of unlinking it: "project" (Remove from project). */
   removeFrom?: string
+  /** The subject by name, for "Remove from Job hunt" on the thing's own page. */
+  removeFromName?: string
 }
 
 /**
@@ -84,6 +88,7 @@ export function useKindBlocks({
   linkedRows = [],
   sayAdd = false,
   makesFor = () => undefined,
+  ofName,
 }: {
   of: { type: ObjectType; id: string }
   kinds: readonly ObjectType[]
@@ -99,6 +104,8 @@ export function useKindBlocks({
   sayAdd?: boolean
   /** How a kind that is only linked makes a new one from its + (FR-055). */
   makesFor?: (kind: ObjectType) => Makes | undefined
+  /** The subject's name, for what its blocks offer on a thing's own page: "Remove from Job hunt". */
+  ofName?: string
 }): { blocks: ReactNode[]; full: number; picker: ReactNode } {
   const registry = useRegistry()
   const openNew = useContext(NewContext)
@@ -143,6 +150,7 @@ export function useKindBlocks({
       ...(sayAdd ? { addSays: creator ? creator.label : 'Link' } : {}),
       ...(join ? { join } : {}),
       ...(adds ? { removeFrom } : {}),
+      ...(ofName ? { removeFromName: ofName } : {}),
     }
   })
   const joinOf = joining ? blocks.find((b) => b.kind === joining) : undefined
@@ -201,50 +209,101 @@ function KindBlock({
   addSays,
   join,
   removeFrom,
+  removeFromName,
 }: KindBlockProps) {
   const registry = useRegistry()
   const rows: ReactNode[] = [
     ...things.map((t) => (
-      // The row's hover takes in its ✕, so the ✕ reads as the row's (N-08).
-      <li
-        key={t.id}
-        className={`group flex min-w-0 items-center ${join ? 'pr-1.5 hover:bg-hover' : ''}`}
-      >
-        {/* With its ✕, the row takes the hover whole; the link adds none of its own (N-08). */}
-        <ThingRow row={t} kind={kind} hover={!join} />
-        {join && (
-          <TakeOff
-            label={`Remove ${t.title} from ${removeFrom}`}
-            title={`Remove from ${removeFrom}`}
-            disabled={join.busy}
-            onClick={() => join.remove(t.id)}
-          />
-        )}
+      <li key={t.id}>
+        {/* On a phone its ✕ is a swipe away, and the page it opens offers it too (DES-001). */}
+        <SwipeRow
+          actions={
+            join && (
+              <SwipeAction
+                label={`Remove ${t.title} from ${removeFrom}`}
+                disabled={join.busy}
+                onClick={() => join.remove(t.id)}
+              />
+            )
+          }
+        >
+          {/* The row's hover takes in its ✕, so the ✕ reads as the row's (N-08). */}
+          <div className={`group flex min-w-0 items-center ${join ? 'pr-1.5 hover:bg-hover' : ''}`}>
+            {/* With its ✕, the row takes the hover whole; the link adds none of its own (N-08). */}
+            <ThingRow
+              row={t}
+              kind={kind}
+              hover={!join}
+              {...(join
+                ? {
+                    act: (_thing, done) => (
+                      <RemoveFrom
+                        name={t.title}
+                        from={removeFromName ?? removeFrom ?? ''}
+                        busy={join.busy}
+                        onRemove={() => {
+                          join.remove(t.id)
+                          done()
+                        }}
+                      />
+                    ),
+                  }
+                : {})}
+            />
+            {join && (
+              <TakeOff
+                label={`Remove ${t.title} from ${removeFrom}`}
+                title={`Remove from ${removeFrom}`}
+                disabled={join.busy}
+                onClick={() => join.remove(t.id)}
+              />
+            )}
+          </div>
+        </SwipeRow>
       </li>
     )),
     ...linked.map((item) => (
-      <li key={item.relationId} className="group flex min-w-0 items-center pr-1.5 hover:bg-hover">
-        {Linked ? (
-          <OpensBeside
-            thing={{ type: item.type, id: item.id }}
-            to={registry.relationFor(item.type).to(item.id)}
-            data-linked={item.id}
-            className="min-w-0 flex-1 px-3"
-          >
-            <Linked thing={item} />
-          </OpensBeside>
-        ) : (
-          <LinkedRow item={item} />
-        )}
-        {/* A mention goes with its sentence; only a relation made by hand unlinks here. */}
-        {item.origin === 'manual' && (
-          <TakeOff
-            label={removeFrom ? `Remove ${item.title} from ${removeFrom}` : `Unlink ${item.title}`}
-            title={removeFrom ? `Remove from ${removeFrom}` : undefined}
-            disabled={unlinking}
-            onClick={() => onUnlink(item.relationId)}
-          />
-        )}
+      <li key={item.relationId}>
+        <SwipeRow
+          actions={
+            item.origin === 'manual' && (
+              <SwipeAction
+                label={
+                  removeFrom ? `Remove ${item.title} from ${removeFrom}` : `Unlink ${item.title}`
+                }
+                word={removeFrom ? 'Remove' : 'Unlink'}
+                disabled={unlinking}
+                onClick={() => onUnlink(item.relationId)}
+              />
+            )
+          }
+        >
+          <div className="group flex min-w-0 items-center pr-1.5 hover:bg-hover">
+            {Linked ? (
+              <OpensBeside
+                thing={{ type: item.type, id: item.id }}
+                to={registry.relationFor(item.type).to(item.id)}
+                data-linked={item.id}
+                className="min-w-0 flex-1 px-3"
+              >
+                <Linked thing={item} />
+              </OpensBeside>
+            ) : (
+              <LinkedRow item={item} />
+            )}
+            {/* A mention goes with its sentence; only a relation made by hand unlinks here. */}
+            {item.origin === 'manual' && (
+              <TakeOff
+                label={
+                  removeFrom ? `Remove ${item.title} from ${removeFrom}` : `Unlink ${item.title}`
+                }
+                title={removeFrom ? `Remove from ${removeFrom}` : undefined}
+                disabled={unlinking}
+                onClick={() => onUnlink(item.relationId)}
+              />
+            )}
+          </div>
+        </SwipeRow>
       </li>
     )),
   ]
@@ -324,7 +383,7 @@ function TakeOff({
       onClick={onClick}
       aria-label={label}
       title={title}
-      className={`${ICON_BUTTON} opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100`}
+      className={`${ICON_BUTTON} opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-lg:hidden [@media(hover:none)]:opacity-100`}
     >
       <CloseIcon size={14} aria-hidden="true" />
     </button>
@@ -335,13 +394,25 @@ function TakeOff({
  * A module's own thing: first a person's avatar or a word or two (a meeting's day and time), then
  * the title, then a fact.
  */
-function ThingRow({ row, kind, hover = true }: { row: Row; kind: ObjectType; hover?: boolean }) {
+function ThingRow({
+  row,
+  kind,
+  hover = true,
+  act,
+}: {
+  row: Row
+  kind: ObjectType
+  hover?: boolean
+  /** What its block offers to do with it, on the page it opens too. */
+  act?: ListAct
+}) {
   // A kind with no word to lead with (reading) gives its title the room.
   const lead = row.initials || row.mark || row.lead !== undefined
   return (
     <OpensBeside
       thing={{ type: kind, id: row.id, ...(atOf(row.to) ? { at: atOf(row.to)! } : {}) }}
       to={row.to}
+      act={act}
       data-linked={row.id}
       className={`grid min-h-9 min-w-0 flex-1 items-center gap-x-3 px-3 text-ui text-ink ${hover ? 'hover:bg-hover' : ''} ${
         lead ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]'
@@ -366,5 +437,73 @@ function ThingRow({ row, kind, hover = true }: { row: Row; kind: ObjectType; hov
       </span>
       {row.trail ?? <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>}
     </OpensBeside>
+  )
+}
+
+/** What a row's swipe uncovers on a phone: its ✕ in words (DES-001). */
+function SwipeAction({
+  label,
+  word = 'Remove',
+  disabled,
+  onClick,
+}: {
+  label: string
+  word?: string
+  disabled: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={SWIPE.remove}
+    >
+      <CloseIcon size={16} aria-hidden="true" />
+      {word}
+    </button>
+  )
+}
+
+/**
+ * "Remove from Job hunt" at the foot of a thing opened from its project's block (DES-001): red,
+ * framed, and asked first, from the foot on a phone.
+ */
+function RemoveFrom({
+  name,
+  from,
+  busy,
+  onRemove,
+}: {
+  name: string
+  from: string
+  busy: boolean
+  onRemove: () => void
+}) {
+  const [asking, setAsking] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAsking(true)}
+        className={`${BUTTON.destructive} w-full justify-center`}
+      >
+        Remove from {from}
+      </button>
+      {asking && (
+        <DeleteConfirm
+          label={`Remove ${name} from ${from}`}
+          message={`Remove ${name} from ${from}? Nothing else about them changes.`}
+          busy={busy}
+          confirm={`Remove from ${from}`}
+          onConfirm={() => {
+            setAsking(false)
+            onRemove()
+          }}
+          onCancel={() => setAsking(false)}
+        />
+      )}
+    </>
   )
 }

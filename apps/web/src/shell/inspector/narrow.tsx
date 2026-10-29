@@ -226,6 +226,7 @@ export function OpensBeside({
   thing,
   to,
   className,
+  act,
   children,
   ...rest
 }: {
@@ -233,6 +234,8 @@ export function OpensBeside({
   to: string
   className?: string
   title?: string
+  /** What the page offers to do with it, which its page in the inspector offers too. */
+  act?: ListAct | undefined
   children: ReactNode
 } & Record<`data-${string}`, string>) {
   const inside = useContext(InspectorContext)
@@ -251,7 +254,7 @@ export function OpensBeside({
       onClick={(e) => {
         if (!narrow || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
         e.preventDefault()
-        show(thing)
+        show(thing, act)
       }}
       {...rest}
     >
