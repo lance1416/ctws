@@ -5,6 +5,7 @@ import { BackIcon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 import { useEveryProject } from './api'
 import { MoreMenu } from './ProjectHead'
+import { NewMenu } from '../creates'
 import { PinnedResources } from './PinnedResources'
 import { ProjectLinked } from './ProjectLinked'
 import { ProjectSquare } from './ProjectSquare'
@@ -32,6 +33,8 @@ export function PhoneProject({ id }: { id: ProjectId }) {
           <BackIcon size={20} aria-hidden="true" />
           Projects
         </Link>
+        {/* What can belong to it, made in it (FR-026). */}
+        <NewMenu projectName={project.name} className="shrink-0" />
         <MoreMenu
           id={id}
           archived={project.isInbox ? null : project.archivedAt !== null}
@@ -55,7 +58,7 @@ export function PhoneProject({ id }: { id: ProjectId }) {
       </div>
       <PinnedResources projectId={id} name={project.name} />
       {main && (
-        <section aria-label={main.moduleLabel} className="min-w-0">
+        <section aria-label={main.moduleLabel} data-panel={main.moduleLabel} className="min-w-0">
           {main.Phone ? (
             <main.Phone projectId={id} />
           ) : (

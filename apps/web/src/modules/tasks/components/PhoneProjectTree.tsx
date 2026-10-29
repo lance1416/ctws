@@ -100,7 +100,10 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
                 onClick={() => inspect({ type: 'task', id: t.id })}
                 className="flex min-w-0 flex-1 flex-col gap-1 py-2 text-left"
               >
-                <span className={`truncate text-prose ${done ? 'text-subtle' : 'text-ink'}`}>
+                <span
+                  data-row-title
+                  className={`truncate text-prose ${done ? 'text-subtle' : 'text-ink'}`}
+                >
                   {deeper && <span className="text-subtle">… </span>}
                   {t.title}
                 </span>
@@ -109,6 +112,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
                     {stage && <StageLabel name={stage.name} quiet={stage.collapsed} />}
                     {due && (
                       <span
+                        data-row-due
                         className={`inline-flex h-5.5 items-center gap-1 rounded-control px-2 text-meta font-medium ${
                           DUE_TONE[due.tone] ?? 'bg-warn-bg text-warn-t'
                         }`}
