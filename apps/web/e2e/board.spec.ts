@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
+  apiPost,
   completedAt,
   makeProject,
   makeTask,
@@ -295,4 +296,20 @@ test('a card made at the top of To do shows, though five are there before it', a
   await box.press('Enter')
   await expect(cardsIn(page, 'todo').first()).toContainText('Made just now')
   await expect(cardsIn(page, 'todo')).toHaveCount(5)
+})
+
+test('a card with a GitHub pull request says its number (FR-057, BUG-077)', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  const reviewed = await makeTask(page, pid, 'Review the search pull request')
+  await makeTask(page, pid, 'Nothing to review')
+  await apiPost(page, '/resources', {
+    owner: { type: 'task', id: reviewed },
+    url: 'https://github.com/acme/ctws/pull/418',
+  })
+  await openBoard(page, pid)
+  await expect(card(page, 'Review the search pull request').locator('[data-board-pr]')).toHaveText(
+    '#418',
+  )
+  await expect(card(page, 'Nothing to review').locator('[data-board-pr]')).toHaveCount(0)
 })

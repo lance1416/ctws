@@ -6,8 +6,8 @@ import {
   type UpdateResourceBody,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { rankBetween } from '@ctws/core'
-import { and, asc, desc, eq, isNotNull, isNull } from 'drizzle-orm'
+import { rankBetween, resourceLook } from '@ctws/core'
+import { and, asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { DomainError, NotFound } from '../../platform/errors'
 import { newId } from '../../platform/db/ids'
@@ -60,6 +60,37 @@ export async function resourcesOf(
       ),
     )
     .orderBy(asc(resources.rank), asc(resources.id))
+}
+
+/**
+ * Each of `ids`' first GitHub pull request, as its label ("#418"): what a card on the board says of
+ * its task (FR-057). In the owners' own order of their resources; an owner with none is not a key.
+ */
+export async function pullRequestsOf(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  type: ObjectType,
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>()
+  if (ids.length === 0) return out
+  const rows = await q
+    .select({ ownerId: resources.ownerId, url: resources.url })
+    .from(resources)
+    .where(
+      within(
+        scoped(resources, workspaceId),
+        eq(resources.ownerType, type),
+        inArray(resources.ownerId, [...ids]),
+      ),
+    )
+    .orderBy(asc(resources.rank), asc(resources.id))
+  for (const r of rows) {
+    if (out.has(r.ownerId)) continue
+    const look = resourceLook(r.url)
+    if (look.service === 'github-pr') out.set(r.ownerId, look.label)
+  }
+  return out
 }
 
 /**

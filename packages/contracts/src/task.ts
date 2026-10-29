@@ -206,6 +206,8 @@ export const projectTasksResponse = z.object({
    * keys.
    */
   next: z.record(objectId, nextAbout),
+  /** Each task's first GitHub pull request, as "#418", for its card (FR-057); none, no key. */
+  pullRequests: z.record(taskId, z.string()),
 })
 
 /** What changed state in a window, read from the event log and grouped by project. */

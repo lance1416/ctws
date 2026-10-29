@@ -114,7 +114,7 @@ test('a birthday picked says this year’s day by its weekday, and when the remi
   const block = page.getByRole('region', { name: 'Birthday' })
   await expect(block).toContainText('Every year on九月廿六')
   // Thursday the 22nd: this year's 九月廿六 is Wednesday, November 4 (FR-062).
-  await expect(page.getByTestId('birthday-preview')).toContainText('Wednesday, Nov 4')
+  await expect(page.getByTestId('birthday-preview')).toContainText('This yearWednesday, Nov 4')
   await expect(block.getByRole('button', { name: /^Tell me/ })).toBeVisible()
   await expect(block).toContainText('At 00:00 their time')
   await block.getByRole('button', { name: /^Tell me/ }).click()
@@ -124,4 +124,19 @@ test('a birthday picked says this year’s day by its weekday, and when the remi
     /3 days before/,
     /A week before/,
   ])
+})
+
+test('a birthday already past this year says next year’s day, as next year’s (BUG-078)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto('/people/new')
+  await page
+    .getByRole('radiogroup', { name: 'Which calendar' })
+    .getByRole('radio', { name: 'Lunar' })
+    .click()
+  // 五月初一 fell on June 15 this year; on October 22 the next is in 2027.
+  await pickLunarDay(page, '五月', '初一')
+  await expect(page.getByTestId('birthday-preview')).toContainText('Next year')
+  await expect(page.getByTestId('birthday-preview')).not.toContainText('This year')
 })

@@ -19,13 +19,14 @@ export const DUE_TONE = {
 } as const
 
 /**
- * A CARD ON THE BOARD (FR-057, artboard 21): the leaf's status and name, its deadline or else its
- * planned day, then the steps from its group's head and what it is waiting on. A click or Enter
+ * A CARD ON THE BOARD (FR-057, artboard 21): the leaf's status and name, its pull request and its
+ * deadline or else its planned day, then the steps from its group's head and what it is waiting on. A click or Enter
  * opens it in the inspector; the pointer drags it to another column.
  */
 export function BoardCard({
   card: { task, path },
   blockers,
+  pullRequest,
   today,
   timeZone,
   tabStop,
@@ -37,6 +38,8 @@ export function BoardCard({
 }: {
   card: Card
   blockers: readonly { id: TaskId; title: string }[] | undefined
+  /** Its first GitHub pull request, "#418" (FR-057). */
+  pullRequest: string | undefined
   today: string
   timeZone: string
   /** The board's one tab stop. */
@@ -76,7 +79,13 @@ export function BoardCard({
             : 'border-line bg-panel hover:border-line-strong focus-visible:border-transparent focus-visible:shadow-[0_0_0_2px_var(--color-task)] aria-[current]:border-transparent aria-[current]:shadow-[0_0_0_2px_var(--color-task)]'
         }`}
       >
-        <CardFace card={{ task, path }} blockers={blockers} today={today} timeZone={timeZone} />
+        <CardFace
+          card={{ task, path }}
+          blockers={blockers}
+          pullRequest={pullRequest}
+          today={today}
+          timeZone={timeZone}
+        />
       </button>
     </li>
   )
@@ -86,11 +95,13 @@ export function BoardCard({
 export function CardFace({
   card: { task, path },
   blockers,
+  pullRequest,
   today,
   timeZone,
 }: {
   card: Card
   blockers: readonly { id: TaskId; title: string }[] | undefined
+  pullRequest: string | undefined
   today: string
   timeZone: string
 }) {
@@ -109,6 +120,11 @@ export function CardFace({
         >
           {task.title}
         </span>
+        {pullRequest && (
+          <span data-board-pr className={`${CHIP} bg-hover text-muted`}>
+            {pullRequest}
+          </span>
+        )}
         {!settled && <DateChip task={task} today={today} timeZone={timeZone} />}
       </span>
       {path && (

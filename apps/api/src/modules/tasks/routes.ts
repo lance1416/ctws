@@ -5,6 +5,7 @@ import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
 import { nextAbout, type LinkRegistry } from '../../shell/links'
 import { relatedAmong } from '../../shell/relations'
+import { pullRequestsOf } from '../../shell/resources'
 import { addDependency, createTask, removeDependency, deleteTask, updateTask } from './service'
 import {
   toCalendarEntry,
@@ -144,6 +145,14 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
         blockers: Object.fromEntries(board.blockers),
         organisations: Object.fromEntries(organisations),
         next: Object.fromEntries(next),
+        pullRequests: Object.fromEntries(
+          await pullRequestsOf(
+            app.db,
+            user.workspaceId,
+            'task',
+            board.tasks.map((t) => t.id),
+          ),
+        ),
       }
     }),
 

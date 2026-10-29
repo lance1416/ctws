@@ -129,7 +129,10 @@ function PreviewLine({ facts, today }: { facts: BirthdayPreviewResponse; today: 
         </>
       )}
       <span aria-hidden="true" />
-      <span className="text-meta text-subtle">This year</span>
+      {/* Once this year's has passed the next is next year's, and says so (FR-062, BUG-078). */}
+      <span className="text-meta text-subtle">
+        {facts.next.day.slice(0, 4) > today.slice(0, 4) ? 'Next year' : 'This year'}
+      </span>
       <span className="text-ink">
         {weekdayOf(facts.next.day)}, {shortDay(facts.next.day, today)}
       </span>

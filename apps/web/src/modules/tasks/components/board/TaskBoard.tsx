@@ -379,6 +379,7 @@ function Board({
                     key={card.task.id}
                     card={card}
                     blockers={data.blockers[card.task.id]}
+                    pullRequest={data.pullRequests[card.task.id]}
                     today={today}
                     timeZone={timeZone}
                     tabStop={card.task.id === tabId}
@@ -399,6 +400,7 @@ function Board({
               <CardFace
                 card={{ task: lifted, path: null }}
                 blockers={data.blockers[lifted.id]}
+                pullRequest={data.pullRequests[lifted.id]}
                 today={today}
                 timeZone={timeZone}
               />
