@@ -188,7 +188,7 @@ const SHOWN = 5
 
 /** A block's "All N", a row at its foot. */
 const ALL_ROW =
-  'flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink'
+  'flex h-9 max-lg:h-11 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink'
 
 function InTouch() {
   const { rows } = useTouchRows('recent')

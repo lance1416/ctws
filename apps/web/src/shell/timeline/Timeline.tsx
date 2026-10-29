@@ -126,7 +126,8 @@ export function Timeline({
             onClick={() => openNew(log)}
             aria-label="Log a message"
             title="Log a message"
-            className={`${ICON_BUTTON} order-last ml-auto`}
+            // On a phone it stays on the name's line, the tabs a line of their own under (P4-09).
+            className={`${ICON_BUTTON} order-last ml-auto max-lg:order-none`}
           >
             <NewIcon size={16} aria-hidden="true" />
           </button>
@@ -137,7 +138,7 @@ export function Timeline({
             role="tablist"
             aria-label="Show"
             onKeyDown={tabKeys}
-            className="flex flex-wrap gap-0.5"
+            className="flex flex-wrap gap-0.5 max-lg:order-last max-lg:basis-full"
           >
             {FILTERS.map((f) => (
               <button
@@ -232,7 +233,7 @@ export function Timeline({
       {everything && (
         <Link
           to={everything.to}
-          className="pl-[calc(52px+24px+1.25rem)] text-meta text-muted hover:text-ink"
+          className="pl-[calc(52px+24px+1.25rem)] text-meta text-muted hover:text-ink max-lg:flex max-lg:min-h-11 max-lg:items-center"
         >
           {everything.label}
         </Link>

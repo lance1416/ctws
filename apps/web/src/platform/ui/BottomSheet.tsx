@@ -67,7 +67,7 @@ export function BottomSheet({
           {head ? (
             <div {...grab} className="flex min-h-11 shrink-0 touch-none items-center gap-2 px-4">
               <span className="flex min-w-0 flex-1 flex-col">
-                <Dialog.Title className="truncate text-subject text-ink">{title}</Dialog.Title>
+                <Dialog.Title className="line-clamp-2 text-subject text-ink">{title}</Dialog.Title>
                 {about && <span className="truncate text-ui text-subtle">{about}</span>}
               </span>
               <Dialog.Close aria-label="Close" className={ICON_BUTTON}>

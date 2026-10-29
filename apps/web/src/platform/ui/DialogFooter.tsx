@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { PhoneFormBar } from './PhoneFormBar'
 import { problemText } from '../http/api'
 import { Button } from './Button'
 import { useCancel } from './Modal'
@@ -11,6 +12,7 @@ export function DialogFooter({
   disabled = false,
   onCancel,
   hint,
+  title,
 }: {
   submit: string
   /** Whatever the write failed with, or null. A dialog with its own wording passes nothing. */
@@ -21,6 +23,8 @@ export function DialogFooter({
   onCancel: () => void
   /** A line on the left, opposite the buttons -- the new task dialog's keyboard chord. */
   hint?: ReactNode
+  /** The dialog's name in a phone's bar, where its buttons go (DES-001 "表单"). */
+  title?: string
 }) {
   const cancel = useCancel()
   return (
@@ -30,7 +34,17 @@ export function DialogFooter({
           {problemText(error) ?? "Couldn't create it. Your answers are still here — try again."}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+      {title && (
+        <PhoneFormBar
+          title={title}
+          submit={submit}
+          disabled={disabled || busy}
+          onCancel={() => cancel(onCancel)}
+        />
+      )}
+      <div
+        className={`flex flex-wrap items-center gap-2 border-t border-line pt-4 ${title ? 'max-lg:hidden' : ''}`}
+      >
         {hint}
         <span className="ml-auto flex items-center gap-2">
           <Button look="secondary" onClick={() => cancel(onCancel)}>

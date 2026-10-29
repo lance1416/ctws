@@ -1,5 +1,8 @@
+import { useRef } from 'react'
 import type { EditScope } from '../api'
+import { BottomSheet } from '../../../platform/ui/BottomSheet'
 import { Button } from '../../../platform/ui/Button'
+import { usePhone } from '../../../platform/ui/phone'
 
 type Ask = {
   /** What the change is, in the question: "Move this meeting to …". */
@@ -40,6 +43,45 @@ function Question({
   answer,
   first,
 }: Ask & { back: string; answer: 'secondary' | 'destructive'; first: 'back' | 'answer' }) {
+  const phone = usePhone()
+  const firstFocus = useRef<HTMLButtonElement>(null)
+  // On a phone, a sheet from the foot: the question, then its answers full width, one over the
+  // other, the way out last (DES-001).
+  if (phone)
+    return (
+      <BottomSheet title="This meeting repeats" onClose={onCancel} initialFocus={firstFocus}>
+        <div
+          role="alertdialog"
+          aria-label="This meeting repeats"
+          className="flex flex-col gap-3 px-4 pt-1 pb-4 text-ui"
+        >
+          <p className="text-ink">{what}</p>
+          <Button
+            look={answer}
+            ref={first === 'answer' ? firstFocus : undefined}
+            onClick={() => onPick('one')}
+            className="w-full justify-center"
+          >
+            Just this one
+          </Button>
+          <Button
+            look={answer}
+            onClick={() => onPick('following')}
+            className="w-full justify-center"
+          >
+            This and all later
+          </Button>
+          <Button
+            look="secondary"
+            ref={first === 'back' ? firstFocus : undefined}
+            onClick={onCancel}
+            className="w-full justify-center"
+          >
+            {back}
+          </Button>
+        </div>
+      </BottomSheet>
+    )
   return (
     <div
       role="alertdialog"

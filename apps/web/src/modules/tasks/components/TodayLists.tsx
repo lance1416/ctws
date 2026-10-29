@@ -17,7 +17,7 @@ import { RowAction } from './RowAction'
 
 /** A Today block's "All N", a row at its foot. */
 export const ALL_ROW =
-  'flex h-9 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink'
+  'flex h-9 max-lg:h-11 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink'
 
 /** A Today block's "All N" names its full list by these (FR-011 rule 3). */
 export const TODAY_LISTS = {

@@ -131,7 +131,7 @@ function PersonHead({ person }: { person: PersonResponse }) {
               {r.title && <span>{r.title}</span>}
               <Link
                 to={orgTo(r.organisationId)}
-                className={`${TAG} bg-organisation-bg text-organisation-t hover:underline`}
+                className={`${TAG} bg-organisation-bg text-organisation-t hover:underline max-lg:h-11`}
               >
                 <KIND_ICON.organisation size={12} aria-hidden="true" />
                 {r.organisationName}

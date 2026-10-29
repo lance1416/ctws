@@ -91,7 +91,7 @@ function Chip({
     <Link
       to={to}
       aria-current={on ? 'true' : undefined}
-      className={`inline-flex h-6 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${
+      className={`inline-flex h-6 items-center gap-1.5 rounded-control px-2 text-meta font-medium max-lg:h-11 ${
         on ? 'bg-select text-ink' : 'bg-hover text-muted hover:text-ink'
       }`}
     >
@@ -132,7 +132,7 @@ function InTouch({ type }: { type: string | null }) {
         <button
           type="button"
           onClick={() => setAll(true)}
-          className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+          className="flex h-9 max-lg:h-11 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
         >
           All {rows.length}
         </button>
@@ -149,11 +149,11 @@ function InTouchRow({ row }: { row: OrganisationInTouch }) {
   return (
     <li
       data-in-touch={row.organisationId}
-      className="grid min-h-10 grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_7rem_6rem] items-center gap-x-3 px-3 text-ui"
+      className="grid min-h-10 grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_7rem_6rem] items-center gap-x-3 px-3 text-ui max-lg:flex max-lg:flex-wrap max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-1.5 max-lg:py-3"
     >
       <Link
         to={`/organisations/${row.organisationId}`}
-        className="flex min-w-0 items-center gap-3 text-ink hover:underline"
+        className="flex min-w-0 items-center gap-3 text-ink hover:underline max-lg:basis-full"
       >
         <OrganisationMark name={row.organisationName} />
         <span className="truncate">{row.organisationName}</span>

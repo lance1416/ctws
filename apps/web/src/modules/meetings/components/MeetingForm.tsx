@@ -180,7 +180,7 @@ export function MeetingForm({
         />
       </div>
 
-      <FormBar busy={busy} disabled={!ready} onCancel={onCancel} />
+      <FormBar busy={busy} disabled={!ready} onCancel={onCancel} title="Edit meeting" />
     </form>
   )
 }

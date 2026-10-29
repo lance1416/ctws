@@ -1,4 +1,6 @@
 import { idFrom, noteId, type NoteResponse } from '@ctws/contracts'
+import { usePhone } from '../../../platform/ui/phone'
+import { PhoneNote } from '../components/PhoneNote'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -28,6 +30,7 @@ export function Note() {
   const notes = useQuery(notesQuery())
   // The note this page made from `new`: its editor is the one already on screen.
   const [born, setBorn] = useState<string | null>(null)
+  const phone = usePhone()
   const fresh = id === 'new'
   const note = fresh ? undefined : notes.data?.find((n) => n.id === idFrom(noteId, id))
   const gone = !fresh && notes.isSuccess && !note
@@ -50,14 +53,22 @@ export function Note() {
     <div className="flex min-h-full max-w-6xl shrink-0 flex-col gap-4">
       <h1 className="sr-only">{note ? noteTitle(note) : 'New note'}</h1>
       {note ? <HungOn note={note} /> : <p className="text-meta text-muted">On its own</p>}
-      <NoteEditor
-        key={note && note.id !== born ? note.id : 'new'}
-        note={note ?? null}
-        onMade={(made) => {
-          setBorn(made.id)
-          navigate(`/${NOTES_ID}/${made.id}`, { replace: true })
-        }}
-      />
+      {phone ? (
+        <PhoneNote
+          key={note?.id ?? 'new'}
+          note={note ?? null}
+          onMade={(made) => navigate(`/${NOTES_ID}/${made.id}`, { replace: true })}
+        />
+      ) : (
+        <NoteEditor
+          key={note && note.id !== born ? note.id : 'new'}
+          note={note ?? null}
+          onMade={(made) => {
+            setBorn(made.id)
+            navigate(`/${NOTES_ID}/${made.id}`, { replace: true })
+          }}
+        />
+      )}
       {note && (
         <DangerZone>
           <DeleteNote note={note} onDeleted={() => navigate(`/${NOTES_ID}`)} />

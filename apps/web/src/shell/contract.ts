@@ -140,6 +140,8 @@ type ParentStepProps = {
   project: { id: ProjectId; name: string }
   /** How many levels what is put there takes: one for a new line, more for a task with children. */
   height: number
+  /** The task being moved: neither it nor what is under it can be its own parent. */
+  moving?: TaskId | null
   busy: boolean
   error: string | null
   onPick: (parent: { id: TaskId; title: string }) => void

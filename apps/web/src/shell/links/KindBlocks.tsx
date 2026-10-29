@@ -284,7 +284,7 @@ function KindBlock({
                 thing={{ type: item.type, id: item.id }}
                 to={registry.relationFor(item.type).to(item.id)}
                 data-linked={item.id}
-                className="min-w-0 flex-1 px-3"
+                className="min-w-0 flex-1 px-3 max-lg:flex max-lg:min-h-11 max-lg:items-center"
               >
                 <Linked thing={item} />
               </OpensBeside>
@@ -357,7 +357,7 @@ function KindBlock({
         <AllInInspector
           list={linkedListOf(kind, of)}
           count={rows.length}
-          className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+          className="flex h-9 max-lg:h-11 w-full items-center border-t border-line px-3 max-lg:h-11 text-ui text-muted hover:bg-hover hover:text-ink"
         />
       )}
     </Block>
@@ -414,7 +414,7 @@ function ThingRow({
       to={row.to}
       act={act}
       data-linked={row.id}
-      className={`grid min-h-9 min-w-0 flex-1 items-center gap-x-3 px-3 text-ui text-ink ${hover ? 'hover:bg-hover' : ''} ${
+      className={`grid min-h-9 min-w-0 flex-1 items-center max-lg:min-h-11 gap-x-3 px-3 text-ui text-ink ${hover ? 'hover:bg-hover' : ''} ${
         lead ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]'
       }`}
     >

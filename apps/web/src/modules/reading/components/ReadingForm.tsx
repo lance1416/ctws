@@ -153,7 +153,7 @@ export function ReadingForm({
         </div>
       </div>
 
-      <FormBar busy={busy} failed={error} onCancel={onCancel} />
+      <FormBar busy={busy} failed={error} onCancel={onCancel} title="Edit reading" />
     </form>
   )
 }
@@ -185,7 +185,7 @@ function RecommendedBy({
         type="button"
         onClick={() => setPicking(true)}
         aria-label={`Recommended by: ${value?.name ?? 'Nobody'}`}
-        className="-mx-1.5 flex h-8 min-w-0 items-center rounded-control px-1.5 text-ui text-ink hover:bg-hover"
+        className="-mx-1.5 flex h-8 min-w-0 items-center rounded-control px-1.5 text-ui text-ink hover:bg-hover max-lg:min-h-11"
       >
         {/* The person as a tag, their avatar and name, as on the item's page (E-02). */}
         {value && <Avatar initials={initialsOf(value.name)} />}

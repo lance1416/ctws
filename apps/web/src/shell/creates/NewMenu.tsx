@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { BUTTON, KEY, KEY_ON_INK } from '../../platform/ui/buttonStyles'
+import { BUTTON, KEY, KEY_ON_INK, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { KIND_ICON, NewIcon } from '../../platform/ui/icons'
 import { LAYER } from '../../platform/ui/layers'
 import type { Creator } from '../contract'
@@ -25,9 +25,12 @@ const useOpenNew = () => useContext(NewContext)
 export function NewMenu({
   projectName,
   className = '',
+  compact = false,
 }: {
   projectName: string
   className?: string
+  /** A "+" in a phone's title bar, not the desk's ink New with its key (P4-11). */
+  compact?: boolean
 }) {
   const registry = useRegistry()
   const openNew = useOpenNew()
@@ -82,18 +85,25 @@ export function NewMenu({
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className={BUTTON.primary}
+        aria-label={compact ? 'New' : undefined}
+        className={compact ? `${ICON_BUTTON} size-11` : BUTTON.primary}
       >
-        <NewIcon size={16} aria-hidden="true" />
-        New
-        <kbd className={KEY_ON_INK}>N</kbd>
+        {compact ? (
+          <NewIcon size={22} aria-hidden="true" />
+        ) : (
+          <>
+            <NewIcon size={16} aria-hidden="true" />
+            New
+            <kbd className={KEY_ON_INK}>N</kbd>
+          </>
+        )}
       </button>
       {open && (
         <div
           role="menu"
           aria-label={`New in ${projectName}`}
           onKeyDown={onKeyDown}
-          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 flex w-95 flex-col rounded-block bg-float pb-1.5 shadow-float`}
+          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 flex w-95 flex-col rounded-block bg-float pb-1.5 shadow-float max-lg:fixed max-lg:inset-x-4 max-lg:top-16 max-lg:w-auto`}
         >
           <label className="flex h-11 items-center gap-2.5 border-b border-line px-3 text-muted">
             <NewIcon size={16} aria-hidden="true" />

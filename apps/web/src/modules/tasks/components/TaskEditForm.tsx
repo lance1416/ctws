@@ -17,9 +17,10 @@ import { DetailHead } from '../../../platform/ui/DetailPane'
 import { area, boxed, label } from '../../../platform/ui/formStyles'
 import { FlagIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
+import { usePhone } from '../../../platform/ui/phone'
 import type { UnsavedGuard } from '../../../platform/ui/unsavedGuard'
 import { useTimeZone } from '../../../shell/auth'
-import { ProjectSquare, useEveryProject } from '../../../shell/projects'
+import { MoveToProject, ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { instantPhrase, moveDueToDay } from '../logic/dueDates'
 import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
 import { DependencyRows } from './Dependencies'
@@ -58,7 +59,12 @@ export function TaskEditForm({
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
   const projects = useEveryProject()
-  const { counts, stages } = useTaskPlace(task)
+  const { counts, stages, path, height } = useTaskPlace(task)
+  const phone = usePhone()
+  // A phone's Move to… (FR-088): its pick is in the form, saved with the rest; the parent's name
+  // is kept for the head, the tree it is in not being the one loaded.
+  const [moving, setMoving] = useState(false)
+  const [under, setUnder] = useState<string | null>(null)
   const [stageBusy, setStageBusy] = useState(false)
 
   const title = watch('title')
@@ -85,225 +91,270 @@ export function TaskEditForm({
   const setDueDay = (day: string) =>
     setValue('dueAt', dueAt ? moveDueToDay(dueAt, day, timeZone) : dayEndIso(day, timeZone), dirty)
 
-  return (
-    <form
-      onSubmit={submit(onSaved)}
-      // Ctrl Enter saves from any field (FR-029); a plain Enter in the notes is a new line.
-      onKeyDown={(e) => {
-        if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.nativeEvent.isComposing) return
-        e.preventDefault()
-        if (!save.isPending && !stageBusy && title?.trim()) e.currentTarget.requestSubmit()
+  const mover = moving && (
+    <MoveToProject
+      of={{ type: 'task', id: task.id }}
+      title={`Move “${title || task.title}” to`}
+      height={height}
+      busy={false}
+      error={null}
+      onPick={(to) => {
+        setValue('projectId', to, dirty)
+        setValue('parentId', null, dirty)
+        setUnder(null)
+        setMoving(false)
       }}
-      className="flex flex-col gap-4"
-    >
-      <div>
-        <DetailHead
-          kind={
-            // Where it is read, the project it is in; here also what moves it.
-            <span className="flex min-w-0 items-center gap-1.5">
-              {movingTo && <ProjectSquare project={movingTo} />}
-              <PickOne
-                label="Projects"
-                value={projectId}
-                choices={(projects.data ?? [])
-                  // A task may move only into a live project, or stay in its own archived one.
-                  .filter((p) => !p.archivedAt || p.id === task.projectId)
-                  .map((p) => ({ value: p.id, label: p.name }))}
-                onPick={(id) => setValue('projectId', id, dirty)}
-              />
-            </span>
-          }
-          trailing={
-            <span className="flex items-center gap-2">
-              <Button look="secondary" onClick={onCancel}>
-                Cancel
-              </Button>
-              <Button
-                look="primary"
-                type="submit"
-                disabled={save.isPending || stageBusy || !title?.trim()}
-              >
-                Save
-              </Button>
-            </span>
-          }
-          onClose={onClose}
-        />
-        <h2 className="mt-1.5 flex items-start gap-2 text-subject text-ink">
-          <span aria-hidden="true" className="mt-[0.2em] flex shrink-0">
-            {counts ? (
-              <ProgressSquare status={task.status} children={counts} size={20} />
-            ) : (
-              <StatusMark status={status} />
-            )}
-          </span>
-          <input
-            {...titleRest}
-            // Two refs on one element: the library's, and this form's for the focus above.
-            ref={(el) => {
-              registerTitle(el)
-              titleField.current = el
-            }}
-            aria-label="Title"
-            className="-my-0.5 min-w-0 flex-1 rounded-control bg-transparent py-0.5 text-subject text-ink"
-          />
-        </h2>
-      </div>
+      onPickParent={({ project, parent }) => {
+        setValue('projectId', project.id, dirty)
+        setValue('parentId', parent.id, dirty)
+        setUnder(parent.title)
+        setMoving(false)
+      }}
+      onClose={() => setMoving(false)}
+    />
+  )
 
-      {guard.asking && (
-        <div role="alert" className="rounded-control border border-line-strong p-3 text-ui">
-          <p className="text-ink">
-            {guard.leaving
-              ? 'You have unsaved changes. Leaving will discard them.'
-              : 'Discard the changes?'}
-          </p>
-          <div className="mt-2 flex gap-2">
-            <Button look="secondary" onClick={guard.discard}>
-              Discard changes
-            </Button>
-            <Button look="primary" ref={guard.focusOn} onClick={guard.keep}>
-              Keep editing
-            </Button>
-          </div>
-        </div>
-      )}
-      {save.isError && (
-        <p role="alert" className="text-ui text-stop-t">
-          {problemText(save.error)}
-        </p>
-      )}
-
-      <dl className={FIELDS}>
-        <Field icon={<StatusMark status={status} size={16} />} name="Status" top={!counts}>
-          {counts ? (
-            <span className="text-ui text-ink">{STATUS_LABEL[task.status]}</span>
-          ) : (
-            <StatusRadios id="detail" field={register('status')} bare />
-          )}
-        </Field>
-        {!counts && (
-          <Field icon={<PLACE_ICON.calendar size={16} aria-hidden="true" />} name="Planned" top>
-            <DateDecisions
-              bare
-              kind="plan"
-              today={today}
-              onDay={(day) => setValue('scheduledOn', day, dirty)}
-              onClear={() => setValue('scheduledOn', null, dirty)}
-              htmlFor="detail-go"
-              exact={
-                <Controller
-                  name="scheduledOn"
-                  control={control}
-                  render={({ field: plan }) => (
-                    <DayField
-                      id="detail-go"
-                      label="Plan"
-                      value={plan.value ?? null}
-                      onChange={(day) => setValue('scheduledOn', day, dirty)}
-                      today={today}
-                      className="mt-1.5 max-w-60"
-                    />
-                  )}
-                />
-              }
-              echo={scheduledOn ? dayPhrase(scheduledOn, today) : null}
-            />
-          </Field>
-        )}
-        <Field icon={<FlagIcon size={16} aria-hidden="true" />} name="Due" top>
-          <DateDecisions
-            bare
-            kind="due"
-            today={today}
-            onDay={setDueDay}
-            onClear={() => setValue('dueAt', null, dirty)}
-            htmlFor="detail-due"
-            exact={
-              // The day typed or pointed at as everywhere (FR-034, I-01), its time after it; the
-              // form holds the instant, read and written on the account's clock.
-              <span className="mt-1.5 flex flex-wrap items-start gap-2">
-                <DayField
-                  id="detail-due"
-                  label="Due"
-                  value={dueAt ? ymd(new Date(dueAt), timeZone) : null}
-                  onChange={(day) => (day ? setDueDay(day) : setValue('dueAt', null, dirty))}
-                  today={today}
-                  className="max-w-60 min-w-0 flex-1"
-                />
-                <input
-                  type="time"
-                  aria-label="Due time"
-                  disabled={!dueAt}
-                  value={dueAt ? toDayTimeInput(dueAt, timeZone).slice(11) : ''}
-                  onChange={(e) => {
-                    if (!dueAt) return
-                    const day = ymd(new Date(dueAt), timeZone)
-                    // An emptied time is the end of the day, as a deadline set by day alone is.
-                    setValue(
-                      'dueAt',
-                      e.target.value
-                        ? fromDayTimeInput(`${day}T${e.target.value}`, timeZone)
-                        : dayEndIso(day, timeZone),
-                      dirty,
-                    )
-                  }}
-                  className={`${boxed} w-28 shrink-0 disabled:opacity-50`}
-                />
+  return (
+    <>
+      <form
+        onSubmit={submit(onSaved)}
+        // Ctrl Enter saves from any field (FR-029); a plain Enter in the notes is a new line.
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.nativeEvent.isComposing) return
+          e.preventDefault()
+          if (!save.isPending && !stageBusy && title?.trim()) e.currentTarget.requestSubmit()
+        }}
+        className="flex flex-col gap-4"
+      >
+        <div>
+          <DetailHead
+            kind={
+              // Where it is read, the project it is in; here also what moves it.
+              <span className="flex min-w-0 items-center gap-1.5">
+                {movingTo && <ProjectSquare project={movingTo} />}
+                {phone ? (
+                  <button
+                    type="button"
+                    onClick={() => setMoving(true)}
+                    className="flex min-h-11 min-w-0 items-center gap-1 text-ui text-muted"
+                  >
+                    <span className="truncate">
+                      {form.formState.dirtyFields.projectId || form.formState.dirtyFields.parentId
+                        ? [movingTo?.name, under].filter(Boolean).join(' › ')
+                        : path.join(' › ')}
+                    </span>
+                    <span className="shrink-0 text-ink underline underline-offset-2">Move to…</span>
+                  </button>
+                ) : (
+                  <PickOne
+                    label="Projects"
+                    value={projectId}
+                    choices={(projects.data ?? [])
+                      // A task may move only into a live project, or stay in its own archived one.
+                      .filter((p) => !p.archivedAt || p.id === task.projectId)
+                      .map((p) => ({ value: p.id, label: p.name }))}
+                    onPick={(id) => {
+                      setValue('projectId', id, dirty)
+                      setValue('parentId', null, dirty)
+                    }}
+                  />
+                )}
               </span>
             }
-            echo={dueAt ? instantPhrase(dueAt, today, timeZone) : null}
+            trailing={
+              <span className="flex items-center gap-2">
+                <Button look="secondary" onClick={onCancel}>
+                  Cancel
+                </Button>
+                <Button
+                  look="primary"
+                  type="submit"
+                  disabled={save.isPending || stageBusy || !title?.trim()}
+                >
+                  Save
+                </Button>
+              </span>
+            }
+            onClose={onClose}
           />
-        </Field>
-        {/* Stages are this project's: a move to another leaves it without one. */}
-        {projectId === task.projectId && (
-          <Field icon={<StageDot />} name="Stage" top>
-            <StagePicker
-              projectId={task.projectId}
-              stages={stages}
-              value={watch('stageId') ?? null}
-              onChange={(stage) => setValue('stageId', stage, dirty)}
-              onBusy={setStageBusy}
+          <h2 className="mt-1.5 flex items-start gap-2 text-subject text-ink">
+            <span aria-hidden="true" className="mt-[0.2em] flex shrink-0">
+              {counts ? (
+                <ProgressSquare status={task.status} children={counts} size={20} />
+              ) : (
+                <StatusMark status={status} />
+              )}
+            </span>
+            <input
+              {...titleRest}
+              // Two refs on one element: the library's, and this form's for the focus above.
+              ref={(el) => {
+                registerTitle(el)
+                titleField.current = el
+              }}
+              aria-label="Title"
+              className="-my-0.5 min-w-0 flex-1 rounded-control bg-transparent py-0.5 text-subject text-ink"
+            />
+          </h2>
+        </div>
+
+        {guard.asking && (
+          <div role="alert" className="rounded-control border border-line-strong p-3 text-ui">
+            <p className="text-ink">
+              {guard.leaving
+                ? 'You have unsaved changes. Leaving will discard them.'
+                : 'Discard the changes?'}
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Button look="secondary" onClick={guard.discard}>
+                Discard changes
+              </Button>
+              <Button look="primary" ref={guard.focusOn} onClick={guard.keep}>
+                Keep editing
+              </Button>
+            </div>
+          </div>
+        )}
+        {save.isError && (
+          <p role="alert" className="text-ui text-stop-t">
+            {problemText(save.error)}
+          </p>
+        )}
+
+        <dl className={FIELDS}>
+          <Field icon={<StatusMark status={status} size={16} />} name="Status" top={!counts}>
+            {counts ? (
+              <span className="text-ui text-ink">{STATUS_LABEL[task.status]}</span>
+            ) : (
+              <StatusRadios id="detail" field={register('status')} bare />
+            )}
+          </Field>
+          {!counts && (
+            <Field icon={<PLACE_ICON.calendar size={16} aria-hidden="true" />} name="Planned" top>
+              <DateDecisions
+                bare
+                kind="plan"
+                today={today}
+                onDay={(day) => setValue('scheduledOn', day, dirty)}
+                onClear={() => setValue('scheduledOn', null, dirty)}
+                htmlFor="detail-go"
+                exact={
+                  <Controller
+                    name="scheduledOn"
+                    control={control}
+                    render={({ field: plan }) => (
+                      <DayField
+                        id="detail-go"
+                        label="Plan"
+                        value={plan.value ?? null}
+                        onChange={(day) => setValue('scheduledOn', day, dirty)}
+                        today={today}
+                        className="mt-1.5 max-w-60"
+                      />
+                    )}
+                  />
+                }
+                echo={scheduledOn ? dayPhrase(scheduledOn, today) : null}
+              />
+            </Field>
+          )}
+          <Field icon={<FlagIcon size={16} aria-hidden="true" />} name="Due" top>
+            <DateDecisions
+              bare
+              kind="due"
+              today={today}
+              onDay={setDueDay}
+              onClear={() => setValue('dueAt', null, dirty)}
+              htmlFor="detail-due"
+              exact={
+                // The day typed or pointed at as everywhere (FR-034, I-01), its time after it; the
+                // form holds the instant, read and written on the account's clock.
+                <span className="mt-1.5 flex flex-wrap items-start gap-2">
+                  <DayField
+                    id="detail-due"
+                    label="Due"
+                    value={dueAt ? ymd(new Date(dueAt), timeZone) : null}
+                    onChange={(day) => (day ? setDueDay(day) : setValue('dueAt', null, dirty))}
+                    today={today}
+                    className="max-w-60 min-w-0 flex-1"
+                  />
+                  <input
+                    type="time"
+                    aria-label="Due time"
+                    disabled={!dueAt}
+                    value={dueAt ? toDayTimeInput(dueAt, timeZone).slice(11) : ''}
+                    onChange={(e) => {
+                      if (!dueAt) return
+                      const day = ymd(new Date(dueAt), timeZone)
+                      // An emptied time is the end of the day, as a deadline set by day alone is.
+                      setValue(
+                        'dueAt',
+                        e.target.value
+                          ? fromDayTimeInput(`${day}T${e.target.value}`, timeZone)
+                          : dayEndIso(day, timeZone),
+                        dirty,
+                      )
+                    }}
+                    className={`${boxed} w-28 shrink-0 disabled:opacity-50`}
+                  />
+                </span>
+              }
+              echo={dueAt ? instantPhrase(dueAt, today, timeZone) : null}
             />
           </Field>
-        )}
-        {/* Written the moment each is named or taken away, not by Save. */}
-        <DependencyRows taskId={task.id} title={task.title} projectId={task.projectId} editing />
-      </dl>
+          {/* Stages are this project's: a move to another leaves it without one. */}
+          {projectId === task.projectId && (
+            <Field icon={<StageDot />} name="Stage" top>
+              <StagePicker
+                projectId={task.projectId}
+                stages={stages}
+                value={watch('stageId') ?? null}
+                onChange={(stage) => setValue('stageId', stage, dirty)}
+                onBusy={setStageBusy}
+              />
+            </Field>
+          )}
+          {/* Written the moment each is named or taken away, not by Save. */}
+          <DependencyRows taskId={task.id} title={task.title} projectId={task.projectId} editing />
+        </dl>
 
-      {/* `htmlFor`, not a wrapping label: React writes a textarea's value into its text, so a
+        {/* `htmlFor`, not a wrapping label: React writes a textarea's value into its text, so a
           wrapping label's name would be “Notes” plus whatever had been typed. */}
-      <div>
-        <div className="flex items-end justify-between gap-2">
-          <label htmlFor="detail-notes" className={label}>
-            Notes
-          </label>
-          <button
-            type="button"
-            onClick={() => setWriting(true)}
-            className="-mb-0.5 h-7 rounded-control border border-line px-2 text-meta text-muted hover:border-line-strong hover:text-ink"
-          >
-            Full screen
-          </button>
+        <div>
+          <div className="flex items-end justify-between gap-2">
+            <label htmlFor="detail-notes" className={label}>
+              Notes
+            </label>
+            <button
+              type="button"
+              onClick={() => setWriting(true)}
+              className="-mb-0.5 h-7 rounded-control border border-line px-2 text-meta text-muted hover:border-line-strong hover:text-ink max-lg:h-11"
+            >
+              Full screen
+            </button>
+          </div>
+          {/* Notes are prose, so the one reading measure in the app: 68ch. */}
+          <textarea
+            id="detail-notes"
+            // Empty notes are null, not '': a PATCH clearing them has to say null.
+            {...register('notes', {
+              setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
+            })}
+            rows={5}
+            className={`${area} mt-1.5 max-w-reading`}
+          />
         </div>
-        {/* Notes are prose, so the one reading measure in the app: 68ch. */}
-        <textarea
-          id="detail-notes"
-          // Empty notes are null, not '': a PATCH clearing them has to say null.
-          {...register('notes', {
-            setValueAs: (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v : null),
-          })}
-          rows={5}
-          className={`${area} mt-1.5 max-w-reading`}
-        />
-      </div>
-      {writing && (
-        <WritingMode
-          heading={title?.trim() || 'Notes'}
-          source={watch('notes') ?? ''}
-          onChange={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
-          onClose={() => setWriting(false)}
-        />
-      )}
-    </form>
+        {writing && (
+          <WritingMode
+            heading={title?.trim() || 'Notes'}
+            source={watch('notes') ?? ''}
+            onChange={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
+            onClose={() => setWriting(false)}
+          />
+        )}
+      </form>
+      {/* Outside the form: its keys and presses are not the form's. */}
+      {mover}
+    </>
   )
 }

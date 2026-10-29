@@ -3,6 +3,7 @@ import type {
   OrganisationResponse,
   UpdateOrganisationBody,
 } from '@ctws/contracts'
+import { PhoneFormBar } from '../../../platform/ui/PhoneFormBar'
 import { useQuery } from '@tanstack/react-query'
 import { useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -218,7 +219,13 @@ export function OrganisationEditor({
 
       {children && <div className="col-span-2 row-start-4">{children}</div>}
 
-      <div className="col-start-2 row-start-1 flex items-center gap-2 self-center">
+      <PhoneFormBar
+        title={organisation ? `Edit ${organisation.name}` : 'New organisation'}
+        submit={organisation ? 'Save' : 'Create organisation'}
+        disabled={busy}
+        cancelTo={cancelTo}
+      />
+      <div className="col-start-2 row-start-1 flex items-center gap-2 self-center max-lg:hidden">
         <Link to={cancelTo} className={BUTTON.quiet}>
           Cancel
         </Link>

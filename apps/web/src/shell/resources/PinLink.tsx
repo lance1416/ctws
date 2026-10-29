@@ -155,6 +155,7 @@ export function PinLink({
           </p>
         )}
         <DialogFooter
+          title="Pin a link"
           submit={verb}
           busy={save.isPending}
           disabled={!recognised || !owner}

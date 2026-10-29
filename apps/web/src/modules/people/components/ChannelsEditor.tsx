@@ -151,7 +151,7 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
               type="button"
               aria-label={`Remove item ${i + 1}`}
               onClick={() => channels.remove(i)}
-              className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink"
+              className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink max-lg:size-11"
             >
               <CloseIcon size={14} aria-hidden="true" />
             </button>
@@ -164,7 +164,7 @@ export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useCh
       <button
         type="button"
         onClick={channels.add}
-        className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink"
+        className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink max-lg:min-h-11"
       >
         <NewIcon size={14} aria-hidden="true" />
         Another way
@@ -189,7 +189,7 @@ function KindButton({
       <DropdownMenu.Trigger
         aria-label={`${label}: ${KIND_LABEL[kind]}`}
         title={KIND_LABEL[kind]}
-        className={`${boxed} inline-grid w-9 place-items-center px-0 text-muted hover:text-ink`}
+        className={`${boxed} inline-grid w-9 place-items-center px-0 max-lg:w-11 text-muted hover:text-ink`}
       >
         <Icon size={14} aria-hidden="true" />
       </DropdownMenu.Trigger>

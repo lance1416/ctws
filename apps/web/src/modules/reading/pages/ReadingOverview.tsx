@@ -109,7 +109,7 @@ function ToRead() {
               <Link
                 to={`/reading/${i.id}`}
                 data-to-read={i.id}
-                className="grid min-h-9 grid-cols-[16px_minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
+                className="grid min-h-9 max-lg:min-h-11 grid-cols-[16px_minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
               >
                 <Icon size={16} aria-hidden="true" className="text-reading" />
                 <span className="truncate text-ink">{nameBesideSite(i)}</span>
@@ -126,7 +126,7 @@ function ToRead() {
         <button
           type="button"
           onClick={() => setAll(true)}
-          className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+          className="flex h-9 max-lg:h-11 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
         >
           All {rows.length}
         </button>

@@ -56,7 +56,7 @@ export function CommunicationOverview() {
           >
             <NewIcon size={16} aria-hidden="true" />
             Log a message
-            <kbd className={KEY_ON_INK}>{keyLabel('N X')}</kbd>
+            <kbd className={`${KEY_ON_INK} max-lg:hidden`}>{keyLabel('N X')}</kbd>
           </button>
         )}
       </div>
@@ -77,7 +77,8 @@ function Heads({ cols, names }: { cols: string; names: readonly string[] }) {
   return (
     <div
       aria-hidden="true"
-      className={`grid h-8 items-center gap-x-3 border-b border-line px-3 text-meta text-muted ${cols}`}
+      // On a phone a row is a card, named first (FR-088): no column heads over it.
+      className={`grid h-8 items-center gap-x-3 border-b border-line px-3 text-meta text-muted max-lg:hidden ${cols}`}
     >
       {names.map((n, i) => (
         <span key={i}>{n}</span>
@@ -93,7 +94,7 @@ function More({ rows, shown, onAll }: { rows: number; shown: number; onAll: () =
     <button
       type="button"
       onClick={onAll}
-      className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+      className="flex h-9 max-lg:h-11 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
     >
       All {rows}
     </button>
@@ -131,10 +132,13 @@ function AwaitingLine({ row }: { row: AwaitingRow }) {
   return (
     <li
       data-awaiting={row.id}
-      className={`grid min-h-12 items-center gap-x-3 border-b border-line px-3 py-1.5 last:border-b-0 ${AWAITING_COLS}`}
+      // On a phone, a card: who, then what about, then the rest as its tags, then its actions.
+      className={`grid min-h-12 items-center gap-x-3 border-b border-line px-3 py-1.5 last:border-b-0 ${AWAITING_COLS} max-lg:flex max-lg:flex-wrap max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-1.5 max-lg:py-3`}
     >
-      <With row={row} />
-      <About projectId={row.projectId} to={`/communication/${row.id}`}>
+      <span className="contents max-lg:block max-lg:basis-full">
+        <With row={row} />
+      </span>
+      <About projectId={row.projectId} to={`/communication/${row.id}`} wide>
         {row.subject ?? 'No subject'}
       </About>
       <span className="font-mono text-meta text-muted tabular-nums">
@@ -153,7 +157,9 @@ function AwaitingLine({ row }: { row: AwaitingRow }) {
           </span>
         )}
       </span>
-      <AwaitingActions message={row} later="pick" />
+      <span className="contents max-lg:block max-lg:basis-full">
+        <AwaitingActions message={row} later="pick" />
+      </span>
     </li>
   )
 }
@@ -189,15 +195,21 @@ function With({ row }: { row: AwaitingRow }) {
 function About({
   projectId,
   to,
+  wide = false,
   children,
 }: {
   projectId: string | null
   to: string
+  /** A line of its own in a phone's card. */
+  wide?: boolean
   children: ReactNode
 }) {
   const project = useEveryProject().data?.find((p) => p.id === projectId)
   return (
-    <Link to={to} className="flex min-w-0 items-center gap-2 text-ui text-ink hover:underline">
+    <Link
+      to={to}
+      className={`flex min-w-0 items-center gap-2 text-ui text-ink hover:underline ${wide ? 'max-lg:basis-full' : ''}`}
+    >
       {project && <ProjectSquare project={project} />}
       <span className="truncate">{children}</span>
     </Link>
@@ -240,11 +252,11 @@ function InTouchLine({ row }: { row: OrganisationInTouch }) {
   return (
     <li
       data-in-touch={row.organisationId}
-      className={`grid min-h-11 items-center gap-x-3 border-b border-line px-3 last:border-b-0 ${IN_TOUCH_COLS}`}
+      className={`grid min-h-11 items-center gap-x-3 border-b border-line px-3 last:border-b-0 ${IN_TOUCH_COLS} max-lg:flex max-lg:flex-wrap max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-1.5 max-lg:py-3`}
     >
       <Link
         to={`/organisations/${row.organisationId}`}
-        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline"
+        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline max-lg:basis-full"
       >
         <OrganisationMark name={row.organisationName} />
         <span className="truncate">{row.organisationName}</span>
@@ -265,7 +277,7 @@ function InTouchLine({ row }: { row: OrganisationInTouch }) {
       </span>
       <Link
         to={`/communication/${row.lastContact.communicationId}`}
-        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline"
+        className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline max-lg:order-last max-lg:basis-full"
       >
         <span className="inline-grid size-6 shrink-0 place-items-center rounded-control bg-communication-bg text-communication">
           <Way size={14} aria-hidden="true" />

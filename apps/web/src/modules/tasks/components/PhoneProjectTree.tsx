@@ -15,12 +15,12 @@ import { useRegistry } from '../../../shell/registry'
 import { projectTasksQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { isFinished } from '../logic/status'
-import { flatten } from '../logic/tree/flatten'
+import { blockLength, flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
 import { treeDue } from '../logic/tree/treeDue'
 import { EditStages } from './board/EditStages'
 import { ProgressSquare } from './ProgressSquare'
-import { useTreeVisibility } from './tree/useTreeVisibility'
+import { useTreeVisibility, type DoneGroup } from './tree/useTreeVisibility'
 
 /** Each level in, as far as the fourth; deeper rows say so with "…" before the name. */
 const LEVEL_PX = 16
@@ -55,6 +55,41 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
   const counts = leafCounts(all)
   const stages = new Map((tasks.data?.stages ?? []).map((s) => [s.id, s]))
   const rows = flatten(shown.visible, new Set<TaskId>())
+  // Each group's "3 done" after the last row it would show among, as on the desk (FR-054, P4-12):
+  // at the end of its parent's block, the project's own at the end of the list.
+  const doneAfter = new Map<number, { group: DoneGroup; depth: number }[]>()
+  const sayDone = (at: number, group: DoneGroup, depth: number) => {
+    const counts = shown.closed.get(group)
+    if (!counts || (shown.isOpen(group) ? counts.all : counts.hidden) === 0) return
+    doneAfter.set(
+      at,
+      [...(doneAfter.get(at) ?? []), { group, depth }].sort((a, b) => b.depth - a.depth),
+    )
+  }
+  rows.forEach((row, i) => {
+    if (row.hasChildren) sayDone(i + blockLength(rows, i), row.id, row.depth + 1)
+  })
+  sayDone(rows.length, 'top', 1)
+  const doneRows = (at: number) =>
+    (doneAfter.get(at) ?? []).map(({ group, depth }) => {
+      const open = shown.isOpen(group)
+      return (
+        <li
+          key={`done:${group}`}
+          data-done-group={group}
+          style={{ paddingLeft: 48 + (Math.min(depth, DEEPEST) - 1) * LEVEL_PX }}
+        >
+          <button
+            type="button"
+            onClick={() => shown.toggle(group)}
+            aria-pressed={open}
+            className="min-h-11 min-w-11 text-ui text-muted"
+          >
+            {open ? 'Hide done' : `${shown.closed.get(group)!.hidden} done`}
+          </button>
+        </li>
+      )
+    })
   return (
     <div className="flex flex-col gap-2">
       {error && (
@@ -67,14 +102,15 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
         data-task-tree
         className="overflow-hidden rounded-phone-card border border-line bg-panel py-1"
       >
-        {rows.map((row) => {
+        {rows.length === 0 && doneRows(0)}
+        {rows.map((row, i) => {
           const t = byId.get(row.id)!
           const children = counts.get(row.id)
           const stage = t.stageId ? stages.get(t.stageId) : undefined
           const due = treeDue({ dueAt: t.dueAt, status: t.status, waiting: false }, today, timeZone)
           const deeper = row.depth > DEEPEST
           const done = isFinished(t.status)
-          return (
+          return [
             <li
               key={row.id}
               data-phone-tree-row={row.id}
@@ -98,7 +134,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
               <button
                 type="button"
                 onClick={() => inspect({ type: 'task', id: t.id })}
-                className="flex min-w-0 flex-1 flex-col gap-1 py-2 text-left"
+                className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1 self-stretch py-2 text-left"
               >
                 <span
                   data-row-title
@@ -129,8 +165,9 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
                   </span>
                 )}
               </button>
-            </li>
-          )
+            </li>,
+            ...doneRows(i + 1),
+          ]
         })}
         {creator && (
           <li>

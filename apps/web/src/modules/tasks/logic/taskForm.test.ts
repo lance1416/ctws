@@ -27,12 +27,13 @@ describe('the create form validates with the create CONTRACT', () => {
     expect(createTaskForm).toBe(createTaskBody)
   })
 
-  it("makes the detail form the task's own fields plus the project it may move to", () => {
+  it("makes the detail form the task's own fields plus where it may move to", () => {
     expect(Object.keys(detailTaskForm.shape).sort()).toEqual(
-      [...Object.keys(taskFields), 'projectId'].sort(),
+      [...Object.keys(taskFields), 'projectId', 'parentId'].sort(),
     )
     for (const key of PATCH_KEYS) expect(Object.keys(updateTaskBody.shape)).toContain(key)
     expect(PATCH_KEYS).not.toContain('projectId')
+    expect(PATCH_KEYS).not.toContain('parentId')
   })
 
   it('accepts a draft the contract accepts, and hands back the schema’s parsed values', async () => {

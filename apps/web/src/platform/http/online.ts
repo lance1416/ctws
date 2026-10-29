@@ -22,7 +22,7 @@ export function useOnline(): boolean {
 }
 
 /** Why a save does nothing while offline (FR-033), said where it is hovered. */
-const OFFLINE_WHY = 'Offline. Nothing can be saved until the connection is back.'
+export const OFFLINE_WHY = 'Offline. Nothing can be saved until the connection is back.'
 
 /**
  * A button that saves, greyed while offline (FR-033, U-27): `aria-disabled` rather than

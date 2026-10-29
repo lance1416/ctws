@@ -151,6 +151,7 @@
   --color-swipe-later: light-dark(#885504, #e8a33d);
   --color-swipe-pick: light-dark(#5a5f6b, #b4b8bf);
   --color-swipe-done: light-dark(#166d2f, #5fb865);
+  --color-swipe-remove: light-dark(#b22b2c, #f06a6a);
 
   /* THE EIGHT KINDS (FR-002): main / `-t` text / `-bg` tint. Every value is the design's
      (tokens.md, DES-001 v1.4), measured as tokens.md "对比度怎么量" says and as

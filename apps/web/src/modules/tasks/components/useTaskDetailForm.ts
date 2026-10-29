@@ -34,6 +34,7 @@ export function useTaskDetailForm(task: TaskResponse) {
     mentions.current = notes?.links ?? new Map()
     return {
       projectId: task.projectId,
+      parentId: task.parentId,
       title: task.title,
       notes: notes?.text ?? null,
       status: task.status,
@@ -61,8 +62,12 @@ export function useTaskDetailForm(task: TaskResponse) {
       // the new project. It goes in the same PATCH, so a refused move changes nothing else.
       // A stage is its project's, so it does not come along.
       if (patch.notes) patch.notes = mentionsAsLinks(patch.notes, mentions.current)
-      if (changed.has('projectId'))
-        Object.assign(patch, { projectId: values.projectId, parentId: null, stageId: null })
+      if (changed.has('projectId') || changed.has('parentId'))
+        Object.assign(patch, {
+          projectId: values.projectId,
+          parentId: values.parentId ?? null,
+          ...(values.projectId === task.projectId ? {} : { stageId: null }),
+        })
       if (Object.keys(patch).length > 0) await patchTask(task.id, patch)
     },
     meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },

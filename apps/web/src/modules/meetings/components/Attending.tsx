@@ -66,7 +66,7 @@ export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
             <li key={a.id}>
               <Link
                 to={`/people/${a.id}`}
-                className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline"
+                className="flex min-w-0 items-center gap-2.5 text-ui text-ink hover:underline max-lg:min-h-11"
               >
                 <Avatar initials={initials(a)} />
                 <span className="truncate">{a.name}</span>

@@ -35,7 +35,7 @@ export function PickOne<T extends string | null>({
       <DropdownMenu.Trigger
         disabled={disabled}
         aria-label={`${label}: ${current?.label ?? placeholder}`}
-        className="-mx-1.5 flex h-8 min-w-0 items-center gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover disabled:opacity-50"
+        className="-mx-1.5 flex h-8 min-w-0 items-center max-lg:min-h-11 max-lg:min-w-11 gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover disabled:opacity-50"
       >
         {current?.mark && (
           <span aria-hidden="true" className="flex shrink-0">

@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from 'react'
-import { useOnline } from '../../platform/http/online'
+import { PhoneFormBar } from '../../platform/ui/PhoneFormBar'
+import { OFFLINE_WHY, useOnline } from '../../platform/http/online'
 import { keyLabel } from '../../platform/keyboard/keys'
 import { Button } from '../../platform/ui/Button'
 import { AlertIcon, OfflineIcon, RetryIcon } from '../../platform/ui/icons'
@@ -22,7 +23,10 @@ export function FormBar({
   disabled = false,
   failed = null,
   onCancel,
+  title,
 }: {
+  /** The form's name in a phone's bar. */
+  title?: string
   busy: boolean
   disabled?: boolean
   /** The last save's refusal, in the server's words, or true when it just failed. */
@@ -57,7 +61,16 @@ export function FormBar({
           </button>
         </div>
       )}
-      <div className="flex items-center justify-end gap-2">
+      {title && (
+        <PhoneFormBar
+          title={title}
+          submit="Save"
+          disabled={busy || disabled}
+          why={online ? undefined : OFFLINE_WHY}
+          onCancel={onCancel}
+        />
+      )}
+      <div className={`flex items-center justify-end gap-2 ${title ? 'max-lg:hidden' : ''}`}>
         <Button look="secondary" onClick={onCancel}>
           Cancel
         </Button>

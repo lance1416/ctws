@@ -49,7 +49,7 @@ export function NotesOverview() {
                 <Link
                   to={`/${NOTES_ID}/${n.id}`}
                   data-note-row={n.id}
-                  className="grid min-h-9 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
+                  className="grid min-h-9 max-lg:min-h-11 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover"
                 >
                   <span className="truncate text-ink">{noteTitle(n)}</span>
                   <Anchor note={n} />
@@ -65,7 +65,7 @@ export function NotesOverview() {
           <button
             type="button"
             onClick={() => setAll(true)}
-            className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+            className="flex h-9 max-lg:h-11 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
           >
             All {rows.length}
           </button>

@@ -74,6 +74,10 @@ describe.each(['light', 'dark'] as const)('text in %s', (scheme) => {
   it("a swiped row's buttons read at 6:1, their words on their fills (BUG-068)", () => {
     for (const fill of ['swipe-later', 'swipe-pick', 'swipe-done'])
       expect(contrast(read('on-ink', scheme), read(fill, scheme)), fill).toBeGreaterThanOrEqual(6)
+    // Remove is the design's red (P4-13): 6.4:1 light, 5.5:1 dark, over AA's 4.5.
+    expect(contrast(read('on-ink', scheme), read('swipe-remove', scheme))).toBeGreaterThanOrEqual(
+      4.5,
+    )
   })
 
   it("a kind's or a state's main colour shows as an icon (3:1) on every surface, bare, hovered and selected", () => {

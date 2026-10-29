@@ -266,6 +266,7 @@ export function CreateTaskDialog({
         )}
 
         <DialogFooter
+          title="New task"
           submit="Create"
           onCancel={() => {
             forgetDraft(draft)

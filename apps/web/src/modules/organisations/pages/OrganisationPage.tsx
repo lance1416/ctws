@@ -68,8 +68,13 @@ function OrganisationHead({ organisation: o }: { organisation: OrganisationRespo
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <OrganisationMark name={o.name} size={56} />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
+      {/* On a phone the name takes the rest of its line and wraps; the buttons go under, on the
+          left (P4-10). */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
+        <h1
+          tabIndex={-1}
+          className="truncate text-title tracking-[-0.02em] focus:outline-none max-lg:overflow-visible max-lg:whitespace-normal"
+        >
           {o.name}
         </h1>
         {(o.type || o.city) && (
@@ -93,7 +98,7 @@ function OrganisationHead({ organisation: o }: { organisation: OrganisationRespo
         <button type="button" onClick={() => openNew(log)} className={BUTTON.secondary}>
           <KIND_ICON.communication size={16} aria-hidden="true" />
           Log a message
-          <kbd className={KEY}>{keyLabel('N X')}</kbd>
+          <kbd className={`${KEY} max-lg:hidden`}>{keyLabel('N X')}</kbd>
         </button>
       )}
       <Link to={`/organisations/${o.id}/edit`} className={BUTTON.secondary}>
@@ -229,7 +234,7 @@ function Holder({
 }) {
   return (
     <li>
-      <Link to={to} className="flex min-w-0 items-center gap-2.5 hover:underline">
+      <Link to={to} className="flex min-w-0 items-center gap-2.5 hover:underline max-lg:min-h-11">
         <Avatar initials={holder.initials} />
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-ui text-ink">{holder.name}</span>

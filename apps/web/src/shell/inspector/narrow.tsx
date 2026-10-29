@@ -165,7 +165,10 @@ export function NarrowBlocks({ blocks }: { blocks: readonly (NarrowBlockOf | nul
       </h3>
       {b.body}
       {b.all && (
-        <Link to={b.all.to} className="pl-7 text-meta text-muted hover:text-ink">
+        <Link
+          to={b.all.to}
+          className="pl-7 text-meta text-muted hover:text-ink max-lg:flex max-lg:min-h-11 max-lg:items-center"
+        >
           {b.all.label}
         </Link>
       )}
@@ -209,7 +212,7 @@ export function NarrowRow({
       <InspectLink
         thing={thing}
         to={to}
-        className="min-w-0 truncate text-ui text-ink hover:underline"
+        className="min-w-0 truncate text-ui text-ink hover:underline max-lg:flex max-lg:min-h-11 max-lg:items-center"
       >
         {title}
       </InspectLink>

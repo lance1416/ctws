@@ -25,5 +25,11 @@ export function useTaskPlace(task: TaskResponse) {
   const counts = tree.some((t) => t.parentId === task.id)
     ? leafCounts(tree).get(task.id)
     : undefined
-  return { project, path, counts, stages }
+  // How many levels it takes with what is under it, for where Move to… may put it.
+  const heightOf = (id: string, seen: Set<string>): number => {
+    if (seen.has(id)) return 1
+    const kids = tree.filter((t) => t.parentId === id)
+    return 1 + Math.max(0, ...kids.map((k) => heightOf(k.id, new Set([...seen, id]))))
+  }
+  return { project, path, counts, stages, height: heightOf(task.id, new Set()) }
 }

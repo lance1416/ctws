@@ -64,6 +64,7 @@ export function MoveToProject({
                 <parents.Step
                   project={{ id: project(thing), name: thing.title }}
                   height={height}
+                  moving={of?.type === 'task' ? (of.id as TaskId) : null}
                   busy={busy}
                   error={error}
                   onPick={(parent) =>

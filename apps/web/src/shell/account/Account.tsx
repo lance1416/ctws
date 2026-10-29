@@ -103,11 +103,16 @@ function Row({
   action?: ReactNode
 }) {
   return (
-    <div className="grid min-h-16 grid-cols-[16px_140px_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-3">
+    // On a phone, its name over its value, the action on a line of its own (DES-001 "账号页").
+    <div className="grid min-h-16 grid-cols-[16px_140px_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-3 max-lg:grid-cols-[16px_minmax(0,1fr)] max-lg:gap-y-1.5">
       <Icon size={16} aria-hidden="true" className="text-muted" />
       <span className="text-ui text-muted">{name}</span>
-      <div className="min-w-0">{children}</div>
-      {action ?? <span />}
+      <div className="min-w-0 max-lg:col-start-2">{children}</div>
+      {action ? (
+        <div className="max-lg:col-start-2">{action}</div>
+      ) : (
+        <span className="max-lg:hidden" />
+      )}
     </div>
   )
 }

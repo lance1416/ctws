@@ -6,6 +6,7 @@ import { ICON_BUTTON, KEY } from '../../../platform/ui/buttonStyles'
 import { BackIcon, CloseIcon } from '../../../platform/ui/icons'
 import { SkeletonRows } from '../../../platform/ui/Block'
 import { projectTasksQuery } from '../api'
+import { ancestorsOf } from '../logic/tree/ancestors'
 import { flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
 import { ProgressSquare } from './ProgressSquare'
@@ -22,6 +23,7 @@ const LEVEL = 16
 export function MoveUnderParent({
   project,
   height,
+  moving = null,
   busy,
   error,
   onPick,
@@ -31,6 +33,7 @@ export function MoveUnderParent({
   project: { id: ProjectId; name: string }
   /** How many levels the moved task and what is under it take. */
   height: number
+  moving?: TaskId | null
   busy: boolean
   error: string | null
   onPick: (parent: { id: TaskId; title: string }) => void
@@ -51,8 +54,11 @@ export function MoveUnderParent({
   const byId = new Map(all.map((t) => [t.id, t]))
   const counts = leafCounts(all)
   const typed = query.trim().toLocaleLowerCase()
+  // Under itself, or under its own: the tree would close on itself.
+  const inside = (id: TaskId) =>
+    id === moving || (moving !== null && ancestorsOf(all, id).includes(moving))
   const rows = flatten(all, new Set())
-    .filter((r) => r.hasChildren && r.depth + height <= MAX_TASK_DEPTH)
+    .filter((r) => r.hasChildren && r.depth + height <= MAX_TASK_DEPTH && !inside(r.id))
     .filter((r) => typed === '' || byId.get(r.id)!.title.toLocaleLowerCase().includes(typed))
   const active = Math.min(at, Math.max(rows.length - 1, 0))
   const pick = (id: TaskId) => {

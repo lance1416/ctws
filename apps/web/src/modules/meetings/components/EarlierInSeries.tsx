@@ -105,7 +105,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
       {!words && rows.length > SHOWN && (
         <Link
           to={`/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId, list: 'series' })}`}
-          className="flex h-9 items-center justify-between border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+          className="flex h-9 max-lg:h-11 items-center justify-between border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
         >
           All {rows.length} earlier meetings
           <ForwardIcon size={14} aria-hidden="true" />

@@ -59,7 +59,7 @@ export function Segmented({
           onClick={() => {
             if (!unavailable) onPick(id)
           }}
-          className={`inline-flex h-6.5 items-center gap-1.5 rounded-control px-2.25 text-meta font-medium ${
+          className={`inline-flex h-6.5 max-lg:h-11 items-center gap-1.5 rounded-control px-2.25 text-meta font-medium ${
             id === current
               ? 'bg-panel text-ink ring-1 ring-line'
               : unavailable

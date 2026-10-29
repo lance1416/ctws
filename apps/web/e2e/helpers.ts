@@ -191,7 +191,8 @@ export async function saveTaskBody(page: Page): Promise<Record<string, unknown>>
 }
 
 /** The New in a project's head (FR-053): a menu of what can be made there. */
-export const headNew = (page: Page): Locator => page.getByRole('button', { name: /^New N$/ })
+/** A project page's New: the desk's "New N", a phone's "+" named New (P4-11). */
+export const headNew = (page: Page): Locator => page.getByRole('button', { name: /^New( N)?$/ })
 
 /** Opens the new-task dialog from a project's page, through its head's New. */
 export async function openNewTask(page: Page): Promise<void> {

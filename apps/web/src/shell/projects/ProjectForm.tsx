@@ -5,6 +5,7 @@ import {
   type ProjectColor,
   type ProjectResponse,
 } from '@ctws/contracts'
+import { PhoneFormBar } from '../../platform/ui/PhoneFormBar'
 import { initialsOf, leastUsedColor } from '@ctws/core'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState, type ReactNode } from 'react'
@@ -183,10 +184,11 @@ function ProjectForm({
         >
           {title}
         </h1>
-        <Link to={cancelTo} className={BUTTON.quiet}>
+        <PhoneFormBar title={title} submit={submit} disabled={busy} cancelTo={cancelTo} />
+        <Link to={cancelTo} className={`${BUTTON.quiet} max-lg:hidden`}>
           Cancel
         </Link>
-        <button type="submit" disabled={busy} className={BUTTON.primary}>
+        <button type="submit" disabled={busy} className={`${BUTTON.primary} max-lg:hidden`}>
           <DoneIcon size={16} aria-hidden="true" />
           {submit}
           <kbd className={KEY_ON_INK}>{keyLabel('Ctrl Enter')}</kbd>

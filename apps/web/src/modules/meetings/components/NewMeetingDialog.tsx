@@ -225,6 +225,7 @@ export function NewMeetingDialog({
         </div>
 
         <DialogFooter
+          title="New meeting"
           submit="Create"
           error={make.error}
           busy={make.isPending}

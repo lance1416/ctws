@@ -114,7 +114,7 @@ export function Modal({
           className={
             full
               ? 'fixed inset-0 z-40 flex bg-float pt-[env(safe-area-inset-top)]'
-              : `fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-lg:pt-4`
+              : `fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-lg:pt-4 max-lg:has-[[data-phone-form-bar]]:pt-16`
           }
         >
           <Dialog.Content

@@ -6,7 +6,7 @@
  * 30 high, 10 each side, 6 radius, a `line-strong` edge on the panel.
  */
 export const boxed =
-  'h-7.5 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-ink placeholder:text-subtle aria-invalid:border-stop'
+  'h-7.5 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-ink placeholder:text-subtle aria-invalid:border-stop max-lg:h-11'
 
 export const field = `w-full ${boxed}`
 
@@ -25,12 +25,12 @@ export const CHIP =
 
 /** One status as a chip over its own radio, in a `flex flex-wrap` row sized to the words. */
 export const STATUS_CHIP =
-  'relative flex h-8 cursor-pointer items-center gap-1.5 rounded-control border border-line px-2 text-ui whitespace-nowrap text-muted hover:bg-hover has-[:checked]:border-line-strong has-[:checked]:bg-select has-[:checked]:font-medium has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-task'
+  'relative flex h-8 max-lg:h-11 cursor-pointer items-center gap-1.5 rounded-control border border-line px-2 text-ui whitespace-nowrap text-muted hover:bg-hover has-[:checked]:border-line-strong has-[:checked]:bg-select has-[:checked]:font-medium has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-task'
 
 /** A named decision, shaped like the row's triage buttons. */
 export const decision =
-  'flex h-8 items-center rounded-control border border-line px-2.5 text-ui text-ink hover:border-line-strong hover:bg-hover'
+  'flex h-8 max-lg:h-11 items-center rounded-control border border-line px-2.5 text-ui text-ink hover:border-line-strong hover:bg-hover'
 
 /** `decision` closer in, so a row of four fits a field row of the inspector on one line (I-10). */
 export const decisionTight =
-  'flex h-8 shrink-0 items-center rounded-control border border-line px-2 text-ui whitespace-nowrap text-ink hover:border-line-strong hover:bg-hover'
+  'flex h-8 max-lg:h-11 shrink-0 items-center rounded-control border border-line px-2 text-ui whitespace-nowrap text-ink hover:border-line-strong hover:bg-hover'

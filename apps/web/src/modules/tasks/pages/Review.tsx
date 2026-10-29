@@ -1,4 +1,5 @@
 import type { ProjectId, ReviewResponse, TaskStatus } from '@ctws/contracts'
+import { usePhone } from '../../../platform/ui/phone'
 import { addDays } from '@ctws/core/day'
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
@@ -58,6 +59,7 @@ export function Review() {
 }
 
 function Week() {
+  const phone = usePhone()
   const { monday, thisMonday, show } = useReviewWeek()
   const review = useQuery(reviewQuery({ from: monday, to: addDays(monday, 6) }))
   const data = review.data
@@ -105,7 +107,35 @@ function Week() {
         </p>
       )}
 
-      {data && (
+      {data && phone && (
+        <div className="flex flex-col gap-3">
+          {data.projects.map((p) => (
+            <PhoneLane key={p.projectId} project={p} />
+          ))}
+          {data.projects.length === 0 && (
+            <p className="px-1 text-ui text-subtle">Nothing happened this week</p>
+          )}
+          <Brief stages={data.stagesMoved} range={{ from: data.from, to: data.to }} />
+          {still.length > 0 && (
+            <section
+              aria-label="No movement"
+              data-no-movement
+              className="flex flex-col gap-2 rounded-phone-card border border-line bg-panel p-3.5"
+            >
+              <h2 className="text-ui font-medium text-muted">No movement</h2>
+              <ul className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {still.map((p) => (
+                  <li key={p.id} className="flex items-center gap-2 text-ui text-ink">
+                    <ProjectSquare project={p} />
+                    {p.name}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
+      {data && !phone && (
         <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
           <section
             aria-label="By project"
@@ -155,6 +185,42 @@ function Week() {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * A project's week on a phone (DES-001 "回顾"): a card, its square and name on top, then what was
+ * finished, started and dropped, a section each and only where there is some, five rows a section.
+ */
+function PhoneLane({ project: p }: { project: ReviewProject }) {
+  const project = useEveryProject().data?.find((x) => x.id === p.projectId)
+  const closed = new Set(p.closedParents.map((c) => c.id))
+  return (
+    <section
+      aria-label={p.projectName}
+      data-review-lane={p.projectName}
+      className="flex flex-col gap-3 rounded-phone-card border border-line bg-panel p-3.5"
+    >
+      <h2 className="flex items-center gap-2 text-prose font-medium text-ink">
+        {project && <ProjectSquare project={project} />}
+        <span className="min-w-0 truncate">{p.projectName}</span>
+      </h2>
+      {LANES.filter(({ list }) => p[list].length > 0).map(({ list, label, status }) => (
+        <div key={list} className="flex flex-col gap-1.5">
+          <h3 className="flex items-center gap-1.5 text-ui font-medium text-muted">
+            <StatusMark status={status} size={14} />
+            {label}
+            <span className="font-normal tabular-nums">{p[list].length}</span>
+          </h3>
+          <Cell
+            lines={cellLines(p[list], closed)}
+            status={status}
+            projectId={p.projectId}
+            label={list}
+          />
+        </div>
+      ))}
+    </section>
   )
 }
 

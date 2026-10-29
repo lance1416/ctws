@@ -76,7 +76,7 @@ function More({ rows, shown, onAll }: { rows: number; shown: number; onAll: () =
     <button
       type="button"
       onClick={onAll}
-      className="flex h-9 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
+      className="flex h-9 max-lg:h-11 w-full items-center border-t border-line px-3 text-ui text-muted hover:bg-hover hover:text-ink"
     >
       All {rows}
     </button>
@@ -111,7 +111,7 @@ function NextSeven() {
                 <Link
                   to={occurrenceTo(m)}
                   data-next-meeting
-                  className="grid min-h-9 grid-cols-[2.5rem_3rem_minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui hover:bg-hover"
+                  className="grid min-h-9 max-lg:min-h-11 grid-cols-[2.5rem_3rem_minmax(0,1fr)_auto] items-center gap-x-3 px-3 text-ui hover:bg-hover"
                 >
                   <span className="font-mono text-meta text-meeting-t">
                     {weekdayOf(ymd(start, zone), true)}

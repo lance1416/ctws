@@ -34,7 +34,7 @@ export function PhoneProject({ id }: { id: ProjectId }) {
           Projects
         </Link>
         {/* What can belong to it, made in it (FR-026). */}
-        <NewMenu projectName={project.name} className="shrink-0" />
+        <NewMenu projectName={project.name} className="shrink-0" compact />
         <MoreMenu
           id={id}
           archived={project.isInbox ? null : project.archivedAt !== null}

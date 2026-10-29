@@ -4,6 +4,7 @@ import {
   apiPost,
   dayInZone,
   makeProject,
+  makeReading,
   makeTask,
   registerFreshUser,
   WEB,
@@ -398,6 +399,9 @@ test('a project on a phone: its tree alone, a row 44 and over, tags under its na
   await expect(rows).toHaveCount(3)
   for (const row of await rows.all())
     expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  // What opens it, not only the row it sits in (BUG-070).
+  for (const name of await page.locator('[data-phone-tree-row] button:not([aria-label])').all())
+    expect((await name.boundingBox())!.height).toBeGreaterThanOrEqual(44)
   await expect(rows.filter({ hasText: 'Amazon' })).toContainText('0/2')
   await expect(rows.filter({ hasText: 'Phone screen' })).toContainText(/\w{3} \d+/)
 
@@ -433,11 +437,17 @@ test('a person on a project: Remove is a swipe away, and in their sheet, asked f
   await page.goto(`/projects/${jh}`)
   const people = page.getByRole('region', { name: 'People' })
   await expect(people.locator('[data-linked]')).toHaveCount(2)
+  for (const row of await people.locator('[data-linked]').all())
+    expect((await row.boundingBox())!.height, 'a linked row (BUG-070)').toBeGreaterThanOrEqual(44)
 
   // Reached as it is, without the swipe: reaching it opens the row.
   const remove = people.getByRole('button', { name: 'Remove Mira Chen from project' })
   await remove.focus()
   await expect(remove).toBeInViewport()
+  expect(
+    (await remove.boundingBox())!.height,
+    'the swiped Remove (BUG-070)',
+  ).toBeGreaterThanOrEqual(44)
   await remove.press('Enter')
   await expect(people.locator('[data-linked]')).toHaveCount(1)
 
@@ -473,4 +483,111 @@ test('a mention clicked in the sheet takes its place, ‹ back to what mentioned
   await expect(page).toHaveURL(/inspect=person/)
   await sheet.getByRole('button', { name: /^Back to/ }).click()
   await expect(page).toHaveURL(/inspect=task/)
+})
+
+test('a repeating meeting asks "Change which?" from the foot, Edit over Cancel (DES-001)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const day = addDays(dayInZone(await accountZone(page)), 1)
+  const made = await apiPost<{ meetingId: string }>(page, '/meetings', {
+    title: 'Standup',
+    startsLocal: `${day}T09:30`,
+    timeZone: await accountZone(page),
+    durationMinutes: 30,
+    rrule: 'FREQ=DAILY',
+  })
+  await page.goto(`/meetings/${made.meetingId}?at=${day}T09:30`)
+  await page.getByRole('main').getByRole('button', { name: 'Edit', exact: true }).click()
+  const ask = page.getByRole('dialog', { name: 'This meeting repeats. Change which?' })
+  const edit = ask.getByRole('button', { name: 'Edit', exact: true })
+  const cancel = ask.getByRole('button', { name: 'Cancel', exact: true })
+  const [e, c] = [(await edit.boundingBox())!, (await cancel.boundingBox())!]
+  // One over the other, each the sheet's width.
+  expect(e.y).toBeLessThan(c.y)
+  expect(e.width).toBe(c.width)
+  expect(e.width).toBeGreaterThan(PHONE.width - 48)
+  await ask.getByRole('radio', { name: /The whole series/ }).check()
+  await edit.click()
+  await expect(page).toHaveURL(/\/edit/)
+})
+
+test('offline, a tap on the greyed Save says why from the foot (FR-033, DES-001)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const id = await makeReading(page, { kind: 'book', title: 'Dune' })
+  await page.goto(`/reading/${id}/edit`)
+  const bar = page.locator('[data-phone-form-bar]')
+  await expect(bar).toBeVisible()
+  await page.context().setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+  const save = bar.getByRole('button', { name: 'Save' })
+  await expect(save).toHaveAttribute('aria-disabled', 'true')
+  const saved = { patched: false }
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH') saved.patched = true
+  })
+  // aria-disabled: a tap the browser still delivers, which the actionability check would refuse.
+  await save.click({ force: true })
+  await expect(page.getByRole('dialog', { name: 'Not now' })).toContainText(/Nothing can be saved/)
+  expect(saved.patched).toBe(false)
+  await page.context().setOffline(false)
+})
+
+test('a role on a phone is two lines: where and as what with its ×, then from and to (DES-001)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const org = await apiPost<{ id: string }>(page, '/organisations', { name: 'Amazon' })
+  const person = await apiPost<{ id: string }>(page, '/people', {
+    givenName: 'Mira',
+    familyName: 'Chen',
+  })
+  const put = await page.request.put(`/api/v1/people/${person.id}/roles`, {
+    headers: WEB,
+    data: { roles: [{ organisationId: org.id, title: 'Recruiter', from: '2024-01' }] },
+  })
+  expect(put.ok()).toBe(true)
+  await page.goto(`/people/${person.id}/edit`)
+  const role = page.getByRole('textbox', { name: 'Role 1', exact: true })
+  const remove = page.getByRole('button', { name: 'Remove role 1' })
+  const from = page.getByLabel('Role 1 from')
+  const [r, x, f] = [
+    (await role.boundingBox())!,
+    (await remove.boundingBox())!,
+    (await from.boundingBox())!,
+  ]
+  expect(Math.abs(r.y + r.height / 2 - (x.y + x.height / 2))).toBeLessThan(8)
+  expect(x.x).toBeGreaterThan(r.x)
+  expect(f.y).toBeGreaterThan(r.y + r.height)
+})
+
+test('in the edit, Move to… takes a project, then a parent, saved with the rest (FR-088)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const today = dayInZone(await accountZone(page))
+  const inbox = await makeProject(page, 'Errands')
+  const jh = await makeProject(page, 'Job hunt')
+  const amazon = await makeTask(page, jh, 'Amazon')
+  await makeTask(page, jh, 'Onsite', {}, amazon)
+  const loose = await makeTask(page, inbox, 'Send the thank-you', { scheduledOn: today })
+  await page.reload()
+  await page
+    .locator('[data-phone-row]')
+    .filter({ hasText: 'Send the thank-you' })
+    .getByRole('button', { name: /^Send the thank-you/ })
+    .click()
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await sheet.getByRole('button', { name: 'Edit', exact: true }).click()
+  await sheet.getByRole('button', { name: /Move to…/ }).click()
+  const picker = page.getByRole('dialog', { name: /^Move “Send the thank-you” to/ })
+  await picker.getByRole('button', { name: 'Inside “Job hunt”' }).click()
+  await picker.getByRole('option', { name: /Amazon/ }).click()
+  await expect(sheet.getByRole('button', { name: /Move to…/ })).toContainText('Job hunt › Amazon')
+  await sheet.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect
+    .poll(async () => (await serverTasks(page, jh)).find((t) => t.id === loose)?.parentId)
+    .toBe(amazon)
 })

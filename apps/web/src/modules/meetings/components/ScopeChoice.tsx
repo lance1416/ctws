@@ -1,7 +1,9 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { useEffect, useRef, useState } from 'react'
 import { shortDay, weekdayOf } from '../../../platform/time/dates'
+import { BottomSheet } from '../../../platform/ui/BottomSheet'
 import { BUTTON } from '../../../platform/ui/buttonStyles'
+import { usePhone } from '../../../platform/ui/phone'
 import { LAYER } from '../../../platform/ui/layers'
 import { useAccountToday } from '../../../shell/auth'
 import type { EditScope } from '../api'
@@ -24,6 +26,7 @@ export function ScopeChoice({
   onCancel: () => void
 }) {
   const today = useAccountToday()
+  const phone = usePhone()
   const [scope, setScope] = useState<EditScope>('one')
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => box.current?.querySelector<HTMLInputElement>('input:checked')?.focus(), [])
@@ -45,6 +48,52 @@ export function ScopeChoice({
       note: firstDay ? `Since ${shortDay(firstDay, today)}` : 'Every one of them',
     },
   ]
+  const radios = (
+    <div role="radiogroup" aria-label="Change which" className="flex flex-col gap-1">
+      {choices.map((c) => (
+        <label
+          key={c.value}
+          className="flex cursor-pointer items-start gap-3 rounded-control px-3 py-2 has-[:checked]:bg-select hover:bg-hover max-lg:min-h-11"
+        >
+          <input
+            type="radio"
+            name="scope"
+            value={c.value}
+            checked={scope === c.value}
+            onChange={() => setScope(c.value)}
+            className="mt-1 size-4 accent-ink"
+          />
+          <span className="flex flex-col">
+            <span className="text-ui text-ink">{c.label}</span>
+            <span className="text-meta text-muted">{c.note}</span>
+          </span>
+        </label>
+      ))}
+    </div>
+  )
+  // On a phone, a sheet from the foot, its two buttons one over the other (DES-001).
+  if (phone)
+    return (
+      <BottomSheet title="This meeting repeats. Change which?" onClose={onCancel}>
+        <div ref={box} className="flex flex-col gap-3 px-4 pt-1 pb-4">
+          {radios}
+          <button
+            type="button"
+            onClick={() => onPick(scope)}
+            className={`${BUTTON.primary} w-full justify-center`}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className={`${BUTTON.secondary} w-full justify-center`}
+          >
+            Cancel
+          </button>
+        </div>
+      </BottomSheet>
+    )
   return (
     <div
       ref={box}
@@ -59,27 +108,7 @@ export function ScopeChoice({
       className={`absolute top-full right-0 ${LAYER.menu} mt-2 flex w-92 flex-col gap-2 rounded-block bg-float p-3.5 shadow-float`}
     >
       <p className="text-ui font-medium text-ink">This meeting repeats. Change which?</p>
-      <div role="radiogroup" aria-label="Change which" className="flex flex-col gap-1">
-        {choices.map((c) => (
-          <label
-            key={c.value}
-            className="flex cursor-pointer items-start gap-3 rounded-control px-3 py-2 has-[:checked]:bg-select hover:bg-hover"
-          >
-            <input
-              type="radio"
-              name="scope"
-              value={c.value}
-              checked={scope === c.value}
-              onChange={() => setScope(c.value)}
-              className="mt-1 size-4 accent-ink"
-            />
-            <span className="flex flex-col">
-              <span className="text-ui text-ink">{c.label}</span>
-              <span className="text-meta text-muted">{c.note}</span>
-            </span>
-          </label>
-        ))}
-      </div>
+      {radios}
       <div className="flex justify-end gap-2 pt-1">
         <button type="button" onClick={onCancel} className={BUTTON.quiet}>
           Cancel

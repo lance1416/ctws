@@ -114,8 +114,13 @@ function ReadingHead({ item }: { item: ReadingItemResponse }) {
       >
         <Icon size={24} />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
+      {/* On a phone the name takes the rest of its line and wraps; the buttons go under, on the
+          left (P4-10). */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
+        <h1
+          tabIndex={-1}
+          className="truncate text-title tracking-[-0.02em] focus:outline-none max-lg:overflow-visible max-lg:whitespace-normal"
+        >
           {readingLabel(item)}
         </h1>
         <div className="flex flex-wrap items-center gap-3 text-ui text-muted">

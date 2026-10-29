@@ -20,11 +20,12 @@ export const BUTTON = {
   quiet: `${BASE} text-ink hover:bg-hover disabled:opacity-50`,
   destructive: `${BASE} border border-stop text-stop-t hover:bg-stop-bg disabled:opacity-50`,
   /** A small action inside a row or a block head: no frame, muted until hovered. */
-  inline: 'rounded-control px-2 py-1 text-ui text-muted hover:bg-hover hover:text-ink',
+  inline:
+    'rounded-control px-2 py-1 text-ui text-muted hover:bg-hover hover:text-ink max-lg:inline-flex max-lg:min-h-11 max-lg:items-center',
   /** The phone's capture, the middle of the tab bar: an ink square with a plus (artboard 25). */
   tab: 'grid size-11 place-items-center rounded-card bg-ink text-ui text-on-ink',
   /** An offer to add something, not a command. */
-  link: `rounded-control px-2 py-1 text-ui ${LINK} hover:bg-hover`,
+  link: `rounded-control px-2 py-1 text-ui ${LINK} hover:bg-hover max-lg:inline-flex max-lg:min-h-11 max-lg:items-center`,
 } as const
 
 /** A chip that is chosen among others (a person's circles): ink, so it parts from the rest. */
@@ -55,5 +56,5 @@ export const SWIPE = {
   done: 'flex items-center gap-1.5 bg-swipe-done pl-5 text-meta font-medium text-on-ink',
   /** Remove: the hover × of the desk, a swipe away on a phone. */
   remove:
-    'flex w-21 flex-col items-center justify-center gap-1 bg-stop text-meta font-medium text-on-stop',
+    'flex w-21 flex-col items-center justify-center gap-1 bg-swipe-remove text-meta font-medium text-on-ink',
 } as const

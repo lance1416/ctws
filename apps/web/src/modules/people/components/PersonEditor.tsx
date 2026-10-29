@@ -8,6 +8,7 @@ import {
   type ProjectId,
   type UpdatePersonBody,
 } from '@ctws/contracts'
+import { PhoneFormBar } from '../../../platform/ui/PhoneFormBar'
 import { avatarInitials, clockTime, displayName, sortKey, splitName } from '@ctws/core'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useState, type ReactNode } from 'react'
@@ -417,13 +418,13 @@ export function PersonEditor({
             }
           >
             {d.roles.length > 0 && (
-              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_6rem_6rem_auto] items-center gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_6rem_6rem_auto] items-center gap-2 max-lg:grid-cols-1 max-lg:gap-3">
                 {['Organisation', 'Role', 'From', 'To'].map((h) => (
-                  <span key={h} aria-hidden="true" className={label}>
+                  <span key={h} aria-hidden="true" className={`${label} max-lg:hidden`}>
                     {h}
                   </span>
                 ))}
-                <span />
+                <span className="max-lg:hidden" />
                 {d.roles.map((r, i) => {
                   const change = (patch: Partial<Role>) =>
                     set({ roles: d.roles.map((x) => (x.key === r.key ? { ...x, ...patch } : x)) })
@@ -581,7 +582,13 @@ export function PersonEditor({
 
       {children && <div className="col-span-2 row-start-4">{children}</div>}
 
-      <div className="col-start-2 row-start-1 flex items-center gap-2 self-center">
+      <PhoneFormBar
+        title={person ? `Edit ${person.name}` : 'New person'}
+        submit={person ? 'Save' : 'Create person'}
+        disabled={busy || channels.bad || badDay}
+        cancelTo={cancelTo}
+      />
+      <div className="col-start-2 row-start-1 flex items-center gap-2 self-center max-lg:hidden">
         <Link to={cancelTo} className={BUTTON.quiet}>
           Cancel
         </Link>
@@ -664,7 +671,7 @@ function Another({ onAdd, children }: { onAdd: () => void; children: ReactNode }
     <button
       type="button"
       onClick={onAdd}
-      className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink"
+      className="inline-flex items-center gap-1.5 self-start rounded-control px-1 py-0.5 text-ui text-muted hover:text-ink max-lg:min-h-11"
     >
       <NewIcon size={14} aria-hidden="true" />
       {children}
@@ -678,7 +685,7 @@ function Remove({ what, onRemove }: { what: string; onRemove: () => void }) {
       type="button"
       onClick={onRemove}
       aria-label={`Remove ${what}`}
-      className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink"
+      className="inline-grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink max-lg:size-11"
     >
       <CloseIcon size={14} aria-hidden="true" />
     </button>
@@ -700,7 +707,9 @@ function RoleRow({
   onRemove: () => void
 }) {
   return (
-    <>
+    // On a phone, two lines a role: where and as what, then from and to; its × at the end of the
+    // first (DES-001 "表单").
+    <div className="contents max-lg:grid max-lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] max-lg:items-center max-lg:gap-2">
       <OrganisationBox at={at} role={role} onChange={onChange} />
       <input
         aria-label={`Role ${at}`}
@@ -739,8 +748,10 @@ function RoleRow({
           onChange={(to) => onChange({ to })}
         />
       )}
-      <Remove what={`role ${at}`} onRemove={onRemove} />
-    </>
+      <span className="contents max-lg:col-start-3 max-lg:row-start-1 max-lg:block">
+        <Remove what={`role ${at}`} onRemove={onRemove} />
+      </span>
+    </div>
   )
 }
 
@@ -965,7 +976,7 @@ function Circles({
         <button
           type="button"
           onClick={() => setNaming('')}
-          className="inline-flex h-7 items-center gap-1 rounded-control border border-dashed border-line-strong px-2.5 text-ui text-muted hover:text-ink"
+          className="inline-flex h-7 max-lg:h-11 items-center gap-1 rounded-control border border-dashed border-line-strong px-2.5 text-ui text-muted hover:text-ink"
         >
           <NewIcon size={12} aria-hidden="true" />
           New circle

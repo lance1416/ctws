@@ -1,5 +1,5 @@
 // The forms' schemas are the wire contracts, so they refuse exactly what the server would.
-import { createTaskBody, projectId, taskFields } from '@ctws/contracts'
+import { createTaskBody, projectId, taskFields, taskId } from '@ctws/contracts'
 import { z } from 'zod'
 
 export const createTaskForm = createTaskBody
@@ -7,8 +7,12 @@ export const createTaskForm = createTaskBody
 export type CreateTaskForm = z.input<typeof createTaskBody>
 export type CreateTaskValues = z.output<typeof createTaskBody>
 
-/** A task's fields as the update contract takes them, and the project it is moved to. */
-export const detailTaskForm = z.object(taskFields).partial().extend({ projectId }).strict()
+/** A task's fields as the update contract takes them, and the project and parent it is moved to. */
+export const detailTaskForm = z
+  .object(taskFields)
+  .partial()
+  .extend({ projectId, parentId: taskId.nullable().optional() })
+  .strict()
 export type DetailTaskForm = z.input<typeof detailTaskForm>
 export type DetailTaskValues = z.output<typeof detailTaskForm>
 

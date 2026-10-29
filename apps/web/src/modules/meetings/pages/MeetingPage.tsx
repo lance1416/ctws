@@ -101,8 +101,13 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
       >
         <KIND_ICON.meeting size={24} />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
+      {/* On a phone the name takes the rest of its line and wraps; the buttons go under, on the
+          left (P4-10). */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
+        <h1
+          tabIndex={-1}
+          className="truncate text-title tracking-[-0.02em] focus:outline-none max-lg:overflow-visible max-lg:whitespace-normal"
+        >
           {m.title}
         </h1>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -118,7 +123,7 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
           {project && (
             <Link
               to={`/projects/${project.id}`}
-              className="inline-flex items-center gap-1.5 text-ui text-muted hover:text-ink"
+              className="inline-flex items-center gap-1.5 text-ui text-muted hover:text-ink max-lg:min-h-11"
             >
               <ProjectSquare project={project} />
               {project.name}
