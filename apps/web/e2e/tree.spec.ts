@@ -509,14 +509,19 @@ test('a task created while the project is still loading appears', async ({ page 
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   const dialog = page.getByRole('dialog', { name: 'New task' })
-  // Made from the project's page, it is the project's (FR-026), not the Inbox's.
-  await expect(dialog.getByRole('button', { name: /^Projects/ })).toContainText('P')
   await dialog.getByRole('textbox', { name: 'Title' }).fill('typed early')
+  // What the dialog opened on, read without waiting so the timing is the test's own.
+  const openedOn = await dialog
+    .getByRole('button', { name: /^Projects/ })
+    .getAttribute('aria-label')
   const created = page.waitForResponse(
     (r) => r.request().method() === 'POST' && r.ok() && /\/api\/v1\/tasks$/.test(r.url()),
   )
   await dialog.getByRole('button', { name: 'Create', exact: true }).click()
-  expect((await created).request().postDataJSON()).toMatchObject({ projectId: pid })
+  // Made from the project's page, it is the project's (FR-026, BUG-092), not the Inbox's.
+  expect((await created).request().postDataJSON(), `the dialog said ${openedOn}`).toMatchObject({
+    projectId: pid,
+  })
   release()
 
   await expect(page.getByRole('listitem').filter({ hasText: 'typed early' })).toBeVisible()
