@@ -40,7 +40,8 @@ test('the icon bar holds the eleven places in order, the current one selected', 
 
 test('the top bar is 48 high and the icon bar 52 wide', async ({ page }) => {
   await registerFreshUser(page)
-  const header = await page.locator('header').boundingBox()
+  // The page's banner: a page may draw a <header> of its own inside main (Today's).
+  const header = await page.getByRole('banner').boundingBox()
   expect(header?.height).toBe(48)
   const bar = await page.getByRole('navigation', { name: 'Modules' }).boundingBox()
   expect(bar?.width).toBe(52)
