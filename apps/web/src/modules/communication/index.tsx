@@ -38,7 +38,8 @@ export const communicationModule: WorkspaceModule = {
     { index: true, element: <CommunicationOverview />, handle: PAGE },
     { path: ':id', element: <Message />, handle: PAGE },
   ],
-  creates: [{ kind: 'communication', key: 'x', label: 'Message', Dialog: NewMessage }],
+  // The kind's name, as everywhere (DES-001 "种类名"); its button says the act: Log a message.
+  creates: [{ kind: 'communication', key: 'x', label: 'Communication', Dialog: NewMessage }],
   chords: [
     {
       id: 'communication',

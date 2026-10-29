@@ -41,7 +41,7 @@ export function CommunicationOverview() {
   const openNew = useContext(NewContext)
   const creator = useRegistry().creates.find((c) => c.kind === 'communication')
   if (overview.isSuccess && overview.data.awaiting.length + overview.data.inTouch.length === 0)
-    return <ModuleEmpty kind="communication" />
+    return <ModuleEmpty kind="communication" says="Log a message" />
   return (
     <div className="flex flex-col gap-3.5">
       <div className="flex items-center gap-3">
