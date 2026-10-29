@@ -16,3 +16,22 @@ describe('noteTitle', () => {
     expect(noteTitle(note({}))).toBe('Empty note')
   })
 })
+
+describe('a meeting note', () => {
+  const anchor = {
+    type: 'meeting',
+    id: 'x',
+    occurrenceId: '2026-10-19T09:00',
+    title: 'Atlas weekly',
+  }
+
+  it('is called by its meeting and that day, its headings not taken for a name', () => {
+    expect(noteTitle(note({ anchor, body: '## Updates\n- one' }))).toBe('Atlas weekly, Oct 19')
+  })
+
+  it('keeps a title of its own', () => {
+    expect(noteTitle(note({ anchor, title: 'Hiring plan', body: '## Updates' }))).toBe(
+      'Hiring plan',
+    )
+  })
+})

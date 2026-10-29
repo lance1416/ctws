@@ -28,9 +28,9 @@ test('a note hung on a meeting says it is on the meeting, and is that meeting’
   })
   await page.goto('/notes')
 
-  // Its row: the first line for a note with no title, and what it hangs on.
+  // Its row: a meeting note with no title is that meeting's on that day (FR-050, v2.8).
   const hung = row(page, note.id)
-  await expect(hung).toContainText('Ship the importer by Friday.')
+  await expect(hung).toContainText(/Weekly sync, [A-Z][a-z]{2} \d+/)
   await expect(hung).toContainText('Weekly sync')
   await hung.click()
   await expect(page).toHaveURL(new RegExp(`/notes/${note.id}$`))

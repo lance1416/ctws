@@ -27,7 +27,8 @@ export function NoteEditor({
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
   const [preview, setPreview] = useState(body)
-  // Untitled, it is called by its first line, as lists call it; the box says so (R-05).
+  // Untitled, it is called as lists call it (a meeting's and its day, else its first line); the
+  // box says so (R-05, FR-050).
   const named =
     body.trim() || note?.anchor
       ? noteTitle({ title: null, body, anchor: note?.anchor ?? null })
