@@ -201,14 +201,19 @@ async function countLive(tx: Tx, workspaceId: WorkspaceId): Promise<Record<strin
     const live = ['task_dependencies', 'person_channels', 'meeting_exceptions'].includes(table)
       ? ''
       : ' and deleted_at is null'
+    // A task the last release showed nowhere, its project deleted, is gone already: it is buried
+    // with the project, so it is not one of the live rows the move must keep.
+    const shown = sql`not exists (select 1 from projects p where p.id = project_id and p.deleted_at is not null)`
     const owner =
-      table === 'task_dependencies'
-        ? sql`exists (select 1 from tasks t where t.id = blocked_id and t.workspace_id = ${workspaceId} and t.deleted_at is null)`
-        : table === 'person_channels'
-          ? sql`exists (select 1 from people p where p.id = person_id and p.workspace_id = ${workspaceId} and p.deleted_at is null)`
-          : table === 'meeting_exceptions'
-            ? sql`exists (select 1 from meetings m where m.id = meeting_id and m.workspace_id = ${workspaceId} and m.deleted_at is null)`
-            : sql`workspace_id = ${workspaceId}`
+      table === 'tasks'
+        ? sql`workspace_id = ${workspaceId} and ${shown}`
+        : table === 'task_dependencies'
+          ? sql`exists (select 1 from tasks t where t.id = blocked_id and t.workspace_id = ${workspaceId} and t.deleted_at is null and not exists (select 1 from projects p where p.id = t.project_id and p.deleted_at is not null))`
+          : table === 'person_channels'
+            ? sql`exists (select 1 from people p where p.id = person_id and p.workspace_id = ${workspaceId} and p.deleted_at is null)`
+            : table === 'meeting_exceptions'
+              ? sql`exists (select 1 from meetings m where m.id = meeting_id and m.workspace_id = ${workspaceId} and m.deleted_at is null)`
+              : sql`workspace_id = ${workspaceId}`
     const result = await tx.execute(
       sql`select count(*)::int as n from ${sql.raw(table)} where ${owner}${sql.raw(live)}`,
     )

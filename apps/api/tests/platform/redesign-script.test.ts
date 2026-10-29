@@ -415,6 +415,31 @@ describe('the move, on the pre-redesign data', () => {
     expect(await countOf(db, "organisations where name = 'Tencent'")).toBe(0)
   })
 
+  it('moves an account whose deleted project still had live tasks, burying them with it', async () => {
+    // The last release deleted a project without its tasks: they were gone from every view, so
+    // the move buries them with the project. Counted as live before, they failed the check and
+    // kept 103 accounts of the local data from moving, and the server from starting.
+    const { db, run, lines } = await moved()
+    const project = (await one(
+      db,
+      sql`select p.id, count(t.id)::int as n from projects p
+          join tasks t on t.project_id = p.id and t.deleted_at is null
+          where p.workspace_id = ${A} and p.deleted_at is null
+          group by p.id order by 2 desc limit 1`,
+    )) as { id: string; n: number }
+    expect(project.n).toBeGreaterThan(1)
+    await db.execute(sql`update projects set deleted_at = ${NOW} where id = ${project.id}::uuid`)
+    await run()
+    expect(lines.some((l) => l.includes('FAILED'))).toBe(false)
+    expect(await countOf(db, `tasks where project_id = '${project.id}'`)).toBe(0)
+    expect(
+      await countOf(
+        db,
+        `tombstones where object_type = 'task' and workspace_id = (select id from workspaces order by id limit 1) and place->>'projectId' = '${project.id}'`,
+      ),
+    ).toBe(project.n)
+  })
+
   it('keeps the backup it chose first through a retry, and chooses anew after a rollback (BUG-014)', async () => {
     const { db } = await moved()
     const dir = backupsDir()
