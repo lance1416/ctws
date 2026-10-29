@@ -15,7 +15,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { call } from '../../platform/http/api'
 import { monthDay } from '../../platform/time/dates'
 import { BUTTON } from '../../platform/ui/buttonStyles'
-import { boxed } from '../../platform/ui/formStyles'
+import { boxed, label } from '../../platform/ui/formStyles'
 import {
   DoneIcon,
   KIND_ICON,
@@ -170,14 +170,17 @@ export function MigrationReport() {
 
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-5">
         <div className="mb-1 flex flex-wrap items-start gap-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-full">
             <h1 className="text-title text-ink">Your data in the new layout</h1>
             <p className="text-ui text-muted">
               Moved on {monthDay(data.ranAt.slice(0, 10))}. A backup from just before is kept. These
               are the places where a guess was made for you.
             </p>
           </div>
-          <span data-report-left className="mt-2 text-ui text-muted tabular-nums">
+          <span
+            data-report-left
+            className="mt-2 text-ui text-muted tabular-nums max-lg:mt-0 max-lg:flex max-lg:min-h-11 max-lg:flex-1 max-lg:items-center"
+          >
             {data.pending > 0 ? `${data.pending} left` : 'All looked at'}
           </span>
           <button
@@ -195,6 +198,29 @@ export function MigrationReport() {
             Couldn’t finish the report. It is still here.
           </p>
         )}
+        {/* On a phone the sidebar is a row of tags that wraps, each a jump to its part (DES-001). */}
+        <nav aria-label="Migration report" className="flex flex-wrap gap-1.5 lg:hidden">
+          {[...NEED_A_LOOK, ...IF_YOU_LIKE]
+            .filter((s) => of(s.id).length > 0)
+            .map((s) => {
+              const left = of(s.id).filter(waiting).length
+              return (
+                <a
+                  key={s.id}
+                  href={`#${sectionId(s.id)}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-line bg-panel px-3 text-ui text-ink"
+                >
+                  <s.icon size={14} aria-hidden="true" className={`shrink-0 ${s.tone}`} />
+                  {s.label}
+                  {left > 0 ? (
+                    <span className="text-meta text-muted tabular-nums">{left}</span>
+                  ) : (
+                    <MarkDoneIcon size={14} aria-label="Looked at" className="text-go" />
+                  )}
+                </a>
+              )
+            })}
+        </nav>
 
         <Names items={of('names')} />
         <Merges items={of('organisationsToMerge')} />
@@ -278,12 +304,16 @@ function Part({
       aria-label={title}
       className="shrink-0 scroll-mt-4 overflow-hidden rounded-block border border-line bg-panel"
     >
-      <div className="flex h-11 items-center gap-2 border-b border-line pr-2 pl-3">
+      <div className="flex h-11 items-center gap-2 border-b border-line pr-2 pl-3 max-lg:h-auto max-lg:min-h-11 max-lg:flex-wrap max-lg:py-1.5">
         <span className="inline-grid size-6 place-items-center rounded-control bg-hover text-muted">
           <Icon size={14} aria-hidden="true" />
         </span>
         <h2 className="text-ui font-medium text-ink">{title}</h2>
-        {says && <span className="text-meta text-muted">{says}</span>}
+        {says && (
+          <span className="text-meta text-muted max-lg:order-last max-lg:w-full max-lg:pl-8">
+            {says}
+          </span>
+        )}
         <span className="flex-1" />
         {action}
       </div>
@@ -330,12 +360,12 @@ function LooksRight({ item }: { item: MigrationItem }) {
   const check = useCheck()
   if (!waiting(item))
     return (
-      <span className="justify-self-end">
+      <span className="justify-self-end max-lg:col-span-full max-lg:justify-self-start">
         <Why item={item} />
       </span>
     )
   return (
-    <span className="flex items-center gap-2 justify-self-end">
+    <span className="flex items-center gap-2 justify-self-end max-lg:col-span-full max-lg:justify-self-stretch max-lg:justify-between">
       <Why item={item} />
       <button
         type="button"
@@ -376,7 +406,9 @@ function Names({ items }: { items: MigrationItem[] }) {
         )
       }
     >
-      <div className={`${NAME_GRID} h-9 border-b border-line text-meta font-medium text-muted`}>
+      <div
+        className={`${NAME_GRID} h-9 border-b border-line text-meta font-medium text-muted max-lg:hidden`}
+      >
         <span>Was</span>
         <span>Given name</span>
         <span>Middle name</span>
@@ -440,24 +472,29 @@ function NameRow({ item }: { item: MigrationItem }) {
     save.mutate(typed)
   }
   const field = (key: keyof Parts, name: string) => (
-    <input
-      aria-label={`${name} of ${item.title}`}
-      value={parts[key]}
-      disabled={!person.data}
-      onChange={(e) => setTyped({ ...parts, [key]: e.target.value })}
-      onBlur={leave}
-      className={`${boxed} w-full`}
-    />
+    <label className="contents max-lg:flex max-lg:flex-col max-lg:gap-1">
+      <span className={`${label} lg:hidden`}>{name}</span>
+      <input
+        aria-label={`${name} of ${item.title}`}
+        value={parts[key]}
+        disabled={!person.data}
+        onChange={(e) => setTyped({ ...parts, [key]: e.target.value })}
+        onBlur={leave}
+        className={`${boxed} w-full`}
+      />
+    </label>
   )
   return (
     <li
       data-report-name={item.key}
-      className={`${NAME_GRID} min-h-11 border-b border-line py-1.5 last:border-b-0`}
+      // On a phone a card: what it was, the three fields one under another, then why and Looks
+      // right (DES-001).
+      className={`${NAME_GRID} min-h-11 border-b border-line py-1.5 last:border-b-0 max-lg:flex max-lg:flex-col max-lg:items-stretch max-lg:gap-2 max-lg:py-3`}
     >
       {/* To the person's page, to see them whole (BUG-059, MR-06). */}
       <Link
         to={`/people/${item.id}`}
-        className="truncate font-mono text-meta text-muted hover:text-ink hover:underline"
+        className="truncate font-mono text-meta text-muted hover:text-ink hover:underline max-lg:flex max-lg:min-h-11 max-lg:items-center"
       >
         {item.was}
         <span aria-hidden="true" className="ml-1">
@@ -468,6 +505,7 @@ function NameRow({ item }: { item: MigrationItem }) {
       {field('middleName', 'Middle name')}
       {field('familyName', 'Family name')}
       <span className="truncate text-ui text-ink">
+        <span className={`${label} lg:hidden`}>Shown as</span>
         {parts.givenName.trim()
           ? displayName({
               givenName: parts.givenName.trim(),
@@ -528,7 +566,7 @@ function MergeRow({ item }: { item: MigrationItem }) {
         <span key={g.id} className="flex items-center gap-1.5">
           <Link
             to={`/organisations/${g.id}`}
-            className="inline-flex h-6 items-center gap-1.5 rounded-key bg-organisation-bg px-2 text-meta font-medium text-organisation-t hover:underline"
+            className="inline-flex h-6 items-center gap-1.5 rounded-key bg-organisation-bg px-2 text-meta font-medium text-organisation-t hover:underline max-lg:h-11"
           >
             <KIND_ICON.organisation size={12} aria-hidden="true" />
             {g.name}
@@ -592,18 +630,21 @@ function Plain({
             <li
               key={item.key}
               data-report-item={item.key}
-              className="grid min-h-11 grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-line px-3.5 py-1.5 last:border-b-0"
+              className="grid min-h-11 grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-line px-3.5 py-1.5 last:border-b-0 max-lg:grid-cols-[auto_minmax(0,1fr)] max-lg:gap-y-2 max-lg:py-3"
             >
               {to ? (
                 // Put right on its own page (MR-06).
-                <Link to={to} className="truncate text-ui text-ink hover:underline">
+                <Link
+                  to={to}
+                  className="truncate text-ui text-ink hover:underline max-lg:col-span-2 max-lg:flex max-lg:min-h-11 max-lg:items-center"
+                >
                   {item.title}
                   <span aria-hidden="true" className="ml-1 text-muted">
                     ↗
                   </span>
                 </Link>
               ) : (
-                <span className="truncate text-ui text-ink">{item.title}</span>
+                <span className="truncate text-ui text-ink max-lg:col-span-2">{item.title}</span>
               )}
               <Value item={item} which="was" />
               <Value item={item} which="now" />
@@ -673,9 +714,11 @@ function Value({ item, which }: { item: MigrationItem; which: 'was' | 'now' }) {
     )
   }
   return which === 'was' ? (
-    <span className="truncate font-mono text-meta text-muted">{value ?? '—'}</span>
+    <span className="truncate font-mono text-meta text-muted max-lg:whitespace-normal">
+      {value ?? '—'}
+    </span>
   ) : (
-    <span className="truncate text-ui text-ink">{value}</span>
+    <span className="truncate text-ui text-ink max-lg:whitespace-normal">{value}</span>
   )
 }
 

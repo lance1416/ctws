@@ -1,0 +1,341 @@
+{
+  "ranAt": "2026-10-29T05:11:27.215Z",
+  "backupRef": {
+    "name": "20261029T051126Z-pre-redesign.dump",
+    "bytes": 85175
+  },
+  "counts": {
+    "before": {
+      "tasks": 20,
+      "people": 7,
+      "meetings": 3,
+      "projects": 7,
+      "links.about": 6,
+      "links.attends": 4,
+      "links.belongs": 7,
+      "reading_items": 2,
+      "person_channels": 2,
+      "links.recommends": 3,
+      "task_dependencies": 1,
+      "meeting_exceptions": 1
+    },
+    "after": {
+      "tasks": 20,
+      "people": 7,
+      "meetings": 3,
+      "projects": 7,
+      "links.about": 4,
+      "links.attends": 4,
+      "links.belongs": 7,
+      "reading_items": 2,
+      "person_channels": 2,
+      "links.recommends": 3,
+      "task_dependencies": 1,
+      "meeting_exceptions": 1
+    },
+    "moved": {
+      "about": 4,
+      "attends": 4,
+      "belongs": 7,
+      "deleted": 2,
+      "recommends": 2,
+      "createdAdded": 23,
+      "meetingNotes": 1,
+      "edgesToDeleted": 0,
+      "extraRecommenders": 1,
+      "links.about.toDeleted": 2
+    }
+  },
+  "items": [
+    {
+      "key": "project:01a15949-fee4-73a6-afe0-d2decbd77e56",
+      "section": "projectColours",
+      "type": "project",
+      "id": "01a15949-fee4-73a6-afe0-d2decbd77e56",
+      "title": "Inbox",
+      "was": "project-1",
+      "now": "blue IN",
+      "why": "Colour by hue, initials from the name",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "project:01a15949-ff16-7482-bb0a-600d12a222c4",
+      "section": "projectColours",
+      "type": "project",
+      "id": "01a15949-ff16-7482-bb0a-600d12a222c4",
+      "title": "CTWS",
+      "was": "project-1",
+      "now": "blue CT",
+      "why": "Colour by hue, initials from the name",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "project:01a15949-ff44-70da-9fcd-478274bf96ab",
+      "section": "projectColours",
+      "type": "project",
+      "id": "01a15949-ff44-70da-9fcd-478274bf96ab",
+      "title": "Job hunt",
+      "was": "project-2",
+      "now": "amber JH",
+      "why": "Colour by hue, initials from the name",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "project:01a15949-ff6b-75e7-aad9-31de40d3e66a",
+      "section": "projectColours",
+      "type": "project",
+      "id": "01a15949-ff6b-75e7-aad9-31de40d3e66a",
+      "title": "rust-analyzer",
+      "was": "project-3",
+      "now": "green RA",
+      "why": "Colour by hue, initials from the name",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "project:01a15949-ff91-7367-94ba-797cfdd6a22b",
+      "section": "projectColours",
+      "type": "project",
+      "id": "01a15949-ff91-7367-94ba-797cfdd6a22b",
+      "title": "Moving flat",
+      "was": "project-4",
+      "now": "pink MF",
+      "why": "Colour by hue, initials from the name",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "project:01a15949-ffb4-73b6-a34c-5ea3abc0401c",
+      "section": "projectColours",
+      "type": "project",
+      "id": "01a15949-ffb4-73b6-a34c-5ea3abc0401c",
+      "title": "Find a lawyer",
+      "was": "project-5",
+      "now": "teal FL",
+      "why": "Colour by hue, initials from the name",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "project:01a15949-ffd5-713b-ad09-3a5ff637c775",
+      "section": "projectColours",
+      "type": "project",
+      "id": "01a15949-ffd5-713b-ad09-3a5ff637c775",
+      "title": "Thesis",
+      "was": "project-6",
+      "now": "olive TH",
+      "why": "Colour by hue, initials from the name",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "merge:01a18611-f908-74c3-ab27-47cb3bc7bb37+01a18611-f908-74c3-ab27-4a478b2cbdcb",
+      "section": "organisationsToMerge",
+      "type": "organisation",
+      "id": "01a18611-f908-74c3-ab27-47cb3bc7bb37",
+      "title": "Stripe / Stripe Inc.",
+      "was": null,
+      "now": "Stripe",
+      "why": "Written differently",
+      "attention": true,
+      "checked": false,
+      "group": [
+        {
+          "id": "01a18611-f908-74c3-ab27-47cb3bc7bb37",
+          "name": "Stripe",
+          "people": 2
+        },
+        {
+          "id": "01a18611-f908-74c3-ab27-4a478b2cbdcb",
+          "name": "Stripe Inc.",
+          "people": 1
+        }
+      ]
+    },
+    {
+      "key": "name:01a1594a-000b-716f-9b4d-d7bd59b4de5c",
+      "section": "names",
+      "type": "person",
+      "id": "01a1594a-000b-716f-9b4d-d7bd59b4de5c",
+      "title": "欧阳娜娜",
+      "was": "欧阳娜娜",
+      "now": "欧阳娜娜",
+      "why": "Compound surname",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "name:01a1594a-0032-73e1-9a54-c1d9345d786e",
+      "section": "names",
+      "type": "person",
+      "id": "01a1594a-0032-73e1-9a54-c1d9345d786e",
+      "title": "Mary Jane Watson",
+      "was": "Mary Jane Watson",
+      "now": "Mary Jane Watson",
+      "why": "Several words",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "name:01a1594a-0046-777f-88d6-d33725e8f33c",
+      "section": "names",
+      "type": "person",
+      "id": "01a1594a-0046-777f-88d6-d33725e8f33c",
+      "title": "Cher",
+      "was": "Cher",
+      "now": "Cher",
+      "why": "One word",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "role:01a1594a-0046-777f-88d6-d33725e8f33c",
+      "section": "rolesWithoutCompany",
+      "type": "person",
+      "id": "01a1594a-0046-777f-88d6-d33725e8f33c",
+      "title": "Cher",
+      "was": "Singer",
+      "now": "Kept in the note",
+      "why": "No company",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "zone:01a1594a-0046-777f-88d6-d33725e8f33c",
+      "section": "peopleWithoutCity",
+      "type": "person",
+      "id": "01a1594a-0046-777f-88d6-d33725e8f33c",
+      "title": "Cher",
+      "was": null,
+      "now": "Europe/London",
+      "why": "No city",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "name:01a1594a-0058-760f-ac06-7e448e948f6a",
+      "section": "names",
+      "type": "person",
+      "id": "01a1594a-0058-760f-ac06-7e448e948f6a",
+      "title": "Li, Wendy",
+      "was": "Li, Wendy",
+      "now": "Wendy Li",
+      "why": "Had a comma",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "name:01a1594a-0067-77e5-8318-630f320d356f",
+      "section": "names",
+      "type": "person",
+      "id": "01a1594a-0067-77e5-8318-630f320d356f",
+      "title": "王 磊",
+      "was": "王 磊",
+      "now": "王磊",
+      "why": "Had a space",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "name:01a1594a-0330-7081-863b-0b3e1f614005",
+      "section": "names",
+      "type": "person",
+      "id": "01a1594a-0330-7081-863b-0b3e1f614005",
+      "title": "Ada Clarke",
+      "was": "Ada Clarke",
+      "now": "Ada Clarke",
+      "why": null,
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "city:01a1594a-0330-7081-863b-0b3e1f614005",
+      "section": "citiesByName",
+      "type": "person",
+      "id": "01a1594a-0330-7081-863b-0b3e1f614005",
+      "title": "Ada Clarke",
+      "was": "Cambridge",
+      "now": "Cambridge, England, United Kingdom",
+      "why": "Matched by name; the largest one was taken",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "name:01a1594a-0340-72f7-9a72-46db908128d8",
+      "section": "names",
+      "type": "person",
+      "id": "01a1594a-0340-72f7-9a72-46db908128d8",
+      "title": "Ben Shaw",
+      "was": "Ben Shaw",
+      "now": "Ben Shaw",
+      "why": null,
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "status:01a1594a-012e-74cf-97a0-edb716864544",
+      "section": "parentsStatus",
+      "type": "task",
+      "id": "01a1594a-012e-74cf-97a0-edb716864544",
+      "title": "Batch 2",
+      "was": "todo",
+      "now": "in_progress",
+      "why": "Worked out from its subtasks",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "status:01a1594a-007d-746e-978a-b303ba77c97f",
+      "section": "parentsStatus",
+      "type": "task",
+      "id": "01a1594a-007d-746e-978a-b303ba77c97f",
+      "title": "Amazon",
+      "was": "in_progress",
+      "now": "todo",
+      "why": "Worked out from its subtasks",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "planned:01a1594a-00be-76c9-864f-54a3412b92c2",
+      "section": "plannedDatesMoved",
+      "type": "task",
+      "id": "01a1594a-00be-76c9-864f-54a3412b92c2",
+      "title": "Stripe",
+      "was": "2026-10-20",
+      "now": "Moved down to Send the take-home",
+      "why": "A task with subtasks is planned by its subtasks",
+      "attention": false,
+      "checked": false
+    },
+    {
+      "key": "status:01a1594a-011d-7474-986e-d9281b80c69d",
+      "section": "parentsStatus",
+      "type": "task",
+      "id": "01a1594a-011d-7474-986e-d9281b80c69d",
+      "title": "Redesign",
+      "was": "todo",
+      "now": "in_progress",
+      "why": "Worked out from its subtasks",
+      "attention": true,
+      "checked": false
+    },
+    {
+      "key": "planned:01a1594a-0301-7582-aaca-e060d2af69a2",
+      "section": "plannedDatesMoved",
+      "type": "task",
+      "id": "01a1594a-0301-7582-aaca-e060d2af69a2",
+      "title": "Literature review",
+      "was": "2026-10-25",
+      "now": "Dropped: every subtask already had its own day",
+      "why": "A task with subtasks is planned by its subtasks",
+      "attention": false,
+      "checked": false
+    }
+  ],
+  "pending": 9,
+  "doneAt": null
+}

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 import {
   accountZone,
@@ -168,4 +170,31 @@ test('on a phone nothing that is pressed is under 44, on any page (DES-001)', as
     for (const s of await small(page)) found.push(`${name}: ${s}`)
   }
   expect(found, 'targets under 44').toEqual([])
+})
+
+// The report is made once, by the move itself, so a new account has none: this one is the report
+// the pre-redesign fixture's move wrote (apps/api/tests/fixtures/pre-redesign.sql), served as is.
+test('the migration report on a phone: its parts as tags, a name a card, all of it 44 (DES-001)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const report = readFileSync(join(import.meta.dirname, 'migration-report.json'), 'utf8')
+  await page.route('**/api/v1/migration', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({ contentType: 'application/json', body: report })
+      : route.continue(),
+  )
+  await page.goto('/migration')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your data in the new layout')
+  // The sidebar is a row of tags, each a jump to its part.
+  const parts = page.getByRole('navigation', { name: 'Migration report' })
+  await parts.getByRole('link', { name: /^Parents whose status changed/ }).click()
+  await expect(page).toHaveURL(/#report-parentsStatus$/)
+  // A name is a card: what it was, then its three fields one under another.
+  const card = page.locator('[data-report-name]').first()
+  const given = (await card.getByRole('textbox', { name: /^Given name/ }).boundingBox())!
+  const family = (await card.getByRole('textbox', { name: /^Family name/ }).boundingBox())!
+  expect(family.y).toBeGreaterThan(given.y + given.height)
+  expect(given.width).toBeGreaterThan(PHONE.width - 100)
+  expect(await small(page)).toEqual([])
 })
