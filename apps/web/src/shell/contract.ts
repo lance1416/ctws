@@ -161,6 +161,8 @@ type OwnThing = {
   upcoming?: boolean
   /** A person's initials: their avatar stands in the first column instead (FR-049). */
   initials?: string | null
+  /** A mark in the first column instead: a book's or a link's (artboard 5, U-19). */
+  mark?: ReactNode
   /** Who it is with, an avatar after the lead's words (a message: its day, then them; U-12). */
   withInitials?: string | null
   /** A word or two at the row's end. */

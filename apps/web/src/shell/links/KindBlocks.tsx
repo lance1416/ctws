@@ -31,6 +31,7 @@ type Row = {
   to: string
   lead?: string | null
   initials?: string | null
+  mark?: ReactNode
   withInitials?: string | null
   fact?: string | null
   sub?: ReactNode
@@ -336,7 +337,7 @@ function TakeOff({
  */
 function ThingRow({ row, kind, hover = true }: { row: Row; kind: ObjectType; hover?: boolean }) {
   // A kind with no word to lead with (reading) gives its title the room.
-  const lead = row.initials || row.lead !== undefined
+  const lead = row.initials || row.mark || row.lead !== undefined
   return (
     <OpensBeside
       thing={{ type: kind, id: row.id, ...(atOf(row.to) ? { at: atOf(row.to)! } : {}) }}
@@ -348,6 +349,8 @@ function ThingRow({ row, kind, hover = true }: { row: Row; kind: ObjectType; hov
     >
       {row.initials ? (
         <Avatar initials={row.initials} />
+      ) : row.mark ? (
+        <span className="flex text-muted">{row.mark}</span>
       ) : (
         lead && (
           // As wide as "Nov 21 10:00", so the titles after a weekday and after a date line up.
