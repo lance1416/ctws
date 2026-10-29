@@ -533,3 +533,27 @@ test('who recommended it is picked on the edit page, shown with their face, and 
     'No longer recommended by Mira Chen',
   )
 })
+
+for (const [where, viewport] of [
+  ['the desk', { width: 1440, height: 900 }],
+  ['a phone', { width: 390, height: 844 }],
+] as const)
+  test(`Add reading shows the imports to come, each saying Coming later, on ${where} (FR-102)`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await registerFreshUser(page)
+    await makeReading(page, { kind: 'book', title: 'Something already there' })
+    await page.goto('/reading')
+    await page.getByRole('button', { name: 'Add reading' }).click()
+    const box = page.getByRole('dialog', { name: 'Capture' })
+    const asked: string[] = []
+    page.on('request', (r) => asked.push(`${r.method()} ${r.url()}`))
+    for (const name of ['Search books by title', 'Scan a barcode', 'Set up Share to CTWS']) {
+      await box.getByRole('button', { name }).click()
+      await expect(box.getByRole('status').filter({ hasText: 'Coming later' })).toBeVisible()
+    }
+    await expect(box).toContainText('Share to CTWS')
+    // A placeholder asks nothing of any book service, or of the app's own.
+    expect(asked).toEqual([])
+  })

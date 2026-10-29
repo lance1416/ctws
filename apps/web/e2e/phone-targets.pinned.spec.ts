@@ -276,6 +276,11 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
           .click(),
     ],
     [
+      'Add reading, with its imports to come',
+      '/reading',
+      () => page.getByRole('button', { name: 'Add reading' }).click(),
+    ],
+    [
       'a task edited in the sheet',
       `/projects/${a.jh}?inspect=task:${a.amazon}`,
       () => sheet.getByRole('button', { name: 'Edit', exact: true }).click(),
