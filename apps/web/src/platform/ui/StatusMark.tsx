@@ -15,7 +15,6 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
  */
 export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 14 | 16 | 20 }) {
   const half = status === 'in_progress'
-  const solid = status === 'done'
   // Artboard 1: what is being worked on is green, what waits to be started muted, and the backlog
   // and what is settled subtle; the shape says which it is as well.
   const tone = half ? 'text-go' : status === 'todo' ? 'text-muted' : 'text-subtle'
@@ -47,20 +46,13 @@ export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 1
         stroke="none"
         className={`transition-opacity duration-120 ${half ? 'opacity-100' : 'opacity-0'}`}
       />
-      <circle
-        data-part="disc"
-        cx="10"
-        cy="10"
-        r="7.8"
-        fill="currentColor"
-        stroke="none"
-        style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
-        className={`transition-transform duration-120 ${solid ? 'scale-100' : 'scale-0'}`}
-      />
+      {/* Done is the ring and a check, in the settled tone: lighter than what is still to do
+          (artboards 1, 3 and 21, U-24). */}
       <path
         data-part="check"
         d="M6.6 10.2l2.3 2.3 4.5-4.8"
-        className={`stroke-on-ink transition-opacity duration-120 ${status === 'done' ? 'opacity-100' : 'opacity-0'}`}
+        stroke="currentColor"
+        className={`transition-opacity duration-120 ${status === 'done' ? 'opacity-100' : 'opacity-0'}`}
       />
       {status === 'cancelled' && <path d="M6.2 10h7.6" stroke="currentColor" />}
     </svg>
