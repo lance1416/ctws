@@ -4,7 +4,8 @@ import { useRef } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { BackIcon, ForwardIcon } from '../../platform/ui/icons'
 import { MONTHS } from '../../platform/time/dates'
-import { calendarDaysQuery } from '../calendar/api'
+import { calendarDaysQuery, lunarWindowQuery } from '../calendar/api'
+import { lunarSquareName } from '../calendar/monthGrid'
 
 /** The grid's one week, Monday first, as the calendar page draws it. */
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -129,7 +130,7 @@ export function DayGrid({
   const weeks = Math.ceil((lead + daysInMonth(y, m)) / 7)
   const cells = Array.from({ length: weeks * 7 }, (_, i) => addDays(start, i))
   const lunar = useQuery({
-    ...calendarDaysQuery({ from: cells[0]!, to: cells.at(-1)! }),
+    ...lunarWindowQuery({ from: cells[0]!, to: cells.at(-1)! }),
     placeholderData: keepPreviousData,
   })
   return (
@@ -147,8 +148,9 @@ export function DayGrid({
           <Cell
             key={day}
             big={String(Number(day.slice(8)))}
-            // The month's name is in the head; a first day's label keeps only its day.
-            small={lunar.data?.[day]?.replace(/^.*月/, '')}
+            // As the calendar names them: a month's first day by the month, a festival by its name
+            // (P4-06).
+            small={lunarSquareName(lunar.data?.days[day], lunar.data?.festivals[day])?.text}
             selected={day === value}
             today={day === today}
             out={monthOf(day) !== month}

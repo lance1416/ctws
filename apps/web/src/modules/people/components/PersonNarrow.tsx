@@ -1,4 +1,5 @@
 import { avatarInitials } from '@ctws/core'
+import { calledBy } from '../logic/calledBy'
 import { useNow } from '../../../platform/time/useNow'
 import { Avatar } from '../../../platform/ui/Avatar'
 import {
@@ -116,7 +117,7 @@ export function PersonNarrow({ id }: { id: string }) {
               <Timeline
                 of={{ type: 'person', id }}
                 last={5}
-                everything={{ label: `Everything with ${person.givenName}`, to: page }}
+                everything={{ label: `Everything with ${calledBy(person)}`, to: page }}
               />
             ),
           },

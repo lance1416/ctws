@@ -1,4 +1,5 @@
 import type { PersonResponse } from '@ctws/contracts'
+import { calledBy } from '../logic/calledBy'
 import { avatarInitials } from '@ctws/core'
 import { useQuery } from '@tanstack/react-query'
 import { useRef, type ReactNode } from 'react'
@@ -58,7 +59,7 @@ function DeskPerson({ person }: { person: PersonResponse }) {
       registry.relations.some((r) => r.type === k),
     ),
     owned,
-    none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${person.givenName} yet`,
+    none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${calledBy(person)} yet`,
     titles: { reading: 'Recommended reading' },
     linkedRows: registry.personLinked,
     // Each is made new from here: a meeting with them in it, a task related to them, a book as

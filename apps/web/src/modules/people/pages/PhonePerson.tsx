@@ -1,4 +1,5 @@
 import type { PersonResponse } from '@ctws/contracts'
+import { calledBy } from '../logic/calledBy'
 import { avatarInitials } from '@ctws/core'
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
@@ -55,7 +56,7 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
       registry.relations.some((r) => r.type === k),
     ),
     owned,
-    none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${person.givenName} yet`,
+    none: (kind) => `None ${kind === 'reading' ? 'from' : 'with'} ${calledBy(person)} yet`,
     titles: { reading: 'Recommended reading' },
     linkedRows: registry.personLinked,
     creatorFor: (kind) => registry.creates.find((c) => c.kind === kind) ?? null,
@@ -76,8 +77,7 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
   const moreAbout = Boolean(
     person.city || person.hometown || before.length > 0 || person.note || others.length > 0,
   )
-  // "More about Mira": the name they go by; a Chinese name is said whole ("More about 王磊").
-  const called = /[\u3400-\u9fff]/.test(person.name) ? person.name : person.givenName
+  const called = calledBy(person)
   const say = (value: string) =>
     channelLabel('phone', value, numbers ? (v) => numbers.formatPhone(v, region) : undefined)
 

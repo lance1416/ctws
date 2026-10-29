@@ -49,7 +49,7 @@ export function Block({
       className={`flex min-w-0 flex-col overflow-hidden rounded-block border border-line bg-panel ${className}`}
     >
       <div
-        className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 ${emptyInHead ? '' : 'border-b border-line'}`}
+        className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:py-1.5 ${emptyInHead ? '' : 'border-b border-line'}`}
       >
         {Icon && (
           <span
@@ -59,17 +59,23 @@ export function Block({
             <Icon size={14} />
           </span>
         )}
-        <h2 className="shrink-0 text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
-        {emptyInHead ? (
-          // One line beside the name, cut short rather than wrapped (M-07).
-          <span className="min-w-0 truncate text-meta text-subtle">{empty}</span>
-        ) : (
-          count !== undefined && (
-            <span data-count className="text-meta text-subtle tabular-nums">
-              {count}
+        <span className="flex min-w-0 items-center gap-2 max-lg:flex-wrap max-lg:gap-y-0">
+          <h2 className="shrink-0 text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
+          {emptyInHead && (
+            // One line beside the name, cut short rather than wrapped (M-07); on a phone, where a
+            // long name leaves it no room, it goes under the name whole (P4-08).
+            <span className="min-w-0 truncate text-meta text-subtle max-lg:whitespace-normal">
+              {empty}
             </span>
-          )
-        )}
+          )}
+        </span>
+        {emptyInHead
+          ? null
+          : count !== undefined && (
+              <span data-count className="text-meta text-subtle tabular-nums">
+                {count}
+              </span>
+            )}
         <span aria-hidden="true" className="flex-1" />
         {actions}
       </div>
