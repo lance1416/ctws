@@ -159,6 +159,36 @@ test('the header names where you are', async ({ page }) => {
   await page.goto(`/projects/${inbox.id}`)
   await expect(where.getByRole('link')).toHaveText(['Projects'])
   await expect(where.locator('[aria-current="page"]')).toHaveText('Inbox')
+
+  // Every thing's own page the same: its kind, then its name (BUG-022).
+  const mira = await apiPost(page, '/people', { givenName: 'Mira', familyName: 'Chen' })
+  const stripe = await apiPost(page, '/organisations', { name: 'Stripe' })
+  const book = await apiPost(page, '/reading', { kind: 'book', title: 'Dune' })
+  const note = await apiPost(page, '/notes', { title: 'Questions', body: 'Ask about the team.' })
+  const meeting = await apiPost(page, '/meetings', {
+    title: 'First screen',
+    startsLocal: '2030-01-07T14:00',
+    timeZone: 'Europe/London',
+    durationMinutes: 30,
+  })
+  const message = await apiPost(page, '/communication', {
+    direction: 'sent',
+    channel: 'email',
+    parties: [{ type: 'person', id: mira.id }],
+    subject: 'Onsite dates',
+  })
+  for (const [kind, url, name] of [
+    ['People', `/people/${mira.id as string}`, 'Mira Chen'],
+    ['Organisations', `/organisations/${stripe.id as string}`, 'Stripe'],
+    ['Reading', `/reading/${book.id as string}`, 'Dune'],
+    ['Notes', `/notes/${note.id as string}`, 'Questions'],
+    ['Meetings', `/meetings/${meeting.meetingId as string}`, 'First screen'],
+    ['Communication', `/communication/${message.id as string}`, 'Onsite dates'],
+  ] as const) {
+    await page.goto(url)
+    await expect(where.getByRole('link'), kind).toHaveText([kind])
+    await expect(where.locator('[aria-current="page"]'), kind).toHaveText(name)
+  }
 })
 
 test('capture is in the top bar, and C opens it from anywhere', async ({ page }) => {
