@@ -1,5 +1,5 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
-import { SearchDialog } from './SearchDialog'
+import { SearchDialog, type Pick } from './SearchDialog'
 
 /**
  * ONE THING PICKED FOR A JOB (FR-024): the link picker, the search box with its keys, offering one
@@ -15,6 +15,7 @@ export function PickThing({
   error,
   onPick,
   onClose,
+  drill,
 }: {
   of: { type: ObjectType; id: string }
   /** The dialog's head: what the pick is for ("Move “X” to"). */
@@ -25,11 +26,22 @@ export function PickThing({
   error: string | null
   onPick: (thing: LinkCandidate) => void
   onClose: () => void
+  drill?: Pick['drill']
 }) {
   return (
     <SearchDialog
       onClose={onClose}
-      pick={{ of, title, only, asksWhy: false, leaveOut, busy, error, onPick }}
+      pick={{
+        of,
+        title,
+        only,
+        asksWhy: false,
+        leaveOut,
+        busy,
+        error,
+        onPick,
+        ...(drill ? { drill } : {}),
+      }}
     />
   )
 }

@@ -56,6 +56,15 @@ export const openTaskCountSql = (projectId: SQL = sql`projects.id`) =>
       and ${isLeafSql('open_t')}
   )`.mapWith(Number)
 
+/** How many live tasks of the project have one under them: Move to… offers those (FR-059). */
+export const parentTaskCountSql = (projectId: SQL = sql`projects.id`) =>
+  sql<number>`(
+    select count(*) from tasks parent_t
+    where parent_t.project_id = ${projectId}
+      and parent_t.deleted_at is null
+      and not ${isLeafSql('parent_t')}
+  )`.mapWith(Number)
+
 const byId = (q: Queryable, workspaceId: WorkspaceId, id: TaskId) =>
   q
     .select()

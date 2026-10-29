@@ -467,6 +467,57 @@ test('the inbox is a tree to empty: Move to… takes a line to a project', async
   )
 })
 
+test('Move to… goes inside a project to put a line under one of its parents', async ({ page }) => {
+  await registerFreshUser(page)
+  const jh = await makeProject(page, 'Job hunt')
+  await makeProject(page, 'Journal')
+  const amazon = await makeTask(page, jh, 'Amazon')
+  await makeTask(page, jh, 'Phone screen', {}, amazon)
+  const stripe = await makeTask(page, jh, 'Stripe')
+  await makeTask(page, jh, 'Take-home', {}, stripe)
+  await makeTask(page, jh, 'A leaf')
+  const projects = (await (await page.request.get('/api/v1/projects')).json()) as {
+    projects: { id: string; isInbox: boolean }[]
+  }
+  const inbox = projects.projects.find((p) => p.isInbox)!.id
+  await makeTask(page, inbox, 'Ask about the team')
+  await page.goto(`/projects/${inbox}`)
+
+  // FR-059, the acceptance: M, "job", →, Amazon, Enter.
+  await page.getByRole('button', { name: 'Task: Ask about the team', exact: true }).focus()
+  await page.keyboard.press('m')
+  const picker = page.getByRole('dialog').filter({ hasText: 'Move “Ask about the team” to' })
+  await page.keyboard.type('j')
+  // A project with parents ends in "›"; one without has none.
+  await expect(picker.getByRole('option', { name: /Journal/ })).toBeVisible()
+  await expect(picker.getByRole('button', { name: 'Inside “Journal”' })).toHaveCount(0)
+  await expect(picker.getByRole('button', { name: 'Inside “Job hunt”' })).toBeVisible()
+  await page.keyboard.type('ob')
+  await expect(picker.getByRole('option')).toHaveCount(1)
+  await page.keyboard.press('ArrowRight')
+
+  // The parents, in the tree's order, no leaves and no "Top of" row; ← would go back.
+  const parents = picker.getByRole('listbox', { name: 'Parents in Job hunt' })
+  await expect(parents.getByRole('option')).toHaveText([/Amazon$/, /Stripe$/])
+  await page.keyboard.press('ArrowLeft')
+  await expect(picker.getByRole('option', { name: /Job hunt/ })).toBeVisible()
+  await expect(picker.getByRole('combobox', { name: 'Search' })).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  await expect(parents.getByRole('option')).toHaveText([/Amazon$/, /Stripe$/])
+  await page.keyboard.type('ama')
+  await expect(parents.getByRole('option')).toHaveCount(1)
+  await page.keyboard.press('Enter')
+
+  await expect(picker).toHaveCount(0)
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Moved to Job hunt › Amazon' }),
+  ).toBeVisible()
+  const under = (await (await page.request.get(`/api/v1/tasks?projectId=${jh}`)).json()) as {
+    tasks: { title: string; parentId: string | null }[]
+  }
+  expect(under.tasks.find((t) => t.title === 'Ask about the team')?.parentId).toBe(amazon)
+})
+
 test('M does nothing on a row outside the inbox', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'CTWS')

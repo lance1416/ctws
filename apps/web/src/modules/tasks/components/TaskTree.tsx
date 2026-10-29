@@ -8,7 +8,7 @@ import {
   type TaskStatus,
 } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useDelayed } from '../../../platform/time/useDelayed'
 import { BlockFailed } from '../../../platform/ui/Block'
 import { MoveToProject, useProjects } from '../../../shell/projects'
@@ -17,6 +17,9 @@ import { useTaskActions } from '../hooks/useTaskActions'
 import { isFinished } from '../logic/status'
 import { blockLength, flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
+import { hasParentTasks } from '../logic/openTasks'
+import { MoveUnderParent } from './MoveUnderParent'
+import { Toast } from '../../../platform/ui/Toast'
 import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
@@ -59,11 +62,17 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
   const [error, setError] = useState<string | null>(null)
   // The inbox's row being moved to a project (FR-059), and the move itself.
   const [moving, setMoving] = useState<TaskResponse | null>(null)
+  // Where a move under a parent landed, said at the foot for a moment.
+  const [moved, setMoved] = useState<string | null>(null)
+  const unsay = useCallback(() => setMoved(null), [])
   const move = useMutation({
-    mutationFn: ({ id, to }: { id: TaskId; to: ProjectId }) =>
-      patchTask(id, { projectId: to, parentId: null }),
+    mutationFn: ({ id, to, under }: { id: TaskId; to: ProjectId; said?: string; under?: TaskId }) =>
+      patchTask(id, { projectId: to, parentId: under ?? null }),
     meta: { changes: ['task'], awaits: [taskKeys.all], ownsError: true },
-    onSuccess: () => setMoving(null),
+    onSuccess: (_, { said }) => {
+      setMoving(null)
+      if (said) setMoved(said)
+    },
   })
   const folds = useCollapsed(projectId)
   const shown = useTreeVisibility(projectId, all)
@@ -221,8 +230,32 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
         move.reset()
         setMoving(null)
       }}
+      inside={{
+        has: (id) => hasParentTasks(allProjects.data?.find((p) => p.id === id)),
+        step: (project, back) => (
+          <MoveUnderParent
+            project={project}
+            height={rows.find((r) => r.id === moving.id)?.subtreeHeight ?? 1}
+            busy={move.isPending}
+            error={move.isError ? 'Couldn’t move it. Try again.' : null}
+            onPick={(parent) =>
+              move.mutate({
+                id: moving.id,
+                to: project.id,
+                under: parent.id,
+                said: `Moved to ${project.name} › ${parent.title}`,
+              })
+            }
+            back={() => {
+              move.reset()
+              back()
+            }}
+          />
+        ),
+      }}
     />
   )
+  const said = moved && <Toast onGone={unsay}>{moved}</Toast>
 
   // Reading or not read: the tree's own block says so, and never draws an empty project with its
   // "New task" (FR-031, FR-032, BUG-039).
@@ -309,6 +342,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
         {last}
       </div>
       {mover}
+      {said}
       {openTask && (
         // A save marks the row and leaves the pane open, reading back what was written.
         <TaskDetail

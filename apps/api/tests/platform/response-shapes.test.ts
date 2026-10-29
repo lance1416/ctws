@@ -45,7 +45,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       rank: expect.any(String),
       archivedAt: null,
       createdAt: AT,
-      columns: { openTasks: 0 },
+      columns: { openTasks: 0, parentTasks: 0 },
       stages: [],
     })
   })

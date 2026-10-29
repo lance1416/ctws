@@ -15,7 +15,7 @@ import { useComposing } from '../../platform/keyboard/composition'
 import { keyLabel } from '../../platform/keyboard/keys'
 import { pressesWith, useKeyTable, type KeyTable } from '../../platform/keyboard/keyTable'
 import { KEY } from '../../platform/ui/buttonStyles'
-import { KIND_ICON, LinkIcon, NewIcon, PLACE_ICON } from '../../platform/ui/icons'
+import { ForwardIcon, KIND_ICON, LinkIcon, NewIcon, PLACE_ICON } from '../../platform/ui/icons'
 import { SkeletonRows } from '../../platform/ui/Block'
 import { Modal } from '../../platform/ui/Modal'
 import { useMe } from '../auth/useMe'
@@ -134,6 +134,14 @@ export type Pick = {
   leaveOut?: readonly string[]
   /** The list's last row makes one under the words typed: "New person “priya”" (FR-055). */
   makes?: { label: string; run: (name: string) => void }
+  /**
+   * Things it can go further into (FR-059): their row ends in "›", and it or → shows the next
+   * step in the same box, which "‹" or ← leaves.
+   */
+  drill?: {
+    into: (thing: LinkCandidate) => boolean
+    step: (thing: LinkCandidate, back: () => void) => ReactNode
+  }
 }
 
 export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pick }) {
@@ -148,6 +156,8 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   // As a picker: the row chosen, while its line of why is written.
   const [chosen, setChosen] = useState<LinkCandidate | null>(null)
   const [why, setWhy] = useState('')
+  // As a picker: the thing gone into, while its next step is shown.
+  const [inside, setInside] = useState<LinkCandidate | null>(null)
   const navigate = useNavigate()
   const inspector = useInspector()
   const openNew = useContext(NewContext)
@@ -387,6 +397,21 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     else navigate(row.to)
   }
 
+  const intoOf = (row: Row | undefined) => {
+    const thing = row?.kind === 'hit' ? hitsById.get(row.id) : undefined
+    return thing && pick?.drill?.into(thing) ? thing : null
+  }
+  const goInto = (thing: LinkCandidate) => {
+    if (!pick?.busy) setInside(thing)
+  }
+  const comeBack = () => setInside(null)
+  // Back from the next step, the box it left takes focus again, before the next key.
+  const wasInside = useRef(false)
+  useLayoutEffect(() => {
+    if (wasInside.current && !inside) box.current?.focus()
+    wasInside.current = inside !== null
+  }, [inside])
+
   // The foot says only the keys that do something now (DES-001 section 4).
   const current = rows[at]
   const legends: [string, string][] = []
@@ -405,6 +430,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     ])
     if (!pick && (current.kind === 'hit' || current.kind === 'recent'))
       legends.push([keyLabel('Ctrl Enter'), 'Open beside'])
+    if (intoOf(current)) legends.push(['→', 'Inside'])
   } else if (nothing && canNew) legends.push(['Enter', newLabel])
   if (!pick && scope === null && tabs.length > 2) legends.push(['Tab', 'Next kind'])
   if (scope !== null && nothing && !pick?.only) legends.push(['Tab', 'Search every kind'])
@@ -419,260 +445,284 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       palette={!pick}
       picker={pick !== undefined}
     >
-      <div
-        className={`flex items-center gap-2.5 border-b border-line px-4 ${pick ? 'h-11' : 'h-13'}`}
-      >
-        {pick ? (
-          <LinkIcon size={16} aria-hidden="true" className="shrink-0 text-muted" />
-        ) : (
-          <PLACE_ICON.search size={20} aria-hidden="true" className="shrink-0 text-muted" />
-        )}
-        {scope && (
-          <span
-            className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${KIND_TINT[scope]} ${KIND_TEXT[scope]}`}
-          >
-            <ScopeIcon type={scope} />
-            {KIND_WORDS[scope].many}
-          </span>
-        )}
-        <input
-          ref={box}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setChosen(null)
-          }}
-          role="combobox"
-          aria-expanded={rows.length > 0}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={rows.length > 0 ? optionId(at) : undefined}
-          {...composing.bind}
-          onKeyDown={(e) => {
-            // Backspace on an empty box takes the scope off.
-            if (e.key === 'Backspace' && query === '' && scope !== null && !pick?.only) {
-              e.preventDefault()
-              setScope(null)
-              return
-            }
-            keys(e, {
-              next: () => setActive(Math.min(at + 1, rows.length - 1)),
-              previous: () => setActive(Math.max(at - 1, 0)),
-              open: () => {
-                if (composing.composingNow(e)) return false
-                const row = rows[at]
-                if (row) open(row, false, true)
-                else if (nothing && typing && canNew) void makeNew()
-              },
-              beside: () => {
-                const row = rows[at]
-                if (row && !pick) open(row, true, true)
-              },
-              tab: () => {
-                if (scope !== null || tabs.length < 2 || pick)
-                  return nothing && !pick?.only ? setScope(null) : false
-                setTab(nextTab(tabs, tab))
-              },
-              back: () => {
-                if (scope !== null || tabs.length < 2 || pick) return false
-                setTab(nextTab(tabs, tab, true))
-              },
-            })
-          }}
-          placeholder={
-            scope
-              ? `Search ${KIND_WORDS[scope].many.toLocaleLowerCase()}`
-              : pick
-                ? pick.title
-                : 'Search everything'
-          }
-          aria-label="Search"
-          data-bare
-          className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-subtle ${pick ? 'text-ui' : 'text-prose'}`}
-        />
-        {!pick && <kbd className={KEY}>Esc</kbd>}
-      </div>
-
-      {totals.size > 0 && scope === null && !scoping && !pick && (
+      {pick?.drill && inside && pick.drill.step(inside, comeBack)}
+      {/* Kept while the next step is shown: back, its words and place are as they were. */}
+      <div className={pick?.drill && inside ? 'hidden' : 'contents'}>
         <div
-          role="tablist"
-          className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5"
+          className={`flex items-center gap-2.5 border-b border-line px-4 ${pick ? 'h-11' : 'h-13'}`}
         >
-          {tabs.map((t) => {
-            // Totals, from the server (FR-024); a big one is said as 999+.
-            const n =
-              t === 'all' ? [...totals.values()].reduce((a, b) => a + b, 0) : (totals.get(t) ?? 0)
-            return (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                // Read as "Tasks, 12" (DES-001): the name and its total, one phrase.
-                aria-label={`${t === 'all' ? 'All' : KIND_WORDS[t].many}, ${n > 999 ? '999+' : n}`}
-                aria-selected={view === t}
-                tabIndex={-1}
-                onClick={() => showTab(t)}
-                className={`inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium whitespace-nowrap ${
-                  view === t ? 'bg-select text-ink' : 'text-muted hover:bg-hover'
-                }`}
-              >
-                {t !== 'all' && <ScopeIcon type={t} size={14} />}
-                {t === 'all' ? 'All' : KIND_WORDS[t].many}
-                <span className="font-normal text-subtle tabular-nums">{n > 999 ? '999+' : n}</span>
-              </button>
-            )
-          })}
-          {8 - (tabs.length - 1) > 0 && (
-            <span className="inline-flex h-7 items-center px-2.5 text-meta text-subtle whitespace-nowrap">
-              {8 - (tabs.length - 1)} more kinds with nothing
+          {pick ? (
+            <LinkIcon size={16} aria-hidden="true" className="shrink-0 text-muted" />
+          ) : (
+            <PLACE_ICON.search size={20} aria-hidden="true" className="shrink-0 text-muted" />
+          )}
+          {scope && (
+            <span
+              className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${KIND_TINT[scope]} ${KIND_TEXT[scope]}`}
+            >
+              <ScopeIcon type={scope} />
+              {KIND_WORDS[scope].many}
             </span>
           )}
+          <input
+            ref={box}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setChosen(null)
+            }}
+            role="combobox"
+            aria-expanded={rows.length > 0}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={rows.length > 0 ? optionId(at) : undefined}
+            {...composing.bind}
+            onKeyDown={(e) => {
+              // Backspace on an empty box takes the scope off.
+              if (e.key === 'Backspace' && query === '' && scope !== null && !pick?.only) {
+                e.preventDefault()
+                setScope(null)
+                return
+              }
+              // → at the end of the words goes into the row's thing, where it has a next step.
+              const into = intoOf(rows[at])
+              if (
+                e.key === 'ArrowRight' &&
+                into &&
+                !e.altKey &&
+                !e.ctrlKey &&
+                !e.metaKey &&
+                !e.shiftKey &&
+                e.currentTarget.selectionStart === query.length
+              ) {
+                e.preventDefault()
+                goInto(into)
+                return
+              }
+              keys(e, {
+                next: () => setActive(Math.min(at + 1, rows.length - 1)),
+                previous: () => setActive(Math.max(at - 1, 0)),
+                open: () => {
+                  if (composing.composingNow(e)) return false
+                  const row = rows[at]
+                  if (row) open(row, false, true)
+                  else if (nothing && typing && canNew) void makeNew()
+                },
+                beside: () => {
+                  const row = rows[at]
+                  if (row && !pick) open(row, true, true)
+                },
+                tab: () => {
+                  if (scope !== null || tabs.length < 2 || pick)
+                    return nothing && !pick?.only ? setScope(null) : false
+                  setTab(nextTab(tabs, tab))
+                },
+                back: () => {
+                  if (scope !== null || tabs.length < 2 || pick) return false
+                  setTab(nextTab(tabs, tab, true))
+                },
+              })
+            }}
+            placeholder={
+              scope
+                ? `Search ${KIND_WORDS[scope].many.toLocaleLowerCase()}`
+                : pick
+                  ? pick.title
+                  : 'Search everything'
+            }
+            aria-label="Search"
+            data-bare
+            className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-subtle ${pick ? 'text-ui' : 'text-prose'}`}
+          />
+          {!pick && <kbd className={KEY}>Esc</kbd>}
         </div>
-      )}
 
-      {/* Grey rows while the first answer for these words is out (FR-031). */}
-      {debounced.length > 0 &&
-        !scoping &&
-        !results.isSuccess &&
-        !results.isError &&
-        hits.length === 0 && (
-          <div className="px-1 py-1.5" aria-hidden="true">
-            <SkeletonRows rows={3} />
+        {totals.size > 0 && scope === null && !scoping && !pick && (
+          <div
+            role="tablist"
+            className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5"
+          >
+            {tabs.map((t) => {
+              // Totals, from the server (FR-024); a big one is said as 999+.
+              const n =
+                t === 'all' ? [...totals.values()].reduce((a, b) => a + b, 0) : (totals.get(t) ?? 0)
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  // Read as "Tasks, 12" (DES-001): the name and its total, one phrase.
+                  aria-label={`${t === 'all' ? 'All' : KIND_WORDS[t].many}, ${n > 999 ? '999+' : n}`}
+                  aria-selected={view === t}
+                  tabIndex={-1}
+                  onClick={() => showTab(t)}
+                  className={`inline-flex h-7 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium whitespace-nowrap ${
+                    view === t ? 'bg-select text-ink' : 'text-muted hover:bg-hover'
+                  }`}
+                >
+                  {t !== 'all' && <ScopeIcon type={t} size={14} />}
+                  {t === 'all' ? 'All' : KIND_WORDS[t].many}
+                  <span className="font-normal text-subtle tabular-nums">
+                    {n > 999 ? '999+' : n}
+                  </span>
+                </button>
+              )
+            })}
+            {8 - (tabs.length - 1) > 0 && (
+              <span className="inline-flex h-7 items-center px-2.5 text-meta text-subtle whitespace-nowrap">
+                {8 - (tabs.length - 1)} more kinds with nothing
+              </span>
+            )}
           </div>
         )}
-      {results.isError && (
-        <p role="alert" className="px-4 py-3 text-ui text-stop-t">
-          Search failed. Check that the server is running.
-        </p>
-      )}
-      {nothing && (
-        <div className="flex flex-col pb-1.5">
-          <p className="px-4 pt-3 pb-2 text-ui text-ink">
-            No {view === 'all' ? 'results' : KIND_WORDS[view].many.toLocaleLowerCase()} match “
-            {debounced}”.
-          </p>
-          {/* The two next steps (FR-024 "Empty", artboard 23): a line each, the key at the end. */}
-          {scope !== null && !pick?.only && (
-            <NextStep
-              icon={<PLACE_ICON.search size={16} />}
-              keys="Tab"
-              onClick={() => {
-                setScope(null)
-                box.current?.focus()
-              }}
-            >
-              Search every kind
-            </NextStep>
-          )}
-          {canNew && (
-            <NextStep icon={<NewIcon size={16} />} keys="Enter" onClick={() => void makeNew()}>
-              {newLabel} “{debounced}”
-            </NextStep>
-          )}
-        </div>
-      )}
 
-      <p className="sr-only" aria-live="polite">
-        {said}
-      </p>
-      {/* The options are not buttons: focus stays in the box, and `aria-activedescendant` walks
-          the list without adding a tab stop per result. */}
-      <ul
-        id={listId}
-        role="listbox"
-        aria-label={`Results, ${view === 'all' ? 'all kinds' : KIND_WORDS[view].many.toLocaleLowerCase()}`}
-        onScroll={(e) => {
-          const list = e.currentTarget
-          if (list.scrollHeight - list.scrollTop - list.clientHeight < 80) readOn()
-        }}
-        className="max-h-[52vh] overflow-y-auto pb-1.5"
-      >
-        {runs(rows).map((run) => {
-          const options = run.rows.map((row, j) => (
-            <SearchRow
-              key={row.key}
-              row={row}
-              words={debounced}
-              id={optionId(run.start + j)}
-              selected={chosen ? row.kind === 'hit' && row.id === chosen.id : run.start + j === at}
-              compact={pick !== undefined}
-              onChoose={() => open(row, false)}
-              onHover={() => {
-                if (!chosen) setActive(run.start + j)
-              }}
-            />
-          ))
-          const label = runLabel(run, view, scope)
-          if (!label) return options
-          const heading = `${base}-${run.key}`
-          return (
-            <li key={run.key} role="presentation">
-              <div
-                id={heading}
-                className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-subtle uppercase"
-              >
-                {label}
-              </div>
-              <ul role="group" aria-labelledby={heading}>
-                {options}
-              </ul>
-            </li>
-          )
-        })}
-        {/* Two grey rows while the next page of a kind is on its way. */}
-        {kindView && oneKind.isFetchingNextPage && (
-          <li role="presentation" aria-hidden="true" className="px-1">
-            <SkeletonRows rows={2} />
-          </li>
-        )}
-      </ul>
-
-      {pick && chosen ? (
-        <div className="flex flex-col border-t border-line">
-          <label className="flex h-11 items-center gap-2 px-3.5">
-            <input
-              ref={whyBox}
-              value={why}
-              onChange={(e) => setWhy(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !composing.composingNow(e) && !pick.busy) {
-                  e.preventDefault()
-                  pick.onPick(chosen, why.trim() || null)
-                }
-              }}
-              {...composing.bind}
-              aria-label="Why"
-              placeholder="Why, in a line (optional)"
-              data-bare
-              className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
-            />
-            <kbd className={KEY}>Enter</kbd>
-          </label>
-          {pick.error && (
-            <p role="alert" className="px-3.5 pb-2.5 text-ui text-stop-t">
-              {pick.error}
-            </p>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* A pick that is the whole act says here why it did not take (a refused move). */}
-          {pick?.error && (
-            <p role="alert" className="border-t border-line px-3.5 py-2.5 text-ui text-stop-t">
-              {pick.error}
-            </p>
-          )}
-          {legends.length > 0 && (
-            <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
-              {legends.map(([k, does]) => (
-                <Legend key={`${k}:${does}`} keys={k}>
-                  {does}
-                </Legend>
-              ))}
+        {/* Grey rows while the first answer for these words is out (FR-031). */}
+        {debounced.length > 0 &&
+          !scoping &&
+          !results.isSuccess &&
+          !results.isError &&
+          hits.length === 0 && (
+            <div className="px-1 py-1.5" aria-hidden="true">
+              <SkeletonRows rows={3} />
             </div>
           )}
-        </>
-      )}
+        {results.isError && (
+          <p role="alert" className="px-4 py-3 text-ui text-stop-t">
+            Search failed. Check that the server is running.
+          </p>
+        )}
+        {nothing && (
+          <div className="flex flex-col pb-1.5">
+            <p className="px-4 pt-3 pb-2 text-ui text-ink">
+              No {view === 'all' ? 'results' : KIND_WORDS[view].many.toLocaleLowerCase()} match “
+              {debounced}”.
+            </p>
+            {/* The two next steps (FR-024 "Empty", artboard 23): a line each, the key at the end. */}
+            {scope !== null && !pick?.only && (
+              <NextStep
+                icon={<PLACE_ICON.search size={16} />}
+                keys="Tab"
+                onClick={() => {
+                  setScope(null)
+                  box.current?.focus()
+                }}
+              >
+                Search every kind
+              </NextStep>
+            )}
+            {canNew && (
+              <NextStep icon={<NewIcon size={16} />} keys="Enter" onClick={() => void makeNew()}>
+                {newLabel} “{debounced}”
+              </NextStep>
+            )}
+          </div>
+        )}
+
+        <p className="sr-only" aria-live="polite">
+          {said}
+        </p>
+        {/* The options are not buttons: focus stays in the box, and `aria-activedescendant` walks
+          the list without adding a tab stop per result. */}
+        <ul
+          id={listId}
+          role="listbox"
+          aria-label={`Results, ${view === 'all' ? 'all kinds' : KIND_WORDS[view].many.toLocaleLowerCase()}`}
+          onScroll={(e) => {
+            const list = e.currentTarget
+            if (list.scrollHeight - list.scrollTop - list.clientHeight < 80) readOn()
+          }}
+          className="max-h-[52vh] overflow-y-auto pb-1.5"
+        >
+          {runs(rows).map((run) => {
+            const options = run.rows.map((row, j) => (
+              <SearchRow
+                key={row.key}
+                row={row}
+                words={debounced}
+                id={optionId(run.start + j)}
+                selected={
+                  chosen ? row.kind === 'hit' && row.id === chosen.id : run.start + j === at
+                }
+                compact={pick !== undefined}
+                onChoose={() => open(row, false)}
+                {...(intoOf(row) ? { onInto: () => goInto(intoOf(row)!) } : {})}
+                onHover={() => {
+                  if (!chosen) setActive(run.start + j)
+                }}
+              />
+            ))
+            const label = runLabel(run, view, scope)
+            if (!label) return options
+            const heading = `${base}-${run.key}`
+            return (
+              <li key={run.key} role="presentation">
+                <div
+                  id={heading}
+                  className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-subtle uppercase"
+                >
+                  {label}
+                </div>
+                <ul role="group" aria-labelledby={heading}>
+                  {options}
+                </ul>
+              </li>
+            )
+          })}
+          {/* Two grey rows while the next page of a kind is on its way. */}
+          {kindView && oneKind.isFetchingNextPage && (
+            <li role="presentation" aria-hidden="true" className="px-1">
+              <SkeletonRows rows={2} />
+            </li>
+          )}
+        </ul>
+
+        {pick && chosen ? (
+          <div className="flex flex-col border-t border-line">
+            <label className="flex h-11 items-center gap-2 px-3.5">
+              <input
+                ref={whyBox}
+                value={why}
+                onChange={(e) => setWhy(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !composing.composingNow(e) && !pick.busy) {
+                    e.preventDefault()
+                    pick.onPick(chosen, why.trim() || null)
+                  }
+                }}
+                {...composing.bind}
+                aria-label="Why"
+                placeholder="Why, in a line (optional)"
+                data-bare
+                className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+              />
+              <kbd className={KEY}>Enter</kbd>
+            </label>
+            {pick.error && (
+              <p role="alert" className="px-3.5 pb-2.5 text-ui text-stop-t">
+                {pick.error}
+              </p>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* A pick that is the whole act says here why it did not take (a refused move). */}
+            {pick?.error && (
+              <p role="alert" className="border-t border-line px-3.5 py-2.5 text-ui text-stop-t">
+                {pick.error}
+              </p>
+            )}
+            {legends.length > 0 && (
+              <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
+                {legends.map(([k, does]) => (
+                  <Legend key={`${k}:${does}`} keys={k}>
+                    {does}
+                  </Legend>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </Modal>
   )
 }
@@ -766,6 +816,7 @@ function SearchRow({
   compact,
   onChoose,
   onHover,
+  onInto,
 }: {
   row: Row
   id: string
@@ -776,6 +827,8 @@ function SearchRow({
   compact: boolean
   onChoose: () => void
   onHover: () => void
+  /** Its next step, where it has one: the "›" at the row's end (FR-059). */
+  onInto?: () => void
 }) {
   // Read as "name, fact, kind" (DES-001), from the columns as drawn: the fact is a module's own
   // component, so its words are only known once it is on the page.
@@ -882,7 +935,9 @@ function SearchRow({
       onMouseEnter={onHover}
       className={`${shared} ${
         compact
-          ? 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)]'
+          ? onInto
+            ? 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)_24px] pr-2'
+            : 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)]'
           : 'grid-cols-[24px_minmax(0,1fr)_180px_92px]'
       }`}
     >
@@ -904,6 +959,22 @@ function SearchRow({
         <span data-said className="text-meta text-subtle">
           {row.word}
         </span>
+      )}
+      {onInto && (
+        // A pointer's way in; the keyboard's is →, from the box, which keeps focus.
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={`Inside “${row.title}”`}
+          title="Inside  →"
+          onClick={(e) => {
+            e.stopPropagation()
+            onInto()
+          }}
+          className="inline-grid size-6 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink"
+        >
+          <ForwardIcon size={16} aria-hidden="true" />
+        </button>
       )}
     </li>
   )

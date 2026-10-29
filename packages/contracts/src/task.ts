@@ -33,6 +33,9 @@ export const UNCOUNTED_TASK_STATUSES = [
  */
 export const OPEN_TASKS_COLUMN = 'openTasks'
 
+/** The count tasks adds beside it: its live tasks with a live task under them, for Move to…'s "›". */
+export const PARENT_TASKS_COLUMN = 'parentTasks'
+
 /** The transitions a review recounts, by the list each goes in. */
 export const REVIEW_TRANSITIONS = {
   finished: 'done',

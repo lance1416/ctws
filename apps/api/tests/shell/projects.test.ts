@@ -512,6 +512,25 @@ describe('project open-task counts', () => {
     expect((await listed(ctx)).A).toBe(1)
   })
 
+  it('counts the tasks with one under them, for Move to… (FR-059)', async () => {
+    const ctx = await setup()
+    const a = await createProject(ctx, 'A')
+    const amazon = await createTask(ctx, a, 'Amazon')
+    const screen = await createTask(ctx, a, 'Screen', amazon)
+    await createTask(ctx, a, 'Prepare', screen)
+    await patch(ctx, await createTask(ctx, a, 'alone'), { status: 'done' })
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/projects',
+      headers: ctx.authed,
+    })
+    const body = res.json() as { projects: { name: string; columns: { parentTasks: number } }[] }
+    expect(body.projects.map((p) => [p.name, p.columns.parentTasks])).toEqual([
+      ['Inbox', 0],
+      ['A', 2],
+    ])
+  })
+
   it('counts another workspace nothing of ours', async () => {
     const ctx = await setup()
     const mine = await createProject(ctx, 'mine')
