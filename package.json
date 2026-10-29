@@ -18,13 +18,13 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "eslint": "10.11.0",
+    "eslint": "10.13.0",
     "eslint-import-resolver-typescript": "4.4.5",
-    "eslint-plugin-boundaries": "7.2.0",
+    "eslint-plugin-boundaries": "7.2.1",
     "eslint-plugin-react-hooks": "7.1.1",
     "knip": "6.39.0",
     "prettier": "3.9.10",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.71.0"
+    "typescript-eslint": "8.72.0"
   }
 }
