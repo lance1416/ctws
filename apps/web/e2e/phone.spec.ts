@@ -652,3 +652,28 @@ test('a task in the inbox is not offered the Inbox to move back to (BUG-073)', a
   await expect(picker.getByRole('option').first()).toContainText('Job hunt')
   await expect(picker.getByRole('option').filter({ hasText: 'Inbox' })).toHaveCount(0)
 })
+
+test('Today keeps each block to five on a phone, the rest behind All N (FR-015, BUG-091)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const p = await makeProject(page, 'Job hunt')
+  for (let i = 1; i <= 8; i++) await makeTask(page, p, `Under way ${i}`, { status: 'in_progress' })
+  const day = dayInZone(await accountZone(page))
+  for (let i = 1; i <= 7; i++)
+    await makeTask(page, p, `Late ${i}`, { dueAt: `${addDays(day, -i)}T12:00:00Z` })
+  await page.goto('/today')
+
+  const block = (name: string) => page.getByRole('region', { name })
+  await expect(block('In progress').getByRole('listitem')).toHaveCount(5)
+  await expect(block('Overdue').getByRole('listitem')).toHaveCount(5)
+  await expect(block('Overdue').getByRole('button', { name: 'All 7' })).toBeVisible()
+
+  // All of them, from the foot, in the sheet; one opened there has the way back to the list.
+  await block('Overdue').getByRole('button', { name: 'All 7' }).click()
+  const sheet = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(sheet.getByRole('heading', { name: 'Overdue' })).toBeVisible()
+  await expect(sheet.getByRole('listitem')).toHaveCount(7)
+  await sheet.getByRole('button', { name: 'Late 7', exact: true }).click()
+  await expect(sheet.getByRole('button', { name: /^Back to Overdue/ })).toBeVisible()
+})

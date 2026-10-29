@@ -140,8 +140,13 @@ export function FollowUpsPhone({ today }: { today: string }) {
       icon={<FollowUpIcon size={14} className="text-communication" />}
       title="Follow up"
       count={rows.length}
+      foot={
+        rows.length > SHOWN && (
+          <AllInInspector list={FOLLOW_UPS} count={rows.length} className={ALL_ROW} />
+        )
+      }
     >
-      {rows.map((m) => (
+      {rows.slice(0, SHOWN).map((m) => (
         <FollowUpRow key={m.id} message={m} today={today} />
       ))}
     </PhoneSection>

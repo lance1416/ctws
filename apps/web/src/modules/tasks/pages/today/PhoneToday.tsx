@@ -25,7 +25,8 @@ import { useRegistry } from '../../../../shell/registry'
 import { SearchDialog } from '../../../../shell/search'
 import { todayQuery } from '../../api'
 import { ProgressSquare } from '../../components/ProgressSquare'
-import { useShowInInspector } from '../../../../shell/inspector'
+import { AllInInspector, useShowInInspector } from '../../../../shell/inspector'
+import { ALL_ROW, TODAY_LISTS } from '../../components/TodayLists'
 import { useTaskActions } from '../../hooks/useTaskActions'
 import { carriedFrom, dueMark } from '../../logic/todayMarks'
 import { todaySegments } from '../../logic/today'
@@ -34,6 +35,9 @@ import { todaySegments } from '../../logic/today'
 const OPEN_PX = 168
 /** How far a row is swiped right before letting go finishes it. */
 const DONE_PX = 96
+
+/** A block's rows before its "All N", as on the desk (FR-015, DES-001 section 4). */
+const SHOWN = 5
 
 /**
  * TODAY ON A PHONE (FR-083, artboard 25): the date and its lunar day, then a section a card for
@@ -113,8 +117,17 @@ export function PhoneToday() {
               icon={<InProgressIcon size={14} className="text-go" />}
               title="In progress"
               count={inProgress.length}
+              foot={
+                inProgress.length > SHOWN && (
+                  <AllInInspector
+                    list={TODAY_LISTS.inProgress}
+                    count={inProgress.length}
+                    className={ALL_ROW}
+                  />
+                )
+              }
             >
-              {inProgress.map(row)}
+              {inProgress.slice(0, SHOWN).map(row)}
             </PhoneSection>
           )}
           {planned.length > 0 && (
@@ -132,8 +145,17 @@ export function PhoneToday() {
               tone="text-stop-t"
               title="Overdue"
               count={overdue.length}
+              foot={
+                overdue.length > SHOWN && (
+                  <AllInInspector
+                    list={TODAY_LISTS.overdue}
+                    count={overdue.length}
+                    className={ALL_ROW}
+                  />
+                )
+              }
             >
-              {overdue.map(row)}
+              {overdue.slice(0, SHOWN).map(row)}
             </PhoneSection>
           )}
           {inProgress.length + planned.length + overdue.length === 0 && (

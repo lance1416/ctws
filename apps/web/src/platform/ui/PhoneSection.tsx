@@ -10,6 +10,7 @@ export function PhoneSection({
   count,
   tone = 'text-muted',
   label,
+  foot,
   children,
 }: {
   /** Its mark, 14 across, before the name. */
@@ -19,6 +20,8 @@ export function PhoneSection({
   tone?: string
   /** Its name for a screen reader, when the title alone is not it. */
   label?: string
+  /** Under the rows, inside the card: a block's "All N" (FR-015). */
+  foot?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -30,9 +33,10 @@ export function PhoneSection({
         {title}
         {count !== undefined && <span className="font-normal tabular-nums">{count}</span>}
       </h2>
-      <ul className="overflow-hidden rounded-phone-card border border-line bg-panel py-1">
-        {children}
-      </ul>
+      <div className="overflow-hidden rounded-phone-card border border-line bg-panel">
+        <ul className="py-1">{children}</ul>
+        {foot}
+      </div>
     </section>
   )
 }
