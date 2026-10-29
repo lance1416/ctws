@@ -155,3 +155,27 @@ test('each organisation in touch is one row, with what is next', async ({ page }
     table.locator('[data-in-touch]').filter({ hasText: 'Clifford Rowe LLP' }),
   ).toContainText('Nothing')
 })
+
+test('a person’s timeline shows its last three months, the rest a press away (U-17)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const lena = await apiPost(page, '/people', { givenName: 'Lena', familyName: 'Fischer' })
+  const parties = [{ type: 'person', id: lena.id as string }]
+  for (const [subject, at] of [
+    ['October', '2026-10-05T10:00:00Z'],
+    ['September', '2026-09-05T10:00:00Z'],
+    ['August', '2026-08-05T10:00:00Z'],
+    ['July', '2026-07-05T10:00:00Z'],
+    ['June', '2026-06-05T10:00:00Z'],
+  ] as const)
+    await send(page, { subject, occurredAt: at, parties, awaitingReply: false })
+  await page.goto(`/people/${lena.id as string}`)
+  await expect(page.getByRole('main').getByText(/^August 2026$/i)).toBeVisible()
+  await expect(page.getByRole('main').getByText('Jul 5', { exact: true })).toHaveCount(0)
+  await page.getByRole('main').getByRole('button', { name: 'Earlier months (2)' }).click()
+  await expect(page.getByRole('main').getByText('Jun 5', { exact: true })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('button', { name: /Earlier months/ })).toHaveCount(
+    0,
+  )
+})
