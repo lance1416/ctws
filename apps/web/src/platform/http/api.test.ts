@@ -16,6 +16,7 @@ const ME = {
   clockPinned: false,
   migrationReport: null,
   passwordChangedAt: null,
+  singleKeyShortcuts: true,
 }
 
 const json = (body: unknown, status = 200) =>
