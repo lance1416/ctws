@@ -25,7 +25,7 @@ export function MoreProjects({ person, more }: { person: PersonResponse; more: n
       title={words}
       aria-label={words}
       onClick={() => show({ type: 'list', id: `${PERSON_PROJECTS}.${person.id}` })}
-      className="inline-grid size-5 place-items-center rounded-key border border-line text-initials text-muted tabular-nums hover:bg-hover max-lg:tap"
+      className="inline-grid size-5 place-items-center rounded-key bg-hover text-initials text-muted tabular-nums hover:bg-select max-lg:tap"
     >
       +{more}
     </button>
