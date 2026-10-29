@@ -47,7 +47,7 @@ export function anywhereKeys(
       })),
       {
         keys: `${NEW_PREFIX.toUpperCase()} ${PIN_LINK_KEY.toUpperCase()}`,
-        does: 'Link',
+        does: 'Resource (a link)',
         presses: { [NEW_PREFIX]: 'new' as const },
       },
     ],

@@ -119,15 +119,27 @@ export function PinLink({
             </>
           )}
         </p>
-        <input
-          type="url"
-          autoFocus
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://"
-          aria-label="Address"
-          className={`w-full bg-panel ${textbox}`}
-        />
+        {/* The service it is recognised as, its icon at the head of the box (artboard 27). */}
+        <div className="relative">
+          {recognised && (
+            <span
+              data-recognised
+              title={recognised.source || recognised.label}
+              className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center"
+            >
+              <ResourceIcon url={typed} size={16} />
+            </span>
+          )}
+          <input
+            type="url"
+            autoFocus
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://"
+            aria-label="Address"
+            className={`w-full bg-panel ${textbox} ${recognised ? 'pl-8' : ''}`}
+          />
+        </div>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -135,12 +147,6 @@ export function PinLink({
           aria-label="Name (optional)"
           className={`w-full bg-panel ${textbox}`}
         />
-        {recognised && (
-          <span data-recognised className="flex min-w-0 items-center gap-1.5 text-meta text-muted">
-            <ResourceIcon url={typed} />
-            <span className="truncate">{recognised.source || recognised.label}</span>
-          </span>
-        )}
         {save.isError && (
           <p role="alert" className="text-meta text-stop-t">
             {save.error.message.startsWith('Nine')
