@@ -46,12 +46,22 @@ async function aFullAccount(page: Page) {
   // The review reads the change log: last week's finishing is the log moved back into it.
   projectActivityAt(mf, on('2026-10-14'))
 
+  // Circles of one's own, as the overview's filters and the editor's choice draw them.
+  const { circles } = (await (
+    await page.request.put('/api/v1/people/circles', {
+      headers: WEB,
+      data: { circles: [{ name: 'Family' }, { name: 'Friends' }, { name: 'Work' }] },
+    })
+  ).json()) as { circles: { id: string; name: string }[] }
+  const circle = (name: string) => circles.find((c) => c.name === name)!.id
+
   // People in circles, with roles of known months, a birthday near, on a project.
   const stripe = await apiPost<{ id: string }>(page, '/organisations', { name: 'Stripe' })
   const mira = await apiPost<{ id: string }>(page, '/people', {
     givenName: 'Mira',
     familyName: 'Chen',
     circle: 'work',
+    circleIds: [circle('Work')],
     projectIds: [jh],
     birthday: { calendar: 'solar', month: 10, day: 29 },
     channels: [
@@ -76,6 +86,7 @@ async function aFullAccount(page: Page) {
     givenName: 'Priya',
     familyName: 'Nair',
     circle: 'friend',
+    circleIds: [circle('Friends')],
   })
 
   // A message waiting with its follow-up, one in from a company, both on the overview.
@@ -121,7 +132,7 @@ async function aFullAccount(page: Page) {
     durationMinutes: 30,
     rrule: 'FREQ=WEEKLY;BYDAY=TH',
   })
-  // A meeting with more people than are listed, folded behind "All N" (BUG-071).
+  // A meeting with more people than are listed, folded behind "All N", you counted too (BUG-071).
   const crowd: string[] = []
   for (const n of ['Ada', 'Ben', 'Cal', 'Dee', 'Eli', 'Fay', 'Gus', 'Hal', 'Ivy'])
     crowd.push(
@@ -185,6 +196,10 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
   await expect(page.getByRole('main').getByText('Earlier work')).toBeVisible()
   await page.goto(`/organisations/${a.stripe}`)
   await expect(page.getByRole('region', { name: 'In projects' })).toBeVisible()
+  await page.goto('/people')
+  await expect(page.getByRole('link', { name: /^Family/ })).toBeVisible()
+  await page.goto(`/meetings/${a.crowded}?at=2026-10-23T10:00`)
+  await expect(page.getByRole('button', { name: /^All 10/ })).toBeVisible()
   const pages: [string, string][] = [
     ['Workbench', '/'],
     ['Today', '/today'],
@@ -245,7 +260,8 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
   const search = (await earlier
     .getByRole('searchbox', { name: 'Search these notes' })
     .boundingBox())!
-  expect(search.y).toBeGreaterThanOrEqual(heading.y + heading.height)
+  // Soft: the sweep below still says all it finds when this fails.
+  expect.soft(search.y).toBeGreaterThanOrEqual(heading.y + heading.height)
 
   // And what opens over a page.
   const sheet = page.getByRole('complementary', { name: 'Inspector' })
