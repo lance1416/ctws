@@ -256,3 +256,21 @@ test('Delete is the last thing in the edit, and not in reading', async ({ page }
   ])
   expect(box!.y).toBeGreaterThan(notes!.y)
 })
+
+test('a task deleted in the inspector takes the inspector with it (BUG-090)', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  const id = await makeTask(page, pid, '写方案')
+  await page.goto(`/today?inspect=task:${id}`)
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector).toContainText('写方案')
+  await inspector.getByRole('button', { name: 'Edit', exact: true }).last().click()
+  await inspector.getByRole('button', { name: 'Delete task' }).click()
+  await page
+    .getByRole('alertdialog', { name: 'Confirm deleting this task' })
+    .getByRole('button', { name: 'Delete' })
+    .click()
+  await expect(inspector).toHaveCount(0)
+  await expect(page).not.toHaveURL(/inspect=/)
+  expect(await serverTasks(page, pid)).toHaveLength(0)
+})

@@ -14,7 +14,7 @@ export function TaskNarrow({ id }: { id: string }) {
   if (!task.data) return null
   return (
     <div className="flex flex-1 flex-col p-5">
-      <TaskDetailBody task={task.data} onClose={close} act={act} />
+      <TaskDetailBody task={task.data} onClose={close} act={act} onDeleted={close} />
     </div>
   )
 }

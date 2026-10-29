@@ -9,7 +9,11 @@ import { WRITE_AWAITS } from './useTaskDetailForm'
  * Deleting takes the subtree, so the question counts what is lost, read live because the page
  * behind may never have loaded this tree. `message` is null while counting.
  */
-export function useDeleteTask(task: TaskResponse) {
+export function useDeleteTask(
+  task: TaskResponse,
+  /** Run once it is gone, even if what showed it has gone first (its read now answers 404). */
+  onDeleted?: () => void,
+) {
   const qc = useQueryClient()
   const [descendants, setDescendants] = useState<number | null>(null)
   const ask = async () => {
@@ -33,7 +37,10 @@ export function useDeleteTask(task: TaskResponse) {
   const remove = useMutation({
     mutationFn: () => deleteTask(task.id),
     meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
-    onSuccess: () => forget('task', task.id),
+    onSuccess: () => {
+      forget('task', task.id)
+      onDeleted?.()
+    },
   })
   const message =
     descendants === null
