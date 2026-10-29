@@ -495,7 +495,7 @@ async function holdFirstListFetch(page: Page, glob: RouteUrl = TASK_LIST) {
 // The tree has no "New task" until it has loaded (BUG-039), so the task is made with N T.
 test('a task created while the project is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
-  await makeProject(page, 'P')
+  const pid = await makeProject(page, 'P')
   await navLink(page, 'Projects').click()
 
   const { release, heldStale } = await holdFirstListFetch(page)
@@ -509,12 +509,14 @@ test('a task created while the project is still loading appears', async ({ page 
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   const dialog = page.getByRole('dialog', { name: 'New task' })
+  // Made from the project's page, it is the project's (FR-026), not the Inbox's.
+  await expect(dialog.getByRole('button', { name: /^Projects/ })).toContainText('P')
   await dialog.getByRole('textbox', { name: 'Title' }).fill('typed early')
   const created = page.waitForResponse(
     (r) => r.request().method() === 'POST' && r.ok() && /\/api\/v1\/tasks$/.test(r.url()),
   )
   await dialog.getByRole('button', { name: 'Create', exact: true }).click()
-  await created
+  expect((await created).request().postDataJSON()).toMatchObject({ projectId: pid })
   release()
 
   await expect(page.getByRole('listitem').filter({ hasText: 'typed early' })).toBeVisible()
