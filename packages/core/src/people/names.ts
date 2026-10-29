@@ -1,5 +1,3 @@
-import { pinyin } from 'pinyin-pro'
-
 /**
  * A person's name in three parts, after vCard's `N` (RFC 6350): given, middle, family (FR-049).
  * The parts are what is stored; how they are shown follows the script, and how they are sorted
@@ -16,7 +14,8 @@ export type NameParts = {
 export type SplitWhy =
   'Had a comma' | 'One word' | 'Had a space' | 'Several words' | 'Compound surname'
 
-const CJK = /[㐀-䶿一-鿿豈-﫿]/
+/** A Han character, in the blocks a name is written in. */
+export const CJK = /[㐀-䶿一-鿿豈-﫿]/
 const ALL_CJK = /^[㐀-䶿一-鿿豈-﫿\s·•]+$/
 
 /**
@@ -148,26 +147,6 @@ export function displayName(parts: NameParts): string {
     return `${familyName}${middleName ?? ''}${givenName}`
   }
   return [givenName, middleName, familyName].filter((p) => p && p.trim() !== '').join(' ')
-}
-
-/**
- * The letter a person is filed under, A to Z, from the family name (the given name when there is
- * none): a Latin initial without its accent, a Chinese one by the pinyin of the surname (陈 under
- * C, beside Chen), `#` for anything else.
- */
-export function sortKey(parts: NameParts): string {
-  const word = parts.familyName?.trim() || parts.givenName.trim()
-  const first = [...word][0] ?? ''
-  if (first === '') return '#'
-  if (CJK.test(first)) {
-    const letter = pinyin(first, { pattern: 'first', toneType: 'none', mode: 'surname' })
-    return /^[a-z]$/i.test(letter) ? letter.toUpperCase() : '#'
-  }
-  const plain = first
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toUpperCase()
-  return /^[A-Z]$/.test(plain) ? plain : '#'
 }
 
 /**

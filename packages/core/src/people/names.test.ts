@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { displayName, sortKey, splitName, avatarInitials } from './names'
+import { displayName, splitName, avatarInitials } from './names'
+import { sortKey } from './sortKey'
 
 describe('splitName', () => {
   it.each([

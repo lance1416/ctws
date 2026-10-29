@@ -9,7 +9,7 @@ import {
   type UpdatePersonBody,
 } from '@ctws/contracts'
 import { PhoneFormBar } from '../../../platform/ui/PhoneFormBar'
-import { avatarInitials, clockTime, displayName, sortKey, splitName } from '@ctws/core'
+import { avatarInitials, clockTime, displayName, splitName } from '@ctws/core'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -50,6 +50,7 @@ import { byKind } from '../logic/channels'
 import { GENDER_CHOICES } from '../logic/labels'
 import { setNewPersonDraft } from '../logic/newPersonDraft'
 import { ChannelsEditor, useChannelRows } from './ChannelsEditor'
+import { useSortKey } from '../hooks/useSortKey'
 
 const PersonIcon = KIND_ICON.person
 const OrganisationIcon = KIND_ICON.organisation
@@ -201,9 +202,11 @@ export function PersonEditor({
   const shown = parts.givenName
     ? displayName(parts)
     : displayName({ givenName: parts.familyName ?? '', middleName: null, familyName: null })
-  const filed = named
-    ? sortKey(parts.givenName ? parts : { ...parts, givenName: parts.familyName ?? '' })
-    : null
+  const sortKey = useSortKey()
+  const filed =
+    named && sortKey
+      ? sortKey(parts.givenName ? parts : { ...parts, givenName: parts.familyName ?? '' })
+      : null
   const initials = named
     ? avatarInitials(
         parts.givenName ? parts : { givenName: parts.familyName ?? '', familyName: null },
@@ -304,7 +307,7 @@ export function PersonEditor({
           </h1>
           <p data-name-preview className="text-meta text-muted">
             {named
-              ? `Shown as ${shown}. Sorted under ${filed}.`
+              ? `Shown as ${shown}.${filed ? ` Sorted under ${filed}.` : ''}`
               : 'Shown as their name, once given.'}
           </p>
         </div>

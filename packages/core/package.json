@@ -9,8 +9,10 @@
     "./lunar-names": "./src/birthday/names.ts",
     "./day": "./src/day.ts",
     "./clock": "./src/clock.ts",
-    "./rank": "./src/rank.ts"
+    "./rank": "./src/rank.ts",
+    "./sort-key": "./src/people/sortKey.ts"
   },
+  "sideEffects": false,
   "scripts": {
     "test": "vitest run",
     "lint": "eslint ."
