@@ -37,8 +37,11 @@ export type DayTimeline = {
 /** Items closer than this start as one node: their words could not both be read (FR-015). */
 const CLOSE_MINUTES = 40
 
-/** What a node's words need across: its icon, a short name and its time ("Call 1 09:00"). */
-const LABEL_PX = 130
+/**
+ * What a node's words need across before they are cut: a short name over its time ("Call 1",
+ * "09:00"), beside its mark. Hourly meetings on a 1440 Today with nothing beside it fit (U-09).
+ */
+const LABEL_PX = 88
 
 /**
  * THE DAY'S TIMELINE (FR-079): 08 to 20 by default, reaching out to the hour of anything earlier

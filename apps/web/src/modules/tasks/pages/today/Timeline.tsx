@@ -99,15 +99,12 @@ export function Timeline({
                 className="absolute top-0 grid h-10 min-w-6 place-items-center rounded-control bg-meeting text-on-project"
                 style={{ left: pct(node.at), width: pct(node.until - node.at) }}
               >
-                {many ? (
-                  <span className="text-meta font-medium tabular-nums">{node.items.length}</span>
-                ) : (
-                  <Meeting size={14} aria-hidden="true" />
-                )}
+                {/* A node of several says how many beside it, not in it (U-09). */}
+                <Meeting size={14} aria-hidden="true" />
               </div>
               <div
                 className={`absolute top-0 flex h-10 min-w-0 items-center gap-2.5 pl-2 ${many ? '' : 'overflow-hidden'}`}
-                // After the node, which is never narrower than its count (min-w-6).
+                // After the node, which is never narrower than its icon (min-w-6).
                 style={{
                   left: `max(${pct(node.until)}, calc(${pct(node.at)} + 1.5rem))`,
                   width: pct(Math.max(node.room - node.until, 0.06)),

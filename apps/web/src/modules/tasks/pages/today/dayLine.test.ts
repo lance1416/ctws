@@ -75,6 +75,8 @@ describe('what is too close to read apart, on a line of a given width (U-09)', (
 
   it('keeps hours apart on a wide line', () => {
     expect(dayTimeline(calls, minutesOf('08:30'), 2000).nodes).toHaveLength(4)
+    // Today's line at 1440 with nothing beside it: about 1100 across.
+    expect(dayTimeline(calls, minutesOf('08:30'), 1100).nodes).toHaveLength(4)
   })
 
   it('makes one node of them on a narrow one, each a neighbour of the next', () => {
