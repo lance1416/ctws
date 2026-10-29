@@ -62,7 +62,7 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
   return (
     <li
       data-follow-up={m.id}
-      className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover max-lg:border-b max-lg:border-line max-lg:last:border-b-0"
+      className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover"
     >
       <Link to={`/communication/${m.id}`} className="flex min-w-0 items-center gap-2.5">
         {person ? (

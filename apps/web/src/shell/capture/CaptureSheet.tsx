@@ -221,7 +221,7 @@ function Segment({
       tabIndex={on ? 0 : -1}
       onClick={onClick}
       className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-control text-ui font-medium ${
-        on ? 'bg-panel text-ink ring-1 ring-line' : soon ? 'text-subtle' : 'text-muted'
+        on ? 'bg-panel text-ink ring-1 ring-line' : soon ? 'text-subtle opacity-60' : 'text-muted'
       }`}
     >
       <Icon size={16} aria-hidden="true" />

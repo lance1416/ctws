@@ -173,7 +173,7 @@ function PickADay({
 }) {
   const [month, setMonth] = useState(monthOf(today))
   return (
-    <BottomSheet title={`Move “${task.title}” to`} onClose={onClose}>
+    <BottomSheet title="Move to" about={task.title} onClose={onClose}>
       <div className="px-3 pb-4">
         <DayGrid month={month} setMonth={setMonth} value={null} today={today} onPick={onPick} />
       </div>
@@ -220,10 +220,7 @@ function PhoneTaskRow({
   const leaf = t.children === null
   const swipe = useSwipe({ open, setOpen, onDone: leaf ? onDone : null })
   return (
-    <li
-      data-phone-row={t.id}
-      className="relative overflow-hidden border-b border-line last:border-b-0"
-    >
+    <li data-phone-row={t.id} className="relative overflow-hidden">
       {leaf && (
         <div className="absolute inset-y-0 right-0 flex" aria-hidden={!open}>
           <button

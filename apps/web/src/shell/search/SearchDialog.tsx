@@ -142,7 +142,7 @@ export type Pick = {
    */
   drill?: {
     into: (thing: LinkCandidate) => boolean
-    step: (thing: LinkCandidate, back: () => void) => ReactNode
+    step: (thing: LinkCandidate, back: () => void, close: () => void) => ReactNode
   }
 }
 
@@ -451,7 +451,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       palette={!pick}
       picker={pick !== undefined}
     >
-      {pick?.drill && inside && pick.drill.step(inside, comeBack)}
+      {pick?.drill && inside && pick.drill.step(inside, comeBack, onClose)}
       {/* Kept while the next step is shown: back, its words and place are as they were. */}
       <div className={pick?.drill && inside ? 'hidden' : 'contents'}>
         <div

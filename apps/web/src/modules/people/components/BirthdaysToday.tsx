@@ -69,7 +69,7 @@ export function BirthdaysPhone() {
       count={rows.length}
     >
       {rows.map((r) => (
-        <li key={r.personId} className="border-b border-line last:border-b-0">
+        <li key={r.personId}>
           <Link
             to={`/${PEOPLE_ID}/${r.personId}`}
             data-birthday-row

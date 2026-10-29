@@ -30,7 +30,9 @@ export function PhoneSection({
         {title}
         {count !== undefined && <span className="font-normal tabular-nums">{count}</span>}
       </h2>
-      <ul className="overflow-hidden rounded-phone-card border border-line bg-panel">{children}</ul>
+      <ul className="overflow-hidden rounded-phone-card border border-line bg-panel py-1">
+        {children}
+      </ul>
     </section>
   )
 }

@@ -2,8 +2,8 @@ import { MAX_TASK_DEPTH, type ProjectId, type TaskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useComposing } from '../../../platform/keyboard/composition'
-import { KEY } from '../../../platform/ui/buttonStyles'
-import { BackIcon } from '../../../platform/ui/icons'
+import { ICON_BUTTON, KEY } from '../../../platform/ui/buttonStyles'
+import { BackIcon, CloseIcon } from '../../../platform/ui/icons'
 import { SkeletonRows } from '../../../platform/ui/Block'
 import { projectTasksQuery } from '../api'
 import { flatten } from '../logic/tree/flatten'
@@ -26,6 +26,7 @@ export function MoveUnderParent({
   error,
   onPick,
   back,
+  close,
 }: {
   project: { id: ProjectId; name: string }
   /** How many levels the moved task and what is under it take. */
@@ -34,6 +35,7 @@ export function MoveUnderParent({
   error: string | null
   onPick: (parent: { id: TaskId; title: string }) => void
   back: () => void
+  close: () => void
 }) {
   const tasks = useQuery(projectTasksQuery(project.id))
   const composing = useComposing()
@@ -60,6 +62,15 @@ export function MoveUnderParent({
   return (
     <>
       <div className="flex h-11 items-center gap-1 border-b border-line pr-4 pl-2">
+        {/* A phone's full screen shuts here, the way back beside it (DES-001 "从底部弹出的面板"). */}
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Close"
+          className={`${ICON_BUTTON} size-11 lg:hidden`}
+        >
+          <CloseIcon size={18} aria-hidden="true" />
+        </button>
         <button
           type="button"
           onClick={back}

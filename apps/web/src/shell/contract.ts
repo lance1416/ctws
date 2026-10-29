@@ -137,6 +137,8 @@ type ParentStepProps = {
   error: string | null
   onPick: (parent: { id: TaskId; title: string }) => void
   back: () => void
+  /** The whole picker shut, from the step: a phone's ×, where there is no Esc. */
+  close: () => void
 }
 
 type ProjectView = {

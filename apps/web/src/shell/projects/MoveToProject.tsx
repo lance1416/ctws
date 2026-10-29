@@ -60,7 +60,7 @@ export function MoveToProject({
         ? {
             drill: {
               into: (thing) => parents.has(projects.find((p) => p.id === thing.id)),
-              step: (thing, back) => (
+              step: (thing, back, close) => (
                 <parents.Step
                   project={{ id: project(thing), name: thing.title }}
                   height={height}
@@ -70,6 +70,7 @@ export function MoveToProject({
                     onPickParent({ project: { id: project(thing), name: thing.title }, parent })
                   }
                   back={back}
+                  close={close}
                 />
               ),
             },
