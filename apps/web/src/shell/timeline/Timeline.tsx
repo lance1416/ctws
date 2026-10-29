@@ -6,7 +6,7 @@ import { useContext, useId, useState, type ReactNode } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { NewContext } from '../creates'
 import { call } from '../../platform/http/api'
-import { monthDay, ymd } from '../../platform/time/dates'
+import { monthDay, monthTitle, ymd } from '../../platform/time/dates'
 import { BlockFailed } from '../../platform/ui/Block'
 import { tabKeys } from '../../platform/ui/choiceKeys'
 import {
@@ -27,6 +27,9 @@ import { useRegistry } from '../registry'
 type Thing = { type: ObjectType; id: string }
 
 /** What the timeline's tabs narrow it to (FR-065): every kind, or one. */
+/** Months a full timeline shows at first, and adds a press at a time. */
+const MONTHS_AT_ONCE = 3
+
 const FILTERS = [
   { id: 'all', label: 'All', kinds: undefined },
   { id: 'message', label: 'Messages', kinds: ['message'] },
@@ -94,6 +97,17 @@ export function Timeline({
   const entries = useQuery(timelineQuery(of, filter))
   const timeZone = useTimeZone()
   const describeChange = useRegistry().relationFor(of.type).describeChange
+  // The last three months first, by month; the rest a press away (FR-015 "时间线", U-17).
+  const [months, setMonths] = useState(MONTHS_AT_ONCE)
+  const all = last ? (entries.data ?? []).slice(0, last) : (entries.data ?? [])
+  const monthOf = (entry: TimelineEntry) => ymd(new Date(entry.at), timeZone).slice(0, 7)
+  const kept = [...new Set(all.map(monthOf))].slice(0, last ? undefined : months)
+  const sections = kept.map((month) => ({
+    month,
+    title: monthTitle(month),
+    entries: all.filter((e) => monthOf(e) === month),
+  }))
+  const hidden = all.length - sections.reduce((n, s) => n + s.entries.length, 0)
   // Nothing at all to show: no head over an empty list (N-06). A tab with nothing keeps its head,
   // so the other tabs stay in reach.
   if (filter.id === 'all' && entries.isSuccess && entries.data.length === 0 && !logs) return null
@@ -153,41 +167,66 @@ export function Timeline({
         {entries.isError ? (
           <BlockFailed what="timeline" onRetry={() => void entries.refetch()} />
         ) : (
-          <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
-            {(last ? (entries.data ?? []).slice(0, last) : (entries.data ?? [])).map((entry, i) => {
-              const line = lineOf(entry, describeChange, timeZone)
-              if (!line) return null
-              return (
-                <li
-                  key={i}
-                  data-timeline-entry={entry.kind}
-                  className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
-                >
-                  {/* The thread from one mark to the next (artboard 14); the last has none. */}
-                  <span
-                    aria-hidden="true"
-                    className="thread absolute top-7 -bottom-2.5 left-[calc(52px+0.625rem+11.5px)] w-px bg-line"
-                  />
-                  <time
-                    dateTime={entry.at}
-                    className="pt-1 font-mono text-meta text-muted tabular-nums"
-                  >
-                    {monthDay(ymd(new Date(entry.at), timeZone))}
-                  </time>
-                  <span
-                    aria-hidden="true"
-                    className={`inline-grid size-6 place-items-center rounded-control ${line.tint ?? 'text-muted'}`}
-                  >
-                    {line.mark}
-                  </span>
-                  <div className="flex min-w-0 flex-col gap-1 pt-0.5">
-                    <span className="min-w-0 text-ink">{line.text}</span>
-                    {line.more}
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
+          <>
+            {sections.map((section) => (
+              <section
+                key={section.month}
+                aria-label={section.title}
+                className="flex flex-col gap-3"
+              >
+                {/* By month on a full page (FR-015 "时间线"); a narrow page's five need no head. */}
+                {!last && (
+                  <h4 className="text-meta font-medium tracking-[0.06em] text-subtle uppercase">
+                    {section.title}
+                  </h4>
+                )}
+                <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
+                  {section.entries.map((entry, i) => {
+                    const line = lineOf(entry, describeChange, timeZone)
+                    if (!line) return null
+                    return (
+                      <li
+                        key={`${entry.at}-${i}`}
+                        data-timeline-entry={entry.kind}
+                        className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
+                      >
+                        {/* The thread from one mark to the next (artboard 14); the last has none. */}
+                        <span
+                          aria-hidden="true"
+                          className="thread absolute top-7 -bottom-2.5 left-[calc(52px+0.625rem+11.5px)] w-px bg-line"
+                        />
+                        <time
+                          dateTime={entry.at}
+                          className="pt-1 font-mono text-meta text-muted tabular-nums"
+                        >
+                          {monthDay(ymd(new Date(entry.at), timeZone))}
+                        </time>
+                        <span
+                          aria-hidden="true"
+                          className={`inline-grid size-6 place-items-center rounded-control ${line.tint ?? 'text-muted'}`}
+                        >
+                          {line.mark}
+                        </span>
+                        <div className="flex min-w-0 flex-col gap-1 pt-0.5">
+                          <span className="min-w-0 text-ink">{line.text}</span>
+                          {line.more}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ol>
+              </section>
+            ))}
+            {hidden > 0 && (
+              <button
+                type="button"
+                onClick={() => setMonths(months + MONTHS_AT_ONCE)}
+                className="self-start pl-[calc(52px+24px+1.25rem)] text-meta text-muted hover:text-ink"
+              >
+                Earlier months ({hidden})
+              </button>
+            )}
+          </>
         )}
       </div>
       {everything && (

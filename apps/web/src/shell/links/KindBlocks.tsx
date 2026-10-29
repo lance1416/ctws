@@ -281,7 +281,11 @@ function KindBlock({
       {failed ? (
         <BlockFailed what={title.toLocaleLowerCase()} onRetry={onRetry} />
       ) : (
-        <ul className="flex flex-col py-1.5">{shown}</ul>
+        // Alone on a wide row, the rows go across in columns of 22rem, not one line the row's width
+        // (FR-011 rule 2, U-19); a narrow block is one column as before.
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(22rem,100%),1fr))] py-1.5">
+          {shown}
+        </ul>
       )}
       {join?.error && (
         <p role="alert" className="px-3 pb-2 text-ui text-stop-t">

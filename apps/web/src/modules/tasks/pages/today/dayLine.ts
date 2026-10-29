@@ -37,12 +37,20 @@ export type DayTimeline = {
 /** Items closer than this start as one node: their words could not both be read (FR-015). */
 const CLOSE_MINUTES = 40
 
+/** What a node's words need across: its icon, a short name and its time ("Call 1 09:00"). */
+const LABEL_PX = 130
+
 /**
  * THE DAY'S TIMELINE (FR-079): 08 to 20 by default, reaching out to the hour of anything earlier
  * or later; now, the stretch free until the next timed thing, and the things themselves, those
  * too close to read apart drawn as one node.
  */
-export function dayTimeline(items: readonly TimedItem[], nowMinutes: number): DayTimeline {
+export function dayTimeline(
+  items: readonly TimedItem[],
+  nowMinutes: number,
+  /** How wide the line is drawn, when known: closeness is in its pixels there (U-09). */
+  widthPx?: number,
+): DayTimeline {
   const sorted = [...items].sort((a, b) => a.start - b.start)
   const earliest = Math.min(8 * 60, ...sorted.map((i) => i.start))
   const latest = Math.max(20 * 60, ...sorted.map((i) => i.end ?? i.start))
@@ -64,10 +72,13 @@ export function dayTimeline(items: readonly TimedItem[], nowMinutes: number): Da
       ? { at: share(nowMinutes), until: share(next.start), minutes: next.start - nowMinutes }
       : null
 
+  // Close is as close as the line's width makes it: a narrow line (the inspector open beside
+  // Today) puts things an hour apart into one node rather than cutting their words (U-09).
+  const close = widthPx ? Math.max(CLOSE_MINUTES, (span * LABEL_PX) / widthPx) : CLOSE_MINUTES
   const groups: TimedItem[][] = []
   for (const item of sorted) {
     const last = groups.at(-1)
-    if (last && item.start - last[0]!.start < CLOSE_MINUTES) last.push(item)
+    if (last && item.start - last.at(-1)!.start < close) last.push(item)
     else groups.push([item])
   }
   const nodes = groups.map((group, i) => {

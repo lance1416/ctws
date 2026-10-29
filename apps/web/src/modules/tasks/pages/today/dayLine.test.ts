@@ -67,3 +67,19 @@ describe('the day timeline (FR-079)', () => {
     expect(lengthOf(0)).toBe('0m')
   })
 })
+
+describe('what is too close to read apart, on a line of a given width (U-09)', () => {
+  const calls = ['09:00', '10:00', '11:00', '12:00'].map((t, i) =>
+    meeting(`Call ${i + 1}`, t, t.replace(/:00$/, ':30')),
+  )
+
+  it('keeps hours apart on a wide line', () => {
+    expect(dayTimeline(calls, minutesOf('08:30'), 2000).nodes).toHaveLength(4)
+  })
+
+  it('makes one node of them on a narrow one, each a neighbour of the next', () => {
+    const nodes = dayTimeline(calls, minutesOf('08:30'), 700).nodes
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0]!.items).toHaveLength(4)
+  })
+})

@@ -81,6 +81,15 @@ export function weekdayDay(day: string, today: string): string {
   return `${weekdayOf(day, true)}, ${shortDay(day, today)}`
 }
 
+/** `October 2026`: a month as a list's section head, from `YYYY-MM`. */
+export function monthTitle(month: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${month}-15T12:00:00Z`))
+}
+
 /** `Friday, October 2`: a day as a page's heading. */
 export function longDay(day: string): string {
   return new Intl.DateTimeFormat('en-US', {

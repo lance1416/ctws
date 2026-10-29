@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { Link } from 'react-router-dom'
 import { BlockFailed } from '../../../../platform/ui/Block'
 import { BUTTON } from '../../../../platform/ui/buttonStyles'
@@ -28,6 +28,9 @@ export function Timeline({
   failed: boolean
   onRetry: () => void
 }) {
+  // Its own width, for what is too close to read apart there (U-09).
+  const holder = useRef<HTMLDivElement>(null)
+  const width = useWidth(holder)
   if (failed)
     return (
       <section
@@ -37,14 +40,14 @@ export function Timeline({
         <BlockFailed what="timeline" onRetry={onRetry} />
       </section>
     )
-  const line = dayTimeline(items, nowMinutes)
+  const line = dayTimeline(items, nowMinutes, width)
   const Meeting = KIND_ICON.meeting
   return (
     <section
       aria-label="Timeline of the day"
       className="rounded-block border border-line bg-panel px-4 pt-3 pb-2.5"
     >
-      <div className="relative h-16.5">
+      <div ref={holder} className="relative h-16.5">
         <div className="absolute inset-x-0 top-0 h-10 rounded-card bg-hover" />
         {line.now !== null && (
           <div
@@ -272,4 +275,20 @@ function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number
       )}
     </span>
   )
+}
+
+/** An element's width, kept current as it is resized; undefined until it is measured. */
+function useWidth(ref: RefObject<HTMLElement | null>): number | undefined {
+  const [width, setWidth] = useState<number>()
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = () => setWidth(el.clientWidth || undefined)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const watch = new ResizeObserver(measure)
+    watch.observe(el)
+    return () => watch.disconnect()
+  }, [ref])
+  return width
 }

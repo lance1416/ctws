@@ -72,7 +72,7 @@ export function PersonPage({ person }: { person: PersonResponse }) {
       <PersonHead person={person} />
       {/* With nothing to profile, the panel is not drawn and the blocks take the width (M-03). */}
       <div
-        className={`grid items-start gap-4 ${profiled ? 'lg:grid-cols-[20rem_minmax(0,1fr)]' : ''}`}
+        className={`grid items-start gap-4 ${profiled ? 'lg:grid-cols-[20rem_minmax(0,1fr)] min-[1800px]:grid-cols-[24rem_minmax(0,1fr)]' : ''}`}
       >
         {profiled && <Profile person={person} />}
         <div className="flex min-w-0 flex-col gap-4">
