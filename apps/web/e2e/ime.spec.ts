@@ -137,3 +137,52 @@ test('committing a circle’s name out of an IME does not add the circle', async
   await added
   expect(writes).toEqual(['PUT /api/v1/people/circles'])
 })
+
+/** Two frames: past anything an Enter just handled would have started or drawn. */
+const settled = (page: Page) =>
+  page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+
+test('committing out of an IME in New’s filter does not open what it names', async ({ page }) => {
+  await registerFreshUser(page)
+  const id = await makeProject(page, '改版')
+  await page.goto(`/projects/${id}`)
+  // The menu's button, named with its key: not New meeting and the like on the page.
+  await page.getByRole('button', { name: /^New( N)?$/ }).click()
+  await commitWithIme(page, 'input[aria-label="What to make"]', 'task')
+  await settled(page)
+  await expect(page.getByRole('dialog', { name: 'New task' })).toHaveCount(0)
+
+  await page.getByLabel('What to make').press('Enter')
+  await expect(page.getByRole('dialog', { name: 'New task' })).toBeVisible()
+})
+
+test('committing a month out of an IME does not read it yet', async ({ page }) => {
+  await registerFreshUser(page)
+  await page.goto('/people/new')
+  await page.getByRole('button', { name: 'Another role' }).click()
+  const from = page.getByLabel('Role 1 from', { exact: true })
+
+  await commitWithIme(page, 'input[aria-label="Role 1 from"]', 'mar 2021')
+  await settled(page)
+  // Read, it would be written out as "Mar 2021"; the IME's Enter leaves it as typed.
+  await expect(from).toHaveValue('mar 2021')
+
+  await from.press('Enter')
+  await expect(from).toHaveValue('Mar 2021')
+})
+
+test('committing a zone out of an IME does not save it', async ({ page }) => {
+  await registerFreshUser(page, '/account')
+  const place = page.getByRole('region', { name: 'Time and place' })
+  await place.getByRole('button', { name: 'Change' }).click()
+  const writes = recordWrites(page)
+
+  await commitWithIme(page, 'input[aria-label="Time zone"]', 'Asia/Tokyo')
+  await settled(page)
+  expect(writes).toEqual([])
+
+  const saved = answered(page, 'PATCH', /^\/api\/v1\/auth\/me$/)
+  await place.getByRole('combobox', { name: 'Time zone' }).press('Enter')
+  await saved
+  expect(writes).toEqual(['PATCH /api/v1/auth/me'])
+})
