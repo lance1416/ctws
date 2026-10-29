@@ -298,7 +298,7 @@ function Swatch({
   return (
     <label
       title={word}
-      className={`relative grid size-7 cursor-pointer place-items-center rounded-control text-on-project ${squareClass(color)} has-[:checked]:outline-2 has-[:checked]:outline-offset-2 has-[:checked]:outline-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-task`}
+      className={`relative grid size-7 cursor-pointer place-items-center rounded-control text-on-project max-lg:tap ${squareClass(color)} has-[:checked]:outline-2 has-[:checked]:outline-offset-2 has-[:checked]:outline-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-task`}
     >
       <input
         type="radio"

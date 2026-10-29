@@ -495,7 +495,7 @@ export function PersonEditor({
                 {GENDER_CHOICES.map((g) => (
                   <label
                     key={g.label}
-                    className="flex h-7 cursor-pointer items-center rounded-control px-2.5 text-ui text-muted has-[:checked]:bg-panel has-[:checked]:font-medium has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-task"
+                    className="flex h-7 cursor-pointer items-center rounded-control px-2.5 text-ui text-muted max-lg:tap has-[:checked]:bg-panel has-[:checked]:font-medium has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-task"
                   >
                     <input
                       type="radio"
