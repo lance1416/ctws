@@ -10,8 +10,9 @@ const readyRow = pathRow.omit({ parentTitle: true })
 export type ReadyTask = z.output<typeof readyRow>
 
 /**
- * Leaves that could be started now (FR-041): to do, in an unarchived project, waiting for no
- * unfinished task. Parents are never here, since their status is their children's. Oldest plan
+ * Leaves that could be started now (FR-041): to do, in an unarchived project that is not the
+ * inbox, waiting for no unfinished task. What is in the inbox is still to be sorted, not a next
+ * step (BUG-065). Parents are never here, since their status is their children's. Oldest plan
  * first: a task planned for a day comes before one with no day, then by deadline, then by place
  * in its tree.
  */
@@ -25,6 +26,7 @@ export async function listReady(q: Queryable, workspaceId: WorkspaceId): Promise
     join projects p on p.id = t.project_id
     where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
       and p.archived_at is null
+      and not p.is_inbox
       and t.status = 'todo'
       and ${isLeafSql('t')}
       and not exists (

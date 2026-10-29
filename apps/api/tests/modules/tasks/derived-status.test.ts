@@ -233,6 +233,21 @@ describe('only leaves are listed as in progress or ready', () => {
     await setStatus(ctx, prep, 'done')
     expect((await ready(ctx)).map((r) => r.id)).toEqual([flights])
   })
+
+  it('leaves the inbox out: what is there is still to be sorted (FR-041, BUG-065)', async () => {
+    const { ctx, projectId } = await setup()
+    const projects = await ctx.app.inject({
+      method: 'GET',
+      url: '/api/v1/projects',
+      headers: ctx.authed,
+    })
+    const inbox = (projects.json().projects as { id: string; isInbox: boolean }[]).find(
+      (p) => p.isInbox,
+    )!
+    await createTask(ctx, inbox.id, 'Renew the passport')
+    const work = await createTask(ctx, projectId, 'Write the cover letter')
+    expect((await ready(ctx)).map((r) => r.id)).toEqual([work])
+  })
 })
 
 describe('the review counts leaves', () => {
