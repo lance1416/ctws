@@ -101,7 +101,7 @@ export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
           <button
             type="button"
             onClick={() => setAll(true)}
-            className="inline-flex h-7 items-center gap-1 self-start rounded-control bg-hover px-2.5 text-meta font-medium text-ink hover:bg-select"
+            className="inline-flex h-7 items-center gap-1 self-start rounded-control bg-hover px-2.5 text-meta font-medium text-ink hover:bg-select max-lg:tap"
           >
             All {count}
             <ForwardIcon size={12} aria-hidden="true" />

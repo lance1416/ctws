@@ -95,6 +95,7 @@ export function TaskEditForm({
   const mover = moving && (
     <MoveToProject
       of={{ type: 'task', id: task.id }}
+      at={task.projectId}
       title={`Move “${title || task.title}” to`}
       height={height}
       busy={false}

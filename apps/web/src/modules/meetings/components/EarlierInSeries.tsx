@@ -49,7 +49,8 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
             placeholder="Search these notes"
             value={asked}
             onChange={(e) => setAsked(e.target.value)}
-            className={`${boxed} h-7 w-56`}
+            // On a phone a line of its own under the name, the width of the block (BUG-074).
+            className={`${boxed} h-7 w-56 max-lg:mr-1.5 max-lg:w-full`}
           />
         )
       }

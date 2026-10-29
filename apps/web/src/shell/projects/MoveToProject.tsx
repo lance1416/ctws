@@ -21,6 +21,7 @@ export function MoveToProject({
   of,
   title,
   from = null,
+  at = null,
   first = null,
   height = 1,
   busy,
@@ -34,6 +35,11 @@ export function MoveToProject({
   title: string
   /** The project it is in now, which is not offered. */
   from?: ProjectId | null
+  /**
+   * The project it is in now, offered still (another parent there); said so the Inbox, its way
+   * back, is not offered to what is in the inbox already (BUG-073).
+   */
+  at?: ProjectId | null
   /** A project offered first, before what the words find (the capture's Inbox). */
   first?: ProjectId | null
   /** How many levels it takes with what is under it, so no parent offered is too deep. */
@@ -49,7 +55,7 @@ export function MoveToProject({
   const project = (thing: LinkCandidate) => idFrom(projectIdSchema, thing.id)
   const inbox = inboxOf(projects)
   const back =
-    of?.type === 'task' && inbox && inbox.id !== from
+    of?.type === 'task' && inbox && inbox.id !== (from ?? at)
       ? {
           id: inbox.id,
           mark: <InboxIcon size={16} aria-hidden="true" className="text-muted" />,

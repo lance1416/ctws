@@ -49,7 +49,7 @@ export function Block({
       className={`flex min-w-0 flex-col overflow-hidden rounded-block border border-line bg-panel ${className}`}
     >
       <div
-        className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:py-1.5 ${emptyInHead ? '' : 'border-b border-line'}`}
+        className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:flex-wrap max-lg:py-1.5 ${emptyInHead ? '' : 'border-b border-line'}`}
       >
         {Icon && (
           <span
