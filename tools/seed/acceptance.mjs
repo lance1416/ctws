@@ -398,7 +398,8 @@ const WORDS = {
 }
 let firstInProgress = true
 for (const [name, counts] of Object.entries(plan)) {
-  for (const { status, i } of spread(counts)) {
+  // Numbered across the parent, not within each status: no two tasks share a name.
+  for (const [i, { status }] of spread(counts).entries()) {
     const word = WORDS[name][i % WORDS[name].length]
     const fields = { parentId: ctParents[name], status }
     // One under way is due at six today.
@@ -425,6 +426,10 @@ await post('/resources', {
 // ---- Today: planned, carried over, overdue ----------------------------------------------------
 // Moving flat is left alone today: its history says nine days quiet.
 await task(P.Atlas, 'Book the room for the Atlas demo', { scheduledOn: '2026-10-22' })
+// A parent planned for today: its progress and "0/2" where a leaf has its status (T-04).
+const demo = await task(P.Atlas, 'Prepare the Atlas demo', { scheduledOn: '2026-10-22' })
+await task(P.Atlas, 'Record the walkthrough', { parentId: demo.id })
+await task(P.Atlas, 'Send the agenda', { parentId: demo.id })
 await task(P.Thesis, 'Email the supervisor', { scheduledOn: '2026-10-18' })
 await task(P['Find a lawyer'], 'Send the lease to Harbour & Lane', { dueAt: at('2026-10-15') })
 await task(P.Thesis, 'Draft the related-work section', { dueAt: at('2026-10-20') })
@@ -712,7 +717,9 @@ for (let i = 1; i <= 40; i++) {
       { type: 'person', id: busy.id },
     ],
     subject: `Thread ${i}`,
-    occurredAt: new Date(Date.UTC(2026, 6, 1 + i * 2, 10)).toISOString(),
+    // Every other day from August to the 20th of October: the latest within the 30 days that
+    // Organisations in touch looks back (FR-071).
+    occurredAt: new Date(Date.UTC(2026, 7, 1 + i * 2, 10)).toISOString(),
     ...(i % 2 && i > 10
       ? { awaitingReply: true, followUpOn: `2026-10-${String(10 + (i % 20)).padStart(2, '0')}` }
       : {}),
