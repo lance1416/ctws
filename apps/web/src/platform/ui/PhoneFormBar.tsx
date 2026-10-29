@@ -1,6 +1,28 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { BUTTON, GATED } from './buttonStyles'
+
+/**
+ * How far the visible part of the page has moved down from the layout's top. iOS Safari brings
+ * the keyboard up by moving what is seen, not by making the layout shorter, so a bar fixed at the
+ * layout's top is carried off the screen (BUG-086); held this far down, it stays in sight.
+ */
+function useVisibleTop(): number {
+  const [top, setTop] = useState(0)
+  useEffect(() => {
+    const seen = window.visualViewport
+    if (!seen) return
+    const follow = () => setTop(Math.max(0, seen.offsetTop))
+    follow()
+    seen.addEventListener('resize', follow)
+    seen.addEventListener('scroll', follow)
+    return () => {
+      seen.removeEventListener('resize', follow)
+      seen.removeEventListener('scroll', follow)
+    }
+  }, [])
+  return top
+}
 
 /**
  * A FORM'S BAR ON A PHONE (DES-001 "表单"): Cancel on the left, the form's name, its press on the
@@ -24,6 +46,7 @@ export function PhoneFormBar({
   cancelTo?: string
   onCancel?: () => void
 }) {
+  const top = useVisibleTop()
   // Its words at the bar's 16, the press at the other 16 (DES-001 "表单页").
   const cancel = '-ml-2 flex min-h-11 items-center px-2 text-prose text-muted'
   let back: ReactNode = null
@@ -42,6 +65,7 @@ export function PhoneFormBar({
   return (
     <div
       data-phone-form-bar
+      style={top ? { transform: `translateY(${top}px)` } : undefined}
       className="fixed inset-x-0 top-0 z-30 flex min-h-14 items-center gap-2 border-b border-line bg-chrome px-4 pt-[env(safe-area-inset-top)] lg:hidden"
     >
       {back}
