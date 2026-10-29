@@ -68,11 +68,13 @@ jobs:
       - run: pnpm --filter @ctws/api db:migrate
         env:
           DATABASE_URL: postgres://ctws:ctws@localhost:5432/ctws
-      - run: docker compose up -d --build --wait api
+      # api-pinned is the same image with its clock pinned: the `*.pinned.spec.ts` run against it.
+      - run: docker compose --profile pinned up -d --build --wait api api-pinned
       - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000/api/v1/health
+      - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3001/api/v1/health
       - run: pnpm --filter @ctws/web e2e
       - if: failure()
-        run: docker compose logs api
+        run: docker compose --profile pinned logs api api-pinned
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
