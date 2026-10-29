@@ -13,6 +13,7 @@ import { avatarInitials, clockTime, displayName, splitName } from '@ctws/core'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useComposing } from '../../../platform/keyboard/composition'
 import { keyLabel } from '../../../platform/keyboard/keys'
 import { useDebouncedValue } from '../../../platform/time/useDebouncedValue'
 import { useNow } from '../../../platform/time/useNow'
@@ -778,9 +779,21 @@ function OrganisationBox({
     enabled: typing && asked.length > 0,
     placeholderData: keepPreviousData,
   })
+  const composing = useComposing()
+  const [pointed, setPointed] = useState(0)
   const found = typing && asked ? (hits.data ?? []) : []
   const exact = found.some((o) => o.name.toLowerCase() === asked.toLowerCase())
   const open = typing && asked.length > 0 && (found.length > 0 || !exact)
+  // The rows the arrows walk: those found, then adding the name as a new one.
+  const rows = [...found, ...(exact ? [] : [null])]
+  const active = Math.min(pointed, Math.max(rows.length - 1, 0))
+  // Until the list has caught up with the words, Enter has nothing to choose yet (BUG-082).
+  const behind = role.organisationName.trim() !== asked || hits.isFetching
+  const choose = (o: (typeof rows)[number]) => {
+    if (o) onChange({ organisationId: o.id, organisationName: o.name })
+    setTyping(false)
+    setChanging(false)
+  }
   if (role.organisationId && !changing)
     return (
       <button
@@ -803,11 +816,31 @@ function OrganisationBox({
         role="combobox"
         aria-expanded={open}
         aria-controls={listId}
+        aria-activedescendant={open && rows.length > 0 ? `${listId}-${active}` : undefined}
         autoComplete="off"
         value={role.organisationName}
         onChange={(e) => {
           setTyping(true)
+          setPointed(0)
           onChange({ organisationName: e.target.value, organisationId: null })
+        }}
+        {...composing.bind}
+        onKeyDown={(e) => {
+          if (composing.composingNow(e) || !open) return
+          if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setPointed((active + 1) % rows.length)
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setPointed((active - 1 + rows.length) % rows.length)
+          } else if (e.key === 'Enter' && !(e.ctrlKey || e.metaKey)) {
+            // The list's Enter, never the form's.
+            e.preventDefault()
+            if (!behind) choose(rows[active] ?? null)
+          } else if (e.key === 'Escape') {
+            e.preventDefault()
+            setTyping(false)
+          }
         }}
         onBlur={() =>
           window.setTimeout(() => {
@@ -823,42 +856,34 @@ function OrganisationBox({
           role="listbox"
           className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full min-w-48 overflow-y-auto rounded-block bg-float py-1 shadow-float`}
         >
-          {found.map((o) => (
-            <li key={o.id} role="option" aria-selected={false}>
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  onChange({ organisationId: o.id, organisationName: o.name })
-                  setTyping(false)
-                  setChanging(false)
-                }}
-                className="flex w-full items-center gap-2 truncate px-3 py-1.5 text-left text-ui text-ink hover:bg-hover"
-              >
+          {rows.map((o, i) => (
+            <li
+              key={o?.id ?? 'new'}
+              id={`${listId}-${i}`}
+              role="option"
+              aria-selected={i === active}
+              // `onMouseDown`: a click comes after the blur, when the list is already closing.
+              onMouseDown={(e) => {
+                e.preventDefault()
+                choose(o)
+              }}
+              onMouseEnter={() => setPointed(i)}
+              className={`flex cursor-pointer items-center gap-2 truncate px-3 py-1.5 text-ui ${
+                o ? 'text-ink' : 'text-muted'
+              } ${i === active ? 'bg-select' : ''}`}
+            >
+              {o ? (
                 <OrganisationIcon
                   size={14}
                   aria-hidden="true"
                   className="shrink-0 text-organisation"
                 />
-                {o.name}
-              </button>
+              ) : (
+                <NewIcon size={14} aria-hidden="true" className="shrink-0" />
+              )}
+              {o ? o.name : `Add “${asked}” as a new organisation`}
             </li>
           ))}
-          {!exact && (
-            <li role="option" aria-selected={false}>
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  setTyping(false)
-                }}
-                className="flex w-full items-center gap-2 truncate px-3 py-1.5 text-left text-ui text-muted hover:bg-hover hover:text-ink"
-              >
-                <NewIcon size={14} aria-hidden="true" className="shrink-0" />
-                Add “{asked}” as a new organisation
-              </button>
-            </li>
-          )}
         </ul>
       )}
     </div>

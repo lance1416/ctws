@@ -77,7 +77,7 @@ test('the zone follows Lives in, until it is set by hand', async ({ page }) => {
 
   const city = page.getByRole('combobox', { name: 'Lives in' })
   await city.fill('Shenzhen')
-  await page.getByRole('button', { name: /^Shenzhen, Guangdong, China$/ }).click()
+  await page.getByRole('option', { name: /^Shenzhen, Guangdong, China$/ }).click()
   await expect(page.getByText('Asia/Shanghai')).toBeVisible()
   await expect(page.getByText('From Lives in')).toBeVisible()
   await page.getByRole('button', { name: /^Save/ }).click()
@@ -93,7 +93,7 @@ test('the zone follows Lives in, until it is set by hand', async ({ page }) => {
   await page.getByRole('combobox', { name: 'Time zone' }).fill('Tokyo')
   await page.getByRole('button', { name: 'Asia/Tokyo' }).click()
   await city.fill('London')
-  await page.getByRole('button', { name: /^London, England, United Kingdom$/ }).click()
+  await page.getByRole('option', { name: /^London, England, United Kingdom$/ }).click()
   await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`/people/${made.id}$`))
   expect(await person(page, made.id)).toMatchObject({
@@ -111,7 +111,7 @@ for (const how of ['Done', 'Tab'] as const) {
     const made = await apiPost<{ id: string }>(page, '/people', { name: '王磊' })
     await page.goto(`/people/${made.id}/edit`)
     await page.getByRole('combobox', { name: 'Lives in' }).fill('Shenzhen')
-    await page.getByRole('button', { name: /^Shenzhen, Guangdong, China$/ }).click()
+    await page.getByRole('option', { name: /^Shenzhen, Guangdong, China$/ }).click()
     await expect(page.getByText('From Lives in')).toBeVisible()
 
     await page.getByRole('button', { name: 'Change' }).click()
@@ -159,4 +159,64 @@ test('the birthday is out from the start, with nothing chosen until a day is (N-
   )
   await page.getByRole('button', { name: /^Create person/ }).click()
   expect((await made).request().postDataJSON()).not.toHaveProperty('birthday')
+})
+
+test('the organisation and city lists are chosen from with the keyboard (BUG-082)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await apiPost(page, '/organisations', { name: 'Stripe' })
+  await apiPost(page, '/organisations', { name: 'Stride Health' })
+  await page.goto('/people/new')
+  await box(page, 'Given name').fill('Ada')
+
+  await page.getByRole('button', { name: 'Another role' }).click()
+  const org = page.getByRole('combobox', { name: 'Organisation of role 1' })
+  await org.fill('Stri')
+  const list = page.getByRole('listbox')
+  await expect(list.getByRole('option')).toHaveText([
+    'Stride Health',
+    'Stripe',
+    'Add “Stri” as a new organisation',
+  ])
+  await expect(list.getByRole('option', { name: 'Stride Health' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  await org.press('ArrowDown')
+  await expect(list.getByRole('option', { name: 'Stripe' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  // Enter takes the one marked, and the form stays where it is.
+  await org.press('Enter')
+  await expect(page).toHaveURL(/\/people\/new$/)
+  await expect(
+    page.getByRole('button', { name: 'Organisation of role 1: Stripe. Change it' }),
+  ).toBeVisible()
+
+  const city = page.getByRole('combobox', { name: 'Lives in' })
+  await city.fill('Lond')
+  await expect(page.getByRole('option', { name: 'London, England, United Kingdom' })).toBeVisible()
+  await city.press('ArrowDown')
+  await city.press('ArrowUp')
+  await city.press('Enter')
+  await expect(page).toHaveURL(/\/people\/new$/)
+  await expect(city).toHaveValue('London, England, United Kingdom')
+  await expect(page.getByText('From Lives in')).toBeVisible()
+
+  const made = page.waitForResponse(
+    (r) => r.request().method() === 'PUT' && /\/people\/[^/]+\/roles$/.test(r.url()) && r.ok(),
+  )
+  await city.press('ControlOrMeta+Enter')
+  const id = (await made).url().split('/').at(-2)!
+  expect(await person(page, id)).toMatchObject({
+    city: 'London, England, United Kingdom',
+    roles: [{ organisationName: 'Stripe' }],
+  })
+  // Choosing Stripe added nothing.
+  const orgs = await page.request.get('/api/v1/organisations', { headers: WEB })
+  expect(
+    ((await orgs.json()) as { organisations: { name: string }[] }).organisations.map((o) => o.name),
+  ).toEqual(['Stride Health', 'Stripe'])
 })

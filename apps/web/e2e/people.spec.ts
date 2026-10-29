@@ -546,7 +546,7 @@ test('a city box suggests after a few letters, and saves the standard name', asy
   await edit(page, made.id)
   const box = page.getByRole('combobox', { name: 'Lives in' })
   await box.fill('oxfo')
-  const oxford = page.getByRole('button', { name: 'Oxford, England, United Kingdom' })
+  const oxford = page.getByRole('option', { name: 'Oxford, England, United Kingdom' })
   await expect(oxford).toBeVisible()
   await oxford.click()
   await expect(box).toHaveValue('Oxford, England, United Kingdom')
@@ -568,7 +568,7 @@ test('the city box says its list is open only while it is', async ({ page }) => 
 
   await expect(box).toHaveAttribute('aria-expanded', 'false')
   await box.fill('oxfo')
-  const oxford = page.getByRole('button', { name: 'Oxford, England, United Kingdom' })
+  const oxford = page.getByRole('option', { name: 'Oxford, England, United Kingdom' })
   await expect(oxford).toBeVisible()
   await expect(box).toHaveAttribute('aria-expanded', 'true')
   // Leaving the box puts the list away; the box must say so too.
