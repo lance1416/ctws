@@ -2,3 +2,4 @@
 export { DayField } from './DayField'
 export { BirthdayPicker } from './BirthdayPicker'
 export { DayPickButton } from './DayPickButton'
+export { DayGrid, monthOf } from './grids'

@@ -4,7 +4,7 @@ import { Link, NavLink, useSearchParams } from 'react-router-dom'
 import { BackIcon, KIND_ICON, LinkIcon } from '../../../platform/ui/icons'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { readingQuery } from '../api'
-import { readingLabel } from '../logic/item'
+import { isToRead, readingLabel } from '../logic/item'
 
 const ROW = ({ isActive }: { isActive: boolean }) =>
   `mx-1.5 flex h-7.5 items-center gap-2 rounded-control px-2 text-ui hover:bg-hover ${
@@ -70,4 +70,11 @@ export function ReadingSidebar() {
       )}
     </nav>
   )
+}
+
+/** What a phone's More says beside Reading (FR-085): what is being read and what waits to be. */
+export function ReadingMoreCount() {
+  const reading = useQuery(readingQuery())
+  if (!reading.data) return null
+  return <span data-count>{reading.data.filter(isToRead).length}</span>
 }

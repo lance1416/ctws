@@ -17,6 +17,8 @@ export const BUTTON = {
   destructive: `${BASE} border border-stop text-stop-t hover:bg-stop-bg disabled:opacity-50`,
   /** A small action inside a row or a block head: no frame, muted until hovered. */
   inline: 'rounded-control px-2 py-1 text-ui text-muted hover:bg-hover hover:text-ink',
+  /** The phone's capture, the middle of the tab bar: an ink square with a plus (artboard 25). */
+  tab: 'grid size-11 place-items-center rounded-card bg-ink text-ui text-on-ink',
   /** An offer to add something, not a command. */
   link: `rounded-control px-2 py-1 text-ui ${LINK} hover:bg-hover`,
 } as const

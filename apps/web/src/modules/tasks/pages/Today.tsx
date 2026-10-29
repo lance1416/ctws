@@ -26,6 +26,8 @@ import { useOthersToday, useTodayRows } from './today/useTodayRows'
 import { ALL_ROW, TODAY_LISTS } from '../components/TodayLists'
 import { AllInInspector } from '../../../shell/inspector'
 import { RowAction } from '../components/RowAction'
+import { usePhone } from '../../../platform/ui/phone'
+import { PhoneToday } from './today/PhoneToday'
 
 /** A block shows this many before its "All 12", which opens the rest beside it (FR-011). */
 const SHOWN = 5
@@ -36,6 +38,10 @@ const SHOWN = 5
  * the right, the blocks the modules add: follow up, ready to start, this week, birthdays.
  */
 export function Today() {
+  return usePhone() ? <PhoneToday /> : <DeskToday />
+}
+
+function DeskToday() {
   const timeZone = useTimeZone()
   // Kept current while the page sits open: the now line, the date and which day is today follow
   // it, and so do the server's lists, keyed by the day.

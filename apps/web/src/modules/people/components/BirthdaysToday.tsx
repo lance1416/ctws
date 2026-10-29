@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { monthDay, weekdayOf } from '../../../platform/time/dates'
 import { Avatar } from '../../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../../platform/ui/Block'
+import { PhoneSection } from '../../../platform/ui/PhoneSection'
 import { CakeIcon } from '../../../platform/ui/icons'
 import { birthdaysQuery } from '../api'
 import { PEOPLE_ID } from '../logic/id'
@@ -53,5 +54,40 @@ export function BirthdaysToday() {
         ))}
       </ul>
     </Block>
+  )
+}
+
+/** BIRTHDAYS ON A PHONE'S TODAY (FR-083): those whose reminder has come round, when any has. */
+export function BirthdaysPhone() {
+  const view = useQuery(birthdaysQuery())
+  const rows = view.data?.card ?? []
+  if (rows.length === 0) return null
+  return (
+    <PhoneSection
+      icon={<CakeIcon size={14} className="text-person" />}
+      title="Birthdays"
+      count={rows.length}
+    >
+      {rows.map((r) => (
+        <li key={r.personId} className="border-b border-line last:border-b-0">
+          <Link
+            to={`/${PEOPLE_ID}/${r.personId}`}
+            data-birthday-row
+            className="flex min-h-14 items-center gap-3 px-3.5 py-2"
+          >
+            <Avatar initials={r.initials} size={32} />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-prose text-ink">{r.name}</span>
+              <span className="text-ui text-muted">
+                {weekdayOf(r.day, true)}, {monthDay(r.day)}
+              </span>
+            </span>
+            <span className="inline-flex h-6 items-center rounded-control bg-person-bg px-2 text-ui font-medium text-person-t">
+              {r.inDays === 0 ? 'Today' : `in ${r.inDays} days`}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </PhoneSection>
   )
 }

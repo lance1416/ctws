@@ -436,15 +436,18 @@ test('an open Today asks the server again when the day turns', async ({ page }) 
   await again
 })
 
-test('on a narrow screen the rows keep the title and drop the path and mark', async ({ page }) => {
+test('on a phone a long row keeps its mark and cuts its title, the page no wider (FR-083)', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '窄屏')
   await makeTask(page, pid, '窄屏上一条很长很长的任务标题也不应该把页面撑宽', { dueAt: dueAgo(2) })
   await page.reload()
-  const row = page.locator('[data-today-row]').first()
+  const row = page.locator('[data-phone-row]').first()
   await expect(row).toBeVisible()
-  await expect(page.locator('[data-row-path]').first()).toBeHidden()
+  await expect(row.locator('[data-row-mark]')).toHaveText('2 days late')
+  await expect(row).toContainText('窄屏')
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
 })
 

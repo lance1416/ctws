@@ -6,7 +6,7 @@ import { PROJECT_VIEWS, ProjectTasks } from './components/ProjectBlock'
 import { openOf, PersonTaskRow } from './components/PersonTaskRow'
 import { ProjectOutline } from './components/ProjectOutline'
 import { ProjectCardFacts, ProjectMoved, useProjectOrder } from './components/ProjectFacts'
-import { OpenTaskCount, TaskStatusLine, TodayCount } from './components/TaskKind'
+import { OpenTaskCount, ReviewMoreCount, TaskStatusLine, TodayCount } from './components/TaskKind'
 import { useInboxCapture, useTaskEntries } from './hooks/contributions'
 import { TASKS_ID, taskPage } from './logic/id'
 import { revealHref } from './logic/crumb'
@@ -16,7 +16,8 @@ import { TASK_KEYS } from './logic/keys'
 import { TaskFact, TaskMark } from './components/TaskFacts'
 import { ReadyBlock } from './pages/today/ReadyBlock'
 import { WeekBlock } from './pages/today/WeekBlock'
-import { openTasksOf } from './logic/openTasks'
+import { hasParentTasks, openTasksOf } from './logic/openTasks'
+import { MoveUnderParent } from './components/MoveUnderParent'
 import { NewTask } from './components/NewTask'
 import { OpenTask } from './pages/OpenTask'
 import { TaskNarrow } from './components/TaskNarrow'
@@ -54,6 +55,7 @@ export const taskModule: WorkspaceModule = {
       end: false,
       chord: 'review',
       Sidebar: { label: 'Weeks', List: ReviewWeeks },
+      MoreCount: ReviewMoreCount,
     },
   ],
   // Tasks have no list page of their own yet: they are dealt with on Today and live in their
@@ -103,6 +105,7 @@ export const taskModule: WorkspaceModule = {
     Narrow: ProjectNarrowTasks,
     count: openTasksOf,
     counts: ['task'],
+    Parents: { has: hasParentTasks, Step: MoveUnderParent },
     contents: async (qc, projectId) => {
       const { tasks } = await qc.fetchQuery(projectTasksQuery(projectId))
       return tasks.length === 0 ? null : `${tasks.length} tasks`

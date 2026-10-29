@@ -3,9 +3,9 @@ import { MessageNarrow } from './components/MessageNarrow'
 import { ReceivedIcon, SentIcon } from '../../platform/ui/icons'
 import type { WorkspaceModule } from '../../shell/contract'
 import { communicationKeys } from './api'
-import { AwaitingCount } from './components/CommunicationFacts'
+import { AwaitingCount, AwaitingMoreCount } from './components/CommunicationFacts'
 import { CommunicationSidebar } from './components/CommunicationSidebar'
-import { FollowUpsToday } from './components/FollowUpsToday'
+import { FollowUpsPhone, FollowUpsToday } from './components/FollowUpsToday'
 import { MessageFact, MessageMark } from './components/MessageFacts'
 import { NewMessage } from './components/NewMessage'
 import { useFollowUpEntries } from './hooks/followUpEntries'
@@ -29,6 +29,7 @@ export const communicationModule: WorkspaceModule = {
     label: 'Communication',
     to: `/${COMMUNICATION_ID}`,
     Count: AwaitingCount,
+    MoreCount: AwaitingMoreCount,
     List: CommunicationSidebar,
     chord: 'communication',
     // After Meetings, before Reading, as on the bar (FR-019).
@@ -53,7 +54,7 @@ export const communicationModule: WorkspaceModule = {
     { key: 'messagesSent', label: 'Messages sent', icon: SentIcon, order: 30 },
     { key: 'messagesReceived', label: 'Messages received', icon: ReceivedIcon, order: 40 },
   ],
-  today: [{ id: 'follow-up', order: 10, Block: FollowUpsToday }],
+  today: [{ id: 'follow-up', order: 10, Block: FollowUpsToday, Phone: FollowUpsPhone }],
   widgets: [{ place: 'awaiting', Component: AwaitingReply }],
   // The day each is to be chased (FR-080); the workbench's week shows them too (FR-076).
   calendar: {

@@ -5,6 +5,7 @@ import {
   type ProjectResponse,
   type PersonId,
   type ProjectId,
+  type TaskId,
 } from '@ctws/contracts'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
@@ -117,6 +118,25 @@ export type ProjectContribution = {
   counts?: readonly ObjectType[]
   /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */
   contents?: (qc: QueryClient, projectId: ProjectId) => Promise<string | null>
+  /**
+   * Move to…'s second step (FR-059): whether a project has things to put a task under, and the
+   * step that picks one. At most one module gives it.
+   */
+  Parents?: {
+    has: (project: ProjectResponse | undefined) => boolean
+    Step: ComponentType<ParentStepProps>
+  }
+}
+
+/** What Move to…'s second step is given, and answers with (FR-059). */
+type ParentStepProps = {
+  project: { id: ProjectId; name: string }
+  /** How many levels what is put there takes: one for a new line, more for a task with children. */
+  height: number
+  busy: boolean
+  error: string | null
+  onPick: (parent: { id: TaskId; title: string }) => void
+  back: () => void
 }
 
 type ProjectView = {
@@ -261,7 +281,13 @@ export type ShownEntry = SaidEntry & {
 }
 
 /** One block in Today's right column, given the account's today. */
-export type TodayBlock = { id: string; order: number; Block: ComponentType<{ today: string }> }
+export type TodayBlock = {
+  id: string
+  order: number
+  Block: ComponentType<{ today: string }>
+  /** What it is on a phone's Today, after Overdue (FR-083); without one it is not on a phone. */
+  Phone?: ComponentType<{ today: string }>
+}
 
 /** A module's half of the calendar; the shell merges them. */
 export type CalendarContribution = {
@@ -314,6 +340,8 @@ export type ModulePage = {
   chord?: string
   /** The count beside the label. A component, so the rail never knows the module's query. */
   Count?: ComponentType
+  /** What a phone's More says beside it (FR-085), where that is not `Count`. */
+  MoreCount?: ComponentType
   /** The glyph over the label where a phone shows the page as a tab: paths in a 22px box. */
   icon?: ReactNode
   /**
@@ -336,6 +364,8 @@ export type KindEntry = {
   to: string
   /** How many there are, a bare number for the sidebar's head (FR-021), zero included. */
   Count?: ComponentType
+  /** What a phone's More says beside it (FR-085), where that is not `Count`. */
+  MoreCount?: ComponentType
   /** The module's list in its sidebar, under the head (FR-020). */
   List?: ComponentType
   /** One line of what is current ("Next birthday: …"); renders nothing when there is nothing. */
@@ -381,7 +411,12 @@ export type CaptureTarget = {
 }
 
 /** What the box lets the person choose beside the line (FR-025). */
-type CaptureWhere = { projectId: ProjectId | null; date: string | null }
+type CaptureWhere = {
+  projectId: ProjectId | null
+  date: string | null
+  /** A task in the project to put it under (a phone's Lands in, FR-084); a reading has none. */
+  parentId?: TaskId | null
+}
 
 /** One search result. The module decides what it says; the shell lays it out so modules line up. */
 export type SearchHit = {

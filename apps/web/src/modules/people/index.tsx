@@ -7,7 +7,7 @@ import { useProjectPeople } from './hooks/projectThings'
 import { peopleKeys } from './api'
 import { UpcomingBirthdays } from './widgets/UpcomingBirthdays'
 import { NextBirthdayLine, PeopleCount } from './components/PeopleKind'
-import { BirthdaysToday } from './components/BirthdaysToday'
+import { BirthdaysPhone, BirthdaysToday } from './components/BirthdaysToday'
 import { NewPerson } from './components/NewPerson'
 import { PersonFact, PersonMark } from './components/PersonFacts'
 import { useBirthdayEntries } from './hooks/contributions'
@@ -69,7 +69,7 @@ export const peopleModule: WorkspaceModule = {
       was: 'g n',
     },
   ],
-  today: [{ id: 'birthdays', order: 40, Block: BirthdaysToday }],
+  today: [{ id: 'birthdays', order: 40, Block: BirthdaysToday, Phone: BirthdaysPhone }],
   // A project's page lists the people on it (FR-055).
   project: { Things: { kind: 'person', useThings: useProjectPeople } },
   lists: peopleLists,

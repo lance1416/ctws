@@ -188,16 +188,23 @@ test('the header reads in order from the keyboard', async ({ page }) => {
 // -------------------------------------------------------------------------------------- phone
 const PHONE = { width: 375, height: 812 }
 
-test('on a phone, five tabs replace the rail', async ({ page }) => {
+test('on a phone, five tabs replace the rail (FR-082)', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/')
   // Exactly one navigation of that name is visible at any width: the rail and the bar are never
   // both in the accessibility tree.
   const nav = page.getByRole('navigation', { name: 'Main navigation' })
   await expect(nav).toHaveCount(1)
-  await expect(nav.getByRole('link')).toHaveText(['Workbench', 'Today', 'Projects', 'Calendar'])
-  await nav.getByRole('button', { name: 'Search' }).click()
-  await expect(page.getByRole('dialog', { name: 'Search' })).toBeVisible()
+  await expect(nav.getByRole('link')).toHaveText(['Today', 'Calendar', 'People', 'More'])
+  await nav.getByRole('link', { name: 'More' }).click()
+  await expect(nav.getByRole('link', { name: 'More' })).toHaveAttribute('aria-current', 'page')
+  await nav.getByRole('button', { name: 'Capture' }).click()
+  await expect(page.getByRole('dialog', { name: 'Capture' })).toBeVisible()
+  // Every way in is at least 44 across and high.
+  for (const tab of await nav.locator('a, button').all()) {
+    const box = (await tab.boundingBox())!
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44)
+  }
 })
 
 test('nothing scrolls sideways on a phone, whatever the page', async ({ page }) => {
@@ -266,21 +273,22 @@ test('on a phone, a dialog ends above the tab bar too', async ({ page }) => {
   expect(await topmostAt(page, (await create.boundingBox())!)).toContain('Create')
 })
 
-test("on a phone, the Today tab says how much is on today's plate", async ({ page }) => {
-  await page.setViewportSize(PHONE)
+test('at 320px what capture says stays on the screen, however long the name', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 })
   await registerFreshUser(page, '/')
-  const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, 'Late one', { dueAt: '2020-01-01T09:00:00.000Z' })
-  await page.reload()
-  const today = page
+  await page
     .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: /^Today/ })
-  await expect(today.locator('[data-count]')).toHaveText('1')
+    .getByRole('button', { name: 'Capture' })
+    .click()
+  const sheet = page.getByRole('dialog', { name: 'Capture' })
+  await sheet.getByRole('textbox', { name: 'Capture' }).fill('一个很长很长的想法，长到一行放不下')
+  await sheet.getByRole('button', { name: 'Add', exact: true }).click()
+  const said = sheet.getByRole('status').filter({ hasText: 'Added to' })
+  await expect(said).toBeVisible()
+  const box = (await said.boundingBox())!
+  expect(box.x).toBeGreaterThanOrEqual(0)
+  expect(box.x + box.width).toBeLessThanOrEqual(320)
 })
-
-// The phone's capture is the tab bar's `+` (FR-084), which comes with phase 4's phone frame;
-// until then a phone has no capture box to hold the message.
-test.fixme('at 320px what capture says stays on the screen, however long the name', async () => {})
 
 test('the frame stays put as a long page scrolls: only the main area moves', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 700 })

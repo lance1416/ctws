@@ -14,3 +14,10 @@ export function ProjectsStatus() {
   const n = archived.data?.length ?? 0
   return n > 0 ? <span data-status>{n} archived</span> : null
 }
+
+/** What a phone's More says beside Projects (FR-085): the live ones, the inbox not among them. */
+export function ProjectsMoreCount() {
+  const projects = useProjects()
+  if (!projects.data) return null
+  return <span data-count>{projects.data.filter((p) => !p.isInbox).length}</span>
+}

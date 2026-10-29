@@ -17,8 +17,6 @@ import { useTaskActions } from '../hooks/useTaskActions'
 import { isFinished } from '../logic/status'
 import { blockLength, flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
-import { hasParentTasks } from '../logic/openTasks'
-import { MoveUnderParent } from './MoveUnderParent'
 import { Toast } from '../../../platform/ui/Toast'
 import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
@@ -221,37 +219,23 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
   const mover = moving && (
     <MoveToProject
       of={{ type: 'task', id: moving.id }}
-      title={moving.title}
+      title={`Move “${moving.title}” to`}
       from={moving.projectId}
+      height={rows.find((r) => r.id === moving.id)?.subtreeHeight ?? 1}
       busy={move.isPending}
       error={move.isError ? 'Couldn’t move it. Try again.' : null}
       onPick={(to) => move.mutate({ id: moving.id, to })}
+      onPickParent={({ project, parent }) =>
+        move.mutate({
+          id: moving.id,
+          to: project.id,
+          under: parent.id,
+          said: `Moved to ${project.name} › ${parent.title}`,
+        })
+      }
       onClose={() => {
         move.reset()
         setMoving(null)
-      }}
-      inside={{
-        has: (id) => hasParentTasks(allProjects.data?.find((p) => p.id === id)),
-        step: (project, back) => (
-          <MoveUnderParent
-            project={project}
-            height={rows.find((r) => r.id === moving.id)?.subtreeHeight ?? 1}
-            busy={move.isPending}
-            error={move.isError ? 'Couldn’t move it. Try again.' : null}
-            onPick={(parent) =>
-              move.mutate({
-                id: moving.id,
-                to: project.id,
-                under: parent.id,
-                said: `Moved to ${project.name} › ${parent.title}`,
-              })
-            }
-            back={() => {
-              move.reset()
-              back()
-            }}
-          />
-        ),
       }}
     />
   )

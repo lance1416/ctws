@@ -12,7 +12,7 @@ import { ReadingFact } from './components/ReadingFact'
 import { describeReadingChange } from './logic/describeChange'
 import { READING_ID } from './logic/id'
 import { isReadingUrl } from './logic/readingUrl'
-import { ReadingSidebar } from './components/ReadingSidebar'
+import { ReadingMoreCount, ReadingSidebar } from './components/ReadingSidebar'
 import { ReadingEdit, ReadingItem } from './pages/ReadingItem'
 import { ReadingOverview } from './pages/ReadingOverview'
 
@@ -26,6 +26,7 @@ export const readingModule: WorkspaceModule = {
     to: `/${READING_ID}`,
     Status: UnfiledLine,
     List: ReadingSidebar,
+    MoreCount: ReadingMoreCount,
     chord: 'reading',
     order: 40,
   },

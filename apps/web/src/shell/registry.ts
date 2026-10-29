@@ -37,7 +37,7 @@ import { weekCountKeys } from './review/api'
 import { timelineKeys } from './timeline/Timeline'
 import { projectKeys } from './projects/api'
 import { ProjectNarrow } from './projects/ProjectNarrow'
-import { ProjectsCount, ProjectsStatus } from './projects/ProjectKind'
+import { ProjectsCount, ProjectsMoreCount, ProjectsStatus } from './projects/ProjectKind'
 import { anywhereKeys, type AnywhereAction } from './shortcuts/keys'
 
 export const WORKBENCH_PATH = '/'
@@ -57,6 +57,7 @@ const PROJECTS_KIND: KindEntry = {
   label: 'Projects',
   to: '/projects',
   Count: ProjectsCount,
+  MoreCount: ProjectsMoreCount,
   Status: ProjectsStatus,
   chord: 'projects',
 }
@@ -176,6 +177,7 @@ export type Registry = {
   projectOutline: ComponentType<{ projectId: ProjectId }> | null
   projectNarrow: ComponentType<{ projectId: ProjectId }> | null
   projectCount: ((project: ProjectResponse) => number) | null
+  projectParents: NonNullable<ProjectContribution['Parents']> | null
   projectContents: NonNullable<ProjectContribution['contents']>[]
   /** The page-wide keys: capture, search, this help, the jumps. */
   anywhere: KeyTable<AnywhereAction>
@@ -280,6 +282,7 @@ export function buildRegistry(modules: readonly WorkspaceModule[], config: Shell
     projectOutline: modules.find((m) => m.project?.Outline)?.project?.Outline ?? null,
     projectNarrow: modules.find((m) => m.project?.Narrow)?.project?.Narrow ?? null,
     projectCount: modules.find((m) => m.project?.count)?.project?.count ?? null,
+    projectParents: modules.find((m) => m.project?.Parents)?.project?.Parents ?? null,
     projectContents: modules.flatMap((m) => (m.project?.contents ? [m.project.contents] : [])),
     anywhere: anywhereKeys(chords, creates),
     keys: modules.flatMap((m) => m.keys ?? []),

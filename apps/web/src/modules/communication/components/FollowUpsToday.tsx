@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { shortDay, ymd } from '../../../platform/time/dates'
 import { Avatar } from '../../../platform/ui/Avatar'
 import { Block, BlockFailed } from '../../../platform/ui/Block'
+import { PhoneSection } from '../../../platform/ui/PhoneSection'
 import { FollowUpIcon } from '../../../platform/ui/icons'
 import type { CommunicationResponse } from '@ctws/contracts'
 import { useAccountToday, useTimeZone } from '../../../shell/auth'
@@ -61,7 +62,7 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
   return (
     <li
       data-follow-up={m.id}
-      className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover"
+      className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover max-lg:border-b max-lg:border-line max-lg:last:border-b-0"
     >
       <Link to={`/communication/${m.id}`} className="flex min-w-0 items-center gap-2.5">
         {person ? (
@@ -122,3 +123,24 @@ const SHOWN = 5
 /** A block's "All N", a row at its foot. */
 const ALL_ROW =
   'flex h-9 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink'
+
+/**
+ * FOLLOW UP ON A PHONE'S TODAY (FR-083): the same rows as a section after Overdue, drawn only when
+ * something is to be chased.
+ */
+export function FollowUpsPhone({ today }: { today: string }) {
+  const followUps = useQuery(followUpsQuery())
+  const rows = followUps.data ?? []
+  if (rows.length === 0) return null
+  return (
+    <PhoneSection
+      icon={<FollowUpIcon size={14} className="text-communication" />}
+      title="Follow up"
+      count={rows.length}
+    >
+      {rows.map((m) => (
+        <FollowUpRow key={m.id} message={m} today={today} />
+      ))}
+    </PhoneSection>
+  )
+}

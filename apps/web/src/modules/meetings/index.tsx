@@ -5,7 +5,7 @@ import { useMeetingsWith } from './hooks/personThings'
 import { useProjectMeetings } from './hooks/projectThings'
 import { meetingKeys } from './api'
 import { CalendarOccurrence } from './components/OccurrencePane'
-import { NextMeetingLine } from './components/MeetingsKind'
+import { MeetingsMoreCount, NextMeetingLine } from './components/MeetingsKind'
 import { useMeetingEntries } from './hooks/contributions'
 import { MEETINGS_ID } from './logic/id'
 import { MeetingNarrow } from './components/MeetingNarrow'
@@ -30,6 +30,7 @@ export const meetingModule: WorkspaceModule = {
     label: 'Meetings',
     to: `/${MEETINGS_ID}`,
     Status: NextMeetingLine,
+    MoreCount: MeetingsMoreCount,
     List: MeetingsSidebar,
     chord: 'meetings',
     order: 30,

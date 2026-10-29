@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAccountToday } from '../../../shell/auth'
 import { useProjects } from '../../../shell/projects'
-import { todayQuery } from '../api'
+import { reviewWeeksQuery, todayQuery } from '../api'
 import { openTasksOf } from '../logic/openTasks'
 import { todaySegments } from '../logic/today'
 
@@ -36,4 +36,13 @@ export function TaskStatusLine() {
   ]
   const line = parts.filter(Boolean).join(', ')
   return line ? <span data-status>{line}</span> : null
+}
+
+/** What a phone's More says beside Review (FR-085): how many were finished this week. */
+export function ReviewMoreCount() {
+  const today = useAccountToday()
+  const weeks = useQuery(reviewWeeksQuery(today))
+  const week = weeks.data?.find((w) => w.from <= today)
+  if (!weeks.data) return null
+  return <span data-count>{week?.finished ?? 0}</span>
 }

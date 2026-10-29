@@ -1,3 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
+import { addDays } from '@ctws/core/day'
+import { ymd } from '../../../platform/time/dates'
+import { meetingsQuery } from '../api'
 import { clockTime } from '@ctws/core/clock'
 import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth'
@@ -16,4 +20,14 @@ export function NextMeetingLine() {
       Next: {next.title} at {at}
     </span>
   )
+}
+
+/** What a phone's More says beside Meetings (FR-085): how many are still to come this week. */
+export function MeetingsMoreCount() {
+  const zone = useTimeZone()
+  const now = useNow()
+  const today = ymd(now, zone)
+  const week = useQuery(meetingsQuery({ from: today, to: addDays(today, 6) }))
+  if (!week.data) return null
+  return <span data-count>{week.data.filter((m) => new Date(m.endsAt) > now).length}</span>
 }

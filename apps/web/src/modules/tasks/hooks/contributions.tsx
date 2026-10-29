@@ -26,11 +26,12 @@ export function useInboxCapture(): CaptureTargetState {
       ? {
           name: inbox.name,
           to: `/projects/${inbox.id}`,
-          submit: async (title: string, { projectId, date }) => {
+          submit: async (title: string, { projectId, date, parentId }) => {
             const into = projectId ?? inbox.id
             const made = await createTask({
               projectId: into,
               title,
+              ...(parentId ? { parentId } : {}),
               ...(date ? { scheduledOn: date } : {}),
             })
             // Not awaited: the box is free for the next line once the server has this one, and

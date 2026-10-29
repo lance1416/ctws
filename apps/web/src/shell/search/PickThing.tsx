@@ -16,8 +16,10 @@ export function PickThing({
   onPick,
   onClose,
   drill,
+  first = null,
 }: {
-  of: { type: ObjectType; id: string }
+  /** What it is picked for; null for a thing not made yet. */
+  of: { type: ObjectType; id: string } | null
   /** The dialog's head: what the pick is for ("Move “X” to"). */
   title: string
   only: ObjectType
@@ -27,6 +29,8 @@ export function PickThing({
   onPick: (thing: LinkCandidate) => void
   onClose: () => void
   drill?: Pick['drill']
+  /** Offered before the rest, when the words find it. */
+  first?: string | null
 }) {
   return (
     <SearchDialog
@@ -38,6 +42,7 @@ export function PickThing({
         asksWhy: false,
         leaveOut,
         busy,
+        first,
         error,
         onPick,
         ...(drill ? { drill } : {}),

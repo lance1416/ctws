@@ -12,6 +12,7 @@ import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
 import { BUTTON } from './buttonStyles'
 import { LAYER } from './layers'
 import { UnsavedAsk } from './UnsavedAsk'
+import { usePhone } from './phone'
 import type { UnsavedGuard } from './unsavedGuard'
 
 /**
@@ -91,6 +92,8 @@ export function Modal({
   }, [])
 
   const guard = useCloseGuard(unsaved, onClose)
+  // On a phone a picker or search takes the whole screen (FR-088), over a sheet it came from.
+  const full = usePhone() && (picker || palette)
 
   return (
     <Dialog.Root
@@ -108,7 +111,11 @@ export function Modal({
             if (e.target === e.currentTarget) onClose()
           }}
           // `max-sm:pt-24`: the top bar stays above the scrim and is two rows tall on a phone.
-          className={`fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-sm:pt-24`}
+          className={
+            full
+              ? 'fixed inset-0 z-40 flex bg-float pt-[env(safe-area-inset-top)]'
+              : `fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-lg:pt-4`
+          }
         >
           <Dialog.Content
             aria-describedby={undefined}
@@ -165,7 +172,11 @@ export function Modal({
                 initialFocus.current?.focus()
               })
             }
-            className={`h-fit w-full rounded-block bg-float shadow-float ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : picker ? 'max-w-[23.75rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`}
+            className={
+              full
+                ? 'flex min-h-0 w-full flex-col bg-float'
+                : `h-fit w-full rounded-block bg-float shadow-float ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : picker ? 'max-w-[23.75rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`
+            }
           >
             {palette || picker ? (
               <Dialog.Title className="sr-only">{title}</Dialog.Title>

@@ -1,4 +1,6 @@
-import type { ProjectId } from '@ctws/contracts'
+import type { ProjectId, TaskId } from '@ctws/contracts'
+import { usePhone } from '../../platform/ui/phone'
+import { CaptureSheet } from './CaptureSheet'
 import { radioKeys } from '../../platform/ui/choiceKeys'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useMutation } from '@tanstack/react-query'
@@ -31,9 +33,9 @@ type Kind = 'task' | 'reading'
 /** The event a page's own Add sends to open the box on one kind: "Add reading" (FR-072). */
 const OPEN = 'ctws:capture'
 
-/** Opens the capture box with this kind chosen, from a page's own button. */
-export function openCapture(kind: Kind): void {
-  window.dispatchEvent(new CustomEvent<Kind>(OPEN, { detail: kind }))
+/** Opens the capture box, with this kind chosen when a page's own button says which. */
+export function openCapture(kind?: Kind): void {
+  window.dispatchEvent(new CustomEvent<Kind | undefined>(OPEN, { detail: kind }))
 }
 
 /**
@@ -48,6 +50,9 @@ export function Capture() {
   const [text, setText] = useState('')
   const [switched, setSwitched] = useState<Kind | null>(null)
   const [projectId, setProjectId] = useState<ProjectId | null>(null)
+  // A task in the project to put it under, picked on a phone's Lands in (FR-084).
+  const [parent, setParent] = useState<{ id: TaskId; title: string } | null>(null)
+  const phone = usePhone()
   const [date, setDate] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
   // A day the field could not read, said in the box's status line so the row does not grow.
@@ -90,7 +95,7 @@ export function Capture() {
   }, [open, ready])
   useEffect(() => {
     const onOpen = (e: Event) => {
-      setSwitched((e as CustomEvent<Kind>).detail)
+      setSwitched((e as CustomEvent<Kind | undefined>).detail ?? null)
       setOpen(true)
       box.current?.focus()
     }
@@ -100,7 +105,7 @@ export function Capture() {
 
   const add = useMutation({
     mutationFn: async (sent: string) => {
-      await target!.submit(sent, { projectId, date })
+      await target!.submit(sent, { projectId, date, parentId: parent?.id ?? null })
       const project = projectId ? projects.data?.find((p) => p.id === projectId) : undefined
       return {
         sent,
@@ -146,6 +151,86 @@ export function Capture() {
         : 'A sentence becomes a task.'
   const landing = projectId ? (projects.data?.find((p) => p.id === projectId) ?? null) : null
   const inbox = projects.data?.find((p) => p.isInbox)
+
+  const statusLines = (trouble || landed || add.isError || refusal || !online) && (
+    <div className="flex flex-col gap-1 border-t border-line px-3 py-2 text-meta">
+      {refusal && (
+        <p role="alert" className="flex items-start gap-1 text-stop-t">
+          <AlertIcon size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
+          {refusal}
+        </p>
+      )}
+      {!online && (
+        <p role="status" className="text-muted">
+          You’re offline. This stays here until you can save.
+        </p>
+      )}
+      {fallback?.missing && (
+        <p role="alert" className="text-stop-t">
+          {fallback.missing}
+        </p>
+      )}
+      {/* `status`, not `alert`: the projects page already alerts on the same failure. */}
+      {fallback?.unavailable && (
+        <p role="status" className="text-stop-t">
+          {fallback.unavailable}
+        </p>
+      )}
+      {add.isError && (
+        <p role="alert" className="flex items-center gap-2 text-stop-t">
+          Couldn’t save. What you typed is still here.
+          <button
+            type="button"
+            onClick={() => add.mutate(line)}
+            disabled={!canAdd}
+            className={LINK}
+          >
+            Try again
+          </button>
+        </p>
+      )}
+      {landed && !add.isError && (
+        <p role="status" className="truncate text-muted">
+          Added to{' '}
+          <Link to={landed.to} className={LINK}>
+            {landed.name}
+          </Link>
+        </p>
+      )}
+    </div>
+  )
+
+  if (phone)
+    return open ? (
+      <CaptureSheet
+        box={box}
+        text={text}
+        setText={(next) => {
+          setText(next)
+          setLanded(null)
+        }}
+        kind={kind}
+        setKind={(k) => {
+          setSwitched(k)
+          if (k === 'reading') setParent(null)
+        }}
+        landing={{ projectId, parent }}
+        setLanding={(at) => {
+          setProjectId(at.projectId)
+          setParent(at.parent)
+        }}
+        landingName={target?.name ?? (kind === 'task' ? 'Inbox' : 'To read')}
+        inbox={inbox}
+        projects={projects.data ?? []}
+        date={date}
+        setDate={setDate}
+        today={today}
+        canAdd={canAdd}
+        onAdd={() => add.mutate(line)}
+        onClose={() => setOpen(false)}
+        status={statusLines}
+      />
+    ) : null
 
   return (
     <div className="relative w-60 shrink">
@@ -300,53 +385,7 @@ export function Capture() {
               <kbd className={KEY_ON_INK}>Enter</kbd>
             </button>
           </div>
-          {(trouble || landed || add.isError || refusal || !online) && (
-            <div className="flex flex-col gap-1 border-t border-line px-3 py-2 text-meta">
-              {refusal && (
-                <p role="alert" className="flex items-start gap-1 text-stop-t">
-                  <AlertIcon size={12} aria-hidden="true" className="mt-0.5 shrink-0" />
-                  {refusal}
-                </p>
-              )}
-              {!online && (
-                <p role="status" className="text-muted">
-                  You’re offline. This stays here until you can save.
-                </p>
-              )}
-              {fallback?.missing && (
-                <p role="alert" className="text-stop-t">
-                  {fallback.missing}
-                </p>
-              )}
-              {/* `status`, not `alert`: the projects page already alerts on the same failure. */}
-              {fallback?.unavailable && (
-                <p role="status" className="text-stop-t">
-                  {fallback.unavailable}
-                </p>
-              )}
-              {add.isError && (
-                <p role="alert" className="flex items-center gap-2 text-stop-t">
-                  Couldn’t save. What you typed is still here.
-                  <button
-                    type="button"
-                    onClick={() => add.mutate(line)}
-                    disabled={!canAdd}
-                    className={LINK}
-                  >
-                    Try again
-                  </button>
-                </p>
-              )}
-              {landed && !add.isError && (
-                <p role="status" className="truncate text-muted">
-                  Added to{' '}
-                  <Link to={landed.to} className={LINK}>
-                    {landed.name}
-                  </Link>
-                </p>
-              )}
-            </div>
-          )}
+          {statusLines}
         </div>
       )}
     </div>

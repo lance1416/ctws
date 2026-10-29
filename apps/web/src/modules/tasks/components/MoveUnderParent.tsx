@@ -119,7 +119,7 @@ export function MoveUnderParent({
         id={`${base}-results`}
         role="listbox"
         aria-label={`Parents in ${project.name}`}
-        className="max-h-[52vh] overflow-y-auto pb-1.5"
+        className="max-h-[52vh] overflow-y-auto pb-1.5 max-lg:max-h-none max-lg:min-h-0 max-lg:flex-1"
       >
         {rows.map((row, i) => {
           const task = byId.get(row.id)!
@@ -156,7 +156,7 @@ export function MoveUnderParent({
           {error}
         </p>
       ) : (
-        <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
+        <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle max-lg:hidden">
           {rows.length > 0 && (
             <span className="inline-flex items-center gap-1.5">
               <kbd className={KEY}>Enter</kbd>Choose

@@ -118,8 +118,10 @@ const placeRow = (p: (typeof PLACES)[number]): Row => ({
  * line of why is asked at its foot once a row is chosen.
  */
 export type Pick = {
-  /** The thing being linked from: the answer leaves it out. */
-  of: Endpoint
+  /** The thing being linked from: the answer leaves it out. Null for one not made yet. */
+  of: Endpoint | null
+  /** Offered first among what the words find (the capture's Inbox, FR-084). */
+  first?: string | null
   title: string
   /** Offer this kind only, when the block it opened from holds one kind. */
   only?: ObjectType | undefined
@@ -211,7 +213,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   }
   // As a picker (FR-027) the server's candidates are the hits: every kind, the likely few first.
   const candidates = useQuery({
-    ...candidatesQuery(pick?.of ?? { type: 'project', id: '' }, debounced),
+    ...candidatesQuery(pick?.of ?? null, debounced),
     enabled: pick !== undefined,
     placeholderData: keepPreviousData,
   })
@@ -237,10 +239,14 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   const typing = query.trim()
   const typed = typing.toLocaleLowerCase()
   const scoping = scope === null && query.startsWith('/')
-  const hits = (debounced.length > 0 || pick ? results.rows : []).filter(
-    (h) => ((scope ?? 'all') === 'all' || h.type === scope) && !pick?.leaveOut?.includes(h.id),
-  )
-  const view: Tab = pick ? 'all' : (scope ?? tab)
+  const hits = (debounced.length > 0 || pick ? results.rows : [])
+    .filter(
+      (h) => ((scope ?? 'all') === 'all' || h.type === scope) && !pick?.leaveOut?.includes(h.id),
+    )
+    // The one asked for first leads; the rest keep the server's order.
+    .sort((a, b) => Number(b.id === pick?.first) - Number(a.id === pick?.first))
+  // A picker of one kind lists every one it finds, not five and an "All N".
+  const view: Tab = pick ? (pick.only ?? 'all') : (scope ?? tab)
   const tabs: Tab[] = pick
     ? ['all', ...kindsWithHits(hits).map((k) => k.type)]
     : ['all', ...(everything.data?.groups ?? []).map((g) => g.type)]
@@ -534,7 +540,11 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             data-bare
             className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-subtle ${pick ? 'text-ui' : 'text-prose'}`}
           />
-          {!pick && <kbd className={KEY}>Esc</kbd>}
+          {!pick && <kbd className={`${KEY} max-lg:hidden`}>Esc</kbd>}
+          {/* A phone has no Esc: the full screen closes here (FR-088). */}
+          <button type="button" onClick={onClose} className="text-ui text-muted lg:hidden">
+            Cancel
+          </button>
         </div>
 
         {totals.size > 0 && scope === null && !scoping && !pick && (
@@ -631,7 +641,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             const list = e.currentTarget
             if (list.scrollHeight - list.scrollTop - list.clientHeight < 80) readOn()
           }}
-          className="max-h-[52vh] overflow-y-auto pb-1.5"
+          className="max-h-[52vh] overflow-y-auto pb-1.5 max-lg:max-h-none max-lg:min-h-0 max-lg:flex-1"
         >
           {runs(rows).map((run) => {
             const options = run.rows.map((row, j) => (
@@ -712,7 +722,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               </p>
             )}
             {legends.length > 0 && (
-              <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle">
+              <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle max-lg:hidden">
                 {legends.map(([k, does]) => (
                   <Legend key={`${k}:${does}`} keys={k}>
                     {does}

@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Login } from '../shell/auth'
 import { Account, MigrationReport } from '../shell/account'
 import { Calendar } from '../shell/calendar'
-import { Layout, RouteError, topPage, type PageHandle } from '../shell/layout'
+import { Layout, More, MORE_PATH, RouteError, topPage, type PageHandle } from '../shell/layout'
 import {
   EditProject,
   NewProject,
@@ -33,6 +33,7 @@ export const router = createBrowserRouter([
               { index: true, element: <Workbench />, handle: topPage('Workbench') },
               { path: '/calendar', element: <Calendar />, handle: topPage('Calendar') },
               { path: '/account', element: <Account />, handle: topPage('Account') },
+              { path: MORE_PATH, element: <More />, handle: topPage('More') },
               {
                 path: '/migration',
                 element: <MigrationReport />,

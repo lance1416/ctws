@@ -45,18 +45,6 @@ test('the left rail shows each project the open-task count the server reports', 
       await expect(link.locator('[data-count]')).toHaveCount(0)
     }
   }
-
-  // The Today destination carries its own count, from the same server list the page renders.
-  await makeTask(page, busy, '今天要做的', { scheduledOn: new Date().toLocaleDateString('en-CA') })
-  // On a phone the tab bar's Today says how much is planned (the icon bar has no counts).
-  await page.setViewportSize(PHONE)
-  await page.reload()
-  await expect(
-    page
-      .getByRole('navigation', { name: 'Main navigation' })
-      .getByRole('link', { name: /^Today/ })
-      .locator('[data-count]'),
-  ).toHaveText('1')
 })
 
 // A page that scrolls sideways on a phone is unusable: the rail, the capture bar and the type are
