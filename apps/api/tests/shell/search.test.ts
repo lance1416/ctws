@@ -1,7 +1,7 @@
 import type { SearchEverythingResponse } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createPerson, createProject, createTask } from '../helpers/builders'
-import { appWithUser, secondUser, type Harness } from '../helpers/harness'
+import { appWithUser, secondUser, web, type Harness } from '../helpers/harness'
 
 /**
  * ONE SEARCH FOR EVERYTHING (FR-024, `GET /search`): every kind's first five and how many there
@@ -76,5 +76,31 @@ describe('GET /search', () => {
     await createPerson(ctx, { name: 'Stripe contact' })
     const theirs = await secondUser(ctx)
     expect((await search(theirs, 'q=stripe')).groups).toEqual([])
+  })
+
+  it('names an untitled note on a meeting by the meeting and that day (FR-050)', async () => {
+    const ctx = await setup()
+    const post = async (url: string, payload: object) => {
+      const res = await ctx.app.inject({ method: 'POST', url, headers: web(ctx), payload })
+      expect(res.statusCode, res.body).toBeLessThan(300)
+      return res.json() as Record<string, string>
+    }
+    const m = await post('/api/v1/meetings', {
+      title: 'Atlas weekly',
+      startsLocal: '2026-10-19T09:00',
+      timeZone: 'Europe/London',
+      durationMinutes: 45,
+    })
+    await post('/api/v1/notes', {
+      title: null,
+      body: '## Updates\n\nThe importer ships Friday.',
+      anchor: { type: 'meeting', id: m.meetingId, occurrenceId: '2026-10-19T09:00' },
+    })
+    await post('/api/v1/notes', { title: 'Importer plan', body: 'The importer, step by step.' })
+    const body = await search(ctx, 'q=importer&kind=note')
+    expect(body.groups[0]!.items.map((i) => i.title).sort()).toEqual([
+      'Atlas weekly, Oct 19',
+      'Importer plan',
+    ])
   })
 })

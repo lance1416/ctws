@@ -21,9 +21,20 @@ export function linkRegistry(linkables: readonly Linkable[]): LinkRegistry {
     ]
     throw new Error(`every object type needs exactly one linkable; ${problems.join('; ')}`)
   }
-  return {
-    all: linkables,
+  // A linkable that names its rows by another's knowledge has them named on every way out.
+  const named = (l: Linkable): Linkable =>
+    l.retitle
+      ? {
+          ...l,
+          rows: async (q, workspaceId, want) =>
+            l.retitle!(q, workspaceId, await l.rows(q, workspaceId, want), registry),
+        }
+      : l
+  const wrapped = new Map([...byType].map(([t, l]) => [t, named(l)]))
+  const registry: LinkRegistry = {
+    all: linkables.map(named),
     order: linkables.map((l) => l.type),
-    of: (type) => byType.get(type)!,
+    of: (type) => wrapped.get(type)!,
   }
+  return registry
 }

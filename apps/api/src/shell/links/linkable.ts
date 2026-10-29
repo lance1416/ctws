@@ -1,3 +1,4 @@
+import type { LinkRegistry } from './registry'
 import {
   type LastExchange,
   type LinkCandidate,
@@ -24,6 +25,17 @@ export type Linkable = {
    * What the workspace cannot see is left out, and the shell drops the edges that pointed at it.
    */
   rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<LinkCandidate[]>
+  /**
+   * Names its rows by what another module knows, once `rows` has found them (a note on a meeting
+   * is that meeting's, on that day: FR-050). Given the registry, so no module reads another's
+   * tables; every caller of `rows` through the registry gets the names.
+   */
+  retitle?: (
+    q: Queryable,
+    workspaceId: WorkspaceId,
+    rows: LinkCandidate[],
+    registry: LinkRegistry,
+  ) => Promise<LinkCandidate[]>
   /** How many of them a text matches, as `rows` would find them all: search's totals (FR-024). */
   count: (q: Queryable, workspaceId: WorkspaceId, text: string) => Promise<number>
   /**
