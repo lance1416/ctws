@@ -21,3 +21,22 @@ export function theirTime(at: Date, theirs: string, mine: string): string {
   const amount = Number.isInteger(hours) ? `${hours}` : hours.toFixed(1)
   return `${clockTime(at, theirs)}, ${amount} hour${hours === 1 ? '' : 's'} ${diff > 0 ? 'ahead' : 'behind'}`
 }
+
+/**
+ * Their clock and how far it is from yours, apart (a phone's profile card, FR-087): null when it
+ * is your time too, where the card leaves the line out.
+ */
+export function timeApart(
+  at: Date,
+  theirs: string,
+  mine: string,
+): { clock: string; apart: string } | null {
+  const diff = offsetMinutes(theirs, at) - offsetMinutes(mine, at)
+  if (diff === 0) return null
+  const hours = Math.abs(diff) / 60
+  const amount = Number.isInteger(hours) ? `${hours}` : hours.toFixed(1)
+  return {
+    clock: clockTime(at, theirs),
+    apart: `${amount} hour${hours === 1 ? '' : 's'} ${diff > 0 ? 'ahead of' : 'behind'} you`,
+  }
+}

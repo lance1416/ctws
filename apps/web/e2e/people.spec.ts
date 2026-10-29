@@ -362,9 +362,10 @@ test('a very long link is cut, and the profile does not widen at all', async ({ 
   expect(cut.overflows).toBe(true)
   expect(cut.right).toBeLessThanOrEqual(cut.edge)
 
-  // In a narrow window, a horizontal scrollbar is the first sign of a break.
+  // In a narrow window, a horizontal scrollbar is the first sign of a break. On a phone the link is
+  // under "More about" (FR-087).
   await page.setViewportSize({ width: 420, height: 900 })
-  await expect(link).toBeVisible()
+  await expect(page.getByRole('main').locator('[data-channel="url"]')).toBeVisible()
   await expect.poll(overflow).toBeLessThanOrEqual(0)
 })
 

@@ -76,6 +76,8 @@ test('Lands in is Move to…, Inbox first, and a project’s parents a step in (
   const picker = page.getByRole('dialog', { name: 'Lands in' })
   await expect(picker.getByRole('option').first()).toContainText('Inbox')
   await picker.getByRole('button', { name: 'Inside “Job hunt”' }).click()
+  // A full screen shuts with its ×, the way back beside it.
+  await expect(picker.getByRole('button', { name: 'Close' })).toBeVisible()
   await picker.getByRole('option', { name: /Amazon/ }).click()
   await expect(sheet.getByRole('button', { name: 'Lands in Job hunt, under Amazon' })).toBeVisible()
 
@@ -136,7 +138,8 @@ test('Today on a phone: sections, the circle finishes, the swipes move and finis
   // Pick a date: the shared grid from the foot; a day not today takes it off.
   await swipe('Pack the books', -200)
   await planned.getByRole('button', { name: 'Pick a date for “Pack the books”' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Move “Pack the books” to' })
+  const sheet = page.getByRole('dialog', { name: 'Move to' })
+  await expect(sheet).toContainText('Pack the books')
   await sheet.getByRole('button', { name: 'Next month' }).click()
   await sheet.getByRole('button', { name: /-15$/ }).first().click()
   await expect(planned.getByText('Pack the books')).toHaveCount(0)
@@ -188,4 +191,83 @@ test('More: search on top, the pages, every other kind, the projects, the accoun
   await page.getByRole('button', { name: 'Cancel' }).click()
   await main.getByRole('link', { name: 'Account and time zone' }).click()
   await expect(page).toHaveURL(/\/account$/)
+})
+
+test('the phone calendar: lunar names, a dot a kind, the chosen day listed (FR-086)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await apiPost(page, '/meetings', {
+    title: 'Stripe: first screen',
+    startsLocal: '2026-10-22T14:00',
+    timeZone: await accountZone(page),
+    durationMinutes: 45,
+    joinUrl: 'https://meet.google.com/abc-defg-hij',
+  })
+  const p = await makeProject(page, 'Job hunt')
+  await makeTask(page, p, 'Prepare the system design round', { dueAt: '2026-10-22T16:00:00.000Z' })
+  await page.goto('/calendar?day=2026-10-18')
+
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^October/)
+  await expect(page.locator('[data-day="2026-10-18"]')).toContainText('重阳')
+  await expect(page.locator('[data-day="2026-10-22"] .bg-meeting')).toHaveCount(1)
+  await expect(page.locator('[data-day="2026-10-22"] .bg-warn')).toHaveCount(1)
+
+  await page.locator('[data-day="2026-10-22"]').click()
+  const day = page.getByRole('region', { name: 'Thursday, October 22' })
+  await expect(day.locator('[data-day-entry]')).toHaveText([
+    /14:00\s*14:45\s*Stripe: first screen\s*Google Meet/,
+    /Due\s*Prepare the system design round/,
+  ])
+  await day.getByRole('link', { name: /Stripe: first screen/ }).click()
+  await expect(page.getByRole('link', { name: /Join/ }).first()).toBeVisible()
+
+  // New event is a placeholder: it says so and opens nothing.
+  await page.goto('/calendar')
+  await page.getByRole('button', { name: 'New event' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Coming later' })).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('a person on a phone: a tap to reach them, their clock, the rest under More about (FR-087)', async ({
+  page,
+}) => {
+  // Their clock against yours on a day of their summer time and ours.
+  await page.clock.setFixedTime(new Date('2026-10-18T09:24:00Z'))
+  await registerFreshUser(page)
+  const wang = await apiPost(page, '/people', {
+    givenName: '磊',
+    familyName: '王',
+    city: 'Shanghai, China',
+    cityKey: 'shanghai-cn',
+    timeZone: 'Asia/Shanghai',
+    note: 'Met at the Beijing meetup.',
+    channels: [{ kind: 'phone', value: '+86 139 1234 5678', label: null }],
+  })
+  await page.goto(`/people/${wang.id as string}`)
+  await expect(page.getByRole('link', { name: 'People' }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Call' })).toHaveAttribute(
+    'href',
+    'tel:+8613912345678',
+  )
+  await expect(page.getByRole('link', { name: 'Message' })).toHaveAttribute(
+    'href',
+    'sms:+8613912345678',
+  )
+  // No address to write to: Email is greyed and goes nowhere.
+  await expect(page.getByRole('link', { name: 'Email' })).toHaveCount(0)
+
+  const card = page.getByRole('list', { name: 'Profile' })
+  await expect(card).toContainText('17:24 in Shanghai')
+  await expect(card).toContainText('7 hours ahead of you')
+  const more = page.getByRole('region', { name: 'More about 王磊' })
+  await expect(more).toContainText('Shanghai, China')
+  await expect(more).toContainText('Met at the Beijing meetup.')
+
+  // "…" holds Delete, and only that.
+  await page.getByRole('button', { name: 'More', exact: true }).click()
+  const sheet = page.getByRole('dialog', { name: '王磊' })
+  await expect(sheet.getByRole('button')).toHaveCount(2)
+  await expect(sheet.getByRole('button', { name: 'Close' })).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Delete 王磊' })).toBeVisible()
 })

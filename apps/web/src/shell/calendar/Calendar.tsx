@@ -29,6 +29,8 @@ import { useInspector } from '../layout/inspectorAddress'
 import { useRegistry } from '../registry'
 import { lunarWindowQuery } from './api'
 import { DayPanel } from './DayPanel'
+import { PhoneCalendar } from './PhoneCalendar'
+import { usePhone } from '../../platform/ui/phone'
 import { dayParts, squareLines, type Placed } from './dayParts'
 import { useLunarName } from './lunarName'
 import {
@@ -80,6 +82,10 @@ const LEGEND = [
  * deadline belongs to a task.
  */
 export function Calendar() {
+  return usePhone() ? <PhoneCalendar /> : <DeskCalendar />
+}
+
+function DeskCalendar() {
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
   const [params, setParams] = useSearchParams()

@@ -25,6 +25,8 @@ import { useRegistry } from '../../../shell/registry'
 import { Timeline } from '../../../shell/timeline'
 import { circlesQuery } from '../api'
 import { usePhone } from '../hooks/usePhone'
+import { usePhone as usePhoneFrame } from '../../../platform/ui/phone'
+import { PhonePerson } from './PhonePerson'
 import { byKind, channelHref, channelLabel, KIND_LABEL } from '../logic/channels'
 import { LEAD_LABELS } from '../logic/labels'
 import { theirTime } from '../logic/localTime'
@@ -43,6 +45,10 @@ const monthYear = (month: string) => `${MONTHS[Number(month.slice(5, 7)) - 1]} $
  * profile down the left, and beside it what they are in, a block each, then their timeline.
  */
 export function PersonPage({ person }: { person: PersonResponse }) {
+  return usePhoneFrame() ? <PhonePerson person={person} /> : <DeskPerson person={person} />
+}
+
+function DeskPerson({ person }: { person: PersonResponse }) {
   const registry = useRegistry()
   // One hook per module that lists its own things with a person: the registry's list is fixed.
   const owned = registry.personThings.map((t) => ({ kind: t.kind, ...t.useThings(person.id) }))
