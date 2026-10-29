@@ -7,8 +7,10 @@ const EVENT = 'ctws:shortcuts-changed'
 let inThisTab = true
 
 /**
- * Per browser, not per account: single-key shortcuts can steal a screen reader's keys. Every access
- * is wrapped, because `localStorage` throws in a private window or with site data blocked.
+ * Whether single-key shortcuts act (FR-029): they can steal a screen reader's keys. The account
+ * keeps the choice; this is the page's copy of it, also kept in the browser so a reload starts
+ * the way the account was left. Every access is wrapped, because `localStorage` throws in a
+ * private window or with site data blocked.
  */
 export function shortcutsEnabled(): boolean {
   try {

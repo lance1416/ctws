@@ -10,6 +10,8 @@ import {
   changePassword,
   loadAccount,
   passwordChangedAt,
+  setSingleKeyShortcuts,
+  singleKeyShortcuts,
   registerUser,
   setTimezone,
 } from './service'
@@ -85,6 +87,7 @@ export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
     clockPinned: app.env.clockPinnedAt !== undefined,
     migrationReport: await migrationPending(app.db, account.workspaceId),
     passwordChangedAt: (await passwordChangedAt(app.db, account.id))?.toISOString() ?? null,
+    singleKeyShortcuts: await singleKeyShortcuts(app.db, account.id),
   })
 
   serve(app, [
@@ -93,8 +96,10 @@ export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
 
     on(api.auth.updateMe, async (req) => {
       const account = currentUser(req)
-      await setTimezone(app.db, account.id, req.body.timezone)
-      return me({ ...account, timezone: req.body.timezone })
+      const { timezone, singleKeyShortcuts: on } = req.body
+      if (timezone !== undefined) await setTimezone(app.db, account.id, timezone)
+      if (on !== undefined) await setSingleKeyShortcuts(app.db, account.id, on)
+      return me({ ...account, timezone: timezone ?? account.timezone })
     }),
 
     on(

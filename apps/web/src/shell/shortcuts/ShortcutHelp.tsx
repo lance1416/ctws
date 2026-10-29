@@ -1,7 +1,7 @@
 import { Fragment, useRef, useState } from 'react'
 import { keyLabel } from '../../platform/keyboard/keys'
 import { singleKeysOf, type KeyTable } from '../../platform/keyboard/keyTable'
-import { setShortcutsEnabled, useShortcutsEnabled } from '../../platform/keyboard/enabled'
+import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { ICON_BUTTON, KEY } from '../../platform/ui/buttonStyles'
 import {
   BarExpandIcon,
@@ -13,6 +13,7 @@ import {
 } from '../../platform/ui/icons'
 import { Modal } from '../../platform/ui/Modal'
 import { PROJECT_KEYS, WORKBENCH_KEYS } from '../projects/keys'
+import { useSetSingleKeys } from '../auth'
 import { useRegistry } from '../registry'
 import { SEARCH_KEYS } from '../search/SearchDialog'
 import { JUMP_PREFIX, NEW_PREFIX } from './chords'
@@ -46,6 +47,7 @@ const COLUMNS: readonly (readonly string[])[] = [
  */
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const enabled = useShortcutsEnabled()
+  const setSingleKeys = useSetSingleKeys()
   const registry = useRegistry()
   const [filter, setFilter] = useState('')
   const box = useRef<HTMLInputElement>(null)
@@ -188,19 +190,20 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           type="checkbox"
           role="switch"
           checked={enabled}
-          onChange={(e) => setShortcutsEnabled(e.target.checked)}
+          onChange={(e) => setSingleKeys(e.target.checked)}
           className="size-4 accent-ink"
         />
         Single-key shortcuts
         <span className="inline-flex flex-wrap items-center gap-1">
-          {singles.map((k) => (
+          {spans(singles).map((k) => (
             <kbd key={k} className={KEY}>
               {k.toUpperCase()}
             </kbd>
           ))}
         </span>
         <span className="text-meta text-subtle">
-          Arrows, Enter, Esc and Alt keys always work. This browser only.
+          Arrows, Enter, Esc and {keyLabel('keys with Ctrl or Alt')} always work. Kept with your
+          account.
         </span>
       </label>
       <div className="flex h-10 items-center gap-2 rounded-b-block border-t border-line bg-chrome px-5 text-meta">
@@ -226,4 +229,12 @@ function Caps({ keys }: { keys: string }) {
       ))}
     </Fragment>
   ))
+}
+
+/** The single keys as caps, a run of digits as one: "1–7", not a cap each (artboard 24). */
+function spans(keys: readonly string[]): string[] {
+  const digits = keys.filter((k) => /^[0-9]$/.test(k)).sort()
+  const rest = keys.filter((k) => !/^[0-9]$/.test(k))
+  if (digits.length < 3) return [...rest, ...digits]
+  return [...rest, `${digits[0]}–${digits.at(-1)}`]
 }

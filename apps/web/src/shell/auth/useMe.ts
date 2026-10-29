@@ -1,6 +1,7 @@
 import { api, type MeResponse } from '@ctws/contracts'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, call } from '../../platform/http/api'
+import { setShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { browserZone, ymd } from '../../platform/time/dates'
 import { setServerNow } from '../../platform/time/serverClock'
 import { useNow } from '../../platform/time/useNow'
@@ -21,6 +22,8 @@ export function useMe() {
         // A pinned server (acceptance, UAT) says what the present is; every date follows it.
         // Otherwise the browser's own clock is the present.
         if (me.clockPinned) setServerNow(me.now)
+        // Single keys on or off is the account's (FR-029); the keyboard reads this copy of it.
+        setShortcutsEnabled(me.singleKeyShortcuts)
         return me
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
@@ -43,4 +46,22 @@ export function useTimeZone(): string {
 /** Today in the account's zone, `YYYY-MM-DD`, turning at its midnight while the page stays open. */
 export function useAccountToday(): string {
   return ymd(useNow(), useTimeZone())
+}
+
+/** Single keys on or off, kept with the account (FR-029): at once here, then on the server. */
+export function useSetSingleKeys() {
+  const qc = useQueryClient()
+  const save = useMutation({
+    mutationFn: (on: boolean) => call(api.auth.updateMe, { body: { singleKeyShortcuts: on } }),
+    // Nothing else reads it: the account comes back in the answer.
+    meta: { refresh: false },
+    onSuccess: (me) => qc.setQueryData(meKey, me),
+    // Not kept: the account says what it still is.
+    onError: () => void qc.invalidateQueries({ queryKey: meKey }),
+  })
+  // Said at once, before the press's render: the switch is drawn from it.
+  return (on: boolean) => {
+    setShortcutsEnabled(on)
+    save.mutate(on)
+  }
 }

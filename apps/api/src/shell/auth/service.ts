@@ -133,6 +133,23 @@ export async function setTimezone(db: Queryable, userId: UserId, timezone: strin
   await db.update(users).set({ timezone }).where(eq(users.id, userId))
 }
 
+/** Whether single keys act for this account (FR-029). */
+export async function singleKeyShortcuts(db: Queryable, userId: UserId): Promise<boolean> {
+  const [row] = await db
+    .select({ on: users.singleKeyShortcuts })
+    .from(users)
+    .where(eq(users.id, userId))
+  return row?.on ?? true
+}
+
+export async function setSingleKeyShortcuts(
+  db: Queryable,
+  userId: UserId,
+  on: boolean,
+): Promise<void> {
+  await db.update(users).set({ singleKeyShortcuts: on }).where(eq(users.id, userId))
+}
+
 /** When the password was last changed here, or null for the one set at sign-up. */
 export async function passwordChangedAt(db: Queryable, userId: UserId): Promise<Date | null> {
   const [row] = await db

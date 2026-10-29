@@ -7,7 +7,7 @@ import { format } from 'date-fns'
 /** A unique email: register is rate limited per IP, and each test needs a workspace of its own. */
 const freshEmail = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
 
-const PASSWORD = 'correct horse battery'
+export const PASSWORD = 'correct horse battery'
 
 /**
  * Registers a brand-new user over the API, in the browser's own zone as the sign-up form does, and
@@ -734,5 +734,5 @@ export async function lunarYear(page: Page, year: string) {
  */
 export async function keyAsShown(page: Page, keys: string): Promise<string> {
   const mac = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform))
-  return mac ? keys.replace(/\bCtrl\b/g, '⌘') : keys
+  return mac ? keys.replace(/\bCtrl\b/g, '⌘').replace(/\bAlt\b/g, '⌥') : keys
 }

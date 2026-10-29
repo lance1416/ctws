@@ -9,6 +9,8 @@ import {
   captureBox,
   openCapture,
   keyAsShown,
+  PASSWORD,
+  WEB,
 } from './helpers'
 
 const handle = (page: Page, title: string) =>
@@ -217,7 +219,7 @@ test('the ? overlay lists the keys, closes on Escape and on a click outside', as
     '?',
     '[',
     'L',
-    'Alt+Enter',
+    await keyAsShown(page, 'Alt+Enter'),
     'Shift+Enter',
     'S',
     'X',
@@ -319,6 +321,23 @@ test('the single-key shortcuts can be turned off, and stay off after a reload', 
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.keyboard.press('Escape')
+
+  // Kept with the account: another browser, signed in as the same person, starts with it off.
+  const elsewhere = await page
+    .context()
+    .browser()!
+    .newContext({ baseURL: new URL(page.url()).origin })
+  const other = await elsewhere.newPage()
+  const me = await page.request.get('/api/v1/auth/me', { headers: WEB })
+  const signedIn = await other.request.post('/api/v1/auth/login', {
+    headers: WEB,
+    data: { email: ((await me.json()) as { email: string }).email, password: PASSWORD },
+  })
+  expect(signedIn.ok()).toBe(true)
+  await other.goto('/')
+  await other.getByRole('button', { name: 'Keys', exact: true }).click()
+  await expect(other.getByRole('switch', { name: /Single-key shortcuts/ })).not.toBeChecked()
+  await elsewhere.close()
 
   // Survives a reload: it is stored, not just held in React state.
   await page.reload()

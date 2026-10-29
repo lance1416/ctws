@@ -146,6 +146,30 @@ describe('first-user bootstrap', () => {
     expect(res.json()).toMatchObject({ role: 'member' })
   })
 
+  it('keeps single-key shortcuts with the account: on at first, off once turned off (FR-029)', async () => {
+    const ctx = await app()
+    const res = await post(ctx, body)
+    const cookie = String(res.headers['set-cookie']).split(';')[0]!
+    const me = () => ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: { cookie } })
+    expect((await me()).json()).toMatchObject({ singleKeyShortcuts: true, timezone: 'UTC' })
+    const off = await ctx.app.inject({
+      method: 'PATCH',
+      url: '/api/v1/auth/me',
+      headers: { ...headers, cookie },
+      payload: { singleKeyShortcuts: false },
+    })
+    expect(off.statusCode).toBe(200)
+    // The other field is left as it was.
+    expect((await me()).json()).toMatchObject({ singleKeyShortcuts: false, timezone: 'UTC' })
+    const nothing = await ctx.app.inject({
+      method: 'PATCH',
+      url: '/api/v1/auth/me',
+      headers: { ...headers, cookie },
+      payload: {},
+    })
+    expect(nothing.statusCode).toBe(400)
+  })
+
   it('reports the role on /auth/me', async () => {
     const ctx = await app({ authRegistration: 'closed' })
     const res = await post(ctx, body)

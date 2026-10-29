@@ -28,7 +28,14 @@ export const loginBody = z
   .strict()
 
 /** The account's own settings it may change (artboard 30): its zone, for now. */
-export const updateMeBody = z.object({ timezone: canonicalTimeZone }).strict()
+/** What the account page changes: its time zone, and whether single keys act (FR-029). */
+export const updateMeBody = z
+  .object({ timezone: canonicalTimeZone, singleKeyShortcuts: z.boolean() })
+  .partial()
+  .strict()
+  .refine((b) => b.timezone !== undefined || b.singleKeyShortcuts !== undefined, {
+    message: 'nothing to change',
+  })
 
 /** A new password, given with the one it replaces. */
 export const changePasswordBody = z
@@ -58,6 +65,8 @@ export const meResponse = userResponse.extend({
   migrationReport: z.object({ pending: z.number().int().nonnegative() }).nullable(),
   /** When the password was last changed here; null for one set at sign-up. */
   passwordChangedAt: instant.nullable(),
+  /** Whether keys without Ctrl or Alt act (FR-029); kept with the account. */
+  singleKeyShortcuts: z.boolean(),
 })
 
 export type MeResponse = z.infer<typeof meResponse>

@@ -326,7 +326,16 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(help).toBeVisible()
   // It says every key, including the project page's own.
-  for (const key of [await keyAsShown(page, 'Ctrl+K'), 'C', '?', 'N', 'G', 'Alt+Enter', 'S', 'X']) {
+  for (const key of [
+    await keyAsShown(page, 'Ctrl+K'),
+    'C',
+    '?',
+    'N',
+    'G',
+    await keyAsShown(page, 'Alt+Enter'),
+    'S',
+    'X',
+  ]) {
     await expect(help.getByText(key, { exact: true }).first()).toBeVisible()
   }
 

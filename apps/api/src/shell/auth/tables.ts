@@ -1,6 +1,7 @@
 import { ROLES, type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
 import { inList } from '../../platform/db/sql'
 import {
+  boolean,
   check,
   index,
   pgTable,
@@ -25,6 +26,9 @@ export const users = pgTable(
     disabledAt: timestamp('disabled_at', { withTimezone: true }),
     // When the password was last changed; null for the one set at sign-up.
     passwordChangedAt: timestamp('password_changed_at', { withTimezone: true }),
+    // Single-key shortcuts on (FR-029): off, only keys with Ctrl or Alt act. Kept with the
+    // account, so it stays off on another computer.
+    singleKeyShortcuts: boolean('single_key_shortcuts').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
