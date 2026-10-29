@@ -15,7 +15,7 @@ import {
 import { WORKBENCH_PATH } from '../shell/registry'
 import { Workbench } from '../shell/workbench'
 import { lazyPage } from '../platform/ui/lazyPage'
-import { queryClient } from './queryClient'
+import { asLoader, landed, queryClient } from './queryClient'
 import { registry } from './registry'
 
 // Pages the first page of a visit seldom is, loaded when drawn (baseline.md §8).
@@ -46,11 +46,21 @@ function prefetched(routes: RouteObject[]): RouteObject[] {
       ...(prefetch
         ? {
             loader: async ({ params }) => {
-              const me = await queryClient.ensureQueryData(meQuery()).catch(() => null)
+              // The session, read here when it is not in hand yet, is the loader's too.
+              const me = await asLoader(() => queryClient.ensureQueryData(meQuery())).catch(
+                () => null,
+              )
               if (!me) return null
-              void queryClient.prefetchQuery(projectsQuery())
-              void queryClient.prefetchQuery(archivedProjectsQuery())
-              prefetch({ qc: queryClient, params, today: ymd(serverNow(), me.timezone), registry })
+              asLoader(() => {
+                void queryClient.prefetchQuery(projectsQuery())
+                void queryClient.prefetchQuery(archivedProjectsQuery())
+                prefetch({
+                  qc: queryClient,
+                  params,
+                  today: ymd(serverNow(), me.timezone),
+                  registry,
+                })
+              })
               return null
             },
             // Arriving at a page prefetches; a change of its search (`?task=` as a task opens) is
@@ -127,3 +137,14 @@ export const router = createBrowserRouter(
     },
   ]),
 )
+
+// Each landing hands the page its loader's reads (`landed`), before the page mounts to use them:
+// the first, once the first page's loaders are done, and each navigation after.
+let landedAt = router.state.initialized ? router.state.location.key : null
+if (landedAt !== null) landed()
+router.subscribe((state) => {
+  if (!state.initialized || state.navigation.state !== 'idle') return
+  if (state.location.key === landedAt) return
+  landedAt = state.location.key
+  landed()
+})
