@@ -241,8 +241,9 @@ function CircleRow({
           className="mx-1 mb-2 rounded-control border border-line-strong p-3 text-ui"
         >
           <p className="text-ink">
-            Delete {circle.name}? The {peopleWord(circle.count)} in it{' '}
-            {circle.count === 1 ? 'stays' : 'stay'}; they just leave this circle.
+            Delete {circle.name}?{/* Nobody in it: the question alone (FR-049). */}
+            {circle.count > 0 &&
+              ` The ${peopleWord(circle.count)} in it ${circle.count === 1 ? 'stays' : 'stay'}; they just leave this circle.`}
           </p>
           <div className="mt-2 flex justify-end gap-2">
             <Button look="secondary" onClick={onCancel}>

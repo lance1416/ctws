@@ -118,10 +118,12 @@ test('a project lists who is waiting for a reply in it (FR-055)', async ({ page 
     followUpOn: '2026-10-21',
   })
   await page.goto(`/projects/${jobs.id as string}`)
-  const block = page.getByRole('region', { name: 'Communication' })
+  // Awaiting reply, one line a message: its day, who (an avatar), what, and when to chase it; a
+  // day gone by is a nudge, said as one (artboard 8, U-12).
+  const block = page.getByRole('region', { name: 'Awaiting reply' })
   await expect(block).toContainText('Onsite dates')
-  await expect(block).toContainText('Priya Nair')
-  await expect(block).toContainText('Oct 21')
+  await expect(block).toContainText('PN')
+  await expect(block).toContainText('Yesterday')
   await expect(block).not.toContainText('Elsewhere')
 })
 

@@ -90,7 +90,8 @@ function OpenProject({ id }: { id: ProjectId }) {
   // they go under it when there is no column to spare.
   const page = useRef<HTMLDivElement>(null)
   const columns = useColumns(page)
-  // A wide view (the board) is the whole width; the blocks go under it.
+  // A wide view (the board) is the whole main area, the blocks left to the tree: under a board
+  // the page would scroll and its columns too, two scrolls at once (U-13, artboards 20 and 21).
   const wide = views.find((v) => v.id === view)?.wide === true
   const { main: mainColumns, side } = wide
     ? { main: columns, side: columns }
@@ -121,7 +122,7 @@ function OpenProject({ id }: { id: ProjectId }) {
             <main.Component projectId={id} view={view} />
           </section>
         )}
-        <ProjectLinked projectId={id} columns={side} beside={mainColumns < columns} />
+        {!wide && <ProjectLinked projectId={id} columns={side} beside={mainColumns < columns} />}
       </div>
     </div>
   )

@@ -31,6 +31,7 @@ type Row = {
   to: string
   lead?: string | null
   initials?: string | null
+  withInitials?: string | null
   fact?: string | null
   sub?: ReactNode
   trail?: ReactNode
@@ -346,8 +347,9 @@ function ThingRow({ row, kind, hover = true }: { row: Row; kind: ObjectType; hov
       ) : (
         lead && (
           // As wide as "Nov 21 10:00", so the titles after a weekday and after a date line up.
-          <span className="min-w-[12ch] font-mono text-meta whitespace-nowrap text-muted">
+          <span className="flex min-w-[12ch] items-center gap-2.5 font-mono text-meta whitespace-nowrap text-muted">
             {row.lead ?? ''}
+            {row.withInitials && <Avatar initials={row.withInitials} />}
           </span>
         )
       )}

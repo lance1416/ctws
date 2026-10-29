@@ -207,12 +207,12 @@ export function PersonEditor({
     ? avatarInitials(
         parts.givenName ? parts : { givenName: parts.familyName ?? '', familyName: null },
       )
-    : '?'
+    : null
 
   // The sidebar holds a place for them, marked New, while they are written down (FR-062).
   useEffect(() => {
     if (person) return
-    setNewPersonDraft(named && filed ? { name: shown, sortKey: filed, initials } : null)
+    setNewPersonDraft(named && filed && initials ? { name: shown, sortKey: filed, initials } : null)
   }, [person, named, shown, filed, initials])
   useEffect(() => () => setNewPersonDraft(null), [])
 

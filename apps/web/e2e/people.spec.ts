@@ -676,8 +676,32 @@ test('circles are edited beside the people: renamed, added, and deleted with a q
   )
   await pane.getByRole('button', { name: 'Delete Climbing', exact: true }).last().click()
   await expect(list.getByRole('listitem')).toHaveCount(2)
+  // Nobody in it: the question alone (FR-049).
+  await list.getByRole('button', { name: 'Delete University' }).click()
+  await expect(pane.getByRole('alert')).toContainText('Delete University?')
+  await expect(pane.getByRole('alert')).not.toContainText('stay')
+  await pane.getByRole('button', { name: 'Cancel' }).click()
   const after = await page.request.get('/api/v1/people/circles', { headers: WEB })
   expect(
     ((await after.json()) as { circles: { name: string }[] }).circles.map((c) => c.name),
   ).toEqual(['Home', 'University'])
+})
+
+test('a long people list has a filter at its top, which says when it finds nobody', async ({
+  page,
+}) => {
+  await registerFreshUser(page, '/people')
+  for (let i = 0; i < 13; i++) await apiPost(page, '/people', { givenName: `Person${i}` })
+  await apiPost(page, '/people', { name: '李雯', aliases: [{ name: 'Wendy Li' }] })
+  await page.reload()
+  const list = page.getByRole('navigation', { name: 'People' })
+  const box = page.getByRole('searchbox', { name: 'Filter people' })
+  await box.fill('wendy')
+  // Another name finds them too.
+  await expect(list.locator('[data-person-row]')).toHaveCount(1)
+  await expect(list).toContainText('李雯')
+  await box.fill('zzqq')
+  await expect(list).toContainText('Nothing matches “zzqq”.')
+  await list.getByRole('button', { name: 'Clear the filter' }).click()
+  await expect(list.locator('[data-person-row]')).toHaveCount(14)
 })

@@ -40,6 +40,8 @@ export function ProjectLinked({
     of: { type: 'project', id: projectId },
     kinds,
     owned,
+    // A project's messages are the ones awaiting a reply (artboard 8, U-12).
+    titles: { communication: 'Awaiting reply' },
     // A kind the project owns is made in it; another is linked to it.
     creatorFor: (kind) =>
       owned.some((o) => o.kind === kind)

@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { Link, NavLink, useMatch } from 'react-router-dom'
 import { archivedProjectsQuery, useProjects } from './api'
 import { useRegistry } from '../registry'
 import { SidebarHead } from '../layout/Sidebar'
+import { FILTER_FROM, FilteredEmpty, matches, SidebarFilter } from '../layout/SidebarFilter'
 import { ProjectSquare } from './ProjectSquare'
 import { showArchived, useArchivedShown } from './archivedShown'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
@@ -22,9 +23,12 @@ export function ProjectsSidebar() {
   const Outline = registry.projectOutline
   const open = useMatch('/projects/:id')?.params.id
 
+  const [typed, setTyped] = useState('')
   const live = projects.data ?? []
-  const inbox = live.find((p) => p.isInbox)
-  const others = live.filter((p) => !p.isInbox)
+  const filtering = typed.trim() !== ''
+  const inbox = live.find((p) => p.isInbox && (!filtering || matches(p.name, typed)))
+  const all = live.filter((p) => !p.isInbox)
+  const others = all.filter((p) => matches(p.name, typed))
   const row = ({ isActive }: { isActive: boolean }) =>
     `mx-1.5 flex h-7.5 items-center gap-2 rounded-control px-2 text-ui hover:bg-hover ${
       isActive ? 'bg-select font-medium text-ink' : 'text-ink'
@@ -48,8 +52,11 @@ export function ProjectsSidebar() {
           </Link>
         }
       >
-        {projects.data && others.length}
+        {projects.data && all.length}
       </SidebarHead>
+      {(all.length > FILTER_FROM || filtering) && (
+        <SidebarFilter what="projects" value={typed} onChange={setTyped} />
+      )}
       {/* Every row keeps its height; past the bottom the list scrolls in here (U-06). */}
       <nav
         aria-label="Projects"
@@ -72,7 +79,10 @@ export function ProjectsSidebar() {
             {Outline && p.id === open && <Outline projectId={p.id} />}
           </Fragment>
         ))}
-        {archived.data && archived.data.length > 0 && (
+        {filtering && !inbox && others.length === 0 && (
+          <FilteredEmpty typed={typed} onClear={() => setTyped('')} />
+        )}
+        {!filtering && archived.data && archived.data.length > 0 && (
           <>
             <button
               type="button"
