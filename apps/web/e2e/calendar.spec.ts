@@ -36,6 +36,8 @@ test('a task planned and due lands twice: counted on one day, named on the other
 
   await expect(square(page, dayOffset(1))).toContainText('1 planned')
   await expect(square(page, dayOffset(1))).not.toContainText('发版')
+  // The due day may be next month's, off this grid at the month's end: open its month.
+  await page.goto(`/calendar?day=${dayOffset(4)}`)
   await expect(square(page, dayOffset(4))).toContainText('发版')
 })
 
