@@ -307,6 +307,23 @@ export function backdateProjectActivity(projectId: string, days: number, timeZon
   }
 }
 
+/**
+ * A project's whole logged history put at one instant, for a spec on the pinned server, whose
+ * clock the database's own `now()` does not share: `backdateProjectActivity` counts from that.
+ */
+export function projectActivityAt(projectId: string, at: string): void {
+  if (!/^[0-9a-f-]{36}$/.test(projectId) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(at)) {
+    throw new Error('projectActivityAt: refusing a malformed argument')
+  }
+  const out = psql(
+    `update events set occurred_at = '${at}' ` +
+      `where object_type = 'task' and object_id in (select id from tasks where project_id = '${projectId}')`,
+  )
+  if (/UPDATE 0/.test(out) || !out.includes('UPDATE')) {
+    throw new Error(`projectActivityAt: no row updated: ${out}`)
+  }
+}
+
 /** The app's own picker: a press on the trigger, then a press on the item. */
 export async function pickOne(
   where: Page | Locator,
