@@ -18,6 +18,8 @@ export type UnsavedGuard = {
   keep: () => void
   /** "Discard": lets go of whichever way out was asked about. */
   discard: () => void
+  /** Takes a way out without asking: what was typed is kept elsewhere (Esc, FR-029). */
+  release: (go: () => void) => void
 }
 
 export function useUnsavedGuard(dirty: boolean): UnsavedGuard {
@@ -68,6 +70,10 @@ export function useUnsavedGuard(dirty: boolean): UnsavedGuard {
       setLogoutVia(null)
       setExitVia(null)
       if (blocker.state === 'blocked') blocker.reset()
+    },
+    release: (go) => {
+      released.current = true
+      go()
     },
     discard: () => {
       released.current = true

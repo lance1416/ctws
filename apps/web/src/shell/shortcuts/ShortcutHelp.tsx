@@ -107,7 +107,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       tint: grey,
       rows: [
         { keys: 'Ctrl+Enter', does: 'Save', presses: {} },
-        { keys: 'Esc', does: 'Cancel, asking first when something was changed', presses: {} },
+        { keys: 'Esc', does: 'Close; what you typed is kept', presses: {} },
       ],
     },
   ]

@@ -1,7 +1,8 @@
 import type { MeetingOccurrence } from '@ctws/contracts'
 import { ItemPane, useItemPane } from '../../../shell/detail'
 import { CancelMeeting } from './CancelMeeting'
-import { MeetingForm } from './MeetingForm'
+import { MeetingForm, meetingDraft } from './MeetingForm'
+import { forgetDraft } from '../../../platform/ui/drafts'
 import { MeetingRead } from './MeetingRead'
 import { ScopeAsk } from './ScopeAsk'
 import { useScopedEdit } from './useScopedEdit'
@@ -18,7 +19,17 @@ export function MeetingDetail({
   onMoved: (occurrence: MeetingOccurrence) => void
 }) {
   const pane = useItemPane(onClose)
-  const edit = useScopedEdit(meeting, { moved: onMoved, saved: () => pane.setEditing(false) })
+  const draft = meetingDraft(meeting)
+  const edit = useScopedEdit(meeting, {
+    moved: (occurrence) => {
+      forgetDraft(draft)
+      onMoved(occurrence)
+    },
+    saved: () => {
+      forgetDraft(draft)
+      pane.setEditing(false)
+    },
+  })
 
   return (
     <ItemPane
@@ -60,12 +71,17 @@ export function MeetingDetail({
         <MeetingForm
           meeting={meeting}
           busy={edit.busy}
-          onCancel={() => {
-            edit.reset()
-            pane.setEditing(false)
-          }}
+          // Cancel lets what was typed go, asking first; Esc closes the pane and keeps it.
+          onCancel={() =>
+            pane.guard.leave(() => {
+              forgetDraft(draft)
+              edit.reset()
+              pane.setEditing(false)
+            })
+          }
           onSave={edit.submit}
           onUnsaved={pane.onUnsaved}
+          draft={draft}
         />
       ) : (
         <MeetingRead meeting={meeting} onEdit={() => pane.setEditing(true)} />

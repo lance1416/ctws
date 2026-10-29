@@ -17,7 +17,8 @@ import { dayOffset } from './days'
  * pane always has.
  */
 
-const asked = (pane: Locator) => pane.getByRole('alert').filter({ hasText: 'unsaved changes' })
+const asked = (pane: Locator) =>
+  pane.getByRole('alert').filter({ hasText: /unsaved changes|Discard the changes\?/ })
 
 /** A person's edit page, open; a person is edited on a page, not in a pane (FR-063). */
 async function person(page: Page, channels: object[] = []) {
@@ -150,14 +151,15 @@ for (const where of ['Today', 'Done'] as const) {
   })
 }
 
-const newDialogs: [string, string, (page: Page) => Promise<unknown>][] = [
+/** Each dialog: its name, its box, and a way to open it, again and again from the same place. */
+const newDialogs: [string, string, (page: Page) => Promise<() => Promise<unknown>>][] = [
   [
     'New task',
     'Title',
     async (page) => {
       const pid = await makeProject(page, 'P')
       await page.goto(`/projects/${pid}`)
-      await openNewTask(page)
+      return () => openNewTask(page)
     },
   ],
   [
@@ -165,31 +167,46 @@ const newDialogs: [string, string, (page: Page) => Promise<unknown>][] = [
     'Title',
     async (page) => {
       await page.goto('/meetings')
-      await page
-        .getByRole('main')
-        .getByRole('button', { name: /^New meeting/ })
-        .first()
-        .click()
+      return () =>
+        page
+          .getByRole('main')
+          .getByRole('button', { name: /^New meeting/ })
+          .first()
+          .click()
     },
   ],
 ]
 
-for (const [name, field, open] of newDialogs) {
-  test(`Escape and the scrim on a typed-in ${name} dialog ask first`, async ({ page }) => {
+for (const [name, field, setUp] of newDialogs) {
+  test(`Escape closes a typed-in ${name} dialog and keeps it; Cancel asks (FR-029)`, async ({
+    page,
+  }) => {
     await registerFreshUser(page)
-    await open(page)
+    const open = await setUp(page)
+    await open()
     const dialog = page.getByRole('dialog', { name })
     const box = dialog.getByLabel(field, { exact: true })
     await box.fill('Half typed')
 
+    // Esc and the scrim close it without asking; opened again, it is as it was.
     await box.press('Escape')
-    await expect(asked(dialog)).toBeVisible()
-    await dialog.getByRole('button', { name: 'Keep editing' }).click()
+    await expect(dialog).toHaveCount(0)
+    await open()
+    await expect(box).toHaveValue('Half typed')
+    await page.mouse.click(5, 5)
+    await expect(dialog).toHaveCount(0)
+    await open()
     await expect(box).toHaveValue('Half typed')
 
-    await page.mouse.click(5, 5)
-    await expect(asked(dialog)).toBeVisible()
+    // Cancel is the way to let it go, and it asks first.
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(asked(dialog)).toContainText('Discard the changes?')
+    await dialog.getByRole('button', { name: 'Keep editing' }).click()
+    await expect(box).toHaveValue('Half typed')
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
     await dialog.getByRole('button', { name: 'Discard changes' }).click()
     await expect(dialog).toHaveCount(0)
+    await open()
+    await expect(box).toHaveValue('')
   })
 }

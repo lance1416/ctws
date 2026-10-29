@@ -334,7 +334,7 @@ const OVERLAY_VIEWPORT = { width: 1024, height: 800 }
 test.describe('the panel as an overlay', () => {
   test.use({ viewport: OVERLAY_VIEWPORT })
 
-  test('closing a panel with unsaved edits asks; keep editing keeps them, discard drops them', async ({
+  test('a panel with unsaved edits closes and keeps them; Cancel asks, and discard drops them', async ({
     page,
   }) => {
     await registerFreshUser(page)
@@ -346,28 +346,35 @@ test.describe('the panel as an overlay', () => {
     const dialog = page.getByRole('dialog')
     await page.getByLabel('Title').fill('写方案 v2')
 
-    // Every way out asks: stepping back to reading (Cancel), closing the pane (the ✕), Escape,
-    // and a click outside.
+    // Cancel is the one way out that lets it go, so it asks (FR-029).
     await page.getByRole('button', { name: 'Cancel' }).click()
-    await expect(dialog).toContainText('You have unsaved changes')
-    await page.getByRole('button', { name: 'Keep editing' }).click()
-    await page.getByRole('button', { name: 'Close' }).click()
-    await expect(dialog).toBeVisible()
-    await expect(dialog).toContainText('You have unsaved changes')
-    await page.getByRole('button', { name: 'Keep editing' }).click()
-    await expect(dialog.getByText('You have unsaved changes')).toHaveCount(0)
+    await expect(dialog).toContainText('Discard the changes?')
+    await page.keyboard.press('Escape') // Escape on the question means keep editing
+    await expect(dialog.getByText('Discard the changes?')).toHaveCount(0)
     await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
+    // Escape steps out of editing without asking, and Edit brings back what was typed.
     await page.getByLabel('Title').press('Escape')
-    await expect(dialog).toContainText('You have unsaved changes')
-    await page.keyboard.press('Escape') // a second Escape on the prompt means keep editing
-    await expect(dialog.getByText('You have unsaved changes')).toHaveCount(0)
-    await expect(dialog).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+    await editDetail(page)
+    await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
+    // The ✕ and a click outside close the pane as Escape does, keeping it too.
+    await page.getByRole('button', { name: 'Close' }).click()
+    await expect(dialog).toHaveCount(0)
+    await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await editDetail(page)
+    await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
     await page.mouse.click(60, 600)
-    await expect(dialog).toContainText('You have unsaved changes')
+    await expect(dialog).toHaveCount(0)
+    await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
+    await editDetail(page)
+    await expect(page.getByLabel('Title')).toHaveValue('写方案 v2')
 
+    await page.getByRole('button', { name: 'Cancel' }).click()
     await page.getByRole('button', { name: 'Discard changes' }).click()
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
     expect((await serverTask(page, pid, '写方案')).title).toBe('写方案')
     // A panel reopened afterwards is clean again.
@@ -402,8 +409,8 @@ test.describe('the panel as an overlay', () => {
     // Not a keystroke in the panel: one press on the named day, which writes the deadline field.
     await page.getByRole('button', { name: 'Due tomorrow' }).click()
     await expect(page.getByLabel('Due', { exact: true })).not.toHaveValue('')
-    await page.getByRole('button', { name: 'Close' }).click()
-    await expect(dialog).toContainText('You have unsaved changes')
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await expect(dialog).toContainText('Discard the changes?')
     await page.getByRole('button', { name: 'Keep editing' }).click()
 
     // The plan half of the same control, and the ways OUT of a date are edits too: clearing the plan on a

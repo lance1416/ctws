@@ -9,7 +9,8 @@ import {
 } from '@ctws/contracts'
 import { addDays } from '@ctws/core/day'
 import { useMutation } from '@tanstack/react-query'
-import { useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
+import { forgetDraft, keepDraft, keptDraft } from '../../../platform/ui/drafts'
 import { problemText } from '../../../platform/http/api'
 import { keyLabel } from '../../../platform/keyboard/keys'
 import { useComposing } from '../../../platform/keyboard/composition'
@@ -147,7 +148,9 @@ export function LogMessage({
   const now = toDayTimeInput(useNow().toISOString(), zone)
   const composing = useComposing()
   const [opened] = useState(() => draftOf(what, now, zone))
-  const [d, setDraft] = useState(opened)
+  // What Esc closed it on, for when the same form opens again (FR-029).
+  const kept = keptKey(what)
+  const [d, setDraft] = useState(() => keptDraft<Draft>(kept) ?? opened)
   const set = (patch: Partial<Draft>) => setDraft((was) => ({ ...was, ...patch }))
   const [link, setLink] = useState<string | null>(null)
   const [nobody, setNobody] = useState(false)
@@ -185,11 +188,23 @@ export function LogMessage({
       awaits: [communicationKeys.all],
       ownsError: true,
     },
-    onSuccess: onDone,
+    onSuccess: (saved) => {
+      forgetDraft(kept)
+      onDone(saved)
+    },
   })
 
   const dirty = JSON.stringify(d) !== JSON.stringify(opened)
   const guard = useUnsavedGuard(dirty && !save.isPending)
+  useEffect(() => keepDraft(kept, dirty ? d : null))
+  /** Esc and the ×: closed without asking, what was typed kept. */
+  const close = () => guard.release(onClose)
+  /** Cancel: asks first when something was typed, and lets it go. */
+  const cancel = () =>
+    guard.leave(() => {
+      forgetDraft(kept)
+      onClose()
+    })
 
   const send = () => {
     if (save.isPending) return
@@ -209,7 +224,7 @@ export function LogMessage({
   const waits = d.direction === 'sent' && d.awaiting
 
   return (
-    <DetailPane label={title} onClose={() => guard.leave(onClose)}>
+    <DetailPane label={title} onClose={close}>
       <form
         noValidate
         aria-label={title}
@@ -229,12 +244,7 @@ export function LogMessage({
             <KIND_ICON.communication size={14} aria-hidden="true" />
           </span>
           <h2 className="flex-1 text-ui font-medium text-ink">{title}</h2>
-          <button
-            type="button"
-            onClick={() => guard.leave(onClose)}
-            aria-label="Close"
-            className={ICON_BUTTON}
-          >
+          <button type="button" onClick={close} aria-label="Close" className={ICON_BUTTON}>
             <CloseIcon size={16} aria-hidden="true" />
           </button>
         </div>
@@ -483,7 +493,7 @@ export function LogMessage({
         )}
 
         <div className="mt-auto flex items-center justify-end gap-2 border-t border-line pt-3">
-          <button type="button" onClick={() => guard.leave(onClose)} className={BUTTON.quiet}>
+          <button type="button" onClick={cancel} className={BUTTON.quiet}>
             Cancel
           </button>
           <button type="submit" disabled={save.isPending} className={BUTTON.primary}>
@@ -505,3 +515,9 @@ function Field({ label: name, children }: { label: string; children: ReactNode }
     </div>
   )
 }
+
+/** Which form it is, for what Esc kept: a new one by where it was opened, else its message's. */
+const keptKey = (what: LogWhat) =>
+  what.kind === 'new'
+    ? `message:new:${what.projectId ?? ''}:${what.parties.map((p) => p.id).join(',')}`
+    : `message:${what.kind}:${what.kind === 'reply' ? what.to.id : what.message.id}`

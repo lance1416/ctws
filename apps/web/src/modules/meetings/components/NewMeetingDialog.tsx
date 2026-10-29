@@ -5,9 +5,14 @@ import {
   type PersonId,
 } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { createMeeting, meetingKeys } from '../api'
-import { createBody, newMeeting, useMeetingForm } from '../hooks/useMeetingForm'
+import {
+  createBody,
+  newMeeting,
+  useMeetingForm,
+  type MeetingForm as MeetingFormValues,
+} from '../hooks/useMeetingForm'
 import { ProjectPicker } from '../../../shell/projects'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { ymd } from '../../../platform/time/dates'
@@ -15,6 +20,7 @@ import { useTimeZone } from '../../../shell/auth'
 import { boxed, field, label } from '../../../platform/ui/formStyles'
 import { DialogFooter } from '../../../platform/ui/DialogFooter'
 import { Modal } from '../../../platform/ui/Modal'
+import { forgetDraft, keepDraft, keptDraft } from '../../../platform/ui/drafts'
 import { useNow } from '../../../platform/time/useNow'
 import {
   AttendeesPicker,
@@ -50,10 +56,16 @@ export function NewMeetingDialog({
   const titleField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
 
-  const { form, values, ready } = useMeetingForm({
-    ...newMeeting(heldOn ?? today, accountZone, projectId),
-    attendeeIds,
-  })
+  // What was typed before Esc closed it, opened from the same place (FR-029).
+  const draft = `meeting:new:${projectId ?? ''}:${heldOn ?? ''}:${attendeeIds.join(',')}`
+  const { form, values, ready } = useMeetingForm(
+    keptDraft<MeetingFormValues>(draft) ?? {
+      ...newMeeting(heldOn ?? today, accountZone, projectId),
+      attendeeIds,
+    },
+  )
+  const typed = values.title.trim() !== ''
+  useEffect(() => keepDraft(draft, typed ? values : null))
   const dirty = { shouldDirty: true }
   const title = form.register('title')
   // The dialog's two boxes are the halves of one start.
@@ -64,7 +76,10 @@ export function NewMeetingDialog({
   const make = useMutation({
     mutationFn: (body: CreateMeetingBody) => createMeeting(body),
     meta: { changes: ['meeting'], awaits: [meetingKeys.all], ownsError: true },
-    onSuccess: (made) => onMade(made),
+    onSuccess: (made) => {
+      forgetDraft(draft)
+      onMade(made)
+    },
   })
 
   const submit = form.handleSubmit((v) => {
@@ -75,7 +90,7 @@ export function NewMeetingDialog({
     <Modal
       title="New meeting"
       onClose={onClose}
-      unsaved={values.title.trim() !== '' && !make.isPending}
+      unsaved={typed && !make.isPending}
       initialFocus={titleField}
       // The footer carries Cancel, so the header has no second dismiss.
       dismissLabel={null}
@@ -214,7 +229,10 @@ export function NewMeetingDialog({
           error={make.error}
           busy={make.isPending}
           disabled={!ready}
-          onCancel={onClose}
+          onCancel={() => {
+            forgetDraft(draft)
+            onClose()
+          }}
         />
       </form>
     </Modal>

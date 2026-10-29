@@ -1,6 +1,6 @@
 import { problemText } from '../../../platform/http/api'
 import type { TaskResponse } from '@ctws/contracts'
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
 import { DetailPane } from '../../../platform/ui/DetailPane'
 import { useUnsavedGuard } from '../../../platform/ui/unsavedGuard'
@@ -19,13 +19,22 @@ type Props = {
   onSaved?: () => void
   /** Opened from a list in the inspector: that list's action, under the facts (U-29). */
   act?: ReactNode
+  /** Where the frame around it finds how to close it: keeping an edit, as the ✕ does. */
+  closing?: RefObject<() => void>
 }
 
 /** One task in the pane: reading by default, the form behind Edit. Saving returns to reading. */
 export function TaskDetail({ task, onClose, onSaved }: Props) {
+  // The pane's own ways out (Esc, a click outside) close as the body's ✕ does.
+  const closing = useRef(onClose)
   return (
-    <DetailPane label="Task details" onClose={onClose}>
-      <TaskDetailBody task={task} onClose={onClose} {...(onSaved ? { onSaved } : {})} />
+    <DetailPane label="Task details" onClose={() => closing.current()}>
+      <TaskDetailBody
+        task={task}
+        onClose={onClose}
+        closing={closing}
+        {...(onSaved ? { onSaved } : {})}
+      />
     </DetailPane>
   )
 }
@@ -34,7 +43,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
  * The task itself, wherever it is shown: the pane above, and the inspector, where it is edited in
  * place too (artboard 8, DES-001 "检查器里的窄版").
  */
-export function TaskDetailBody({ task, onClose, onSaved, act }: Props) {
+export function TaskDetailBody({ task, onClose, onSaved, act, closing }: Props) {
   useRecordRecent({
     type: 'task',
     id: task.id,
@@ -57,17 +66,25 @@ export function TaskDetailBody({ task, onClose, onSaved, act }: Props) {
     setEditing(false)
     backToPanel()
   }
-  const requestClose = () => guard.leave(onClose)
+  // The ✕ and a click outside close as Esc does: without asking, what was typed kept (FR-029).
+  const requestClose = () => {
+    if (editing) edit.keep()
+    guard.release(onClose)
+  }
+  if (closing) closing.current = requestClose
 
   /**
-   * Escape unwinds one level: the discard question, then editing. Closing the pane is the shell's
-   * job, so only a press handled here is marked with `preventDefault`.
+   * Escape unwinds one level: the discard question, then editing, which it leaves without asking
+   * and keeping what was typed for the next Edit (FR-029). Closing the pane is the shell's job, so
+   * only a press handled here is marked with `preventDefault`.
    */
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Escape' || e.defaultPrevented) return
     if (guard.asking) guard.keep()
-    else if (editing) guard.leave(stopEditing)
-    else return
+    else if (editing) {
+      edit.keep()
+      stopEditing()
+    } else return
     e.preventDefault()
   }
 
@@ -86,7 +103,12 @@ export function TaskDetailBody({ task, onClose, onSaved, act }: Props) {
               task={task}
               edit={edit}
               guard={guard}
-              onCancel={() => guard.leave(stopEditing)}
+              onCancel={() =>
+                guard.leave(() => {
+                  edit.discard()
+                  stopEditing()
+                })
+              }
               onClose={requestClose}
               onSaved={() => {
                 setEditing(false)

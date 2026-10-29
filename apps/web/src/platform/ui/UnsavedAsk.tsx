@@ -9,7 +9,7 @@ export function UnsavedAsk({ guard }: { guard: UnsavedGuard }) {
       <p className="text-ink">
         {guard.leaving
           ? 'You have unsaved changes. Leaving will discard them.'
-          : 'You have unsaved changes. Closing will discard them.'}
+          : 'Discard the changes?'}
       </p>
       <div className="mt-2 flex gap-2">
         <Button look="secondary" onClick={guard.discard}>

@@ -7,6 +7,7 @@ import { mentionsAsLinks, mentionsAsWords } from '../../../platform/notes/mentio
 import { fromDayTimeInput, toDayTimeInput } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
 import { patchTask, taskKeys } from '../api'
+import { forgetDraft, keepDraft, keptDraft } from '../../../platform/ui/drafts'
 import {
   detailTaskForm,
   PATCH_KEYS,
@@ -24,6 +25,8 @@ export const WRITE_AWAITS = [taskKeys.all]
  */
 export function useTaskDetailForm(task: TaskResponse) {
   const timeZone = useTimeZone()
+  // What Esc left the edit with, for when Edit is pressed again (FR-029).
+  const draft = `task:edit:${task.id}`
   // The notes' mentions are typed as their words (I-09); where each goes is kept for the save.
   const mentions = useRef(new Map<string, string>())
   const defaults = (): DetailTaskForm => {
@@ -72,6 +75,7 @@ export function useTaskDetailForm(task: TaskResponse) {
         { values, changed: new Set(Object.keys(dirtyFields)) },
         {
           onSuccess: () => {
+            forgetDraft(draft)
             // `getValues()`, the input shape: resetting to the resolver's output (an ISO `dueAt`)
             // would leave those fields dirty and the leave guard blocking a cleanly saved pane.
             form.reset(form.getValues())
@@ -81,8 +85,31 @@ export function useTaskDetailForm(task: TaskResponse) {
       )
     })
 
-  /** Takes the task as it is now: the pane may have changed it since it opened (the status). */
-  const start = () => form.reset(defaults())
+  /**
+   * Takes the task as it is now: the pane may have changed it since it opened (the status). What
+   * an Esc kept is put back over it, the fields that were changed and only those.
+   */
+  const start = () => {
+    form.reset(defaults())
+    const kept = keptDraft<Kept>(draft)
+    for (const key of kept?.changed ?? [])
+      form.setValue(key, kept!.values[key] as never, { shouldDirty: true })
+  }
+  /** Esc: what was typed stays for the next Edit. */
+  const keep = () =>
+    keepDraft(
+      draft,
+      isDirty
+        ? {
+            values: form.getValues(),
+            changed: Object.keys(dirtyFields) as (keyof DetailTaskForm)[],
+          }
+        : null,
+    )
+  /** Cancel, answered Discard: it is let go. */
+  const discard = () => forgetDraft(draft)
 
-  return { form, isDirty, save, submit, start }
+  return { form, isDirty, save, submit, start, keep, discard }
 }
+
+type Kept = { values: DetailTaskForm; changed: (keyof DetailTaskForm)[] }

@@ -9,8 +9,9 @@ import { BackHead } from './BackHead'
 
 /**
  * What an item's pane keeps between its reading and its form: whether it is editing, and whether
- * the form holds unsaved changes. Every way out of the pane goes through `close`, which asks first
- * when there is something to lose.
+ * the form holds unsaved changes. Esc, the × and the way back go through `close`, which does not
+ * ask: the form keeps what was typed for when it opens again (FR-029). Its Cancel asks, through
+ * `guard.leave`.
  */
 export function useItemPane(onClose: () => void) {
   const [editing, setEditing] = useState(false)
@@ -22,7 +23,7 @@ export function useItemPane(onClose: () => void) {
     /** For the form: whether anything differs from what it opened on. */
     onUnsaved: setUnsaved,
     guard,
-    close: () => guard.leave(onClose),
+    close: () => guard.release(onClose),
   }
 }
 

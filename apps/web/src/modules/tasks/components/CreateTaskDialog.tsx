@@ -7,7 +7,7 @@ import {
 } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { DayField } from '../../../shell/dates'
 import { ProjectChip, useEveryProject } from '../../../shell/projects'
@@ -18,6 +18,7 @@ import { flatten } from '../logic/tree/flatten'
 import { area, label } from '../../../platform/ui/formStyles'
 import { PickOne } from '../../../platform/ui/inline'
 import { Modal } from '../../../platform/ui/Modal'
+import { forgetDraft, keepDraft, keptDraft } from '../../../platform/ui/drafts'
 import { DateDecisions, StatusRadios } from './TaskFields'
 import { useComposing } from '../../../platform/keyboard/composition'
 import {
@@ -52,6 +53,9 @@ export function CreateTaskDialog({
   const timeZone = useTimeZone()
   const todayYmd = ymd(useNow(), timeZone)
 
+  // What was typed before Esc closed it, opened from the same place (FR-029).
+  const draft = `task:new:${projectId}:${relatedTo?.id ?? ''}:${plannedOn ?? ''}`
+
   // The deadline is picked as a named day and held as the end of that day, the instant the
   // contract takes.
   const {
@@ -62,7 +66,7 @@ export function CreateTaskDialog({
     formState: { errors },
   } = useForm<CreateTaskForm, unknown, CreateTaskValues>({
     resolver: zodResolver(createTaskForm),
-    defaultValues: {
+    defaultValues: keptDraft<CreateTaskForm>(draft) ?? {
       projectId,
       parentId: null,
       title: '',
@@ -72,11 +76,15 @@ export function CreateTaskDialog({
       notes: null,
     },
   })
+  useEffect(() => {
+    const kept = watch((values) => keepDraft(draft, typedIn(values) ? values : null))
+    return () => kept.unsubscribe()
+  }, [watch, draft])
   const project = watch('projectId')
   const parentId = watch('parentId')
   const scheduledOn = watch('scheduledOn')
   const dueAt = watch('dueAt')
-  const typed = watch('title').trim() !== '' || (watch('notes') ?? '').trim() !== ''
+  const typed = typedIn({ title: watch('title'), notes: watch('notes') })
 
   const projects = useEveryProject()
   const tasks = useQuery(projectTasksQuery(project))
@@ -110,6 +118,7 @@ export function CreateTaskDialog({
       if (create.isPending) return
       create.mutate(values, {
         onSuccess: () => {
+          forgetDraft(draft)
           if (!stay) return onClose()
           setValue('title', '')
           titleField.current?.focus()
@@ -258,7 +267,10 @@ export function CreateTaskDialog({
 
         <DialogFooter
           submit="Create"
-          onCancel={onClose}
+          onCancel={() => {
+            forgetDraft(draft)
+            onClose()
+          }}
           hint={
             // Both chords: one guessed from the user agent could teach the wrong key.
             <p className="text-meta text-muted">
@@ -277,3 +289,6 @@ export function CreateTaskDialog({
     </Modal>
   )
 }
+
+const typedIn = (values: { title?: string | undefined; notes?: string | null | undefined }) =>
+  (values.title ?? '').trim() !== '' || (values.notes ?? '').trim() !== ''

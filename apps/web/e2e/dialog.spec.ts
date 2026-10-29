@@ -152,9 +152,8 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
 
   await openNewTask(page)
   await titleField(page).fill('不会被创建')
-  // A typed title is asked about first; Discard is the way out.
+  // Closed without asking: what was typed is kept for the next time it opens (FR-029).
   await page.keyboard.press('Escape')
-  await dialog(page).getByRole('button', { name: 'Discard changes' }).click()
   await expect(dialog(page)).toHaveCount(0)
   await expect(headNew(page)).toBeFocused()
   expect(writes).toEqual([])
@@ -166,17 +165,21 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   await expect(dialog(page)).toBeVisible()
+  // What Escape closed it on is back.
+  await expect(titleField(page)).toHaveValue('不会被创建')
   await page.keyboard.press('Escape')
   await expect(dialog(page)).toHaveCount(0)
   await expect(handle).toBeFocused()
 
-  // Cancel is the same decision with a mouse.
+  // Cancel lets it go, asking first; opened again, it is empty.
   await openNewTask(page)
   // `exact`: accessible names are one flat namespace matched by substring, and "Clear the
-  // deadline" is in
-  // this very dialog.
+  // deadline" is in this very dialog.
   await dialog(page).getByRole('button', { name: 'Cancel', exact: true }).click()
+  await dialog(page).getByRole('button', { name: 'Discard changes' }).click()
   await expect(dialog(page)).toHaveCount(0)
+  await openNewTask(page)
+  await expect(titleField(page)).toHaveValue('')
   expect(writes).toEqual([])
 })
 

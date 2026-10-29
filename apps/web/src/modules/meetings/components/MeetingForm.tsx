@@ -4,6 +4,8 @@ import { useNow } from '../../../platform/time/useNow'
 import { Field } from '../../../platform/ui/Field'
 import { area, boxed, field, label } from '../../../platform/ui/formStyles'
 import { useReportUnsaved } from '../../../platform/ui/unsavedGuard'
+import { keepDraft, keptDraft } from '../../../platform/ui/drafts'
+import { useEffect, useRef } from 'react'
 import { FormBar, saveOnChord } from '../../../shell/detail'
 import { ProjectPicker } from '../../../shell/projects'
 import { useTimeZone } from '../../../shell/auth'
@@ -24,6 +26,7 @@ export function MeetingForm({
   onCancel,
   onSave,
   onUnsaved,
+  draft,
 }: {
   meeting: MeetingOccurrence
   busy: boolean
@@ -31,6 +34,8 @@ export function MeetingForm({
   onSave: (patch: UpdateSeriesBody) => void
   /** Whether anything differs from what the form opened on, for the pane's leave guard. */
   onUnsaved?: (unsaved: boolean) => void
+  /** Where what Esc closed it on is kept, in a pane (FR-029); its owner forgets it. */
+  draft?: string
 }) {
   const today = ymd(useNow(), useTimeZone())
   const { form, values, ready } = useMeetingForm(meetingValues(meeting))
@@ -40,6 +45,20 @@ export function MeetingForm({
   const setStart = (nextDay: string, nextClock: string) =>
     form.setValue('startsLocal', `${nextDay}T${nextClock}`, dirty)
   useReportUnsaved(form.formState.isDirty && !busy, onUnsaved)
+  // Back over what it opened on, as changes, so they still read as unsaved.
+  const restored = useRef(false)
+  useEffect(() => {
+    if (!draft) return
+    if (!restored.current) {
+      restored.current = true
+      const kept = keptDraft<typeof values>(draft)
+      for (const key of Object.keys(kept ?? {}) as (keyof typeof values)[])
+        if (JSON.stringify(kept![key]) !== JSON.stringify(values[key]))
+          form.setValue(key, kept![key] as never, dirty)
+      return
+    }
+    keepDraft(draft, form.formState.isDirty ? values : null)
+  })
 
   return (
     <form
@@ -165,3 +184,6 @@ export function MeetingForm({
     </form>
   )
 }
+
+/** What a meeting's form in a pane keeps when Esc closes it. */
+export const meetingDraft = (meeting: MeetingOccurrence) => `meeting:edit:${meeting.meetingId}`

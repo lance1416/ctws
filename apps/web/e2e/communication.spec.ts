@@ -103,7 +103,7 @@ test('a message needs someone it was with, and leaving a typed one asks first', 
   await form.getByRole('button', { name: /^Log message/ }).click()
   await expect(form.getByRole('alert').filter({ hasText: 'Say who it was to' })).toBeVisible()
   await form.getByRole('button', { name: 'Cancel' }).click()
-  await expect(form.getByRole('alert').filter({ hasText: 'unsaved changes' })).toBeVisible()
+  await expect(form.getByRole('alert').filter({ hasText: 'Discard the changes?' })).toBeVisible()
   await form.getByRole('button', { name: 'Discard changes' }).click()
   await expect(form).toHaveCount(0)
 })

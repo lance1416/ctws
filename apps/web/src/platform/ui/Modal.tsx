@@ -1,5 +1,13 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
 import { BUTTON } from './buttonStyles'
 import { LAYER } from './layers'
@@ -56,8 +64,9 @@ export function Modal({
   /** The header's own dismiss control. `null` on a layer whose footer already carries Cancel. */
   dismissLabel?: string | null
   /**
-   * Something typed in would be lost, so Escape, the scrim and the header's dismiss ask first.
-   * The footer's Cancel still discards: pressing it is the decision.
+   * Something typed in would be lost by the footer's Cancel, which asks first (`useCancel`).
+   * Escape, the scrim and the header's dismiss close without asking: the form keeps what was
+   * typed for when it opens again (FR-029, `drafts`).
    */
   unsaved?: boolean
   /** A palette (search, the key list): no title row, and wide enough for columns. */
@@ -87,7 +96,7 @@ export function Modal({
     <Dialog.Root
       open
       onOpenChange={(next) => {
-        if (!next) guard.leave(onClose)
+        if (!next) onClose()
       }}
     >
       <Dialog.Portal>
@@ -96,7 +105,7 @@ export function Modal({
           // Closed on the press, and only one that starts on the scrim: Radix's own outside click
           // is armed a macrotask after mount and can miss a press made as the layer opens.
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget) guard.leave(onClose)
+            if (e.target === e.currentTarget) onClose()
           }}
           // `max-sm:pt-24`: the top bar stays above the scrim and is two rows tall on a phone.
           className={`fixed inset-0 ${LAYER.pane} flex justify-center overflow-y-auto bg-scrim px-4 ${wide ? 'pt-[calc(8vh-1.25rem)] pb-[8vh]' : 'py-[8vh]'} max-sm:pt-24`}
@@ -173,7 +182,7 @@ export function Modal({
                 <UnsavedAsk guard={guard} />
               </div>
             )}
-            {children}
+            <CancelContext.Provider value={guard.leave}>{children}</CancelContext.Provider>
           </Dialog.Content>
         </Dialog.Overlay>
       </Dialog.Portal>
@@ -181,12 +190,21 @@ export function Modal({
   )
 }
 
+const CancelContext = createContext<(discard: () => void) => void>((discard) => discard())
+
+/**
+ * The footer's Cancel in a layer: lets what was typed go, asking first when there is something to
+ * lose. `discard` is what letting go does (forget the draft, close).
+ */
+export const useCancel = () => useContext(CancelContext)
+
 /**
  * The leave guard's close half, for a layer that is not a route: `useUnsavedGuard` also holds the
  * router, and the router takes one blocker at a time, which the pane underneath may already hold.
  */
 function useCloseGuard(unsaved: boolean, onClose: () => void): UnsavedGuard {
   const [asking, setAsking] = useState(false)
+  const discarding = useRef(onClose)
   const focusOn = useRef<HTMLButtonElement | null>(null)
   useEffect(() => {
     if (asking) focusOn.current?.focus()
@@ -195,11 +213,16 @@ function useCloseGuard(unsaved: boolean, onClose: () => void): UnsavedGuard {
     asking,
     leaving: false,
     focusOn,
-    leave: (go) => (unsaved ? setAsking(true) : go()),
+    leave: (go) => {
+      if (!unsaved) return go()
+      discarding.current = go
+      setAsking(true)
+    },
     keep: () => setAsking(false),
+    release: (go) => go(),
     discard: () => {
       setAsking(false)
-      onClose()
+      discarding.current()
     },
   }
 }
