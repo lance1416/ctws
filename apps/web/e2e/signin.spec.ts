@@ -94,3 +94,27 @@ test('after a session ends, signing in again goes back to the page, and shows no
   await stale
   await expect(page.getByText('Only mine')).toHaveCount(0)
 })
+
+test('an empty field or a short new password is said plainly, and nothing is sent', async ({
+  page,
+}) => {
+  await page.goto('/login')
+  const sent: string[] = []
+  page.on('request', (r) => /\/auth\/(login|register)$/.test(r.url()) && sent.push(r.url()))
+
+  await page.getByLabel('Email').fill('someone@example.com')
+  await page.getByLabel('Email').press('Enter')
+  await expect(page.getByRole('alert')).toHaveText('Enter your password.')
+
+  await page.getByLabel('Email').fill('')
+  await page.getByLabel('Password').fill('short')
+  await page.getByLabel('Password').press('Enter')
+  await expect(page.getByRole('alert')).toHaveText('Enter your email.')
+
+  await page.getByLabel('Email').fill('someone@example.com')
+  await page.getByRole('button', { name: 'Create an account' }).click()
+  await expect(page.getByRole('alert')).toHaveText('Use a password of at least 12 characters.')
+  expect(sent).toHaveLength(0)
+  // Never the validator's own words.
+  await expect(page.getByRole('alert')).not.toContainText('body/')
+})

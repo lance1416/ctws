@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../registry'
-import { call, problemText } from '../../platform/http/api'
+import { ApiError, call, problemText } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
 import { meKey, useMe } from './useMe'
 import { LINK } from '../../platform/ui/buttonStyles'
@@ -38,8 +38,25 @@ export function Login() {
       qc.setQueryData(meKey, user)
       navigate(from, { replace: true })
     },
-    onError: (e: Error) => setError(problemText(e) ?? ''),
+    // A form the server could not read is said as the person would put it, never the
+    // validator's own words ("body/password Too small…").
+    onError: (e: Error) =>
+      setError(
+        e instanceof ApiError && e.status === 400
+          ? 'Check your email and password.'
+          : (problemText(e) ?? ''),
+      ),
   })
+  /** Asks only once both are filled in; an empty one is said here, not sent. */
+  const ask = (how: 'register' | 'login') => {
+    if (act.isPending) return
+    if (email.trim() === '') return setError('Enter your email.')
+    if (password === '') return setError('Enter your password.')
+    // The account's rule, said before asking: a new password is twelve or more.
+    if (how === 'register' && password.length < 12)
+      return setError('Use a password of at least 12 characters.')
+    act.mutate(how)
+  }
 
   if (me.isLoading) return null
   if (me.data) return <Navigate to={from} replace />
@@ -57,7 +74,7 @@ export function Login() {
           className="mt-10 flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault()
-            if (!act.isPending) act.mutate('login')
+            ask('login')
           }}
         >
           <div>
@@ -100,7 +117,7 @@ export function Login() {
               type="button"
               disabled={act.isPending}
               className={`-mx-1 rounded-control px-1 py-0.5 ${LINK} disabled:opacity-50`}
-              onClick={() => act.mutate('register')}
+              onClick={() => ask('register')}
             >
               Create an account
             </button>
