@@ -49,7 +49,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @ctws/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @ctws/web exec playwright install --with-deps chromium webkit
       # Same-origin, like production: the api image serves the built web app on :3000 and the
       # e2e drives that one origin. COOKIE_SECURE=false because this is plain http.
       - name: Write .env for the api container

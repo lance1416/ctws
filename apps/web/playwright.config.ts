@@ -21,6 +21,13 @@ export default defineConfig({
       use: { baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000' },
     },
     {
+      // The editor again in WebKit, Safari's engine: it draws its own cursor and measures its own
+      // lines, and Safari is where those went wrong.
+      name: 'safari',
+      testMatch: /editor\.spec\.ts$/,
+      use: { browserName: 'webkit', baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000' },
+    },
+    {
       // The specs whose answer depends on what time it is, against the app whose clock is pinned
       // (`api-pinned` in docker-compose.yml): their expectations come from `e2e/pinned.ts`.
       name: 'pinned',

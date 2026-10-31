@@ -3,9 +3,17 @@
    the Markdown is mono, 13 and subtle, inside the same line height, so nothing moves as the cursor
    does. Plain CSS like notes.css: CodeMirror draws its own markup. */
 
+/* The editor fills its box, however little is written: a press anywhere in it writes. */
+[data-markdown-editor] {
+  display: grid;
+}
+
+/* Half a rem out on either side, kept by the content's own padding: room for the cursor line's
+   ground to run past the text without running past the scroller, which would scroll it sideways. */
 [data-markdown-editor] .cm-editor {
   background: transparent;
   color: var(--color-ink);
+  margin-inline: -0.5rem;
 }
 
 [data-markdown-editor] .cm-editor.cm-focused {
@@ -13,6 +21,7 @@
 }
 
 [data-markdown-editor] .cm-scroller {
+  flex-grow: 1;
   font-family: var(--font-sans);
   font-size: var(--text-prose);
   line-height: var(--text-prose--line-height);
@@ -28,8 +37,14 @@
 }
 
 [data-markdown-editor] .cm-content {
-  padding: 0;
-  caret-color: var(--color-ink);
+  padding: 0 0.5rem;
+}
+
+/* The cursor is drawn, not the browser's own (Vim's visual mode needs the selection drawn): in the
+   ink, or on a dark ground it is black on black. */
+[data-markdown-editor] .cm-cursor,
+[data-markdown-editor] .cm-dropCursor {
+  border-left-color: var(--color-ink);
 }
 
 [data-markdown-editor] .cm-line {
@@ -146,18 +161,48 @@
   padding-inline: 0.75rem !important;
 }
 
+/* The block's first and last lines keep half a rem clear above and below it inside themselves,
+   as padding, and draw their part of the block behind the text: CodeMirror measures a line
+   without its margins, and a margin put every line after the block a little off where a press
+   lands, so a press took the line above. */
+.cm-md-codefirst,
+.cm-md-codelast {
+  position: relative;
+  z-index: 0;
+  background: none;
+  border-inline-color: transparent;
+}
+
 .cm-md-codefirst {
-  border-top: 1px solid var(--color-line);
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-  margin-top: 0.5rem;
+  padding-top: 0.5rem !important;
 }
 
 .cm-md-codelast {
+  padding-bottom: 0.5rem !important;
+}
+
+.cm-md-codefirst::before,
+.cm-md-codelast::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-ground);
+  border-inline: 1px solid var(--color-line);
+}
+
+.cm-md-codefirst::before {
+  top: 0.5rem;
+  border-top: 1px solid var(--color-line);
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.cm-md-codelast::before {
+  bottom: 0.5rem;
   border-bottom: 1px solid var(--color-line);
   border-bottom-left-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .cm-md-codehead {
@@ -186,9 +231,13 @@
   font-size: 0.875rem;
 }
 
+/* A table's room above and below is its box's padding, not a margin, for the same reason. */
+.cm-md-tablebox {
+  padding-block: 0.5rem;
+}
+
 .cm-md-table {
   border-collapse: collapse;
-  margin-block: 0.5rem;
   font-size: var(--text-ui);
   line-height: var(--text-ui--line-height);
   font-variant-numeric: tabular-nums;
@@ -210,7 +259,7 @@
 }
 
 .cm-md-math-block {
-  margin-block: 0.5rem;
+  padding-block: 0.5rem;
   text-align: center;
 }
 

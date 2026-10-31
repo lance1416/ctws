@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { apiPost, editorText, makeProject, makeTask, navLink, registerFreshUser } from './helpers'
 
 /**
@@ -126,7 +126,11 @@ test('a formula and a table are drawn off their lines', async ({ page }) => {
   await expect(page.locator('[data-markdown-editor] table.cm-md-table td').first()).toHaveText('1')
 })
 
-test('an IME’s commit is the words only: no line is added (REQ-002 §6)', async ({ page }) => {
+test('an IME’s commit is the words only: no line is added (REQ-002 §6)', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'composition is typed through Chromium’s own protocol')
   await registerFreshUser(page)
   const id = await openNote(page, '- one')
   await lineOf(page, 'one').click()
@@ -347,4 +351,165 @@ test('a task’s notes grow to half the window and a message to twelve lines, th
   for (let i = 0; i < 20; i++) await page.keyboard.press('Enter')
   expect((await said.boundingBox())!.height).toBeLessThanOrEqual(12 * 24 + 12 + 2)
   expect(await said.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+})
+
+/**
+ * Written in, an empty editor still fills its box and scrolls neither way: the cursor line's ground
+ * runs past the text, and with scroll bars always shown (a Mac with a mouse) a scroller it ran past
+ * drew both bars and squeezed the line between them.
+ */
+async function fitsWritten(field: Locator) {
+  await expect(field.locator('.cm-editor.cm-focused')).toBeVisible()
+  await expect(field.locator('.cm-md-active')).toBeVisible()
+  // The editor's own boxes scroll neither way; every box round it that can scroll, not sideways.
+  const scrolled = await field.locator('.cm-scroller').evaluate((from) => {
+    const out: string[] = []
+    let own = true
+    for (let el: Element | null = from; el; el = el.parentElement) {
+      const { overflowX, overflowY } = getComputedStyle(el)
+      const can = el === document.documentElement || /auto|scroll/.test(overflowX + overflowY)
+      const sideways = el.scrollWidth > el.clientWidth
+      if (can && (sideways || (own && el.scrollHeight > el.clientHeight)))
+        out.push(el.className || el.tagName)
+      if (el.hasAttribute('data-markdown-editor')) own = false
+    }
+    return out
+  })
+  expect(scrolled).toEqual([])
+  // The editor is the whole of its box inside the box's padding.
+  const short = await field.evaluate((el) => {
+    const cs = getComputedStyle(el)
+    const inside = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+    return inside - el.querySelector('.cm-editor')!.getBoundingClientRect().height
+  })
+  expect(short).toBeLessThanOrEqual(1)
+}
+
+test('an empty editor fills its box, scrolls neither way, and writes from anywhere in it', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+
+  // A new note: written from a press at the foot of its 20rem, not only on its first line.
+  await page.goto('/notes/new')
+  const note = page.locator('[data-markdown-editor]')
+  await expect(note.locator('.cm-content')).toBeVisible()
+  const box = (await note.boundingBox())!
+  expect(box.height).toBeGreaterThanOrEqual(320)
+  await page.mouse.click(box.x + 40, box.y + box.height - 10)
+  await fitsWritten(note)
+
+  // A task's empty notes in its pane, then in Full screen.
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, 'Bare')
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').filter({ hasText: 'Bare' }).first().click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
+  const notes = page.locator('[data-markdown-editor][data-boxed]')
+  await notes.locator('.cm-content').click()
+  await fitsWritten(notes)
+  await page.getByRole('button', { name: 'Full screen' }).click()
+  const whole = page.getByRole('dialog', { name: 'Bare' }).locator('[data-markdown-editor]')
+  await whole.locator('.cm-content').click()
+  await fitsWritten(whole)
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+
+  // A meeting's notes.
+  const made = await apiPost<{ meetingId: string }>(page, '/meetings', {
+    title: 'Atlas weekly',
+    startsLocal: '2026-09-11T10:30',
+    timeZone: 'Europe/London',
+    durationMinutes: 30,
+  })
+  await page.goto(`/meetings/${made.meetingId}?at=2026-09-11T10:30`)
+  await page
+    .getByRole('button', { name: /Write|Edit the notes/ })
+    .first()
+    .click()
+  const minutes = page.locator('[data-markdown-editor]')
+  await minutes.locator('.cm-content').click()
+  await fitsWritten(minutes)
+
+  // A message's body.
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
+  await page.goto(`/people/${mira.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Mira Chen' })).toBeVisible()
+  await page.keyboard.press('n')
+  await page.keyboard.press('x')
+  const said = page.getByRole('dialog', { name: 'Log a message' }).locator('[data-markdown-editor]')
+  await said.locator('.cm-content').click()
+  await fitsWritten(said)
+})
+
+test('the cursor shows on a dark ground, and a press anywhere on a line puts it on that line', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  // Tall enough that the whole note sits above the status bar.
+  await page.setViewportSize({ width: 1280, height: 1100 })
+  await registerFreshUser(page)
+  await openNote(
+    page,
+    [
+      'First words.',
+      '',
+      '## Plan',
+      '',
+      '```js',
+      'const a = 1',
+      'const b = 2',
+      '```',
+      '',
+      'After the code.',
+      '',
+      '| ID | Name |',
+      '| --- | --- |',
+      '| 1 | mail |',
+      '',
+      'After the table.',
+      '',
+      '$$',
+      'a^2 + b^2',
+      '$$',
+      '',
+      'After the formula.',
+      '',
+      '- one',
+      '- two',
+    ].join('\n'),
+  )
+
+  // Drawn by the editor, in the ink: the browser's own is hidden.
+  await lineOf(page, 'First words').click()
+  const cursor = page.locator('[data-markdown-editor] .cm-cursor').first()
+  await expect(cursor).toBeVisible()
+  const { drawn, ink } = await cursor.evaluate((el) => ({
+    drawn: getComputedStyle(el).borderLeftColor,
+    ink: getComputedStyle(el.closest('.cm-editor')!).color,
+  }))
+  expect(drawn).toBe(ink)
+
+  // Near its top, its middle and its foot, every line below a code block, a table and a formula
+  // as well as above them: what the editor measures is where the line is drawn.
+  for (const words of [
+    'First words',
+    'const b',
+    'After the code',
+    'After the table',
+    'After the formula',
+    'two',
+    'Plan',
+    'After the code',
+  ]) {
+    for (const at of ['top', 'middle', 'foot'] as const) {
+      const box = (await lineOf(page, words).boundingBox())!
+      const y = { top: box.y + 3, middle: box.y + box.height / 2, foot: box.y + box.height - 3 }[at]
+      await page.mouse.click(box.x + 40, y)
+      await expect(
+        page.locator('[data-markdown-editor] .cm-md-active'),
+        `${words}, near its ${at}`,
+      ).toContainText(words)
+    }
+  }
 })

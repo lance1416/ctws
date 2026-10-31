@@ -232,7 +232,9 @@ export class TableWidget extends WidgetType {
     return JSON.stringify(other.rows) === JSON.stringify(this.rows)
   }
   toDOM(view: EditorView) {
-    const table = document.createElement('table')
+    const box = document.createElement('div')
+    box.className = 'cm-md-tablebox'
+    const table = box.appendChild(document.createElement('table'))
     table.className = 'cm-md-table'
     this.rows.forEach((cells, i) => {
       const tr = document.createElement('tr')
@@ -241,14 +243,14 @@ export class TableWidget extends WidgetType {
         cell.textContent = words
         cell.addEventListener('mousedown', (e) => {
           e.preventDefault()
-          view.dispatch({ selection: { anchor: view.posAtDOM(table) + at } })
+          view.dispatch({ selection: { anchor: view.posAtDOM(box) + at } })
           view.focus()
         })
         tr.append(cell)
       }
       table.append(tr)
     })
-    return table
+    return box
   }
   override ignoreEvent() {
     // A press is the cells' own: each takes the cursor to its words.
