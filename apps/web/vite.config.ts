@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
@@ -20,6 +21,23 @@ const dropLegacyFontFormats = {
     return out === code ? null : { code: out, map: null }
   },
 }
+
+/**
+ * WHAT THIS BUILD IS, for the status bar: the image's build sets CTWS_VERSION to the release's tag
+ * and CTWS_COMMIT to its commit; a build from a working tree is `dev`, with the commit git gives,
+ * when there is a git to ask. Vite hands VITE_ variables to the page.
+ */
+function shortCommit(): string {
+  try {
+    return execSync('git rev-parse --short=8 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim()
+  } catch {
+    return ''
+  }
+}
+process.env.VITE_CTWS_VERSION = process.env.CTWS_VERSION || 'dev'
+process.env.VITE_CTWS_COMMIT = process.env.CTWS_COMMIT || shortCommit()
 
 export default defineConfig({
   plugins: [dropLegacyFontFormats, react(), tailwindcss()],

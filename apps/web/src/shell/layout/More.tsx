@@ -9,11 +9,13 @@ import { ProjectSquare, useProjects } from '../projects'
 import { useRegistry } from '../registry'
 import { SearchDialog } from '../search/SearchDialog'
 import { PhoneHead } from './PhoneHead'
+import { BuildVersion } from './StatusBar'
 
 /**
  * MORE (FR-085, artboard 25): everything a phone has no tab for. Search on top; the pages across
  * kinds (Workbench, Review); every other kind, each with what is worth knowing of it; each
- * project, with how many open leaves it has; and the account last.
+ * project, with how many open leaves it has; the account; and, last, which release this is (a
+ * phone has no status bar).
  */
 export function More() {
   const registry = useRegistry()
@@ -101,6 +103,10 @@ export function More() {
           </Link>
         </li>
       </Group>
+
+      <p className="py-4 text-center text-meta text-subtle tabular-nums">
+        <BuildVersion />
+      </p>
 
       {searching && <SearchDialog onClose={() => setSearching(false)} />}
     </div>

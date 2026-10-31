@@ -143,7 +143,8 @@ export function MigrationReport() {
     <div className="-m-5 flex min-h-[calc(100%+2.5rem)] max-lg:pb-20">
       <nav
         aria-label="Migration report"
-        className="sticky top-0 hidden h-[calc(100dvh-2.75rem)] w-62 shrink-0 flex-col overflow-y-auto border-r border-line bg-chrome pb-3 lg:flex"
+        // The window less the top bar's 2.75rem and the status bar's 1.5rem.
+        className="sticky top-0 hidden h-[calc(100dvh-4.25rem)] w-62 shrink-0 flex-col overflow-y-auto border-r border-line bg-chrome pb-3 lg:flex"
       >
         <h2 className="flex h-11 shrink-0 items-center px-3.5 text-ui font-medium text-ink">
           Migration report

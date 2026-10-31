@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { registerFreshUser } from './helpers'
 
 /** The frame of FR-017 to FR-023 (STORY-001): the regions, the icon bar, the retired addresses. */
@@ -148,4 +148,48 @@ test('every place on the bar opens a page of its own, none of them a placeholder
     await expect(page.getByRole('main').getByRole('heading', { level: 1 }), name).toHaveCount(1)
     await expect(page.getByText('Coming later.')).toHaveCount(0)
   }
+})
+
+/** What the server says it is: the image's tag (v0.31.5) or dev, and its commit if built with one. */
+async function running(page: Page): Promise<{ version: string; commit: string | null }> {
+  return (await page.request.get('/api/v1/health')).json()
+}
+
+test('the status bar says the build running, as the server does: the tag as it is', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const build = await running(page)
+  // A release's tag or a working tree's dev, nothing written by hand.
+  expect(build.version).toMatch(/^(v\d+\.\d+\.\d+|dev)$/)
+  const bar = page.getByRole('contentinfo', { name: 'Status' })
+  const version = bar.locator('[data-build-version]')
+  // The tag as GitHub has it, word for word; the commit only for a screen reader.
+  await expect(version).toHaveText(new RegExp(`^${build.version}(, Build [0-9a-f]+)?$`))
+  // CI builds with its commit, so there it must be said; a stack built without one says none.
+  if (process.env.CI) expect(build.commit).toMatch(/^[0-9a-f]{8}$/)
+  if (build.commit) await expect(version).toHaveAttribute('title', `Build ${build.commit}`)
+  // The frame's last 24, across the window, under the icon bar too.
+  const box = (await bar.boundingBox())!
+  const viewport = page.viewportSize()!
+  expect([box.x, box.width, box.height, box.y + box.height]).toEqual([
+    0,
+    viewport.width,
+    24,
+    viewport.height,
+  ])
+})
+
+test('on a phone the build is the last line of More, and there is no status bar', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await registerFreshUser(page)
+  const build = await running(page)
+  await page.goto('/more')
+  await expect(page.getByRole('heading', { level: 1, name: 'More' })).toBeVisible()
+  await expect(page.getByRole('main').locator('[data-build-version]')).toHaveText(
+    new RegExp(`^${build.version}(, Build [0-9a-f]+)?$`),
+  )
+  await expect(page.getByRole('contentinfo', { name: 'Status' })).toBeHidden()
 })

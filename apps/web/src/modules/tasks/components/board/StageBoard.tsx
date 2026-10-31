@@ -207,8 +207,9 @@ export function StageBoard({
           id={BOARD_ID}
           data-board="stage"
           onKeyDown={onKeyDown}
-          // At least 240 a column (DES-001 v1.21), scrolling sideways in here, not the page.
-          className="flex min-w-0 gap-3 max-md:flex-col md:h-[calc(100dvh-16rem)] md:min-h-96 md:overflow-x-auto md:pb-1"
+          // At least 240 a column (DES-001 v1.21), scrolling sideways in here, not the page. Its
+          // height is the window's less the frame and the page above it, the status bar's 1.5rem too.
+          className="flex min-w-0 gap-3 max-md:flex-col md:h-[calc(100dvh-17.5rem)] md:min-h-96 md:overflow-x-auto md:pb-1"
         >
           {columns.map(({ stage, cards: list }) =>
             opened(stage) ? (

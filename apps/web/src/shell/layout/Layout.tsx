@@ -12,6 +12,7 @@ import { NewContext, rememberKind, type NewHow } from '../creates'
 import { LinkDialog } from '../links/LinkDialog'
 import { WhyGreyed } from '../../platform/ui/WhyGreyed'
 import { BottomBar } from './BottomBar'
+import { StatusBar } from './StatusBar'
 import { IconBar } from './IconBar'
 import { Inspector } from './Inspector'
 import { BackOnline } from './Online'
@@ -181,6 +182,7 @@ function Frame({
             />
             {pinning && <PinLink onClose={() => setPinning(false)} />}
             {linking && linkFrom && <LinkDialog of={linkFrom} onClose={() => setLinking(false)} />}
+            <StatusBar />
             <BottomBar />
             <WhyGreyed />
           </div>

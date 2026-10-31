@@ -53,9 +53,10 @@ test('on a meeting’s edit page, Delete this meeting comes after the last field
   await expect(zone.getByRole('button', { name: 'Delete this meeting' })).toBeVisible()
 
   const m = await measure(zone, 'main')
-  const viewport = await page.evaluate(() => window.innerHeight)
+  // The main area's floor: the window's, less the status bar under it on a desk.
+  const floor = await page.locator('main').evaluate((el) => el.getBoundingClientRect().bottom)
   // On the floor of the main area, inside its own 20px of padding, as a project's edit page has it.
-  expect(viewport - m.bottom).toBeLessThanOrEqual(21)
+  expect(floor - m.bottom).toBeLessThanOrEqual(21)
   // Last: everything on the page is above it.
   expect(m.contentBottom).toBeLessThanOrEqual(m.top + 0.5)
   // No fill of its own: it belongs to the page, and the rule sets it apart from the form.
@@ -106,9 +107,10 @@ test('on a short page, Delete project sits at the bottom of the screen', async (
   await expect(zone.getByRole('button', { name: /^Delete / })).toBeVisible()
 
   const m = await measure(zone, 'main')
-  const viewport = await page.evaluate(() => window.innerHeight)
+  // The main area's floor: the window's, less the status bar under it on a desk.
+  const floor = await page.locator('main').evaluate((el) => el.getBoundingClientRect().bottom)
   // On the floor of the main area, inside its own 20px of padding.
-  expect(viewport - m.bottom).toBeLessThanOrEqual(21)
+  expect(floor - m.bottom).toBeLessThanOrEqual(21)
   expect(m.contentBottom).toBeLessThanOrEqual(m.top + 0.5)
   expect(m.fills).toEqual([CLEAR, CLEAR])
   expect(m.rule).toBeGreaterThan(0)
