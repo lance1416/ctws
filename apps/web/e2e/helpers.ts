@@ -775,12 +775,15 @@ export async function fillStart(scope: Page | Locator, day: string, time?: strin
  */
 export async function editorText(editor: Locator): Promise<string> {
   return editor.evaluate((el) =>
-    [...el.querySelectorAll('.cm-line')]
-      .map((line) => {
-        const copy = line.cloneNode(true) as HTMLElement
-        copy.querySelectorAll('.cm-placeholder').forEach((p) => p.remove())
-        return copy.textContent ?? ''
-      })
-      .join('\n'),
+    // The box standing in while the editor's code loads holds the same text.
+    el instanceof HTMLTextAreaElement
+      ? el.value
+      : [...el.querySelectorAll('.cm-line')]
+          .map((line) => {
+            const copy = line.cloneNode(true) as HTMLElement
+            copy.querySelectorAll('.cm-placeholder').forEach((p) => p.remove())
+            return copy.textContent ?? ''
+          })
+          .join('\n'),
   )
 }

@@ -13,6 +13,7 @@ import {
   submitCreate,
   navLink,
   setDue,
+  editorText,
 } from './helpers'
 import { addDaysYmd, dayOffset } from './days'
 
@@ -89,7 +90,9 @@ test('edits persist across a reload', async ({ page }) => {
 
   await page.goto(url)
   await reopen(page, '写方案')
-  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('先问清需求')
+  await expect
+    .poll(() => editorText(page.getByRole('textbox', { name: 'Notes', exact: true })))
+    .toBe('先问清需求')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
   await expect(page.getByLabel('Plan', { exact: true })).toHaveValue(PLAN_SAID)
 })

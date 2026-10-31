@@ -82,6 +82,8 @@ test('in a long edit, Delete follows the last field instead of floating over it'
   const dialog = page.getByRole('dialog', { name: 'Task details' })
   // Delete is the edit's last thing (FR-035), after the notes being edited.
   await dialog.getByRole('button', { name: 'Edit', exact: true }).click()
+  // The editor's code arrived, and with it the notes' own height.
+  await expect(dialog.locator('[data-markdown-editor] .cm-content')).toBeVisible()
   const zone = dialog.locator('[data-stop-zone]')
   await expect(zone.getByRole('button', { name: 'Delete task' })).toBeAttached()
 
@@ -90,10 +92,17 @@ test('in a long edit, Delete follows the last field instead of floating over it'
   expect(atTop.top).toBeGreaterThan(atTop.floor)
   expect(atTop.contentBottom).toBeLessThanOrEqual(atTop.top + 0.5)
 
-  // Scrolled to the end, it sits on the floor with all the content above it.
-  await dialog.evaluate((el) => (el.scrollTop = el.scrollHeight))
+  // Scrolled to the end, it sits on the floor with all the content above it. The editor draws a
+  // long text near the screen only and measures the rest as it comes into view, so the end is
+  // where scrolling to it stops moving it.
+  await expect
+    .poll(async () => {
+      await dialog.evaluate((el) => (el.scrollTop = el.scrollHeight))
+      const m = await measure(zone, '[role="dialog"]')
+      return Math.abs(m.floor - m.bottom)
+    })
+    .toBeLessThanOrEqual(1)
   const atEnd = await measure(zone, '[role="dialog"]')
-  expect(Math.abs(atEnd.floor - atEnd.bottom)).toBeLessThanOrEqual(1)
   expect(atEnd.contentBottom).toBeLessThanOrEqual(atEnd.top + 0.5)
   expect(atEnd.fills).toEqual([CLEAR, CLEAR])
 })

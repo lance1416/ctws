@@ -279,7 +279,8 @@ export default function MarkdownEditor({
     if ((autoFocus || given !== null) && free) {
       created.focus()
       // Taken over in the middle of an `@`: the box's list went with the box; this one asks again.
-      if (given !== null && mentions) startCompletion(created)
+      if (given !== null && mentions && completionStatus(created.state) === null)
+        startCompletion(created)
     }
     return () => {
       created.destroy()
@@ -302,6 +303,10 @@ export default function MarkdownEditor({
       changes: { from: 0, to: v.state.doc.length, insert: value },
       selection: { anchor: atEnd ? value.length : Math.min(head, value.length) },
     })
+    // Written in the box it replaced and arriving a beat late: an `@` being typed asks again.
+    // Only when no list is open: asking again restarts one, and its guard against a quick Enter.
+    if (v.hasFocus && mentions && completionStatus(v.state) === null) startCompletion(v)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run for a new value only.
   }, [value])
 
   return (

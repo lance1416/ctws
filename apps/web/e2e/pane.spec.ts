@@ -312,9 +312,9 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   await expect(dialog.getByRole('textbox', { name: 'Title' })).toHaveValue('读一下这条任务')
   await expect(dialog.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
   await expect(dialog.getByLabel('Plan', { exact: true })).toHaveValue('Mar 14, 2019')
-  await expect(dialog.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
-    '第一行\n第二行',
-  )
+  await expect
+    .poll(() => editorText(dialog.getByRole('textbox', { name: 'Notes', exact: true })))
+    .toBe('第一行\n第二行')
   await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
   // And Delete, last, under its rule.
   await expect(dialog.getByRole('button', { name: 'Delete task' })).toBeVisible()
@@ -532,8 +532,9 @@ test('Ctrl Enter saves the edit from any field (FR-029)', async ({ page }) => {
 })
 
 /**
- * A MENTION WHILE THE NOTES ARE EDITED (I-09): typed as its words, never its address, which
- * nobody can read and a slip of the cursor breaks; saved as the link it was.
+ * A MENTION WHILE THE NOTES ARE EDITED (I-09, REQ-002 FR-108): never its address, which nobody
+ * can read and a slip of the cursor breaks: a chip off the cursor's line, its words on it. Written
+ * around, it stays the link it was.
  */
 test('a mention in the notes is edited as its name, and saved as its link', async ({ page }) => {
   await registerFreshUser(page)
@@ -542,10 +543,18 @@ test('a mention in the notes is edited as its name, and saved as its link', asyn
   const link = `[@Mira Chen](ctws://person/${mira.id})`
   await makeTask(page, pid, 'Prepare the round', { notes: `Ask ${link} what came up.` })
   await openTaskPane(page, pid, 'Prepare the round')
+  await expect(page.locator('[data-markdown-editor] .cm-content').first()).toBeVisible()
 
   const notes = page.getByRole('textbox', { name: 'Notes' })
-  await expect(notes).toHaveValue('Ask @Mira Chen what came up.')
-  await notes.fill('Ask @Mira Chen what came up, and @Mira Chen again.')
+  await notes.locator('.cm-line').first().click()
+  await expect.poll(() => editorText(notes)).toBe('Ask @Mira Chen what came up.')
+  await page.keyboard.press('End')
+  await page.keyboard.press('Backspace')
+  await page.keyboard.type(', and @Mira')
+  await expect(page.getByRole('listbox').getByRole('option').first()).toContainText('Mira Chen')
+  await page.waitForTimeout(100) // CodeMirror's interactionDelay: no Enter in the list's first 75ms
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('again.')
   const saved = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok())
   await page.getByRole('button', { name: /^Save/ }).click()
   expect((await saved).request().postDataJSON().notes).toBe(
@@ -566,6 +575,8 @@ test('@ in the notes offers things by kind; the one chosen is mentioned', async 
   await makeTask(page, pid, 'Update the CV')
   await openTaskPane(page, pid, 'Update the CV')
 
+  // The editor itself (its code arrived), not the box standing in for it while it loads.
+  await expect(page.locator('[data-markdown-editor] .cm-content').first()).toBeVisible()
   const notes = page.getByRole('textbox', { name: 'Notes' })
   await notes.click()
   await notes.pressSequentially('@Mir')
@@ -613,6 +624,8 @@ test('@ works in a message too; Esc puts the list away, not the form', async ({ 
   await page.keyboard.press('x')
   const form = page.getByRole('dialog', { name: 'Log a message' })
 
+  // The editor itself (its code arrived), not the box standing in for it while it loads.
+  await expect(page.locator('[data-markdown-editor] .cm-content').first()).toBeVisible()
   const said = form.getByRole('textbox', { name: 'What was said' })
   await said.click()
   await said.pressSequentially('Ask @Mi')
@@ -647,6 +660,8 @@ test('@Mi puts Mira, whose name starts so, before Femi, who has it inside (BUG-0
     await apiPost(page, '/people', { name })
   await makeTask(page, pid, 'Update the CV')
   await openTaskPane(page, pid, 'Update the CV')
+  // The editor itself (its code arrived), not the box standing in for it while it loads.
+  await expect(page.locator('[data-markdown-editor] .cm-content').first()).toBeVisible()
   const notes = page.getByRole('textbox', { name: 'Notes' })
   await notes.click()
   await notes.pressSequentially('@Mi')
