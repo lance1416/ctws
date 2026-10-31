@@ -17,6 +17,7 @@ const ME = {
   migrationReport: null,
   passwordChangedAt: null,
   singleKeyShortcuts: true,
+  vimKeys: false,
 }
 
 const json = (body: unknown, status = 200) =>
