@@ -132,10 +132,13 @@ test('a pinned note is listed first, under Pinned, and a note on a thing has no 
     anchor: { type: 'person', id: mira.id },
   })
   await page.goto(`/notes/${note.id}`)
-  await page.getByRole('button', { name: 'Pin', exact: true }).click()
+  const pin = page.getByRole('button', { name: 'Pin', exact: true })
+  await expect(pin).toHaveAttribute('aria-pressed', 'false')
+  await pin.click()
   await expect(section(page, 'Pinned')).toContainText('Weekend plan')
+  await expect(pin).toHaveAttribute('aria-pressed', 'true')
   expect((await serverNote(page, note.id)).pinnedAt).not.toBeNull()
-  await page.getByRole('button', { name: 'Unpin' }).click()
+  await pin.click()
   await expect(section(page, 'Pinned')).toHaveCount(0)
 
   await page.goto(`/notes/${on.id}`)

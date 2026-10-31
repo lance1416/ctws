@@ -2,7 +2,7 @@ import type { NoteFolderId, NoteResponse } from '@ctws/contracts'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useQuery } from '@tanstack/react-query'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
-import { FolderIcon, MoreIcon, PinIcon, UnpinIcon } from '../../../platform/ui/icons'
+import { MoreIcon, PinIcon } from '../../../platform/ui/icons'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { foldersQuery } from '../api'
 import { fileNameOf } from '../logic/download'
@@ -87,26 +87,31 @@ export function NoteMenu({
   )
 }
 
-/** The pin beside a note on its own's title: on the list's top, or off it (FR-110). */
+/**
+ * The pin beside a note on its own's title, one switch (FR-110, DES-001): ink while the note is
+ * pinned, muted while it is not; its hover says what a press does.
+ */
 export function PinButton({ note }: { note: NoteResponse }) {
   const shelve = useShelveNote()
   const pinned = note.pinnedAt !== null
-  const Icon = pinned ? UnpinIcon : PinIcon
   return (
     <button
       type="button"
       aria-pressed={pinned}
-      aria-label={pinned ? 'Unpin' : 'Pin'}
-      title={pinned ? 'Unpin' : 'Pin to the top'}
+      aria-label="Pin"
+      title={pinned ? 'Unpin' : 'Pin'}
       onClick={() => shelve.mutate({ id: note.id, pinned: !pinned })}
-      className={`${ICON_BUTTON} shrink-0 ${pinned ? 'text-ink' : ''}`}
+      className={`${ICON_BUTTON} shrink-0 ${pinned ? 'text-ink' : 'text-muted'}`}
     >
-      <Icon size={16} aria-hidden="true" />
+      <PinIcon size={16} aria-hidden="true" />
     </button>
   )
 }
 
-/** The head's tag for the folder a note is in: a press shows the note in the sidebar (DES-001). */
+/**
+ * The head's tag for the folder a note is in, its name alone: a folder is no kind, and the folder
+ * glyph is a project's. A press shows the note in the sidebar (DES-001).
+ */
 export function FolderTag({ note }: { note: NoteResponse }) {
   const folder = useQuery(foldersQuery()).data?.find((f) => f.id === note.folderId)
   if (!folder) return null
@@ -114,9 +119,8 @@ export function FolderTag({ note }: { note: NoteResponse }) {
     <button
       type="button"
       onClick={() => askReveal(note.id)}
-      className="inline-flex h-5.5 items-center gap-1 rounded-control border border-line px-1.5 text-meta text-muted hover:bg-hover hover:text-ink"
+      className="inline-flex h-5.5 items-center rounded-control px-1.5 text-meta text-muted hover:bg-hover"
     >
-      <FolderIcon size={12} aria-hidden="true" />
       {folder.name}
     </button>
   )

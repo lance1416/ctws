@@ -76,7 +76,6 @@ import {
   PanelRight,
   Pencil,
   Pin,
-  PinOff,
   Phone,
   Plus,
   Repeat,
@@ -172,11 +171,8 @@ export const CollapseIcon = ChevronRight
 /** One step back or on: a month, a year. */
 export const BackIcon = ChevronLeft
 export const ForwardIcon = ChevronRight
-/** A folder of notes, as artboard 34 draws its tag (FR-110). */
-export const FolderIcon = Folder
-/** A note pinned to the top of the list, and taken off it (FR-110). */
+/** A note pinned to the top of the list: one switch, on and off (FR-110). */
 export const PinIcon = Pin
-export const UnpinIcon = PinOff
 /** Find's places: the one before, the next (FR-109). */
 export const FindPreviousIcon = ChevronUp
 export const FindNextIcon = ChevronDown
