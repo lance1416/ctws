@@ -102,3 +102,19 @@ test('the outline and the note’s actions are one sheet: a heading a tap away, 
   await expect.poll(async () => (await serverNote(page, note.id)).folderId).not.toBeNull()
   await expect(page.getByRole('main').getByRole('button', { name: 'Job hunt prep' })).toBeVisible()
 })
+
+test('a tap on the row writes and keeps the editor’s focus, the keyboard up (BUG-101)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const note = await apiPost<{ id: string }>(page, '/notes', { title: 'Prep', body: 'Plan' })
+  await page.goto(`/notes/${note.id}`)
+  await page.locator('[data-markdown-editor] .cm-line').first().tap()
+  const row = page.getByRole('toolbar', { name: 'Formatting' })
+  await row.getByRole('button', { name: 'List' }).tap()
+  await expect.poll(async () => (await serverNote(page, note.id)).body).toBe('- Plan')
+  await expect(page.locator('[data-markdown-editor] .cm-content')).toBeFocused()
+  await row.getByRole('button', { name: 'Heading' }).tap()
+  await expect.poll(async () => (await serverNote(page, note.id)).body).toBe('## Plan')
+  await expect(row).toBeVisible()
+})
