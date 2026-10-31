@@ -80,8 +80,8 @@ export function DetailPane({
           data-detail-backdrop
           onClick={onClose}
           style={{ top }}
-          // Below 1024 the scrim stops at the tab bar.
-          className={`fixed inset-x-0 bottom-0 ${LAYER.pane} bg-scrim max-lg:bottom-16`}
+          // Below 1024 the scrim stops at the tab bar; on a desk, at the status bar.
+          className={`fixed inset-x-0 bottom-0 ${LAYER.pane} bg-scrim max-lg:bottom-16 lg:bottom-6`}
         />
       )}
       <div
@@ -91,15 +91,15 @@ export function DetailPane({
         aria-label={label}
         data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
-        // As a column it is the page's right edge, top to bottom (artboard 8, I-08); as an
-        // overlay, a sheet 12px in from the edges.
+        // As a column it is the page's right edge, top to the status bar (artboard 8, I-08,
+        // DES-001 "底部状态栏"); as an overlay, a sheet 12px in from the edges and above the bar.
         style={{ top: wide ? top : top + 12 }}
         // A flex column so `DangerZone` (`mt-auto`) sits on the pane's floor.
         className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto bg-float p-5 text-ink shadow-float focus:outline-none ${
           wide
-            ? 'right-0 bottom-0 w-inspector'
-            : // Below 1024 the overlay stops 12px above the tab bar.
-              'right-3 bottom-3 w-[calc(100%-1.5rem)] max-w-md rounded-block max-lg:bottom-19'
+            ? 'right-0 bottom-0 w-inspector lg:bottom-6'
+            : // Below 1024 the overlay stops 12px above the tab bar; on a desk, above the status bar.
+              'right-3 bottom-3 w-[calc(100%-1.5rem)] max-w-md rounded-block max-lg:bottom-19 lg:bottom-9'
         }`}
       >
         {children}

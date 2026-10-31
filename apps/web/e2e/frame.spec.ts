@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
-import { registerFreshUser } from './helpers'
+import { expect, test, type Locator, type Page } from '@playwright/test'
+import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /** The frame of FR-017 to FR-023 (STORY-001): the regions, the icon bar, the retired addresses. */
 
@@ -192,4 +192,30 @@ test('on a phone the build is the last line of More, and there is no status bar'
     new RegExp(`^${build.version}(, Build [0-9a-f]+)?$`),
   )
   await expect(page.getByRole('contentinfo', { name: 'Status' })).toBeHidden()
+})
+
+test('the inspector and the task pane end above the status bar, which stays in sight', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await registerFreshUser(page, '/people?inspect=meeting:01a15e5c-0000-7000-8000-000000000000')
+  const status = (await page.locator('footer[aria-label="Status"]').boundingBox())!
+  const bottom = async (panel: Locator) => {
+    const box = (await panel.boundingBox())!
+    return box.y + box.height
+  }
+  // The inspector, beside the page (DES-001 "底部状态栏").
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector).toBeVisible()
+  expect(await bottom(inspector)).toBeLessThanOrEqual(status.y + 0.5)
+  await page.keyboard.press('Escape')
+
+  // A task's pane, which is a dialog of its own.
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, 'A task')
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').filter({ hasText: 'A task' }).first().click()
+  const pane = page.getByRole('dialog', { name: 'Task details' })
+  await expect(pane).toBeVisible()
+  expect(await bottom(pane)).toBeLessThanOrEqual(status.y + 0.5)
 })
