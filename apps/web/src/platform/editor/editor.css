@@ -290,3 +290,17 @@
   color: var(--color-on-ink);
   border-radius: 0.125rem;
 }
+
+/* ON A PHONE (DES-001 "笔记编辑器", artboard 35): the text 16/24, as Safari zooms the whole page
+   onto a field set smaller when it takes the focus; ## 20/28 and ### 16/24 with it. */
+@media (max-width: 1023.98px) {
+  [data-markdown-editor] .cm-scroller {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .cm-md-h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}

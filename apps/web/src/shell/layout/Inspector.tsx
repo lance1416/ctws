@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { keyDone } from '../../platform/editor/escape'
+import { keyDone } from '../../platform/editor/focused'
 import { BUTTON, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import {
   BackIcon,

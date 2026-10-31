@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EditorHandle } from '../../../platform/editor/MarkdownEditor'
 import { problemText } from '../../../platform/http/api'
 import { area } from '../../../platform/ui/formStyles'
+import { usePhone } from '../../../platform/ui/phone'
 import { MarkdownField } from '../../../shell/links'
 import { createNote, noteKeys, notesQuery, patchNote } from '../api'
 import { FindBar } from '../../../platform/editor/FindBar'
@@ -11,6 +12,7 @@ import { OutlineNav } from '../../../platform/editor/OutlineNav'
 import { outlineOf, sectionAt } from '../../../platform/editor/outline'
 import { noteTitle } from '../logic/title'
 import { FolderTag, NoteMenu, PinButton } from './NoteMenu'
+import { PhoneNoteBar } from './PhoneNoteBar'
 
 /** How long the text rests before what is typed is saved. */
 const SAVE_AFTER_MS = 800
@@ -82,6 +84,7 @@ export function NoteEditor({
     },
     [qc],
   )
+  const phone = usePhone()
   const headings = useMemo(() => outlineOf(body), [body])
   const [cursor, setCursor] = useState(0)
   const editor = useRef<EditorHandle | null>(null)
@@ -91,6 +94,13 @@ export function NoteEditor({
     <div className="flex gap-10">
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         {/* The page's title, written where it reads (artboard 34): no box around it. */}
+        <PhoneNoteBar
+          note={note}
+          headings={headings}
+          editor={editor}
+          title={title.trim() || named || ''}
+          body={body}
+        />
         <div className="flex max-w-[68ch] items-start gap-2">
           <input
             aria-label="Title"
@@ -102,8 +112,13 @@ export function NoteEditor({
               named ? 'placeholder:text-ink' : ''
             }`}
           />
-          {note && note.anchor === null && <PinButton note={note} />}
-          {made.current && <NoteMenu note={note} title={title.trim() || named || ''} body={body} />}
+          {/* On a phone the bar above has them (artboard 35). */}
+          <span className="flex items-start gap-2 max-lg:hidden">
+            {note && note.anchor === null && <PinButton note={note} />}
+            {made.current && (
+              <NoteMenu note={note} title={title.trim() || named || ''} body={body} />
+            )}
+          </span>
         </div>
         <div className="-mt-1 flex min-h-5.5 items-center gap-2">
           {note && <FolderTag note={note} />}
@@ -119,7 +134,8 @@ export function NoteEditor({
           onChange={setBody}
           label="Note"
           placeholder="Write, or type @ to mention someone"
-          autoFocus={note !== null}
+          // A note opened to read on a phone waits for a tap: no keyboard, no row over it.
+          autoFocus={note !== null && !phone}
           className="min-h-80 max-w-[68ch]"
           handle={editor}
           onCursor={setCursor}

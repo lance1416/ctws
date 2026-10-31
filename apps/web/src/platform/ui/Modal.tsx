@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
-import { escapeInEditor } from '../editor/escape'
+import { escapeInEditor } from '../editor/focused'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
 import { BUTTON } from './buttonStyles'
 import { LAYER } from './layers'

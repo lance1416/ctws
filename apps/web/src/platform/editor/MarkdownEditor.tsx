@@ -16,10 +16,11 @@ import { Compartment, EditorState, Prec, StateEffect, StateField } from '@codemi
 import { EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { type RefObject, useEffect, useRef, useState } from 'react'
-import { editorKeys, history, insertLink, pasteLink } from './commands'
+import { undo } from '@codemirror/commands'
+import { editorKeys, history, insertLink, pasteLink, toggleLineMark } from './commands'
 import { find, findDone, findInNote, type Found, findStep } from './find'
 import { livePreview } from './livePreview'
-import { holdEscape, passOn, releaseEscape } from './escape'
+import { type EditorAction, type FocusedEditor, holdFocus, passOn, releaseFocus } from './focused'
 import { loadVim, reportMode, useVimKeys, vimEscape, vimHoldsEscape } from './vim'
 import { usePhone } from '../ui/phone'
 import { mentionDisplay, type MentionDisplay } from './widgets'
@@ -43,7 +44,16 @@ export type EditorHandle = {
   find: (query: string) => Found
   findStep: (step: 1 | -1) => Found
   findDone: () => void
+  /** The phone's buttons over the keyboard (FR-113), on the text where the cursor is. */
+  act: (action: EditorAction) => void
 }
+
+const LINE_ACTIONS = {
+  heading: toggleLineMark('## '),
+  list: toggleLineMark('- '),
+  task: toggleLineMark('- [ ] '),
+  link: insertLink,
+} as const
 
 /** The highlighting of code inside a fence, in the colours the reading side uses. */
 const codeColours = HighlightStyle.define([
@@ -216,21 +226,35 @@ export default function MarkdownEditor({
     },
   }
 
-  /**
-   * This editor's Esc, for a layer that hears it first (`escapeInEditor`): its `@` list closed, or
-   * vim back to NORMAL; anything else is the layer's.
-   */
-  const [takeEscape] = useState(() => () => {
-    const v = view.current
-    if (!v) return false
-    if (completionStatus(v.state)) {
-      closeCompletion(v)
+  /** This editor as the page reaches it while it has the focus (`useFocusedEditor`). */
+  const [asFocused] = useState<FocusedEditor>(() => ({
+    // Its Esc, for a layer that hears it first: its `@` list closed, or vim back to NORMAL;
+    // anything else is the layer's.
+    escape: () => {
+      const v = view.current
+      if (!v) return false
+      if (completionStatus(v.state)) {
+        closeCompletion(v)
+        return true
+      }
+      if (!vimHoldsEscape(v)) return false
+      vimEscape(v)
       return true
-    }
-    if (!vimHoldsEscape(v)) return false
-    vimEscape(v)
-    return true
-  })
+    },
+    act: (action) => {
+      const v = view.current
+      if (!v) return
+      if (action === 'undo') undo(v)
+      else if (action === 'mention') {
+        // An `@` that starts a word, so its list opens.
+        const { from } = v.state.selection.main
+        const before = v.state.sliceDoc(Math.max(0, from - 1), from)
+        v.dispatch(v.state.replaceSelection(before === '' || /\s/.test(before) ? '@' : ' @'))
+        startCompletion(v)
+      } else LINE_ACTIONS[action](v)
+      v.focus()
+    },
+  }))
 
   useEffect(() => {
     const extensions = [
@@ -264,7 +288,7 @@ export default function MarkdownEditor({
         }
         if (u.docChanged || u.selectionSet) moved.current?.(u.state.selection.main.head)
         if (u.selectionSet || u.focusChanged) reportMode(u.view, u.view.hasFocus)
-        if (u.focusChanged) (u.view.hasFocus ? holdEscape : releaseEscape)(takeEscape)
+        if (u.focusChanged) (u.view.hasFocus ? holdFocus : releaseFocus)(asFocused)
       }),
     ]
     if (placeholder) extensions.push(placeholderText(placeholder))
@@ -313,6 +337,7 @@ export default function MarkdownEditor({
         find: (query) => find(created, query),
         findStep: (step) => findStep(created, step),
         findDone: () => findDone(created),
+        act: asFocused.act,
       }
     // Arrived late (its code is fetched on first use), it takes the focus only if nothing has it
     // since: a menu opened meanwhile stays open.
@@ -325,7 +350,7 @@ export default function MarkdownEditor({
     }
     return () => {
       reportMode(created, false)
-      releaseEscape(takeEscape)
+      releaseFocus(asFocused)
       created.destroy()
       view.current = null
       if (handle) handle.current = null

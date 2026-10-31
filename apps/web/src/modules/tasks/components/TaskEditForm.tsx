@@ -351,7 +351,8 @@ export function TaskEditForm({
             onChange={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
             label="Notes"
             boxed
-            className={`${area} mt-1.5 max-w-reading`}
+            // Grows with the text to half the inspector, then scrolls inside (artboard 36).
+            className={`${area} mt-1.5 max-h-[50vh] max-w-reading overflow-y-auto`}
             fallback={{ id: 'detail-notes', rows: 5, className: `${area} mt-1.5 max-w-reading` }}
           />
         </div>

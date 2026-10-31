@@ -59,7 +59,10 @@ import {
   Keyboard,
   KeyRound,
   LayoutDashboard,
+  Heading,
   Link,
+  List,
+  ListChecks,
   ListTree,
   Lock,
   LogOut,
@@ -76,6 +79,8 @@ import {
   PanelRight,
   Pencil,
   Pin,
+  Undo2,
+  AtSign,
   Phone,
   Plus,
   Repeat,
@@ -171,6 +176,15 @@ export const CollapseIcon = ChevronRight
 /** One step back or on: a month, a year. */
 export const BackIcon = ChevronLeft
 export const ForwardIcon = ChevronRight
+/** The phone's row over the keyboard (REQ-002 FR-113, artboard 35). */
+export const FORMAT_ICON = {
+  heading: Heading,
+  list: List,
+  task: ListChecks,
+  mention: AtSign,
+  link: Link,
+  undo: Undo2,
+} as const satisfies Record<string, IconComponent>
 /** A note pinned to the top of the list: one switch, on and off (FR-110). */
 export const PinIcon = Pin
 /** Find's places: the one before, the next (FR-109). */

@@ -379,7 +379,8 @@ export function LogMessage({
             onChange={(body) => set({ body })}
             label="What was said"
             boxed
-            className={area}
+            // Four lines to start, `area`'s height; it grows to twelve, then scrolls (artboard 36).
+            className={`${area} max-h-[calc(12*1.5rem+0.75rem)] overflow-y-auto`}
             fallback={{ id: `${ids}-body`, rows: 4, className: area }}
           />
         </div>

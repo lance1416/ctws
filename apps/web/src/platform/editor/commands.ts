@@ -51,6 +51,29 @@ export const insertLink: StateCommand = ({ state, dispatch }) => {
   return true
 }
 
+/** What starts a line as a heading, a task or a list item: one replaces another. */
+const LINE_MARK = /^(#{1,6} |[-*+] \[[ xX]\] |[-*+] )/
+
+/**
+ * The phone's buttons over the keyboard (REQ-002 FR-113): the lines the cursor is on become
+ * headings, list items or tasks, their old mark replaced; pressed again, the mark comes off.
+ */
+export const toggleLineMark =
+  (mark: string): StateCommand =>
+  ({ state, dispatch }) => {
+    const lines = new Set<number>()
+    for (const r of state.selection.ranges)
+      for (let n = state.doc.lineAt(r.from).number; n <= state.doc.lineAt(r.to).number; n++)
+        lines.add(n)
+    const changes = [...lines].map((n) => {
+      const line = state.doc.line(n)
+      const had = LINE_MARK.exec(line.text)?.[0] ?? ''
+      return { from: line.from, to: line.from + had.length, insert: had === mark ? '' : mark }
+    })
+    dispatch(state.update({ changes, userEvent: 'input.format' }))
+    return true
+  }
+
 /** On a table's row, Tab goes to the start of the next cell, and from the last to the next row. */
 const nextCell: StateCommand = ({ state, dispatch }) => {
   const head = state.selection.main.head

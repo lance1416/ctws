@@ -10,7 +10,9 @@ import { KIND_TEXT } from '../../../platform/ui/kinds'
 import { PageHead } from '../../../platform/ui/PageHead'
 import { useTimeZone } from '../../../shell/auth'
 import { ModuleEmpty } from '../../../shell/layout'
+import { usePhone } from '../../../platform/ui/phone'
 import { notesQuery } from '../api'
+import { PhoneNotes } from '../components/PhoneNotes'
 import { NOTES_ID } from '../logic/id'
 import { noteTitle } from '../logic/title'
 
@@ -19,14 +21,17 @@ const SHOWN = 5
 
 /**
  * THE NOTES OVERVIEW (FR-074, artboard 18): the latest notes, each with what it hangs on and its
- * day. No folders and no pinning: those come with the Notes batch (FR-103).
+ * day; the sidebar beside it has the pinned and the folders. A phone has no sidebar: its list is
+ * the places themselves (artboard 35).
  */
 export function NotesOverview() {
   const notes = useQuery(notesQuery())
   const zone = useTimeZone()
+  const phone = usePhone()
   const [all, setAll] = useState(false)
   const rows = notes.data ?? []
   if (notes.isSuccess && rows.length === 0) return <ModuleEmpty kind="note" />
+  if (phone) return <PhoneNotes />
   const shown = all ? rows : rows.slice(0, SHOWN)
   return (
     <div className="flex flex-col gap-3.5">

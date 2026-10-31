@@ -5,6 +5,5 @@ export {
   useAccountToday,
   useMe,
   useSetSingleKeys,
-  useSetVimKeys,
   useTimeZone,
 } from './useMe'

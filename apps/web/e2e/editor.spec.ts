@@ -317,3 +317,34 @@ test('typed into the stand-in while the editor loads, nothing is lost as it take
   await expect(page.locator('[data-markdown-editor] .cm-content')).toBeFocused()
   await expect.poll(() => stored(page, id)).toBe('abcdefghijkl')
 })
+
+test('a task’s notes grow to half the window and a message to twelve lines, then scroll', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const lines = Array.from({ length: 40 }, (_, i) => `Line ${i + 1}`).join('\n')
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, 'Long', { notes: lines })
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').filter({ hasText: 'Long' }).first().click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
+  const notes = page.locator('[data-markdown-editor][data-boxed]')
+  await expect(notes.locator('.cm-content')).toBeVisible()
+  const tall = (await notes.boundingBox())!.height
+  expect(tall).toBeLessThanOrEqual(720 / 2 + 1)
+  expect(await notes.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+  await page.keyboard.press('Escape')
+
+  // A message's body: twelve lines of 24, the box's padding and edge, then it scrolls.
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
+  await page.goto(`/people/${mira.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Mira Chen' })).toBeVisible()
+  await page.keyboard.press('n')
+  await page.keyboard.press('x')
+  const said = page.getByRole('dialog', { name: 'Log a message' }).locator('[data-markdown-editor]')
+  await expect(said.locator('.cm-content')).toBeVisible()
+  await said.locator('.cm-content').click()
+  for (let i = 0; i < 20; i++) await page.keyboard.press('Enter')
+  expect((await said.boundingBox())!.height).toBeLessThanOrEqual(12 * 24 + 12 + 2)
+  expect(await said.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+})

@@ -9,12 +9,12 @@ import { fileNameOf } from '../logic/download'
 import { askNewFolder, askReveal } from '../hooks/sidebarAsk'
 import { useShelveNote } from '../hooks/useShelveNote'
 
-/** Hands the browser `text` as a file called `name`. */
-function save(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }))
+/** Hands the browser the note's text as a `.md` file named for it (FR-111). */
+export function downloadNote(title: string, body: string) {
+  const url = URL.createObjectURL(new Blob([body], { type: 'text/markdown;charset=utf-8' }))
   const a = document.createElement('a')
   a.href = url
-  a.download = name
+  a.download = fileNameOf(title)
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -78,7 +78,7 @@ export function NoteMenu({
               <DropdownMenu.Separator className="my-1 h-px bg-line" />
             </>
           )}
-          <DropdownMenu.Item onSelect={() => save(fileNameOf(title), body)} className={MENU_ITEM}>
+          <DropdownMenu.Item onSelect={() => downloadNote(title, body)} className={MENU_ITEM}>
             Download .md
           </DropdownMenu.Item>
         </DropdownMenu.Content>

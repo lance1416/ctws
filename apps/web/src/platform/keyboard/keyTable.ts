@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent } from 'react'
-import { keyDone } from '../editor/escape'
+import { keyDone } from '../editor/focused'
 import { useShortcutsEnabled } from './enabled'
 import { isTypingTarget } from './keys'
 import { isOverlayOpen } from './overlayState'

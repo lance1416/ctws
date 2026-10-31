@@ -2,8 +2,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { BackIcon } from '../../platform/ui/icons'
 import { useRegistry } from '../registry'
 
-/** Pages that draw their own way back, beside their own buttons (a person's, a project's). */
-const OWN_BACK = new Set(['/people', '/projects'])
+/** Pages that draw their own way back, beside their own buttons (a person's, a project's, a note's). */
+const OWN_BACK = new Set(['/people', '/projects', '/notes'])
 
 /**
  * THE WAY BACK ON A PHONE (FR-082): on a thing's page, "‹ Meetings" to its kind's list, where

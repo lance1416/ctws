@@ -12,6 +12,7 @@ import { NewContext, rememberKind, type NewHow } from '../creates'
 import { LinkDialog } from '../links/LinkDialog'
 import { WhyGreyed } from '../../platform/ui/WhyGreyed'
 import { BottomBar } from './BottomBar'
+import { KeyboardRow } from './KeyboardRow'
 import { StatusBar } from './StatusBar'
 import { IconBar } from './IconBar'
 import { Inspector } from './Inspector'
@@ -184,6 +185,7 @@ function Frame({
             {linking && linkFrom && <LinkDialog of={linkFrom} onClose={() => setLinking(false)} />}
             <StatusBar />
             <BottomBar />
+            <KeyboardRow />
             <WhyGreyed />
           </div>
         </MentionContext.Provider>

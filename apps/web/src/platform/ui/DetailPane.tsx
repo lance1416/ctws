@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { tabbable } from 'tabbable'
-import { keyDone } from '../editor/escape'
+import { keyDone } from '../editor/focused'
 import { useWidePane } from './paneLayout'
 import { CloseIcon } from './icons'
 import { LAYER } from './layers'

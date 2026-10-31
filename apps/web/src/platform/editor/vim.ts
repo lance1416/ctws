@@ -13,7 +13,7 @@ const EVENT = 'ctws:vim-changed'
 /** What this tab was last told, for when `localStorage` cannot hold it. */
 let inThisTab = false
 
-export function vimKeysOn(): boolean {
+function vimKeysOn(): boolean {
   try {
     return localStorage.getItem(KEY) === '1'
   } catch {
