@@ -176,7 +176,7 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
   done = patched()
   await page.keyboard.press('x')
   await done
-  await expect(row(page, '配色重做').getByRole('img', { name: 'Backlog' })).toBeVisible()
+  await expect(row(page, '配色重做').getByRole('img', { name: 'To do' })).toBeVisible()
 })
 
 test('a project whose every task is finished shows them folded, not an empty project', async ({

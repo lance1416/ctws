@@ -59,21 +59,46 @@ test('the status mark in a tree row finishes the task in one click, and it is sa
   await expect(page.getByRole('button', { name: 'Reopen “写方案”' })).toBeVisible()
 })
 
-test('a finished task can be restored from its mark, landing on backlog', async ({ page }) => {
+test('a finished task reopens to where it was before: In progress, or To do', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '写方案', { status: 'done' })
+  const started = await makeTask(page, pid, '改稿', { status: 'in_progress' })
+  const res = await page.request.patch(`/api/v1/tasks/${started}`, {
+    headers: WEB,
+    data: { status: 'done' },
+  })
+  expect(res.ok()).toBe(true)
   await openTree(page, pid)
-  // It arrived already finished, so the tree starts without it; the count is the way in.
+  // They arrived already finished, so the tree starts without them; the count is the way in.
   await expect(treeRow(page, '写方案')).toHaveCount(0)
-  await page.getByRole('button', { name: '1 done' }).click()
+  await page.getByRole('button', { name: '2 done' }).click()
 
-  const restored = taskPatched(page)
+  // Its change log says it was under way when it was finished: it goes back to In progress.
+  let restored = taskPatched(page)
+  await page.getByRole('button', { name: 'Reopen “改稿”' }).click()
+  expect((await restored).request().postDataJSON()).toEqual({ status: 'in_progress' })
+  // Never started: To do, not the backlog it was made in.
+  restored = taskPatched(page)
   await page.getByRole('button', { name: 'Reopen “写方案”' }).click()
-  expect((await restored).request().postDataJSON()).toEqual({ status: 'backlog' })
-  expect((await serverTask(page, pid, '写方案')).status).toBe('backlog')
-  await page.reload()
-  await expect(treeRow(page, '写方案').getByRole('img', { name: 'Backlog' })).toBeVisible()
+  expect((await restored).request().postDataJSON()).toEqual({ status: 'todo' })
+  expect((await serverTask(page, pid, '改稿')).status).toBe('in_progress')
+  expect((await serverTask(page, pid, '写方案')).status).toBe('todo')
+})
+
+test('finished and reopened from the same row, a task is back where it was', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '改稿', { status: 'in_progress' })
+  await openTree(page, pid)
+  const finished = taskPatched(page)
+  await page.getByRole('button', { name: 'Complete “改稿”' }).click()
+  await finished
+  await expect(treeRow(page, '改稿').getByRole('img', { name: 'Done' })).toBeVisible()
+  const restored = taskPatched(page)
+  await page.getByRole('button', { name: 'Reopen “改稿”' }).click()
+  expect((await restored).request().postDataJSON()).toEqual({ status: 'in_progress' })
+  await expect(treeRow(page, '改稿').getByRole('img', { name: 'In progress' })).toBeVisible()
 })
 
 test('starting a task from its row puts it under In progress, and S on Today pauses it', async ({
@@ -127,7 +152,8 @@ test('x, then s, on a focused tree row change its status, each saved', async ({ 
 
   res = taskPatched(page)
   await page.keyboard.press('x')
-  expect((await res).request().postDataJSON()).toEqual({ status: 'backlog' })
+  // Reopened, it is what it was before; never started, that is To do (BUG-095).
+  expect((await res).request().postDataJSON()).toEqual({ status: 'todo' })
 
   res = taskPatched(page)
   await page.keyboard.press('s')

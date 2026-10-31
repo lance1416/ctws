@@ -1,4 +1,5 @@
 import { type TaskStatus, type TaskId } from '@ctws/contracts'
+import type { StatusMove } from '../../logic/status'
 import type { KeyboardEvent } from 'react'
 import { useKeyTable } from '../../../../platform/keyboard/keyTable'
 import { statusActions, TREE_KEYS } from '../../logic/keys'
@@ -23,7 +24,7 @@ export function useTreeKeys({
 }: {
   rows: () => readonly FlatRow[]
   statusOf: (id: TaskId) => TaskStatus
-  setStatus: (id: TaskId, status: TaskStatus) => void
+  setStatus: (id: TaskId, status: StatusMove) => void
   open: (id: TaskId) => void
   addChild: (row: FlatRow) => void
   addSibling: (row: FlatRow) => void

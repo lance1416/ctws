@@ -1,7 +1,7 @@
-import { isFinished, toggleDoneTarget, toggleStartTarget } from '../logic/status'
+import { isFinished, type StatusMove, toggleDoneTarget, toggleStartTarget } from '../logic/status'
 import { CollapseIcon, ExpandIcon, FlagIcon, LockIcon, NewIcon } from '../../../platform/ui/icons'
 import { useSortable } from '@dnd-kit/sortable'
-import type { ChildCounts, TaskId, TaskResponse, TaskStatus } from '@ctws/contracts'
+import type { ChildCounts, TaskId, TaskResponse } from '@ctws/contracts'
 import type { KeyboardEvent } from 'react'
 import type { FlatRow } from '../logic/tree/flatten'
 import { blockedLabel } from '../logic/blockedLabel'
@@ -51,7 +51,7 @@ type Props = {
 /** What a row's parts ask the tree to do. Shift+click toggles the selection; a click opens. */
 type RowActions = {
   focus: () => void
-  setStatus: (status: TaskStatus) => void
+  setStatus: (status: StatusMove) => void
   toggle: () => void
   keyDown: (e: KeyboardEvent<HTMLButtonElement>) => void
   open: () => void

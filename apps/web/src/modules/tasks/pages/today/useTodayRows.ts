@@ -1,4 +1,5 @@
-import type { TaskId, TaskStatus, TodayTaskResponse } from '@ctws/contracts'
+import type { TaskId, TodayTaskResponse } from '@ctws/contracts'
+import type { StatusMove } from '../../logic/status'
 import type { KeyboardEvent } from 'react'
 import { useKeyTable } from '../../../../platform/keyboard/keyTable'
 import { useRegistry } from '../../../../shell/registry'
@@ -57,7 +58,7 @@ export function useTodayRows({
     heading: () => document.getElementById('today-heading'),
   })
   const { focus } = pane
-  const setStatus = (id: TaskId, status: TaskStatus) => {
+  const setStatus = (id: TaskId, status: StatusMove) => {
     setError(null)
     focus.expect(id)
     actions.setStatus(id, status, () => focus.drop(id))
