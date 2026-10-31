@@ -9,6 +9,7 @@ import {
   sidewaysScroll,
   navLink,
   editorText,
+  apiPost,
 } from './helpers'
 
 /**
@@ -493,6 +494,14 @@ test('full screen: the outline when there are headings, Ctrl F, and Esc leaves',
   await expect(bar).toHaveCount(0)
   await expect(layer).toBeVisible()
   await expect(writingSource(page)).toBeFocused()
+  // Esc on an open `@` list closes the list, not the layer (BUG-098).
+  await apiPost(page, '/people', { name: 'Mira Chen' })
+  await page.keyboard.type(' @Mi')
+  const list = page.getByRole('listbox')
+  await expect(list.getByRole('option').first()).toContainText('Mira Chen')
+  await page.keyboard.press('Escape')
+  await expect(list).toHaveCount(0)
+  await expect(layer).toBeVisible()
   // Esc in the text leaves full screen.
   await page.keyboard.press('Escape')
   await expect(layer).toHaveCount(0)

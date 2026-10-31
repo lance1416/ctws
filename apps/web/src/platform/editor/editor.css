@@ -253,6 +253,11 @@
   line-height: var(--text-ui--line-height);
 }
 
+/* CodeMirror's own theme sets the list in monospace; it is the app's type, as every menu (BUG-099). */
+[data-markdown-editor] .cm-tooltip.cm-tooltip-autocomplete > ul {
+  font-family: var(--font-sans);
+}
+
 [data-markdown-editor] .cm-tooltip-autocomplete > ul > li {
   display: flex;
   align-items: center;

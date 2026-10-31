@@ -277,6 +277,8 @@ test('@ lists kinds in search’s order, people first, and Enter takes the first
   await page.keyboard.type('@Mi')
   const options = page.getByRole('listbox').getByRole('option')
   await expect(options.first()).toContainText('Mira Chen')
+  // In the app's type, as every menu, not CodeMirror's monospace (BUG-099).
+  expect(await options.first().evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Inter/)
   await expect(options.nth(1)).toContainText('Mira onsite questions')
   await page.waitForTimeout(100) // CodeMirror's interactionDelay, as above
   await page.keyboard.press('Enter')
