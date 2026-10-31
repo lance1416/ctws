@@ -767,3 +767,20 @@ export async function fillStart(scope: Page | Locator, day: string, time?: strin
   await clock.fill(time)
   await clock.press('Tab')
 }
+
+/**
+ * The text in a Markdown editor (REQ-002), line by line, as it shows: the placeholder is not text.
+ * Not `toHaveValue`: the editor is a CodeMirror view, not a text box. A mark the preview hides off
+ * the cursor's line is not in it either; assert the stored text on the server where that matters.
+ */
+export async function editorText(editor: Locator): Promise<string> {
+  return editor.evaluate((el) =>
+    [...el.querySelectorAll('.cm-line')]
+      .map((line) => {
+        const copy = line.cloneNode(true) as HTMLElement
+        copy.querySelectorAll('.cm-placeholder').forEach((p) => p.remove())
+        return copy.textContent ?? ''
+      })
+      .join('\n'),
+  )
+}

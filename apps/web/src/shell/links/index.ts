@@ -2,4 +2,5 @@
 export { linkKeys, prefetchLinks } from './api'
 export { useKindBlocks } from './KindBlocks'
 export { LinkedChips, LinkedSection } from './Links'
+export { MarkdownField } from './MarkdownField'
 export { MentionArea, useMentionText } from './MentionArea'

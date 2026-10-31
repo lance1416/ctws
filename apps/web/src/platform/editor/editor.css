@@ -1,0 +1,254 @@
+/* THE EDITOR WRITES AS THE NOTE READS (REQ-002 §5, artboard 34): the reader's steps and spacing
+   (notes.css), the text in Inter 15/24 whatever is around it. Only what the cursor's line shows of
+   the Markdown is mono, 13 and subtle, inside the same line height, so nothing moves as the cursor
+   does. Plain CSS like notes.css: CodeMirror draws its own markup. */
+
+[data-markdown-editor] .cm-editor {
+  background: transparent;
+  color: var(--color-ink);
+}
+
+[data-markdown-editor] .cm-editor.cm-focused {
+  outline: none;
+}
+
+[data-markdown-editor] .cm-scroller {
+  font-family: var(--font-sans);
+  font-size: var(--text-prose);
+  line-height: var(--text-prose--line-height);
+  overflow-wrap: break-word;
+}
+
+[data-markdown-editor] .cm-content {
+  padding: 0;
+  caret-color: var(--color-ink);
+}
+
+[data-markdown-editor] .cm-line {
+  padding: 0;
+}
+
+[data-markdown-editor] .cm-placeholder {
+  color: var(--color-subtle);
+}
+
+[data-markdown-editor] .cm-selectionBackground,
+[data-markdown-editor] .cm-focused .cm-selectionBackground {
+  background: var(--color-select);
+}
+
+/* What the cursor's line shows: the marks themselves. */
+.cm-md-mark,
+.cm-md-mention {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-size: 0.8125rem;
+  color: var(--color-subtle);
+}
+
+.cm-md-mention {
+  color: var(--color-muted);
+}
+
+/* Headings at the reader's steps: a note's biggest is the subject step. */
+.cm-md-h2 {
+  font-size: var(--text-subject);
+  line-height: var(--text-subject--line-height);
+  font-weight: 600;
+  padding-top: 0.75rem !important;
+}
+
+.cm-md-h3 {
+  font-weight: 600;
+  padding-top: 0.5rem !important;
+}
+
+.cm-md-strong {
+  font-weight: 600;
+}
+
+.cm-md-em {
+  font-style: italic;
+}
+
+.cm-md-del,
+.cm-md-done {
+  text-decoration: line-through;
+  color: var(--color-muted);
+}
+
+.cm-md-code {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-size: 0.875em;
+  background: var(--color-ground);
+  border: 1px solid var(--color-line);
+  border-radius: 0.25rem;
+  padding: 0.0625rem 0.25rem;
+}
+
+.cm-md-link {
+  text-decoration: underline;
+  text-decoration-color: var(--color-line-strong);
+  text-underline-offset: 3px;
+}
+
+.cm-md-task {
+  width: 1rem;
+  height: 1rem;
+  margin: 0 0.625rem 0 0;
+  vertical-align: -0.1875rem;
+  accent-color: var(--color-ink);
+  cursor: pointer;
+}
+
+.cm-md-bullet {
+  display: inline-block;
+  width: 1.25rem;
+  color: var(--color-muted);
+}
+
+.cm-md-quote {
+  border-inline-start: 2px solid var(--color-line);
+  padding-inline-start: 0.875rem !important;
+  color: var(--color-muted);
+}
+
+.cm-md-rule {
+  display: inline-block;
+  width: 100%;
+  vertical-align: middle;
+  border-top: 1px solid var(--color-line);
+}
+
+/* A fence: its lines one block of mono on the ground, its head the language and Copy. */
+.cm-md-codeline {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-size: 0.875rem;
+  background: var(--color-ground);
+  border-inline: 1px solid var(--color-line);
+  padding-inline: 0.75rem !important;
+}
+
+.cm-md-codefirst {
+  border-top: 1px solid var(--color-line);
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.cm-md-codelast {
+  border-bottom: 1px solid var(--color-line);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.cm-md-codehead {
+  display: inline-flex;
+  width: 100%;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-subtle);
+}
+
+.cm-md-copy {
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.cm-md-copy:hover {
+  color: var(--color-ink);
+}
+
+/* A table or a formula entered: its source, in mono, so its columns line up while it is edited. */
+.cm-md-source {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-size: 0.875rem;
+}
+
+.cm-md-table {
+  border-collapse: collapse;
+  margin-block: 0.5rem;
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
+  font-variant-numeric: tabular-nums;
+}
+
+.cm-md-table th,
+.cm-md-table td {
+  border: 1px solid var(--color-line);
+  padding: 0.375rem 0.625rem;
+  text-align: start;
+}
+
+.cm-md-table th {
+  font-weight: 500;
+  background: var(--color-ground);
+}
+
+.cm-md-math-block {
+  margin-block: 0.5rem;
+  text-align: center;
+}
+
+.cm-md-chip {
+  cursor: pointer;
+}
+
+/* Code inside a fence, in the reader's colours. */
+.cm-code-keyword {
+  color: var(--color-code-keyword);
+}
+.cm-code-string {
+  color: var(--color-code-string);
+}
+.cm-code-number {
+  color: var(--color-code-number);
+}
+.cm-code-comment {
+  color: var(--color-code-comment);
+}
+.cm-code-fn {
+  color: var(--color-code-fn);
+}
+.cm-code-attr {
+  color: var(--color-code-attr);
+}
+.cm-code-punct {
+  color: var(--color-code-punct);
+}
+
+/* `@`'s list: the app's float, as every menu. */
+[data-markdown-editor] .cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--color-float);
+  border: 0;
+  border-radius: 0.625rem;
+  box-shadow: var(--shadow-float);
+  padding: 0.25rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
+}
+
+[data-markdown-editor] .cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 0.375rem;
+}
+
+[data-markdown-editor] .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--color-select);
+  color: var(--color-ink);
+}
+
+[data-markdown-editor] .cm-completionDetail {
+  margin-left: auto;
+  font-style: normal;
+  color: var(--color-muted);
+}

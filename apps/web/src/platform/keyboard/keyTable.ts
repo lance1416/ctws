@@ -131,6 +131,8 @@ export function useDocumentKeys<A extends string>(
     if (heldBack(e) === null && isSingleKey(pressOf(e)) && claim?.(e)) e.stopPropagation()
   })
   const onKey = useEffectEvent((e: KeyboardEvent) => {
+    // Answered already where it was pressed (the editor's Ctrl Shift K reads as Ctrl K here).
+    if (e.defaultPrevented) return
     if (heldBack(e) !== null) {
       skipped?.()
       return

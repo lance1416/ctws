@@ -1,0 +1,159 @@
+import type { ObjectType } from '@ctws/contracts'
+import { mentionAddress } from '@ctws/core'
+import {
+  autocompletion,
+  type Completion,
+  type CompletionContext,
+  type CompletionResult,
+} from '@codemirror/autocomplete'
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { languages } from '@codemirror/language-data'
+import { EditorState } from '@codemirror/state'
+import { EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
+import { tags } from '@lezer/highlight'
+import { useEffect, useRef } from 'react'
+import { editorKeys, history, pasteLink } from './commands'
+import { livePreview } from './livePreview'
+import { mentionDisplay, type MentionDisplay } from './widgets'
+import './editor.css'
+
+/** One thing `@` offers: what it is, the words it is written with, and its kind's heading. */
+export type MentionOption = { type: ObjectType; id: string; title: string; section: string }
+
+export type EditorMentions = MentionDisplay & {
+  /** What `@query` finds, in the order the app ranks it (FR-024). */
+  search: (query: string) => Promise<readonly MentionOption[]>
+  /** A row's mark in the list: the kind's icon, a person's initials. */
+  mark: (option: MentionOption) => HTMLElement
+}
+
+/** The highlighting of code inside a fence, in the colours the reading side uses. */
+const codeColours = HighlightStyle.define([
+  { tag: [tags.keyword, tags.operatorKeyword, tags.modifier], class: 'cm-code-keyword' },
+  { tag: [tags.string, tags.special(tags.string), tags.regexp], class: 'cm-code-string' },
+  // Not `atom`: Markdown tags a task's `[ ]` with it, and a mark is the marks' own grey.
+  { tag: [tags.number, tags.bool, tags.null], class: 'cm-code-number' },
+  { tag: [tags.comment, tags.lineComment, tags.blockComment], class: 'cm-code-comment' },
+  {
+    tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],
+    class: 'cm-code-fn',
+  },
+  { tag: [tags.attributeName, tags.propertyName, tags.typeName], class: 'cm-code-attr' },
+  { tag: [tags.punctuation, tags.bracket], class: 'cm-code-punct' },
+])
+
+/** An `@` that starts a word, and what has been typed after it to the cursor: as the text box. */
+const MENTION_QUERY = /(?:^|[\s([{（，。,;；:：])@[^\s@]{1,40}$/u
+
+/** Which thing each offered row stands for, for its mark in the list. */
+const optionOf = new WeakMap<Completion, MentionOption>()
+
+function mentionSource(mentions: EditorMentions) {
+  return async (context: CompletionContext): Promise<CompletionResult | null> => {
+    const typed = context.matchBefore(MENTION_QUERY)
+    if (!typed) return null
+    // The match may start at the space before the `@`.
+    const from = typed.from + typed.text.indexOf('@')
+    const found = await mentions.search(context.state.sliceDoc(from + 1, context.pos))
+    if (context.aborted) return null
+    return {
+      from,
+      filter: false,
+      options: found.map((o) => {
+        const completion: Completion = {
+          label: o.title,
+          section: o.section,
+          type: o.type,
+          // Stored as notes store a mention; drawn as its chip once the cursor leaves the line.
+          apply: `[@${o.title}](${mentionAddress(o.type, o.id)})`,
+        }
+        optionOf.set(completion, o)
+        return completion
+      }),
+    }
+  }
+}
+
+/**
+ * THE ONE MARKDOWN EDITOR (REQ-002 FR-106): CodeMirror 6 with the live preview, the app's keys and
+ * `@`. The value is the note as stored, mentions and all: nothing is translated on the way in or
+ * out. Loaded only where writing starts (`LazyMarkdownEditor`), never where a note is read.
+ */
+export default function MarkdownEditor({
+  value,
+  onChange,
+  label,
+  placeholder,
+  autoFocus = false,
+  mentions,
+  className = '',
+}: {
+  value: string
+  onChange: (next: string) => void
+  /** Its name to a screen reader: what is written here. */
+  label: string
+  placeholder?: string
+  autoFocus?: boolean
+  mentions?: EditorMentions
+  className?: string
+}) {
+  const host = useRef<HTMLDivElement>(null)
+  const view = useRef<EditorView | null>(null)
+  const changed = useRef(onChange)
+  changed.current = onChange
+
+  useEffect(() => {
+    const extensions = [
+      history(),
+      keymap.of(editorKeys),
+      markdown({ base: markdownLanguage, codeLanguages: languages }),
+      syntaxHighlighting(codeColours),
+      livePreview,
+      pasteLink,
+      EditorView.lineWrapping,
+      EditorView.contentAttributes.of({ 'aria-label': label, 'aria-multiline': 'true' }),
+      EditorView.updateListener.of((u) => {
+        if (u.docChanged) changed.current(u.state.doc.toString())
+      }),
+    ]
+    if (placeholder) extensions.push(placeholderText(placeholder))
+    if (mentions)
+      extensions.push(
+        mentionDisplay.of(mentions),
+        autocompletion({
+          override: [mentionSource(mentions)],
+          icons: false,
+          addToOptions: [
+            {
+              render: (completion) => {
+                const option = optionOf.get(completion)
+                return option ? mentions.mark(option) : null
+              },
+              position: 20,
+            },
+          ],
+        }),
+      )
+    const created = new EditorView({
+      parent: host.current!,
+      state: EditorState.create({ doc: value, extensions }),
+    })
+    view.current = created
+    if (autoFocus) created.focus()
+    return () => {
+      created.destroy()
+      view.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one view per mount; `value` follows below.
+  }, [])
+
+  // A value from outside (a save's answer, another tab) replaces the text when it differs.
+  useEffect(() => {
+    const v = view.current
+    if (!v || v.state.doc.toString() === value) return
+    v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } })
+  }, [value])
+
+  return <div ref={host} data-markdown-editor className={className} />
+}

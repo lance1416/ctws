@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { apiPost, registerFreshUser, WEB } from './helpers'
+import { apiPost, editorText, registerFreshUser, WEB } from './helpers'
 import { dayOffset } from './days'
 
 /**
@@ -36,9 +36,9 @@ test('a note hung on a meeting says it is on the meeting, and is that meeting’
   await expect(page).toHaveURL(new RegExp(`/notes/${note.id}$`))
   const main = page.getByRole('main')
   await expect(main).toContainText(/On\s*Weekly sync/)
-  await expect(main.getByRole('textbox', { name: 'Note' })).toHaveValue(
-    'Ship the importer by Friday.',
-  )
+  await expect
+    .poll(() => editorText(main.getByRole('textbox', { name: 'Note' })))
+    .toBe('Ship the importer by Friday.')
 
   // The line is the way to the occurrence it was written for, where it is the notes.
   await main.getByRole('link', { name: 'Weekly sync' }).click()
@@ -94,7 +94,7 @@ test('New note on the overview opens an empty note', async ({ page }) => {
   await page.getByRole('main').getByRole('link', { name: 'New note' }).click()
   await expect(page).toHaveURL(/\/notes\/new$/)
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
-  await expect(page.getByRole('textbox', { name: 'Note' })).toHaveValue('')
+  await expect.poll(() => editorText(page.getByRole('textbox', { name: 'Note' }))).toBe('')
 })
 
 test('an empty Notes is the module empty state, whose button starts a note', async ({ page }) => {

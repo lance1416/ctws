@@ -2,9 +2,8 @@ import type { NoteResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { problemText } from '../../../platform/http/api'
-import { NoteBody } from '../../../platform/notes/NoteBody'
-import { area, field } from '../../../platform/ui/formStyles'
-import { MentionArea, useMentionText } from '../../../shell/links'
+import { area } from '../../../platform/ui/formStyles'
+import { MarkdownField } from '../../../shell/links'
 import { createNote, noteKeys, notesQuery, patchNote } from '../api'
 import { noteTitle } from '../logic/title'
 
@@ -12,10 +11,9 @@ import { noteTitle } from '../logic/title'
 const SAVE_AFTER_MS = 800
 
 /**
- * A NOTE, WRITTEN (FR-050, FR-074): its title and its Markdown, saved as they rest, the Markdown
- * read beside it as it will show. The editor is the one the app has today; folders and pinning
- * come with the Notes batch. A note not yet made is made by its first words, and `onMade` says
- * where it now lives.
+ * A NOTE, WRITTEN (FR-050, FR-074, REQ-002 artboard 34): its title and its Markdown, saved as they
+ * rest, in the one editor, which draws the note as it will read except on the cursor's line. A
+ * note not yet made is made by its first words, and `onMade` says where it now lives.
  */
 export function NoteEditor({
   note,
@@ -27,8 +25,6 @@ export function NoteEditor({
   const qc = useQueryClient()
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
-  const mentioned = useMentionText(body, setBody)
-  const [preview, setPreview] = useState(body)
   // Untitled, it is called as lists call it (a meeting's and its day, else its first line); the
   // box says so (R-05, FR-050).
   const named =
@@ -54,10 +50,6 @@ export function NoteEditor({
         ...was.filter((n) => n.id !== saved.id),
       ]),
   })
-  useEffect(() => {
-    const t = setTimeout(() => setPreview(body), 250)
-    return () => clearTimeout(t)
-  }, [body])
   useEffect(() => {
     const was = made.current
     if (was ? was.body === body && (was.title ?? '') === title : !body.trim() && !title.trim())
@@ -87,36 +79,29 @@ export function NoteEditor({
   )
   return (
     <div className="flex flex-col gap-3">
+      {/* The page's title, written where it reads (artboard 34): no box around it. */}
       <input
         aria-label="Title"
         placeholder={named ?? 'Title'}
         value={title}
         autoFocus={note === null}
         onChange={(e) => setTitle(e.target.value)}
-        className={`${field} h-9 text-subject ${named ? 'placeholder:text-ink' : ''}`}
+        className={`w-full max-w-[68ch] bg-transparent text-title text-ink outline-none placeholder:text-subtle ${
+          named ? 'placeholder:text-ink' : ''
+        }`}
       />
-      <div className="grid items-start gap-3 lg:grid-cols-2">
-        <MentionArea
-          {...mentioned}
-          aria-label="Note"
-          rows={18}
-          placeholder="Markdown: # a heading, - a list, **bold**, @ someone"
-          className={`${area} min-h-80 font-mono`}
-        />
-        <div
-          aria-label="Preview"
-          className="min-h-80 rounded-block border border-line bg-panel px-4 py-3 text-prose"
-        >
-          {preview.trim() ? (
-            <NoteBody source={preview} />
-          ) : (
-            <p className="text-ui text-subtle">What you write shows here as it will read.</p>
-          )}
-        </div>
-      </div>
-      <p className="text-meta text-subtle" aria-live="polite">
+      <p className="-mt-2 min-h-4 text-meta text-subtle" aria-live="polite">
         {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
       </p>
+      <MarkdownField
+        value={body}
+        onChange={setBody}
+        label="Note"
+        placeholder="Write, or type @ to mention someone"
+        autoFocus={note !== null}
+        className="min-h-80 max-w-[68ch]"
+        fallback={{ rows: 18, className: `${area} min-h-80 max-w-[68ch]` }}
+      />
       {save.isError && (
         <p role="alert" className="text-ui text-stop-t">
           {problemText(save.error)}

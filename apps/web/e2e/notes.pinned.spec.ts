@@ -35,7 +35,10 @@ test('N N opens a new note; its first words make it, and Recent lists it with it
       (r.request().postDataJSON() as { body?: string }).body === '- Ask about the first week',
   )
   await page.getByRole('textbox', { name: 'Note' }).fill('- Ask about the first week')
-  await expect(page.getByLabel('Preview')).toContainText('Ask about the first week')
+  // Written where it reads: the editor draws the list itself, no preview beside it.
+  await expect(page.locator('[data-markdown-editor] .cm-line').first()).toContainText(
+    'Ask about the first week',
+  )
   expect((await kept).ok()).toBe(true)
 
   await page
