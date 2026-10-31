@@ -15,7 +15,7 @@ import { languages } from '@codemirror/language-data'
 import { Compartment, EditorState, Prec, StateEffect, StateField } from '@codemirror/state'
 import { drawSelection, EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { undo } from '@codemirror/commands'
 import { editorKeys, history, insertLink, pasteLink, toggleLineMark } from './commands'
 import { find, findDone, findInNote, type Found, findStep } from './find'
@@ -263,7 +263,9 @@ export default function MarkdownEditor({
     },
   }))
 
-  useEffect(() => {
+  // Made in the same commit that takes the stand-in away, before the browser can hand on another
+  // key: a key pressed between the two went to nothing, and was lost.
+  useLayoutEffect(() => {
     const extensions = [
       vimSlot.of([]),
       // The selection drawn by the editor, in the app's select colour: vim hides the browser's
