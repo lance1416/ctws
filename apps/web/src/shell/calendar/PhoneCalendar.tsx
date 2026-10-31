@@ -165,7 +165,8 @@ export function PhoneCalendar() {
       </div>
 
       <section aria-label={longDay(chosen)} className="flex flex-col gap-1.5">
-        <h2 className="flex items-center gap-2 px-1 text-ui font-medium text-ink">
+        {/* In line with the card under it and the month's name above, at the page's 16. */}
+        <h2 className="flex items-center gap-2 text-ui font-medium text-ink">
           {longDay(chosen)}
           {chosenLunar && <span className="font-normal text-muted">{chosenLunar}</span>}
         </h2>
@@ -180,7 +181,7 @@ export function PhoneCalendar() {
 function DayList({ parts }: { parts: ReturnType<typeof dayParts> }) {
   const projects = useEveryProject()
   const rows = [...parts.meetings, ...parts.due, ...parts.followUps, ...parts.birthdays]
-  if (rows.length === 0) return <p className="px-1 text-prose text-muted">Nothing on this day.</p>
+  if (rows.length === 0) return <p className="text-prose text-muted">Nothing on this day.</p>
   return (
     <ul className="overflow-hidden rounded-phone-card border border-line bg-panel py-1">
       {rows.map((e) => {
