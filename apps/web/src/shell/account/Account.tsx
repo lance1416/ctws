@@ -16,6 +16,7 @@ import { Block } from '../../platform/ui/Block'
 import { BUTTON, KEY_ON_INK } from '../../platform/ui/buttonStyles'
 import { field, label } from '../../platform/ui/formStyles'
 import {
+  AppearanceIcon,
   DarkIcon,
   EmailIcon,
   LightIcon,
@@ -41,6 +42,9 @@ const THEMES = [
 
 /** The shortest password the server takes (`newPassword`). */
 const SHORTEST = 12
+
+/** Each block's badge, as on other blocks that hold settings rather than a kind. */
+const SETTING_TINT = 'bg-hover text-muted'
 
 /**
  * THE ACCOUNT (artboard 30): who is signed in, and Sign out; the report of the move to the new
@@ -74,15 +78,19 @@ export function Account() {
       {me.migrationReport && <Moved pending={me.migrationReport.pending} />}
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <Block title="Time and place">
+        <Block badge={{ icon: TimeZoneIcon, tint: SETTING_TINT }} title="Time and place">
           <TimeZoneRow zone={me.timezone} />
         </Block>
-        <Block title="Appearance">
+        <Block badge={{ icon: AppearanceIcon, tint: SETTING_TINT }} title="Appearance">
           <Row icon={LightIcon} name="Theme">
             <ThemeSwitch />
           </Row>
         </Block>
-        <Block title="Signing in" className="lg:col-span-2">
+        <Block
+          badge={{ icon: PasswordIcon, tint: SETTING_TINT }}
+          title="Signing in"
+          className="lg:col-span-2"
+        >
           <SigningIn email={me.email} changedAt={me.passwordChangedAt} />
         </Block>
       </div>

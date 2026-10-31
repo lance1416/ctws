@@ -69,6 +69,7 @@ import {
   MessagesSquare,
   Music,
   Monitor,
+  Palette,
   Moon,
   PanelLeftOpen,
   PanelRight,
@@ -183,6 +184,8 @@ export const LightIcon = Sun
 export const DarkIcon = Moon
 /** Following the system's light or dark (artboard 30). */
 export const SystemIcon = Monitor
+/** The account's Appearance block. */
+export const AppearanceIcon = Palette
 /** The account page's rows (artboard 30). */
 export const SignOutIcon = LogOut
 export const PasswordIcon = KeyRound
