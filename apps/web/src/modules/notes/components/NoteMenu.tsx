@@ -101,7 +101,8 @@ export function PinButton({ note }: { note: NoteResponse }) {
       aria-label="Pin"
       title={pinned ? 'Unpin' : 'Pin'}
       onClick={() => shelve.mutate({ id: note.id, pinned: !pinned })}
-      className={`${ICON_BUTTON} shrink-0 ${pinned ? 'text-ink' : 'text-muted'}`}
+      // The variant, not a plain `text-ink`: the button's own `text-muted` would win over that.
+      className={`${ICON_BUTTON} aria-pressed:text-ink`}
     >
       <PinIcon size={16} aria-hidden="true" />
     </button>
