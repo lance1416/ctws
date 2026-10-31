@@ -32,8 +32,14 @@ function drawn(text: string) {
 }
 
 describe('the live preview', () => {
-  it('grounds the cursor’s line, and only that one', () => {
+  it('grounds the cursor’s line, and only that one; not a selection, which it would hide', () => {
     expect(drawn('one\ntw‸o\nthree').filter(([, w]) => w === 'cm-md-active')).toHaveLength(1)
+    const state = EditorState.create({
+      doc: 'one\ntwo',
+      selection: EditorSelection.range(0, 5),
+      extensions: [markdown({ base: markdownLanguage })],
+    })
+    expect(previewDecorations(state).some((r) => r.value.spec.class === 'cm-md-active')).toBe(false)
   })
 
   it('hides a heading’s marks off the cursor’s line, and shows them on it', () => {

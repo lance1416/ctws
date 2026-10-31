@@ -79,7 +79,10 @@ export function previewDecorations(state: EditorState): Range<Decoration>[] {
   const blocks: { from: number; to: number }[] = []
   const inBlock = (pos: number) => blocks.some((b) => pos >= b.from && pos <= b.to)
   // The cursor's own line, on its hover ground (artboard 34).
-  for (const n of active) out.push(line('cm-md-active').range(doc.line(n).from))
+  // Only a bare cursor's: a line's ground is drawn over the selection, which is behind the text,
+  // and would hide what is selected (DES-001 NB4-04, VISUAL).
+  if (state.selection.ranges.every((r) => r.empty))
+    for (const n of active) out.push(line('cm-md-active').range(doc.line(n).from))
 
   // Maths blocks first: a `$$` paragraph is a paragraph to Markdown, and would be decorated as one.
   syntaxTree(state).iterate({

@@ -1,5 +1,6 @@
 import { BUILD } from '../../platform/build/build'
 import { type EditorMode, useEditorMode } from '../../platform/editor/vim'
+import { LAYER } from '../../platform/ui/layers'
 
 /**
  * THE STATUS BAR (DES-001 section 4): the frame's last 24 on a desk, across its whole width. On the
@@ -12,7 +13,8 @@ export function StatusBar() {
   return (
     <footer
       aria-label="Status"
-      className="flex h-6 shrink-0 items-center gap-4 border-t border-line bg-chrome px-3 text-meta text-subtle tabular-nums max-lg:hidden"
+      // A bar of the frame, as the top bar: over the pane beside it, and that pane's shadow.
+      className={`relative ${LAYER.bar} flex h-6 shrink-0 items-center gap-4 border-t border-line bg-chrome px-3 text-meta text-subtle tabular-nums max-lg:hidden`}
     >
       {editing && <VimMode {...editing} />}
       <span className="ml-auto" />

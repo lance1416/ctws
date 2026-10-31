@@ -304,3 +304,16 @@
     line-height: 1.75rem;
   }
 }
+
+/* VIM'S BLOCK CURSOR (DES-001 NB4-03): the task colour at 35% over the letter it sits on, which
+   keeps its own colour; away from the focus, the block's outline. The package themes it pink at a
+   higher rank, hence `!important`. */
+[data-markdown-editor] .cm-fat-cursor {
+  background: color-mix(in srgb, var(--color-task) 35%, transparent) !important;
+  color: inherit !important;
+}
+
+[data-markdown-editor] .cm-editor:not(.cm-focused) .cm-fat-cursor {
+  background: none !important;
+  outline: 1px solid var(--color-task) !important;
+}

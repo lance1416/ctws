@@ -101,7 +101,9 @@ export function NoteEditor({
           title={title.trim() || named || ''}
           body={body}
         />
-        <div className="flex max-w-[68ch] items-start gap-2">
+        {/* The title's size on the row too: on a phone a field is sized against its parent
+            (styles.css, 16 at least), and this keeps it the title's 26 (DES-001 NB4-01). */}
+        <div className="flex max-w-[68ch] items-start gap-2 text-title">
           <input
             aria-label="Title"
             placeholder={named ?? 'Title'}

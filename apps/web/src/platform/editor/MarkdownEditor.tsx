@@ -13,7 +13,7 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { Compartment, EditorState, Prec, StateEffect, StateField } from '@codemirror/state'
-import { EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
+import { drawSelection, EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { undo } from '@codemirror/commands'
@@ -259,6 +259,9 @@ export default function MarkdownEditor({
   useEffect(() => {
     const extensions = [
       vimSlot.of([]),
+      // The selection drawn by the editor, in the app's select colour: vim hides the browser's
+      // own, and VISUAL would show nothing (DES-001 NB4-04).
+      drawSelection(),
       history(),
       keymap.of([
         findKey,
@@ -341,7 +344,11 @@ export default function MarkdownEditor({
       }
     // Arrived late (its code is fetched on first use), it takes the focus only if nothing has it
     // since: a menu opened meanwhile stays open.
-    const free = document.activeElement === null || document.activeElement === document.body
+    // So does focus on what is behind the layer the editor is in (full screen): it cannot be used.
+    const active = document.activeElement
+    const layer = host.current?.closest('[role="dialog"]')
+    const free =
+      active === null || active === document.body || (layer != null && !layer.contains(active))
     if ((autoFocus || given !== null) && free) {
       created.focus()
       // Taken over in the middle of an `@`: the box's list went with the box; this one asks again.

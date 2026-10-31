@@ -47,7 +47,10 @@ export function Note() {
   if (gone) return <DeletedNotice type="note" id={id} />
   if (!fresh && !note) return null
   return (
-    <div className="flex min-h-full max-w-6xl shrink-0 flex-col gap-4">
+    // On a phone the note is written on the panel's white (artboard 35: the page under it takes
+    // it, `data-paper`), and its foot leaves room for the row over the keyboard, which sits on the
+    // tab bar when there is no keyboard.
+    <div data-paper className="flex min-h-full max-w-6xl shrink-0 flex-col gap-4 max-lg:pb-14">
       <h1 className="sr-only">{note ? noteTitle(note) : 'New note'}</h1>
       {note ? (
         <HungOn note={note} />

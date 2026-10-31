@@ -217,8 +217,8 @@ test('Ctrl F in the editor finds in this note; elsewhere it is the browser’s (
   await expect(bar).toHaveCount(0)
   await expect(page.locator('[data-markdown-editor] .cm-md-found')).toHaveCount(0)
   await expect(editor(page)).toBeFocused()
-  // Back in the text: its cursor's line shows its marks again.
-  await expect(page.locator('[data-markdown-editor] .cm-md-active')).toHaveCount(1)
+  // Back in the text, the place the bar was on selected, drawn in the select colour.
+  await expect(page.locator('[data-markdown-editor] .cm-selectionBackground').first()).toBeVisible()
 })
 
 test('a note downloads as a .md file, its text as written (FR-111)', async ({ page }) => {

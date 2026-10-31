@@ -1,6 +1,6 @@
 import { TASK_STATUSES, type TaskStatus } from '@ctws/contracts'
 import { monthDay, ymd } from '../../../platform/time/dates'
-import { FlagIcon, LockIcon, NewIcon, PLACE_ICON } from '../../../platform/ui/icons'
+import { EditIcon, FlagIcon, LockIcon, NewIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import type { ChangeLine } from '../../../shell/contract'
 import { StatusMark } from '../../../platform/ui/StatusMark'
 
@@ -60,7 +60,7 @@ export function describeTaskChange(
       return old ? { mark: null, text: `Renamed from “${old}”` } : null
     }
     case 'notes_changed':
-      return { mark: null, text: 'Notes edited' }
+      return { mark: <EditIcon size={16} />, text: 'Notes edited' }
     case 'stage_changed': {
       const [from, to] = [text(was), text(now)]
       if (!to) return { mark: null, text: 'Stage cleared' }
