@@ -113,7 +113,8 @@ function Everyone({ circle }: { circle: string | null }) {
                   type="button"
                   onClick={() => document.getElementById(`people-${letter}`)?.scrollIntoView()}
                   aria-label={`Jump to ${letter}`}
-                  className="block w-3.5 rounded-control text-center font-mono text-[10px] leading-3.5 text-muted hover:bg-hover hover:text-ink"
+                  // Letters, not figures: the text face, at the smallest step there is.
+                  className="block w-4 rounded-control text-center text-meta font-medium text-muted hover:bg-hover hover:text-ink"
                 >
                   {letter}
                 </button>

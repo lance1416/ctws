@@ -17,7 +17,7 @@ export function Avatar({
       aria-hidden="true"
       className={`inline-grid shrink-0 place-items-center rounded-full bg-person-bg text-person-t ${
         size === 56
-          ? 'size-14 text-subject font-medium'
+          ? 'size-14 text-subject'
           : size === 40
             ? 'size-10 text-ui font-medium'
             : `text-initials ${size === 32 ? 'size-8' : 'size-6'}`

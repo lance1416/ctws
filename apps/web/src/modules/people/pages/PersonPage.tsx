@@ -302,7 +302,8 @@ function Section({
 function Fact({ name, children }: { name: string; children: ReactNode }) {
   return (
     <div className="contents">
-      <dt className="text-meta leading-5 text-muted">{name}</dt>
+      {/* Meta's own line, centred on the value's first by its box (h-5 is that line). */}
+      <dt className="flex h-5 items-center text-meta text-muted">{name}</dt>
       <dd className="flex min-w-0 flex-col gap-1.5 text-ink">{children}</dd>
     </div>
   )
@@ -353,7 +354,7 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
           <span className="font-mono text-meta uppercase">
             {MONTHS[Number(day.slice(5, 7)) - 1]}
           </span>
-          <span className="text-subject leading-6 font-medium">{Number(day.slice(8, 10))}</span>
+          <span className="text-subject">{Number(day.slice(8, 10))}</span>
         </span>
         <div className="flex min-w-0 flex-col gap-0.5 text-ui">
           <span className="font-medium text-ink">

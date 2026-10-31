@@ -219,7 +219,8 @@ export function Website({ url }: { url: string }) {
 function Fact({ name, children }: { name: string; children: ReactNode }) {
   return (
     <div className="contents">
-      <dt className="text-meta leading-5 text-muted">{name}</dt>
+      {/* Meta's own line, centred on the value's first by its box (h-5 is that line). */}
+      <dt className="flex h-5 items-center text-meta text-muted">{name}</dt>
       <dd className="min-w-0 text-ink">{children}</dd>
     </div>
   )

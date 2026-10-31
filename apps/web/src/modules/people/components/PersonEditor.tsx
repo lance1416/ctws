@@ -505,7 +505,8 @@ export function PersonEditor({
           <Block title="Circles" icon={CirclesIcon} note="Pick any">
             <Circles picked={d.circleIds} onPick={(circleIds) => set({ circleIds })} />
             <fieldset className="flex flex-wrap items-center gap-3">
-              <legend className={`${label} float-left mr-3 leading-8`}>Gender</legend>
+              {/* Centred on the 32 of the choices beside it by the box, not by a tall line. */}
+              <legend className={`${label} float-left mr-3 flex h-8 items-center`}>Gender</legend>
               <div className="flex gap-0.5 rounded-control bg-hover p-0.5">
                 {GENDER_CHOICES.map((g) => (
                   <label
@@ -945,7 +946,8 @@ function ZoneLine({
         />
       ) : (
         <span className="flex min-w-0 items-center gap-2">
-          <span className="truncate font-mono text-ink">{zone ?? 'Not known'}</span>
+          {/* A zone's name is words; the time beside it is mono. */}
+          <span className="truncate text-ink">{zone ?? 'Not known'}</span>
           {fromCity && <span className="text-meta text-subtle">From Lives in</span>}
         </span>
       )}
