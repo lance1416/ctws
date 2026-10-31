@@ -12,8 +12,9 @@ import { languages } from '@codemirror/language-data'
 import { EditorState } from '@codemirror/state'
 import { EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
-import { useEffect, useRef } from 'react'
+import { type RefObject, useEffect, useRef } from 'react'
 import { editorKeys, history, pasteLink } from './commands'
+import { find, findDone, findInNote, type Found, findStep } from './find'
 import { livePreview } from './livePreview'
 import { mentionDisplay, type MentionDisplay } from './widgets'
 import './editor.css'
@@ -26,6 +27,16 @@ export type EditorMentions = MentionDisplay & {
   search: (query: string) => Promise<readonly MentionOption[]>
   /** A row's mark in the list: the kind's icon, a person's initials. */
   mark: (option: MentionOption) => HTMLElement
+}
+
+/** What a page may do to the editor it holds: the outline's jump to a heading. */
+export type EditorHandle = {
+  /** The cursor to `offset` in the text, scrolled to near the top, the editor focused. */
+  goTo: (offset: number) => void
+  /** Ctrl F's bar (FR-109): finds the words, steps through them, and is done. */
+  find: (query: string) => Found
+  findStep: (step: 1 | -1) => Found
+  findDone: () => void
 }
 
 /** The highlighting of code inside a fence, in the colours the reading side uses. */
@@ -88,6 +99,9 @@ export default function MarkdownEditor({
   autoFocus = false,
   mentions,
   className = '',
+  handle,
+  onCursor,
+  onFind,
 }: {
   value: string
   onChange: (next: string) => void
@@ -97,16 +111,37 @@ export default function MarkdownEditor({
   autoFocus?: boolean
   mentions?: EditorMentions
   className?: string
+  /** Filled while the editor is on the page. */
+  handle?: RefObject<EditorHandle | null>
+  /** Where the cursor is, as it moves: the outline's current section. */
+  onCursor?: (offset: number) => void
+  /** Ctrl F in the editor, where the page has a find bar; elsewhere it is the browser's. */
+  onFind?: () => void
 }) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
   const changed = useRef(onChange)
   changed.current = onChange
+  const moved = useRef(onCursor)
+  moved.current = onCursor
+  const finds = useRef(onFind)
+  finds.current = onFind
 
   useEffect(() => {
     const extensions = [
       history(),
-      keymap.of(editorKeys),
+      keymap.of([
+        {
+          key: 'Mod-f',
+          run: () => {
+            if (!finds.current) return false
+            finds.current()
+            return true
+          },
+        },
+        ...editorKeys,
+      ]),
+      findInNote,
       markdown({ base: markdownLanguage, codeLanguages: languages }),
       syntaxHighlighting(codeColours),
       livePreview,
@@ -115,6 +150,7 @@ export default function MarkdownEditor({
       EditorView.contentAttributes.of({ 'aria-label': label, 'aria-multiline': 'true' }),
       EditorView.updateListener.of((u) => {
         if (u.docChanged) changed.current(u.state.doc.toString())
+        if (u.docChanged || u.selectionSet) moved.current?.(u.state.selection.main.head)
       }),
     ]
     if (placeholder) extensions.push(placeholderText(placeholder))
@@ -140,10 +176,25 @@ export default function MarkdownEditor({
       state: EditorState.create({ doc: value, extensions }),
     })
     view.current = created
+    if (handle)
+      handle.current = {
+        goTo: (offset) => {
+          const at = Math.min(offset, created.state.doc.length)
+          created.dispatch({
+            selection: { anchor: at },
+            effects: EditorView.scrollIntoView(at, { y: 'start', yMargin: 24 }),
+          })
+          created.focus()
+        },
+        find: (query) => find(created, query),
+        findStep: (step) => findStep(created, step),
+        findDone: () => findDone(created),
+      }
     if (autoFocus) created.focus()
     return () => {
       created.destroy()
       view.current = null
+      if (handle) handle.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one view per mount; `value` follows below.
   }, [])

@@ -7,10 +7,15 @@ import {
   useCallback,
   useState,
   type ReactNode,
+  type RefObject,
   type TextareaHTMLAttributes,
 } from 'react'
 import { createPortal } from 'react-dom'
-import type { EditorMentions, MentionOption } from '../../platform/editor/MarkdownEditor'
+import type {
+  EditorHandle,
+  EditorMentions,
+  MentionOption,
+} from '../../platform/editor/MarkdownEditor'
 import { KIND_ICON } from '../../platform/ui/icons'
 import { KIND_TEXT } from '../../platform/ui/kinds'
 import { useMe } from '../auth/useMe'
@@ -36,6 +41,12 @@ type Field = {
   placeholder?: string
   autoFocus?: boolean
   className?: string
+  /** The editor's own controls, once it has arrived (the outline's jump). */
+  handle?: RefObject<EditorHandle | null>
+  /** Where the cursor is, as it moves. */
+  onCursor?: (offset: number) => void
+  /** Ctrl F in the editor, where the page has a find bar. */
+  onFind?: () => void
   /** The stand-in text box's own look, while the editor loads or where it could not. */
   fallback?: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>
 }

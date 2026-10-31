@@ -41,6 +41,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ChevronsLeft,
   ChevronsRight,
   Check,
@@ -169,6 +170,9 @@ export const CollapseIcon = ChevronRight
 /** One step back or on: a month, a year. */
 export const BackIcon = ChevronLeft
 export const ForwardIcon = ChevronRight
+/** Find's places: the one before, the next (FR-109). */
+export const FindPreviousIcon = ChevronUp
+export const FindNextIcon = ChevronDown
 /** The icon bar growing to show its names, and shrinking back. */
 export const BarExpandIcon = ChevronsRight
 export const BarCollapseIcon = ChevronsLeft

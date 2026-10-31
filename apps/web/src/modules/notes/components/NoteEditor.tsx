@@ -1,11 +1,16 @@
 import type { NoteResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { EditorHandle } from '../../../platform/editor/MarkdownEditor'
 import { problemText } from '../../../platform/http/api'
 import { area } from '../../../platform/ui/formStyles'
 import { MarkdownField } from '../../../shell/links'
 import { createNote, noteKeys, notesQuery, patchNote } from '../api'
+import { outlineOf, sectionAt } from '../logic/outline'
 import { noteTitle } from '../logic/title'
+import { FindBar } from './FindBar'
+import { NoteMenu } from './NoteMenu'
+import { NoteOutline } from './NoteOutline'
 
 /** How long the text rests before what is typed is saved. */
 const SAVE_AFTER_MS = 800
@@ -77,36 +82,57 @@ export function NoteEditor({
     },
     [qc],
   )
+  const headings = useMemo(() => outlineOf(body), [body])
+  const [cursor, setCursor] = useState(0)
+  const editor = useRef<EditorHandle | null>(null)
+  // Ctrl F's bar while it is open, counting the presses that opened it.
+  const [finding, setFinding] = useState<number | null>(null)
   return (
-    <div className="flex flex-col gap-3">
-      {/* The page's title, written where it reads (artboard 34): no box around it. */}
-      <input
-        aria-label="Title"
-        placeholder={named ?? 'Title'}
-        value={title}
-        autoFocus={note === null}
-        onChange={(e) => setTitle(e.target.value)}
-        className={`w-full max-w-[68ch] bg-transparent text-title text-ink outline-none placeholder:text-subtle ${
-          named ? 'placeholder:text-ink' : ''
-        }`}
-      />
-      <p className="-mt-2 min-h-4 text-meta text-subtle" aria-live="polite">
-        {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
-      </p>
-      <MarkdownField
-        value={body}
-        onChange={setBody}
-        label="Note"
-        placeholder="Write, or type @ to mention someone"
-        autoFocus={note !== null}
-        className="min-h-80 max-w-[68ch]"
-        fallback={{ rows: 18, className: `${area} min-h-80 max-w-[68ch]` }}
-      />
-      {save.isError && (
-        <p role="alert" className="text-ui text-stop-t">
-          {problemText(save.error)}
+    <div className="flex gap-10">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        {/* The page's title, written where it reads (artboard 34): no box around it. */}
+        <div className="flex max-w-[68ch] items-start gap-2">
+          <input
+            aria-label="Title"
+            placeholder={named ?? 'Title'}
+            value={title}
+            autoFocus={note === null}
+            onChange={(e) => setTitle(e.target.value)}
+            className={`min-w-0 flex-1 bg-transparent text-title text-ink outline-none placeholder:text-subtle ${
+              named ? 'placeholder:text-ink' : ''
+            }`}
+          />
+          {made.current && <NoteMenu title={title.trim() || named || ''} body={body} />}
+        </div>
+        <p className="-mt-2 min-h-4 text-meta text-subtle" aria-live="polite">
+          {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
         </p>
-      )}
+        {finding !== null && (
+          <FindBar editor={editor.current} nonce={finding} onClose={() => setFinding(null)} />
+        )}
+        <MarkdownField
+          value={body}
+          onChange={setBody}
+          label="Note"
+          placeholder="Write, or type @ to mention someone"
+          autoFocus={note !== null}
+          className="min-h-80 max-w-[68ch]"
+          handle={editor}
+          onCursor={setCursor}
+          onFind={() => setFinding((n) => (n ?? 0) + 1)}
+          fallback={{ rows: 18, className: `${area} min-h-80 max-w-[68ch]` }}
+        />
+        {save.isError && (
+          <p role="alert" className="text-ui text-stop-t">
+            {problemText(save.error)}
+          </p>
+        )}
+      </div>
+      <NoteOutline
+        headings={headings}
+        current={sectionAt(headings, cursor)}
+        onJump={(h) => editor.current?.goTo(h.offset)}
+      />
     </div>
   )
 }

@@ -329,7 +329,12 @@ export const livePreview = StateField.define<Preview>({
   },
   provide: (field) => [
     writing,
-    EditorView.focusChangeEffect.of((_, focused) => focusMoved.of(focused)),
+    // The content's own focus and blur, as they happen: CodeMirror's notice of a focus change
+    // compares after a pause, and misses a blur and refocus inside it (the outline's jump).
+    EditorView.domEventHandlers({
+      focus: (_, view) => view.dispatch({ effects: focusMoved.of(true) }),
+      blur: (_, view) => view.dispatch({ effects: focusMoved.of(false) }),
+    }),
     EditorView.decorations.from(field, (p) => p.all),
     // A chip or a box is one thing to the cursor: it steps over it and deletes it whole.
     EditorView.atomicRanges.of((view) => view.state.field(field).atomic),
