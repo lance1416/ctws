@@ -559,7 +559,8 @@ export function PersonEditor({
                   <button
                     type="button"
                     onClick={() => setBirthday(null)}
-                    className={`${BUTTON.inline} self-start`}
+                    // Its words in line with the fields above; the hover keeps its padding.
+                    className={`${BUTTON.inline} -ml-2 self-start`}
                   >
                     Remove the birthday
                   </button>
