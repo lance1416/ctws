@@ -97,11 +97,15 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
       ),
       trail: (
         <span className="flex shrink-0 items-center gap-2.5 text-meta text-muted">
-          <span className="inline-flex items-center gap-1 tabular-nums">
+          {/* As wide as the longest it says ("1h 30m"), so a short one starts where the others do. */}
+          <span className="inline-flex w-15 items-center gap-1 tabular-nums">
             <DurationIcon size={12} aria-hidden="true" />
             {lasting(m.durationMinutes)}
           </span>
-          {projectOf(m.projectId)}
+          {/* The project's cell is there with or without a project, so how long stays in its column. */}
+          <span data-meeting-project className="inline-flex size-5 shrink-0">
+            {projectOf(m.projectId)}
+          </span>
         </span>
       ),
     })),
