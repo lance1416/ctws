@@ -181,3 +181,38 @@ test('on: with the @ list open, Esc closes the list and stays in INSERT; the nex
   await page.keyboard.press('Escape')
   await expect(mode(page)).toContainText('NORMAL')
 })
+
+test('on: j and k move one line at a time past a code block, a table and a formula', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await vimOn(page)
+  for (const block of [
+    ['```js', 'code one', 'code two', '```'],
+    ['| A | B |', '| - | - |', '| 1 | 2 |'],
+    ['$$', 'x^2', '$$'],
+  ]) {
+    const id = await openNote(
+      page,
+      ['# H', 'para', '', ...block, '', '## Heading two', 'last line'].join('\n'),
+    )
+    const typedOn = async (letter: string) =>
+      (await stored(page, id))
+        .split('\n')
+        .find((l) => l.includes(letter))
+        ?.replace(letter, '')
+    await page.locator('[data-markdown-editor] .cm-line').filter({ hasText: 'last line' }).click()
+    await expect(mode(page)).toContainText('NORMAL')
+    await page.keyboard.press('k')
+    await page.keyboard.type('IX')
+    await page.keyboard.press('Escape')
+    await expect.poll(() => typedOn('X'), block[0]).toBe('## Heading two')
+    // Down from the line above the block: the blank line, then the block's first line.
+    await page.locator('[data-markdown-editor] .cm-line').filter({ hasText: 'para' }).click()
+    await page.keyboard.press('j')
+    await page.keyboard.press('j')
+    await page.keyboard.type('IY')
+    await page.keyboard.press('Escape')
+    await expect.poll(() => typedOn('Y'), block[0]).toBe(block[0])
+  }
+})

@@ -131,6 +131,12 @@ export function vimHoldsEscape(view: EditorView | null = focused): boolean {
   return vim.insertMode || vim.visualMode || pending
 }
 
+/** Whether vim is in NORMAL with nothing half typed: a j or a k is a plain step. */
+export function vimAtRest(view: EditorView): boolean {
+  const vim = vimOf(view)
+  return Boolean(vim) && !vimHoldsEscape(view)
+}
+
 /** Vim's own Esc, as if pressed in the editor: out of INSERT or VISUAL, or a command dropped. */
 export function vimEscape(view: EditorView): void {
   const cm = ready?.getCM(view)

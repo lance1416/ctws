@@ -358,13 +358,14 @@ test('a task’s notes grow to half the window and a message to twelve lines, th
  * runs past the text, and with scroll bars always shown (a Mac with a mouse) a scroller it ran past
  * drew both bars and squeezed the line between them.
  */
-async function fitsWritten(field: Locator) {
+async function fitsWritten(field: Locator, { full = true } = {}) {
   await expect(field.locator('.cm-editor.cm-focused')).toBeVisible()
   await expect(field.locator('.cm-md-active')).toBeVisible()
-  // The editor's own boxes scroll neither way; every box round it that can scroll, not sideways.
-  const scrolled = await field.locator('.cm-scroller').evaluate((from) => {
+  // The editor's own boxes scroll neither way (when what is written fits); every box round it
+  // that can scroll, not sideways.
+  const scrolled = await field.locator('.cm-scroller').evaluate((from, full) => {
     const out: string[] = []
-    let own = true
+    let own = full
     for (let el: Element | null = from; el; el = el.parentElement) {
       const { overflowX, overflowY } = getComputedStyle(el)
       const can = el === document.documentElement || /auto|scroll/.test(overflowX + overflowY)
@@ -374,8 +375,9 @@ async function fitsWritten(field: Locator) {
       if (el.hasAttribute('data-markdown-editor')) own = false
     }
     return out
-  })
+  }, full)
   expect(scrolled).toEqual([])
+  if (!full) return
   // The editor is the whole of its box inside the box's padding.
   const short = await field.evaluate((el) => {
     const cs = getComputedStyle(el)
@@ -552,5 +554,97 @@ test('up and down move one line at a time past a code block, a table and a formu
     await page.keyboard.press('ArrowDown')
     await page.keyboard.type('Y')
     await expect.poll(() => typedOn(id, 'Y'), block[0]).toBe(block[0])
+  }
+})
+
+test('a long address or a long run of Chinese wraps: no editor scrolls sideways', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const address = 'https://example.com/' + 'a'.repeat(280)
+  const words = '这是一段很长的中文'.repeat(34)
+  /** Writes the two long lines and a short one in `field`, and checks it with the cursor off them and on each. */
+  async function wraps(field: Locator) {
+    await field.locator('.cm-content').click()
+    await page.keyboard.insertText(`${address}\n${words}\nEnd`)
+    await fitsWritten(field, { full: false })
+    for (const on of [address.slice(0, 30), words.slice(0, 9)]) {
+      await field.locator('.cm-line').filter({ hasText: on }).click()
+      await fitsWritten(field, { full: false })
+    }
+  }
+
+  await page.goto('/notes/new')
+  await wraps(page.locator('[data-markdown-editor]'))
+
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, 'Bare')
+  await page.goto(`/projects/${pid}`)
+  await page.getByRole('listitem').filter({ hasText: 'Bare' }).first().click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).click()
+  await wraps(page.locator('[data-markdown-editor][data-boxed]'))
+
+  const made = await apiPost<{ meetingId: string }>(page, '/meetings', {
+    title: 'Atlas weekly',
+    startsLocal: '2026-09-11T10:30',
+    timeZone: 'Europe/London',
+    durationMinutes: 30,
+  })
+  await page.goto(`/meetings/${made.meetingId}?at=2026-09-11T10:30`)
+  await page
+    .getByRole('button', { name: /Write|Edit the notes/ })
+    .first()
+    .click()
+  await wraps(page.locator('[data-markdown-editor]'))
+
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
+  await page.goto(`/people/${mira.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Mira Chen' })).toBeVisible()
+  await page.keyboard.press('n')
+  await page.keyboard.press('x')
+  await wraps(page.getByRole('dialog', { name: 'Log a message' }).locator('[data-markdown-editor]'))
+})
+
+test('up and down walk every line of a note, one at a time, in and out of every block', async ({
+  page,
+}) => {
+  // Tall enough that the whole note sits above the status bar.
+  await page.setViewportSize({ width: 1280, height: 1300 })
+  await registerFreshUser(page)
+  const lines = [
+    '# Gitea',
+    'para',
+    '',
+    '```bash',
+    'code one',
+    'code two',
+    'code three',
+    'code four',
+    '```',
+    '',
+    '## Table',
+    '',
+    '| A | B |',
+    '| - | - |',
+    '| 1 | 2 |',
+    '',
+    '$$',
+    'x^2',
+    '$$',
+    '',
+    '### Small',
+    'last line',
+  ]
+  await openNote(page, lines.join('\n'))
+  const active = page.locator('[data-markdown-editor] .cm-md-active')
+  await lineOf(page, 'last line').click()
+  await page.keyboard.press('End')
+  for (let n = lines.length - 1; n >= 0; n--) {
+    await expect(active, `up, at line ${n + 1}`).toHaveText(lines[n]!)
+    if (n > 0) await page.keyboard.press('ArrowUp')
+  }
+  for (let n = 0; n < lines.length; n++) {
+    await expect(active, `down, at line ${n + 1}`).toHaveText(lines[n]!)
+    if (n < lines.length - 1) await page.keyboard.press('ArrowDown')
   }
 })

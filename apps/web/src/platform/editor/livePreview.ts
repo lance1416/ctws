@@ -382,3 +382,6 @@ export const livePreview = StateField.define<Preview>({
     ),
   ],
 })
+
+/** Up (-1) or down (1) a line into a block drawn whole, as the arrows do: for Vim's k and j. */
+export const stepIntoBlock = (view: EditorView, step: 1 | -1) => intoBlock(view, livePreview, step)

@@ -19,9 +19,9 @@ import { type RefObject, useEffect, useRef, useState } from 'react'
 import { undo } from '@codemirror/commands'
 import { editorKeys, history, insertLink, pasteLink, toggleLineMark } from './commands'
 import { find, findDone, findInNote, type Found, findStep } from './find'
-import { livePreview } from './livePreview'
+import { livePreview, stepIntoBlock } from './livePreview'
 import { type EditorAction, type FocusedEditor, holdFocus, passOn, releaseFocus } from './focused'
-import { loadVim, reportMode, useVimKeys, vimEscape, vimHoldsEscape } from './vim'
+import { loadVim, reportMode, useVimKeys, vimAtRest, vimEscape, vimHoldsEscape } from './vim'
 import { usePhone } from '../ui/phone'
 import { mentionDisplay, type MentionDisplay } from './widgets'
 import './editor.css'
@@ -398,6 +398,9 @@ export default function MarkdownEditor({
                   passOn(e)
                   return true
                 }
+                // j and k into a block drawn whole, as the arrows go: vim steps over it.
+                if ((e.key === 'j' || e.key === 'k') && !mod && !e.altKey && vimAtRest(editor))
+                  return stepIntoBlock(editor, e.key === 'j' ? 1 : -1)
                 if (e.key !== 'Escape') return false
                 // A list about to be asked for (CodeMirror waits a beat after each key) would take
                 // a quick Esc; in INSERT that Esc is vim's.

@@ -151,22 +151,22 @@
   border-top: 1px solid var(--color-line);
 }
 
-/* A fence: its lines one block of mono on the ground, its head the language and Copy. */
+/* A fence: its lines one block of mono on the chrome, its head the language and Copy. */
 .cm-md-codeline {
   font-family: var(--font-mono);
   font-variant-ligatures: none;
   font-size: 0.875rem;
-  background: var(--color-ground);
+  background: var(--color-chrome);
   border-inline: 1px solid var(--color-line);
   padding-inline: 0.75rem !important;
 }
 
-/* The cursor's line in a fence stays where the fence's lines are, inside its edges: the ground a
-   line takes elsewhere, without running out past them. */
+/* The cursor's line in a fence stays where the fence's lines are, inside its edges, on the line
+   colour: the hover ground is too near the chrome to be seen on it. */
 .cm-md-codeline.cm-md-active {
   margin-inline: 0;
   padding-inline: 0.75rem !important;
-  background: var(--color-hover);
+  background: var(--color-line);
 }
 
 /* The block's first and last lines keep half a rem clear above and below it inside themselves,
@@ -195,7 +195,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--color-ground);
+  background: var(--color-chrome);
   border-inline: 1px solid var(--color-line);
 }
 
@@ -206,7 +206,7 @@
 
 .cm-md-codefirst.cm-md-active::before,
 .cm-md-codelast.cm-md-active::before {
-  background: var(--color-hover);
+  background: var(--color-line);
 }
 
 .cm-md-codefirst::before {
