@@ -99,7 +99,12 @@ export async function buildApp(opts: {
 
   app.setErrorHandler(handleError)
 
-  app.get('/api/v1/health', { schema: { hide: true } }, async () => ({ status: 'ok' }))
+  // What is running, for the status bar's build and for whoever checks a deploy with curl.
+  app.get('/api/v1/health', { schema: { hide: true } }, async () => ({
+    status: 'ok',
+    version: opts.env.version,
+    commit: opts.env.commit ?? null,
+  }))
 
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 

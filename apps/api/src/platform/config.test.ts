@@ -21,6 +21,14 @@ describe('parseEnv', () => {
     expect(() => parseEnv({})).toThrow(/DATABASE_URL/)
   })
 
+  it('is a dev build unless the image says which release and commit it is', () => {
+    expect(parseEnv(base)).toMatchObject({ version: 'dev', commit: undefined })
+    expect(parseEnv({ ...base, CTWS_VERSION: 'v0.31.5', CTWS_COMMIT: '1a2b3c4d' })).toMatchObject({
+      version: 'v0.31.5',
+      commit: '1a2b3c4d',
+    })
+  })
+
   it('treats WEB_DIST as optional', () => {
     expect(parseEnv(base).webDist).toBeUndefined()
     expect(parseEnv({ ...base, WEB_DIST: '/app/apps/web/dist' }).webDist).toBe('/app/apps/web/dist')

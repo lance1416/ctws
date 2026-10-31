@@ -69,7 +69,8 @@ jobs:
         env:
           DATABASE_URL: postgres://ctws:ctws@localhost:5432/ctws
       # api-pinned is the same image with its clock pinned: the `*.pinned.spec.ts` run against it.
-      - run: docker compose --profile pinned up -d --build --wait api api-pinned
+      # Built as dev from this commit, as the status bar and /health say (CTWS_COMMIT).
+      - run: CTWS_COMMIT="${GITHUB_SHA::8}" docker compose --profile pinned up -d --build --wait api api-pinned
       - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000/api/v1/health
       - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3001/api/v1/health
       - run: pnpm --filter @ctws/web e2e
@@ -103,7 +104,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: image
-        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/ctws" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/ctws" >> "$GITHUB_OUTPUT"
+          echo "commit=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@v6
         with:
@@ -124,5 +127,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # The tag the image is pushed under is the version it says it is: one name, from git.
+          build-args: |
+            CTWS_VERSION=${{ github.ref_name }}
+            CTWS_COMMIT=${{ steps.image.outputs.commit }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

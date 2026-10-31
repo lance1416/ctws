@@ -23,6 +23,11 @@ describe('app', () => {
     expect(res.json()).toMatchObject({ status: 'ok' })
   })
 
+  it('says which build is running: a working tree is dev', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/health' })
+    expect(res.json()).toMatchObject({ version: 'dev' })
+  })
+
   it('returns RFC 9457 problem details for unknown routes', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/nope' })
     expect(res.statusCode).toBe(404)

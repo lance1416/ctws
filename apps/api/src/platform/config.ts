@@ -28,6 +28,10 @@ const raw = z.object({
   // A step name that makes the data migration fail on purpose, to rehearse the failure path. Never
   // set in production.
   MIGRATION_FAIL_AT: z.string().optional(),
+  // What was built: the release's tag (v0.31.5) and its commit, set by the image's build. A build
+  // from a working tree is `dev`.
+  CTWS_VERSION: z.string().min(1).default('dev'),
+  CTWS_COMMIT: z.string().optional(),
 })
 
 export type Env = {
@@ -43,6 +47,10 @@ export type Env = {
   clockPinnedAt: Date | undefined
   backupsDir: string | undefined
   migrationFailAt: string | undefined
+  /** The release's tag, or `dev`. */
+  version: string
+  /** The commit it was built from, short, when the build knew it. */
+  commit: string | undefined
 }
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
@@ -71,5 +79,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     webDist: parsed.WEB_DIST || undefined,
     backupsDir: parsed.BACKUPS_DIR || undefined,
     migrationFailAt: parsed.MIGRATION_FAIL_AT || undefined,
+    version: parsed.CTWS_VERSION,
+    commit: parsed.CTWS_COMMIT || undefined,
   }
 }

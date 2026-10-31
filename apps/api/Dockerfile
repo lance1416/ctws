@@ -12,6 +12,10 @@ COPY apps/web/package.json apps/web/
 COPY tools/palette/package.json tools/palette/
 RUN pnpm install --frozen-lockfile
 COPY . .
+# What is being built, for the status bar and /health: CI's image job passes the release's tag and
+# its commit; any other build is dev. The web build reads them from the environment.
+ARG CTWS_VERSION=dev
+ARG CTWS_COMMIT=
 RUN pnpm --filter @ctws/api --filter @ctws/web build
 # Production-only dependencies of @ctws/api (contracts is bundled into dist, so it is not needed).
 RUN pnpm --filter @ctws/api --prod deploy --legacy /deploy
@@ -26,6 +30,10 @@ RUN rm -rf /deploy/node_modules/.pnpm/@node-rs+argon2-linux-x64-gnu@* \
 FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+# The same two, for the API to say at /api/v1/health.
+ARG CTWS_VERSION=dev
+ARG CTWS_COMMIT=
+ENV CTWS_VERSION=$CTWS_VERSION CTWS_COMMIT=$CTWS_COMMIT
 # The API serves the web build from here; unset it (or point elsewhere) for an API-only run.
 ENV WEB_DIST=/app/apps/web/dist
 ENV MIGRATIONS_DIR=/app/drizzle

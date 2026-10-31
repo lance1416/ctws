@@ -37,6 +37,10 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      # A local build is dev; its commit when the shell that builds it says (CTWS_COMMIT).
+      args:
+        CTWS_VERSION: ${CTWS_VERSION:-dev}
+        CTWS_COMMIT: ${CTWS_COMMIT:-}
     env_file: .env
     environment:
       # Inside compose the database host is the postgres service, not localhost;
@@ -76,6 +80,10 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      # A local build is dev; its commit when the shell that builds it says (CTWS_COMMIT).
+      args:
+        CTWS_VERSION: ${CTWS_VERSION:-dev}
+        CTWS_COMMIT: ${CTWS_COMMIT:-}
     env_file: .env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-ctws}:${POSTGRES_PASSWORD:-ctws}@postgres:5432/${POSTGRES_DB:-ctws}

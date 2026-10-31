@@ -55,7 +55,7 @@ describe('serving the built web app', () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/health', headers: HTML })
     expect(res.statusCode).toBe(200)
     expect(res.headers['content-type']).toContain('application/json')
-    expect(res.json()).toEqual({ status: 'ok' })
+    expect(res.json()).toMatchObject({ status: 'ok' })
   })
 
   it('keeps the problem+json 404 under /api/, even for a browser navigation', async () => {

@@ -46,5 +46,12 @@ test('GET /api/v1/health returns JSON, not the SPA shell', async ({ request }) =
   const res = await request.get('/api/v1/health')
   expect(res.status()).toBe(200)
   expect(res.headers()['content-type']).toContain('application/json')
-  expect(await res.json()).toEqual({ status: 'ok' })
+  // What is running too: the release's tag or dev, and the commit when the build knew it.
+  const body = (await res.json()) as Record<string, unknown>
+  expect(Object.keys(body).sort()).toEqual(['commit', 'status', 'version'])
+  expect(body).toMatchObject({
+    status: 'ok',
+    version: expect.stringMatching(/^(v\d+\.\d+\.\d+|dev)$/),
+  })
+  expect(body.commit === null || /^[0-9a-f]{8}$/.test(String(body.commit))).toBe(true)
 })
