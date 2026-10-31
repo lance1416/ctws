@@ -1,5 +1,5 @@
 import { syntaxTree } from '@codemirror/language'
-import { type EditorState, type Range, RangeSet, StateField } from '@codemirror/state'
+import { type EditorState, type Range, RangeSet, StateEffect, StateField } from '@codemirror/state'
 import { Decoration, type DecorationSet, EditorView } from '@codemirror/view'
 import type { SyntaxNode } from '@lezer/common'
 import { mentionOf } from '../notes/mention'
@@ -35,9 +35,22 @@ const mark = Decoration.mark({ class: 'cm-md-mark' })
 const style = (cls: string) => Decoration.mark({ class: cls })
 const line = (cls: string) => Decoration.line({ class: cls })
 
-/** The lines (by number) the selection touches: their marks show. */
+/**
+ * Whether the editor has the focus. Only then is the cursor's line source: a note opened, or left
+ * for the title, reads whole, though its cursor still sits where it was. A state built without it
+ * (a test's) is written in.
+ */
+const focusMoved = StateEffect.define<boolean>()
+const writing = StateField.define<boolean>({
+  create: () => false,
+  update: (was, tr) => tr.effects.reduce((on, e) => (e.is(focusMoved) ? e.value : on), was),
+})
+const isWriting = (state: EditorState) => state.field(writing, false) ?? true
+
+/** The lines (by number) the selection touches, while writing: their marks show. */
 function activeLines(state: EditorState): Set<number> {
   const lines = new Set<number>()
+  if (!isWriting(state)) return lines
   for (const r of state.selection.ranges) {
     const from = state.doc.lineAt(r.from).number
     const to = state.doc.lineAt(r.to).number
@@ -48,7 +61,7 @@ function activeLines(state: EditorState): Set<number> {
 
 /** Whether the selection is anywhere from `from` to `to`, ends included: a block shows its source. */
 const touches = (state: EditorState, from: number, to: number) =>
-  state.selection.ranges.some((r) => r.to >= from && r.from <= to)
+  isWriting(state) && state.selection.ranges.some((r) => r.to >= from && r.from <= to)
 
 export function previewDecorations(state: EditorState): Range<Decoration>[] {
   const out: Range<Decoration>[] = []
@@ -58,6 +71,8 @@ export function previewDecorations(state: EditorState): Range<Decoration>[] {
   // Ranges already drawn as a block: nothing inside them is decorated again.
   const blocks: { from: number; to: number }[] = []
   const inBlock = (pos: number) => blocks.some((b) => pos >= b.from && pos <= b.to)
+  // The cursor's own line, on its hover ground (artboard 34).
+  for (const n of active) out.push(line('cm-md-active').range(doc.line(n).from))
 
   // Maths blocks first: a `$$` paragraph is a paragraph to Markdown, and would be decorated as one.
   syntaxTree(state).iterate({
@@ -241,7 +256,10 @@ function link(state: EditorState, node: SyntaxNode, active: boolean, out: Range<
       return
     }
     // On the cursor's line the words alone, as they were typed: its address is nobody's to read.
-    out.push(hide.range(node.from, open.to), style('cm-md-mention').range(open.to, close.from))
+    const at = words.startsWith('@') ? 1 : 0
+    out.push(hide.range(node.from, open.to))
+    if (at) out.push(mark.range(open.to, open.to + at))
+    out.push(style('cm-md-mention').range(open.to + at, close.from))
     out.push(hide.range(close.from, node.to))
     return
   }
@@ -300,11 +318,18 @@ function preview(state: EditorState): Preview {
 export const livePreview = StateField.define<Preview>({
   create: preview,
   update(value, tr) {
-    if (tr.docChanged || tr.selection || syntaxTree(tr.state) !== syntaxTree(tr.startState))
+    if (
+      tr.docChanged ||
+      tr.selection ||
+      tr.effects.some((e) => e.is(focusMoved)) ||
+      syntaxTree(tr.state) !== syntaxTree(tr.startState)
+    )
       return preview(tr.state)
     return value
   },
   provide: (field) => [
+    writing,
+    EditorView.focusChangeEffect.of((_, focused) => focusMoved.of(focused)),
     EditorView.decorations.from(field, (p) => p.all),
     // A chip or a box is one thing to the cursor: it steps over it and deletes it whole.
     EditorView.atomicRanges.of((view) => view.state.field(field).atomic),

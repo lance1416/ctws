@@ -32,6 +32,10 @@ function drawn(text: string) {
 }
 
 describe('the live preview', () => {
+  it('grounds the cursor’s line, and only that one', () => {
+    expect(drawn('one\ntw‸o\nthree').filter(([, w]) => w === 'cm-md-active')).toHaveLength(1)
+  })
+
   it('hides a heading’s marks off the cursor’s line, and shows them on it', () => {
     expect(drawn('## Plan\n\nso‸on')).toContainEqual(['## ', 'hidden'])
     expect(drawn('## Pl‸an\n\nsoon')).toContainEqual(['##', 'cm-md-mark'])
@@ -53,7 +57,9 @@ describe('the live preview', () => {
     const link = '[@Mira Chen](ctws://person/01a18f86-c7d2-7431-b071-f14f685fdd6f)'
     expect(drawn(`With ${link} today\n\n‸`)).toContainEqual([link, 'MentionWidget'])
     const here = drawn(`With ${link} to‸day`)
-    expect(here).toContainEqual(['@Mira Chen', 'cm-md-mention'])
+    // Only its `@` a mark; the name in the text's own face.
+    expect(here).toContainEqual(['@', 'cm-md-mark'])
+    expect(here).toContainEqual(['Mira Chen', 'cm-md-mention'])
     expect(here).toContainEqual(['[', 'hidden'])
     expect(here).toContainEqual(['](ctws://person/01a18f86-c7d2-7431-b071-f14f685fdd6f)', 'hidden'])
   })

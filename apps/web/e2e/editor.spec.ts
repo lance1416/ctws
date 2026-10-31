@@ -36,6 +36,17 @@ test('a heading reads as one off its line, and shows its ## on it (FR-106)', asy
   await expect(lineOf(page, 'Plan')).toHaveText('## Plan')
 })
 
+test('left for its title, a note reads whole: no line shows its marks (artboard 34)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await openNote(page, '## Plan\n\nLast words.')
+  await lineOf(page, 'Plan').click()
+  await expect(lineOf(page, 'Plan')).toHaveText('## Plan')
+  await page.getByRole('textbox', { name: 'Title' }).click()
+  await expect(lineOf(page, 'Plan')).toHaveText('Plan')
+})
+
 test('what is typed is kept: lists go on, Ctrl B bolds, Ctrl Shift K links (FR-107)', async ({
   page,
 }) => {

@@ -38,16 +38,24 @@
 }
 
 /* What the cursor's line shows: the marks themselves. */
-.cm-md-mark,
-.cm-md-mention {
+.cm-md-mark {
   font-family: var(--font-mono);
   font-variant-ligatures: none;
   font-size: 0.8125rem;
   color: var(--color-subtle);
 }
 
+/* A mention's name on its line: the text's own face, only its `@` a mark. */
 .cm-md-mention {
   color: var(--color-muted);
+}
+
+/* The cursor's line, while writing: the row's hover ground, a little wider than the text. */
+.cm-md-active {
+  background: var(--color-hover);
+  border-radius: 0.25rem;
+  margin-inline: -0.5rem;
+  padding-inline: 0.5rem !important;
 }
 
 /* Headings at the reader's steps: a note's biggest is the subject step. */
@@ -55,12 +63,14 @@
   font-size: var(--text-subject);
   line-height: var(--text-subject--line-height);
   font-weight: 600;
-  padding-top: 0.75rem !important;
+  padding-top: 1.25rem !important;
+  padding-bottom: 0.5rem !important;
 }
 
 .cm-md-h3 {
   font-weight: 600;
-  padding-top: 0.5rem !important;
+  padding-top: 1rem !important;
+  padding-bottom: 0.25rem !important;
 }
 
 .cm-md-strong {
@@ -148,6 +158,8 @@
 .cm-md-codehead {
   display: inline-flex;
   width: 100%;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-line);
   justify-content: space-between;
   font-size: 0.75rem;
   color: var(--color-subtle);
@@ -185,8 +197,11 @@
 }
 
 .cm-md-table th {
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
   font-weight: 500;
-  background: var(--color-ground);
+  color: var(--color-muted);
+  background: var(--color-chrome);
 }
 
 .cm-md-math-block {
@@ -198,26 +213,26 @@
   cursor: pointer;
 }
 
-/* Code inside a fence, in the reader's colours. */
-.cm-code-keyword {
+/* Code inside a fence, in the reader's colours; elsewhere a mark is the marks' own grey. */
+.cm-md-codeline .cm-code-keyword {
   color: var(--color-code-keyword);
 }
-.cm-code-string {
+.cm-md-codeline .cm-code-string {
   color: var(--color-code-string);
 }
-.cm-code-number {
+.cm-md-codeline .cm-code-number {
   color: var(--color-code-number);
 }
-.cm-code-comment {
+.cm-md-codeline .cm-code-comment {
   color: var(--color-code-comment);
 }
-.cm-code-fn {
+.cm-md-codeline .cm-code-fn {
   color: var(--color-code-fn);
 }
-.cm-code-attr {
+.cm-md-codeline .cm-code-attr {
   color: var(--color-code-attr);
 }
-.cm-code-punct {
+.cm-md-codeline .cm-code-punct {
   color: var(--color-code-punct);
 }
 
