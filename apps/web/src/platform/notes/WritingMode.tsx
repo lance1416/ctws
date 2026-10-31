@@ -2,32 +2,47 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { FindBar } from '../editor/FindBar'
 import type { EditorHandle } from '../editor/MarkdownEditor'
-import { outlineOf, sectionAt } from '../editor/outline'
-import { OutlineNav } from '../editor/OutlineNav'
+import { outlineOf } from '../editor/outline'
+import { OutlineButton, OutlineNav, useOutline, useSectionInSight } from '../editor/OutlineNav'
+import { OUTLINE_KEYS, useNoteKeys } from '../editor/noteKeys'
+import { SourceButton } from '../editor/SourceButton'
 import { escapeInEditor } from '../editor/focused'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
 import { BUTTON } from '../ui/buttonStyles'
 import { LAYER } from '../ui/layers'
 
 /**
- * What the layer hands the editor it holds: the text and where every keystroke goes; its handle,
- * its cursor and its Ctrl F, for the outline and the find bar.
+ * What the layer hands the editor it holds: the text and where every keystroke goes; its handle
+ * and its Ctrl F, for the outline and the find bar; whether it shows the source.
  */
 export type WritingField = {
   value: string
   onChange: (next: string) => void
   label: string
   handle: RefObject<EditorHandle | null>
-  onCursor: (offset: number) => void
   onFind: () => void
+  source: boolean
 }
 
 /**
- * FULL SCREEN (REQ-002 FR-106, artboard 34 "Whole page", DES-001): the one editor over the whole
- * window, at the reading measure, with the outline beside it when the text has headings and Ctrl
- * F's bar over it; it draws the note as it will read, so there is no preview. Esc or Leave full
- * screen goes back. Every keystroke reports upward, so the unsaved-edit guard sees edits made
- * here. The editor is the caller's (`field`): this layer is the platform's, the editor the shell's.
+ * The account's choices for a whole page of writing (REQ-002 FR-109, FR-116), the same here as on
+ * a note's page: the outline shown, the readable line length, the source.
+ */
+export type PageChoices = {
+  outlineShown: boolean
+  setOutlineShown: (on: boolean) => void
+  readableLines: boolean
+  sourceView: boolean
+  setSourceView: (on: boolean) => void
+}
+
+/**
+ * FULL SCREEN (REQ-002 FR-106, artboards 34 and 37, DES-001): the one editor over the whole window,
+ * laid out as a note's page is, its outline a panel on the right that can be put away and Ctrl F's
+ * bar over it; it draws the note as it will read, or shows its source, so there is no preview.
+ * Esc or Leave full screen goes back. Every keystroke reports upward, so the unsaved-edit guard
+ * sees edits made here. The editor is the caller's (`field`): this layer is the platform's, the
+ * editor the shell's; so are the account's choices (`choices`).
  */
 export function WritingMode({
   heading,
@@ -36,6 +51,7 @@ export function WritingMode({
   onChange,
   onClose,
   field,
+  choices,
 }: {
   heading: string
   /** Read once, on opening: a refetch behind the layer never replaces what is being typed. */
@@ -45,11 +61,19 @@ export function WritingMode({
   onChange: (next: string) => void
   onClose: () => void
   field: (props: WritingField) => ReactNode
+  choices: PageChoices
 }) {
   const [text, setText] = useState(source)
   const headings = useMemo(() => outlineOf(text), [text])
-  const [cursor, setCursor] = useState(0)
   const editor = useRef<EditorHandle | null>(null)
+  const current = useSectionInSight(editor, headings)
+  const outline = useOutline(choices.outlineShown, choices.setOutlineShown)
+  const flipSource = () => choices.setSourceView(!choices.sourceView)
+  // Full screen is an overlay, which the page-wide keys stand down for: these are its own.
+  useNoteKeys(
+    { outline: headings.length > 0 ? outline.toggle : undefined, source: flipSource },
+    { inOverlay: true },
+  )
   // Ctrl F's bar while it is open, counting the presses that opened it.
   const [finding, setFinding] = useState<number | null>(null)
 
@@ -76,6 +100,8 @@ export function WritingMode({
             // NORMAL) is done here, as the editor will not see a key the layer has kept.
             const at = e.target instanceof Element ? e.target : null
             if (at?.closest('[role="search"]') || escapeInEditor()) e.preventDefault()
+            // The outline floating over the text goes first (it puts itself away).
+            else if (outline.narrow && outline.open) e.preventDefault()
           }}
           onOpenAutoFocus={(e) => {
             // Into the text, the editor or the box standing in for it while it loads.
@@ -94,33 +120,48 @@ export function WritingMode({
                 </p>
               )}
             </div>
-            <Dialog.Close className={`shrink-0 ${BUTTON.secondary}`}>
-              Leave full screen
-            </Dialog.Close>
+            <div className="flex shrink-0 items-center gap-2">
+              <SourceButton source={choices.sourceView} onSource={flipSource} />
+              {headings.length > 0 && <OutlineButton outline={outline} keys={OUTLINE_KEYS} />}
+              <Dialog.Close className={`shrink-0 ${BUTTON.secondary}`}>
+                Leave full screen
+              </Dialog.Close>
+            </div>
           </div>
           {/* The status bar stays below it on a desk (its 24, `StatusBar`): vim's mode is there. */}
-          {/* The text in the middle; with headings, the outline beside it, the pair centred. */}
-          <div className="flex min-h-0 flex-1 justify-center gap-10 overflow-y-auto px-4 py-6">
-            <div className="flex w-full max-w-reading min-w-0 flex-col gap-3">
-              {finding !== null && (
-                <FindBar editor={editor.current} nonce={finding} onClose={() => setFinding(null)} />
-              )}
-              {field({
-                value: text,
-                onChange: (next) => {
-                  setText(next)
-                  onChange(next)
-                },
-                // Not "Notes": the pane's own field is still mounted behind this layer.
-                label: 'Writing',
-                handle: editor,
-                onCursor: setCursor,
-                onFind: () => setFinding((n) => (n ?? 0) + 1),
-              })}
+          {/* The text across the window, as on a note's page; the outline down its right. */}
+          <div ref={outline.frame} className="relative flex min-h-0 flex-1 overflow-y-auto">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 px-4 py-6 lg:px-10">
+              <div
+                className={`flex w-full flex-col gap-3 ${
+                  choices.readableLines ? 'mx-auto max-w-[45em] text-prose' : ''
+                }`}
+              >
+                {finding !== null && (
+                  <FindBar
+                    editor={editor.current}
+                    nonce={finding}
+                    onClose={() => setFinding(null)}
+                  />
+                )}
+                {field({
+                  value: text,
+                  onChange: (next) => {
+                    setText(next)
+                    onChange(next)
+                  },
+                  // Not "Notes": the pane's own field is still mounted behind this layer.
+                  label: 'Writing',
+                  handle: editor,
+                  onFind: () => setFinding((n) => (n ?? 0) + 1),
+                  source: choices.sourceView,
+                })}
+              </div>
             </div>
             <OutlineNav
+              outline={outline}
               headings={headings}
-              current={sectionAt(headings, cursor)}
+              current={current}
               onJump={(h) => editor.current?.goTo(h.offset)}
             />
           </div>

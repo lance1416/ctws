@@ -18,6 +18,7 @@ import { Modal } from '../../platform/ui/Modal'
 import { PROJECT_KEYS, WORKBENCH_KEYS } from '../projects/keys'
 import { useSetSingleKeys } from '../auth'
 import { useRegistry } from '../registry'
+import { OUTLINE_KEYS, SOURCE_KEYS } from '../../platform/editor/noteKeys'
 import { SEARCH_KEYS } from '../search/SearchDialog'
 import { JUMP_PREFIX, NEW_PREFIX } from './chords'
 
@@ -32,6 +33,9 @@ const switchOrder = (anywhere: KeyTable, tables: readonly KeyTable[]): KeyTable[
 
 type Group = { title: string; icon: IconComponent; tint: string; rows: KeyTable['rows'] }
 
+/** A note's own keys (REQ-002 FR-109, FR-116). */
+const NOTE_TITLE = 'On a note'
+
 /** Vim's keys in the editor, listed while they are on (REQ-002 FR-112, artboard 36). */
 const VIM_TITLE = 'In the editor, with Vim keys on'
 
@@ -42,7 +46,7 @@ const VIM_TITLE = 'In the editor, with Vim keys on'
 const COLUMNS: readonly (readonly string[])[] = [
   ['Anywhere', 'Go to'],
   ['New', 'On a project', 'On a board, with a card focused', 'On the Workbench'],
-  ['In a tree or list, with a row focused', 'In search', 'In a form', VIM_TITLE],
+  ['In a tree or list, with a row focused', 'In search', 'In a form', NOTE_TITLE, VIM_TITLE],
 ]
 
 /**
@@ -113,6 +117,17 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       rows: [
         { keys: 'Ctrl+Enter', does: 'Save', presses: {} },
         { keys: 'Esc', does: 'Close; what you typed is kept', presses: {} },
+      ],
+    },
+    // A note's whole page, and full screen (REQ-002 FR-109, FR-116, artboard 24).
+    {
+      title: NOTE_TITLE,
+      icon: KIND_ICON.note,
+      tint: grey,
+      rows: [
+        { keys: OUTLINE_KEYS, does: 'Hide or show the outline', presses: {} },
+        { keys: 'Ctrl+F', does: 'Find in the note', presses: {} },
+        { keys: SOURCE_KEYS, does: 'Show the source, or the note drawn', presses: {} },
       ],
     },
     // Vim's own, a few to start from; no `:w`, as notes save as they are typed.

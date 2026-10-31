@@ -1,4 +1,6 @@
 import type { NoteFolderId, NoteResponse } from '@ctws/contracts'
+import { sourceWords } from '../../../platform/editor/SourceButton'
+import { SOURCE_KEYS } from '../../../platform/editor/noteKeys'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useQuery } from '@tanstack/react-query'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
@@ -30,10 +32,15 @@ export function NoteMenu({
   note,
   title,
   body,
+  source,
+  onSource,
 }: {
   note: NoteResponse | null
   title: string
   body: string
+  /** The note shown as its source (FR-116), and the switch. */
+  source: boolean
+  onSource: () => void
 }) {
   const folders = useQuery(foldersQuery()).data ?? []
   const shelve = useShelveNote()
@@ -78,6 +85,10 @@ export function NoteMenu({
               <DropdownMenu.Separator className="my-1 h-px bg-line" />
             </>
           )}
+          <DropdownMenu.Item onSelect={onSource} className={MENU_ITEM}>
+            {sourceWords(source)}
+            <span className="ml-auto pl-4 text-meta text-subtle">{SOURCE_KEYS}</span>
+          </DropdownMenu.Item>
           <DropdownMenu.Item onSelect={() => downloadNote(title, body)} className={MENU_ITEM}>
             Download .md
           </DropdownMenu.Item>

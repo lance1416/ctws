@@ -19,7 +19,7 @@ import { FlagIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { PickOne } from '../../../platform/ui/inline'
 import { usePhone } from '../../../platform/ui/phone'
 import type { UnsavedGuard } from '../../../platform/ui/unsavedGuard'
-import { useTimeZone } from '../../../shell/auth'
+import { useNoteChoices, useTimeZone } from '../../../shell/auth'
 import { MoveToProject, ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { instantPhrase, moveDueToDay } from '../logic/dueDates'
 import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
@@ -83,6 +83,8 @@ export function TaskEditForm({
 
   /** Full-screen writing for the notes: a bigger place to type, inside the same form and guard. */
   const [writing, setWriting] = useState(false)
+  // Full screen is a whole page of writing: the account's choices for one (REQ-002 FR-109).
+  const choices = useNoteChoices()
   // The guard's question is drawn in this form; a layer over it would hide the question, so the
   // question closes it, in the render that asks.
   if (writing && guard.asking) setWriting(false)
@@ -363,6 +365,7 @@ export function TaskEditForm({
             onChange={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
             onClose={() => setWriting(false)}
             field={(f) => <MarkdownField {...f} autoFocus className="min-h-[60vh]" />}
+            choices={choices}
           />
         )}
       </form>

@@ -14,6 +14,7 @@ import { useShelveNote } from '../hooks/useShelveNote'
 import { NOTES_ID } from '../logic/id'
 import { FolderNameField } from './FolderNameField'
 import { downloadNote } from './NoteMenu'
+import { sourceWords } from '../../../platform/editor/SourceButton'
 
 const ROW =
   'flex min-h-12 w-full items-center gap-3 px-4 text-left text-prose text-ink active:bg-hover'
@@ -28,12 +29,17 @@ export function PhoneNoteBar({
   editor,
   title,
   body,
+  source,
+  onSource,
 }: {
   note: NoteResponse | null
   headings: readonly Heading[]
   editor: RefObject<EditorHandle | null>
   title: string
   body: string
+  /** The note shown as its source (FR-116), and the switch, here only in the sheet. */
+  source: boolean
+  onSource: () => void
 }) {
   const [sheet, setSheet] = useState<'actions' | 'folders' | null>(null)
   const shelve = useShelveNote()
@@ -91,6 +97,18 @@ export function PhoneNoteBar({
             </ul>
           )}
           <ul className="py-1 pb-2">
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  onSource()
+                  setSheet(null)
+                }}
+                className={ROW}
+              >
+                {sourceWords(source)}
+              </button>
+            </li>
             {own && (
               <li>
                 <button

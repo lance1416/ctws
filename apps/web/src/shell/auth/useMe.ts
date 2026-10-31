@@ -86,3 +86,44 @@ export function useSetVimKeys() {
     save.mutate(on)
   }
 }
+
+/** The account's choices for how a note is laid out (REQ-002 FR-109, FR-116). */
+export type NoteChoice = 'outlineShown' | 'readableLines' | 'sourceView'
+
+/** As the account was made: an outline beside, the full width, the note drawn. */
+const UNCHOSEN: Record<NoteChoice, boolean> = {
+  outlineShown: true,
+  readableLines: false,
+  sourceView: false,
+}
+
+/**
+ * One of those choices and its switch, kept with the account: the page takes it at once, then the
+ * server; a write that fails puts back what the account still says.
+ */
+export function useNoteChoice(name: NoteChoice): [boolean, (on: boolean) => void] {
+  const qc = useQueryClient()
+  const me = useMe()
+  const save = useMutation({
+    mutationFn: (on: boolean) => call(api.auth.updateMe, { body: { [name]: on } }),
+    meta: { refresh: false },
+    onSuccess: (next) => qc.setQueryData(meKey, next),
+    onError: () => void qc.invalidateQueries({ queryKey: meKey }),
+  })
+  const on = me.data?.[name] ?? UNCHOSEN[name]
+  return [
+    on,
+    (next: boolean) => {
+      qc.setQueryData<MeResponse | null>(meKey, (was) => (was ? { ...was, [name]: next } : was))
+      save.mutate(next)
+    },
+  ]
+}
+
+/** The three together, as a whole page of writing elsewhere (full screen) takes them. */
+export function useNoteChoices() {
+  const [outlineShown, setOutlineShown] = useNoteChoice('outlineShown')
+  const [readableLines] = useNoteChoice('readableLines')
+  const [sourceView, setSourceView] = useNoteChoice('sourceView')
+  return { outlineShown, setOutlineShown, readableLines, sourceView, setSourceView }
+}

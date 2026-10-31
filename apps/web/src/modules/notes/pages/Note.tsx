@@ -50,13 +50,8 @@ export function Note() {
     // On a phone the note is written on the panel's white (artboard 35: the page under it takes
     // it, `data-paper`), and its foot leaves room for the row over the keyboard, which sits on the
     // tab bar when there is no keyboard.
-    <div data-paper className="flex min-h-full max-w-6xl shrink-0 flex-col gap-4 max-lg:pb-14">
+    <div data-paper className="flex min-h-full shrink-0 flex-col max-lg:pb-14">
       <h1 className="sr-only">{note ? noteTitle(note) : 'New note'}</h1>
-      {note ? (
-        <HungOn note={note} />
-      ) : (
-        <p className="text-meta text-muted max-lg:hidden">On its own</p>
-      )}
       {/* The one editor, on a phone too (REQ-002 FR-106, artboard 35). */}
       <NoteEditor
         key={note && note.id !== born ? note.id : 'new'}
@@ -65,12 +60,21 @@ export function Note() {
           setBorn(made.id)
           navigate(`/${NOTES_ID}/${made.id}`, { replace: true })
         }}
+        above={
+          note ? (
+            <HungOn note={note} />
+          ) : (
+            <p className="text-meta text-muted max-lg:hidden">On its own</p>
+          )
+        }
+        below={
+          note && (
+            <DangerZone>
+              <DeleteNote note={note} onDeleted={() => navigate(`/${NOTES_ID}`)} />
+            </DangerZone>
+          )
+        }
       />
-      {note && (
-        <DangerZone>
-          <DeleteNote note={note} onDeleted={() => navigate(`/${NOTES_ID}`)} />
-        </DangerZone>
-      )}
     </div>
   )
 }

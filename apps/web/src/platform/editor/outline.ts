@@ -35,12 +35,10 @@ export function outlineOf(text: string): Heading[] {
   return out
 }
 
-/** The heading whose section holds `offset`: the last at or before it; none above the first. */
-export function sectionAt(headings: readonly Heading[], offset: number): Heading | null {
-  let at: Heading | null = null
-  for (const h of headings) {
-    if (h.offset > offset) break
-    at = h
-  }
-  return at
+/**
+ * The section in sight (artboard 37): the first heading at or below where the top of what shows
+ * of the note is, so a note scrolled to its top marks its first; past the last, the last.
+ */
+export function sectionInSight(headings: readonly Heading[], top: number): Heading | null {
+  return headings.find((h) => h.offset >= top) ?? headings.at(-1) ?? null
 }

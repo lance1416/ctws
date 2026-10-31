@@ -58,26 +58,29 @@ function vimOf(view: EditorView) {
   return ready?.getCM(view)?.state.vim ?? null
 }
 
-/** The mode, as the status bar writes it, and where the cursor is in it. */
+/**
+ * Where the cursor is in the editor with the focus, as the status bar writes it (artboard 37), with
+ * vim's mode when it has vim's keys, and whether it shows the source (FR-116).
+ */
 export type EditorMode = {
-  mode: 'NORMAL' | 'INSERT' | 'VISUAL' | 'REPLACE'
+  mode: 'NORMAL' | 'INSERT' | 'VISUAL' | 'REPLACE' | null
   line: number
   column: number
   /** In VISUAL, the lines the selection takes. */
   lines: number
+  source: boolean
 }
 
 let shown: EditorMode | null = null
-/** The editor that has the focus, while it has vim. */
+/** The editor that has the focus. */
 let focused: EditorView | null = null
 const heard = new Set<() => void>()
 const tell = () => heard.forEach((h) => h())
 
-/** Said by an editor with vim as its mode or cursor moves, and as it takes or loses the focus. */
+/** Said by an editor as its cursor or vim's mode moves, and as it takes or loses the focus. */
 export function reportMode(view: EditorView, hasFocus: boolean): void {
-  const vim = hasFocus ? vimOf(view) : null
-  if (!vim) {
-    // This editor let go of the focus, or has no vim: the bar says nothing for it.
+  if (!hasFocus) {
+    // This editor let go of the focus: the bar says nothing for it.
     if (focused === view) {
       focused = null
       if (shown) {
@@ -90,17 +93,21 @@ export function reportMode(view: EditorView, hasFocus: boolean): void {
   focused = view
   const sel = view.state.selection.main
   const line = view.state.doc.lineAt(sel.head)
+  const vim = vimOf(view)
   const next: EditorMode = {
-    mode: vim.insertMode
-      ? 'INSERT'
-      : vim.visualMode
-        ? 'VISUAL'
-        : vim.mode === 'replace'
-          ? 'REPLACE'
-          : 'NORMAL',
+    mode: !vim
+      ? null
+      : vim.insertMode
+        ? 'INSERT'
+        : vim.visualMode
+          ? 'VISUAL'
+          : vim.mode === 'replace'
+            ? 'REPLACE'
+            : 'NORMAL',
     line: line.number,
     column: sel.head - line.from + 1,
     lines: view.state.doc.lineAt(sel.to).number - view.state.doc.lineAt(sel.from).number + 1,
+    source: view.dom.classList.contains('cm-src'),
   }
   if (JSON.stringify(next) !== JSON.stringify(shown)) {
     shown = next

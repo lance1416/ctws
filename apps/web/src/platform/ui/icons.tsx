@@ -49,6 +49,7 @@ import {
   CornerDownRight,
   Ellipsis,
   FileCode,
+  TextWrap,
   FileText,
   Flag,
   Folder,
@@ -302,3 +303,7 @@ export function InProgressIcon({
     </svg>
   )
 }
+/** A note shown as its Markdown source (REQ-002 FR-116). */
+export const FileCodeIcon = FileCode
+/** How long a note's lines run (REQ-002 FR-109). */
+export const LineLengthIcon = TextWrap

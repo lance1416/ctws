@@ -31,6 +31,12 @@ export const users = pgTable(
     singleKeyShortcuts: boolean('single_key_shortcuts').notNull().default(true),
     /** The editor takes vim's keys (REQ-002 FR-112): off unless the account turns it on. */
     vimKeys: boolean('vim_keys').notNull().default(false),
+    /** A note's outline is shown beside it (REQ-002 FR-109); the same on every note and screen. */
+    outlineShown: boolean('outline_shown').notNull().default(true),
+    /** A note runs the full width, or stops at a readable length (REQ-002 FR-109). */
+    readableLines: boolean('readable_lines').notNull().default(false),
+    /** A note is shown as its Markdown source, not drawn (REQ-002 FR-116). */
+    sourceView: boolean('source_view').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { outlineOf, sectionAt } from './outline'
+import { outlineOf, sectionInSight } from './outline'
 
 describe('a note’s outline', () => {
   it('lists its headings in order, `###` under the sections, their marks gone', () => {
@@ -21,10 +21,11 @@ describe('a note’s outline', () => {
     expect(outlineOf(text)[0]!.offset).toBe(3)
   })
 
-  it('says which section a place in the text is in; none above the first heading', () => {
+  it('marks the section in sight: the first heading at or below the top, else the last', () => {
     const headings = outlineOf('top\n## A\nmid\n## B\nend')
-    expect(sectionAt(headings, 1)).toBeNull()
-    expect(sectionAt(headings, 'top\n## A\nmi'.length)?.words).toBe('A')
-    expect(sectionAt(headings, 'top\n## A\nmid\n## B\ne'.length)?.words).toBe('B')
+    expect(sectionInSight(headings, 0)?.words).toBe('A')
+    expect(sectionInSight(headings, 'top\n## A\nmi'.length)?.words).toBe('B')
+    expect(sectionInSight(headings, 'top\n## A\nmid\n## B\ne'.length)?.words).toBe('B')
+    expect(sectionInSight([], 0)).toBeNull()
   })
 })

@@ -19,6 +19,7 @@ import {
   AppearanceIcon,
   DarkIcon,
   EmailIcon,
+  LineLengthIcon,
   LightIcon,
   MovedIcon,
   PLACE_ICON,
@@ -32,7 +33,7 @@ import { Segmented } from '../../platform/ui/Segmented'
 import { applyTheme, onSchemeChange, readTheme, type Theme } from '../../platform/ui/theme'
 import { ZoneBox, zoneFrom } from '../../platform/ui/ZoneBox'
 import { useVimKeys } from '../../platform/editor/vim'
-import { meKey, useMe, useSetVimKeys } from '../auth/useMe'
+import { meKey, useMe, useNoteChoice, useSetVimKeys } from '../auth/useMe'
 import { useSignOut } from '../layout/signOut'
 import { changePassword, migrationQuery, setTimeZone } from './api'
 
@@ -90,6 +91,7 @@ export function Account() {
         </Block>
         <Block badge={{ icon: PLACE_ICON.keys, tint: SETTING_TINT }} title="Editing">
           <VimKeys />
+          <LineLength />
         </Block>
         <Block
           badge={{ icon: PasswordIcon, tint: SETTING_TINT }}
@@ -266,6 +268,37 @@ function VimKeys() {
           {on
             ? 'Esc goes back to Normal first; press it again to close what is open.'
             : 'Every note editor: notes, meeting notes, a task’s notes, a message. Not on the phone.'}
+        </p>
+      </div>
+    </Row>
+  )
+}
+
+const FULL_READABLE = [
+  { id: 'full', label: 'Full' },
+  { id: 'readable', label: 'Readable' },
+] as const
+
+/**
+ * How long a note's lines run on a whole page (REQ-002 FR-109, artboard 37): the width of the main
+ * area, or a readable length, the text centred.
+ */
+function LineLength() {
+  const [readable, setReadable] = useNoteChoice('readableLines')
+  return (
+    <Row icon={LineLengthIcon} name="Line length">
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
+        <Segmented
+          label="Line length"
+          picks
+          segments={FULL_READABLE}
+          current={readable ? 'readable' : 'full'}
+          onPick={(id) => setReadable(id === 'readable')}
+        />
+        <p className="max-w-64 text-meta text-muted">
+          {readable
+            ? 'A note’s lines stop at a readable length, the text in the middle.'
+            : 'A note’s lines run the width of the page.'}
         </p>
       </div>
     </Row>

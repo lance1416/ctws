@@ -133,22 +133,44 @@ export async function setTimezone(db: Queryable, userId: UserId, timezone: strin
   await db.update(users).set({ timezone }).where(eq(users.id, userId))
 }
 
-/** The account's keyboard choices: single keys (FR-029) and vim's keys (REQ-002 FR-112). */
-export async function keyChoices(
-  db: Queryable,
-  userId: UserId,
-): Promise<{ singleKeyShortcuts: boolean; vimKeys: boolean }> {
-  const [row] = await db
-    .select({ singleKeyShortcuts: users.singleKeyShortcuts, vimKeys: users.vimKeys })
-    .from(users)
-    .where(eq(users.id, userId))
-  return row ?? { singleKeyShortcuts: true, vimKeys: false }
+/**
+ * What the account chose for how it works: single keys (FR-029), vim's keys (REQ-002 FR-112), and
+ * how a note is laid out (REQ-002 FR-109, FR-116).
+ */
+export type Choices = {
+  singleKeyShortcuts: boolean
+  vimKeys: boolean
+  outlineShown: boolean
+  readableLines: boolean
+  sourceView: boolean
 }
 
-export async function setKeyChoices(
+const UNCHOSEN: Choices = {
+  singleKeyShortcuts: true,
+  vimKeys: false,
+  outlineShown: true,
+  readableLines: false,
+  sourceView: false,
+}
+
+export async function choicesOf(db: Queryable, userId: UserId): Promise<Choices> {
+  const [row] = await db
+    .select({
+      singleKeyShortcuts: users.singleKeyShortcuts,
+      vimKeys: users.vimKeys,
+      outlineShown: users.outlineShown,
+      readableLines: users.readableLines,
+      sourceView: users.sourceView,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+  return row ?? UNCHOSEN
+}
+
+export async function setChoices(
   db: Queryable,
   userId: UserId,
-  choices: { singleKeyShortcuts?: boolean | undefined; vimKeys?: boolean | undefined },
+  choices: { [K in keyof Choices]?: Choices[K] | undefined },
 ): Promise<void> {
   const set = Object.fromEntries(Object.entries(choices).filter(([, v]) => v !== undefined))
   if (Object.keys(set).length > 0) await db.update(users).set(set).where(eq(users.id, userId))

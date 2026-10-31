@@ -1,6 +1,6 @@
 import type { NoteResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { EditorHandle } from '../../../platform/editor/MarkdownEditor'
 import { problemText } from '../../../platform/http/api'
 import { area } from '../../../platform/ui/formStyles'
@@ -8,8 +8,16 @@ import { usePhone } from '../../../platform/ui/phone'
 import { MarkdownField } from '../../../shell/links'
 import { createNote, noteKeys, notesQuery, patchNote } from '../api'
 import { FindBar } from '../../../platform/editor/FindBar'
-import { OutlineNav } from '../../../platform/editor/OutlineNav'
-import { outlineOf, sectionAt } from '../../../platform/editor/outline'
+import {
+  OutlineButton,
+  OutlineNav,
+  useOutline,
+  useSectionInSight,
+} from '../../../platform/editor/OutlineNav'
+import { OUTLINE_KEYS, useNoteKeys } from '../../../platform/editor/noteKeys'
+import { outlineOf } from '../../../platform/editor/outline'
+import { SourceButton } from '../../../platform/editor/SourceButton'
+import { useNoteChoice } from '../../../shell/auth'
 import { noteTitle } from '../logic/title'
 import { FolderTag, NoteMenu, PinButton } from './NoteMenu'
 import { PhoneNoteBar } from './PhoneNoteBar'
@@ -18,16 +26,22 @@ import { PhoneNoteBar } from './PhoneNoteBar'
 const SAVE_AFTER_MS = 800
 
 /**
- * A NOTE, WRITTEN (FR-050, FR-074, REQ-002 artboard 34): its title and its Markdown, saved as they
- * rest, in the one editor, which draws the note as it will read except on the cursor's line. A
- * note not yet made is made by its first words, and `onMade` says where it now lives.
+ * A NOTE, WRITTEN (FR-050, FR-074, REQ-002 artboards 34 and 37): its title and its Markdown, saved
+ * as they rest, in the one editor, which draws the note as it will read except on the cursor's
+ * line, or shows its source. The whole main area is the note's, as a code editor's is, its outline
+ * a panel on the right that can be put away. A note not yet made is made by its first words, and
+ * `onMade` says where it now lives. `above` and `below` are the page's, on either side of it.
  */
 export function NoteEditor({
   note,
   onMade,
+  above,
+  below,
 }: {
   note: NoteResponse | null
   onMade?: (made: NoteResponse) => void
+  above?: ReactNode
+  below?: ReactNode
 }) {
   const qc = useQueryClient()
   const [title, setTitle] = useState(note?.title ?? '')
@@ -86,73 +100,96 @@ export function NoteEditor({
   )
   const phone = usePhone()
   const headings = useMemo(() => outlineOf(body), [body])
-  const [cursor, setCursor] = useState(0)
   const editor = useRef<EditorHandle | null>(null)
+  const current = useSectionInSight(editor, headings)
+  const [shown, setShown] = useNoteChoice('outlineShown')
+  const [readable] = useNoteChoice('readableLines')
+  const [source, setSource] = useNoteChoice('sourceView')
+  const outline = useOutline(shown, setShown)
+  const flipSource = () => setSource(!source)
+  useNoteKeys({ outline: headings.length > 0 ? outline.toggle : undefined, source: flipSource })
   // Ctrl F's bar while it is open, counting the presses that opened it.
   const [finding, setFinding] = useState<number | null>(null)
   return (
-    <div className="flex gap-10">
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        {/* The page's title, written where it reads (artboard 34): no box around it. */}
-        <PhoneNoteBar
-          note={note}
-          headings={headings}
-          editor={editor}
-          title={title.trim() || named || ''}
-          body={body}
-        />
-        {/* The title's size on the row too: on a phone a field is sized against its parent
-            (styles.css, 16 at least), and this keeps it the title's 26. */}
-        <div className="flex max-w-[68ch] items-start gap-2 text-title">
-          <input
-            aria-label="Title"
-            placeholder={named ?? 'Title'}
-            value={title}
-            autoFocus={note === null}
-            onChange={(e) => setTitle(e.target.value)}
-            className={`min-w-0 flex-1 bg-transparent max-lg:min-h-11 text-title text-ink outline-none placeholder:text-subtle ${
-              named ? 'placeholder:text-ink' : ''
-            }`}
+    // On a desk the page takes the main area's edges back: the outline runs down its right side.
+    <div ref={outline.frame} className="relative flex flex-1 lg:-m-5">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 lg:px-10 lg:py-5">
+        <div
+          className={`flex w-full flex-col gap-3 ${readable ? 'mx-auto max-w-[45em] text-prose' : ''}`}
+        >
+          {above}
+          <PhoneNoteBar
+            note={note}
+            headings={headings}
+            editor={editor}
+            title={title.trim() || named || ''}
+            body={body}
+            source={source}
+            onSource={flipSource}
           />
-          {/* On a phone the bar above has them (artboard 35). */}
-          <span className="flex items-start gap-2 max-lg:hidden">
-            {note && note.anchor === null && <PinButton note={note} />}
-            {made.current && (
-              <NoteMenu note={note} title={title.trim() || named || ''} body={body} />
-            )}
-          </span>
+          {/* The title's size on the row too: on a phone a field is sized against its parent
+              (styles.css, 16 at least), and this keeps it the title's 26. */}
+          <div className="flex items-start gap-2 text-title">
+            <input
+              aria-label="Title"
+              placeholder={named ?? 'Title'}
+              value={title}
+              autoFocus={note === null}
+              onChange={(e) => setTitle(e.target.value)}
+              className={`min-w-0 flex-1 bg-transparent max-lg:min-h-11 text-title text-ink outline-none placeholder:text-subtle ${
+                named ? 'placeholder:text-ink' : ''
+              }`}
+            />
+            {/* On a phone the bar above has them (artboard 35). */}
+            <span className="flex items-start gap-2 max-lg:hidden">
+              {note && note.anchor === null && <PinButton note={note} />}
+              {made.current && (
+                <NoteMenu
+                  note={note}
+                  title={title.trim() || named || ''}
+                  body={body}
+                  source={source}
+                  onSource={flipSource}
+                />
+              )}
+              <SourceButton source={source} onSource={flipSource} />
+              {headings.length > 0 && <OutlineButton outline={outline} keys={OUTLINE_KEYS} />}
+            </span>
+          </div>
+          <div className="-mt-1 flex min-h-5.5 items-center gap-2">
+            {note && <FolderTag note={note} />}
+            <p className="text-meta text-subtle" aria-live="polite">
+              {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
+            </p>
+          </div>
+          {finding !== null && (
+            <FindBar editor={editor.current} nonce={finding} onClose={() => setFinding(null)} />
+          )}
+          <MarkdownField
+            value={body}
+            onChange={setBody}
+            label="Note"
+            placeholder="Write, or type @ to mention someone"
+            // A note opened to read on a phone waits for a tap: no keyboard, no row over it.
+            autoFocus={note !== null && !phone}
+            className="min-h-80"
+            handle={editor}
+            onFind={() => setFinding((n) => (n ?? 0) + 1)}
+            source={source}
+            fallback={{ rows: 18, className: `${area} min-h-80` }}
+          />
+          {save.isError && (
+            <p role="alert" className="text-ui text-stop-t">
+              {problemText(save.error)}
+            </p>
+          )}
+          {below}
         </div>
-        <div className="-mt-1 flex min-h-5.5 items-center gap-2">
-          {note && <FolderTag note={note} />}
-          <p className="text-meta text-subtle" aria-live="polite">
-            {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
-          </p>
-        </div>
-        {finding !== null && (
-          <FindBar editor={editor.current} nonce={finding} onClose={() => setFinding(null)} />
-        )}
-        <MarkdownField
-          value={body}
-          onChange={setBody}
-          label="Note"
-          placeholder="Write, or type @ to mention someone"
-          // A note opened to read on a phone waits for a tap: no keyboard, no row over it.
-          autoFocus={note !== null && !phone}
-          className="min-h-80 max-w-[68ch]"
-          handle={editor}
-          onCursor={setCursor}
-          onFind={() => setFinding((n) => (n ?? 0) + 1)}
-          fallback={{ rows: 18, className: `${area} min-h-80 max-w-[68ch]` }}
-        />
-        {save.isError && (
-          <p role="alert" className="text-ui text-stop-t">
-            {problemText(save.error)}
-          </p>
-        )}
       </div>
       <OutlineNav
+        outline={outline}
         headings={headings}
-        current={sectionAt(headings, cursor)}
+        current={current}
         onJump={(h) => editor.current?.goTo(h.offset)}
       />
     </div>

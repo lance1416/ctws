@@ -37,7 +37,7 @@ export function FindBar({
       aria-label="Find in this note"
       // A box round a bare input: the app's ring is the box's (DES-001 section 4).
       data-field
-      className="flex h-10 max-w-[68ch] items-center gap-1 rounded-control border border-line bg-float pr-1 pl-3"
+      className="flex h-10 w-[420px] max-w-full items-center gap-1 rounded-control border border-line bg-float pr-1 pl-3"
     >
       <PLACE_ICON.search size={16} aria-hidden="true" className="shrink-0 text-muted" />
       <input

@@ -27,13 +27,19 @@ export const loginBody = z
   })
   .strict()
 
-/** The account's own settings it may change (artboard 30): its zone, for now. */
 /**
- * What the account page changes: its time zone, whether single keys act (FR-029), and whether the
- * editor takes vim's keys (REQ-002 FR-112).
+ * What the account changes: its time zone, whether single keys act (FR-029), whether the editor
+ * takes vim's keys (REQ-002 FR-112), and how a note is laid out (REQ-002 FR-109, FR-116).
  */
 export const updateMeBody = z
-  .object({ timezone: canonicalTimeZone, singleKeyShortcuts: z.boolean(), vimKeys: z.boolean() })
+  .object({
+    timezone: canonicalTimeZone,
+    singleKeyShortcuts: z.boolean(),
+    vimKeys: z.boolean(),
+    outlineShown: z.boolean(),
+    readableLines: z.boolean(),
+    sourceView: z.boolean(),
+  })
   .partial()
   .strict()
   .refine((b) => Object.values(b).some((v) => v !== undefined), {
@@ -72,6 +78,12 @@ export const meResponse = userResponse.extend({
   singleKeyShortcuts: z.boolean(),
   /** Whether the editor takes vim's keys on a desk (REQ-002 FR-112); off unless turned on. */
   vimKeys: z.boolean(),
+  /** Whether a note's outline is shown beside it (REQ-002 FR-109). */
+  outlineShown: z.boolean(),
+  /** Whether a note stops at a readable line length instead of the full width (FR-109). */
+  readableLines: z.boolean(),
+  /** Whether a note is shown as its Markdown source (REQ-002 FR-116). */
+  sourceView: z.boolean(),
 })
 
 export type MeResponse = z.infer<typeof meResponse>

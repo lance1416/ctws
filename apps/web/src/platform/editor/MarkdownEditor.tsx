@@ -20,6 +20,8 @@ import { undo } from '@codemirror/commands'
 import { editorKeys, history, insertLink, pasteLink, toggleLineMark } from './commands'
 import { find, findDone, findInNote, type Found, findStep } from './find'
 import { livePreview, stepIntoBlock } from './livePreview'
+import { isNoteKey } from './noteKeys'
+import { sourceView } from './sourceView'
 import { type EditorAction, type FocusedEditor, holdFocus, passOn, releaseFocus } from './focused'
 import { loadVim, reportMode, useVimKeys, vimAtRest, vimEscape, vimHoldsEscape } from './vim'
 import { usePhone } from '../ui/phone'
@@ -46,6 +48,8 @@ export type EditorHandle = {
   findDone: () => void
   /** The phone's buttons over the keyboard (FR-113), on the text where the cursor is. */
   act: (action: EditorAction) => void
+  /** Where in the text the top of what shows of the editor is: the outline's section in sight. */
+  inSight: () => number
 }
 
 const LINE_ACTIONS = {
@@ -175,6 +179,7 @@ export default function MarkdownEditor({
   onFind,
   onEscape,
   takeOver,
+  source = false,
 }: {
   value: string
   onChange: (next: string) => void
@@ -196,6 +201,8 @@ export default function MarkdownEditor({
   onEscape?: () => void
   /** Where the box it replaces had its caret, when it had the focus: the editor takes over there. */
   takeOver?: RefObject<number | null>
+  /** The note as it is kept, every mark shown, nothing drawn (FR-116); else the live preview. */
+  source?: boolean
 }) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
@@ -215,6 +222,9 @@ export default function MarkdownEditor({
   const phone = usePhone()
   const vimOn = vimKeys && !phone
   const [vimSlot] = useState(() => new Compartment())
+  // The live preview, or the source in its place (FR-116).
+  const [lookSlot] = useState(() => new Compartment())
+  const sourceAt = useRef(source)
 
   /** Ctrl F, where the page has a find bar; the browser's otherwise. */
   const findKey = {
@@ -288,7 +298,7 @@ export default function MarkdownEditor({
       findInNote,
       markdown({ base: markdownLanguage, codeLanguages: languages }),
       syntaxHighlighting(codeColours),
-      livePreview,
+      lookSlot.of(sourceAt.current ? sourceView : livePreview),
       pasteLink,
       EditorView.lineWrapping,
       EditorView.contentAttributes.of({ 'aria-label': label, 'aria-multiline': 'true' }),
@@ -350,6 +360,12 @@ export default function MarkdownEditor({
         findStep: (step) => findStep(created, step),
         findDone: () => findDone(created),
         act: asFocused.act,
+        inSight: () => {
+          const box = created.dom.getBoundingClientRect()
+          const shown = scrollerOf(created.dom)?.getBoundingClientRect().top ?? 0
+          const y = Math.min(Math.max(box.top, shown) + 1, box.bottom - 1)
+          return created.lineBlockAtHeight(y - created.documentTop).from
+        },
       }
     // Arrived late (its code is fetched on first use), it takes the focus only if nothing has it
     // since: a menu opened meanwhile stays open.
@@ -374,6 +390,25 @@ export default function MarkdownEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one view per mount; `value` follows below.
   }, [])
 
+  // The source and the drawn note swapped, the cursor where it was in the text and its line kept
+  // at the height it was on the screen: the page scrolls by however far the line moved.
+  useEffect(() => {
+    const v = view.current
+    if (!v || sourceAt.current === source) return
+    sourceAt.current = source
+    const head = v.state.selection.main.head
+    const before = v.coordsAtPos(head)?.top
+    v.dispatch({ effects: lookSlot.reconfigure(source ? sourceView : livePreview) })
+    reportMode(v, v.hasFocus)
+    v.requestMeasure({
+      read: () => v.coordsAtPos(head)?.top,
+      write: (after) => {
+        if (before === undefined || after === undefined || after === before) return
+        scrollerOf(v.dom)?.scrollBy({ top: after - before })
+      },
+    })
+  }, [source, lookSlot])
+
   // Vim's keys taken on or off; fetched the first time they are wanted.
   useEffect(() => {
     const v = view.current
@@ -396,6 +431,11 @@ export default function MarkdownEditor({
               keydown: (e, editor) => {
                 // Ctrl K is search everywhere (FR-029), never vim's: passed on untouched.
                 const mod = e.ctrlKey || e.metaKey
+                // So are the note page's own (the outline, the source): never vim's Ctrl V.
+                if (isNoteKey(e)) {
+                  passOn(e)
+                  return true
+                }
                 if (mod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
                   passOn(e)
                   return true
@@ -459,4 +499,12 @@ export default function MarkdownEditor({
       className={className}
     />
   )
+}
+
+/** The box that scrolls the editor: the nearest one round it that can. */
+function scrollerOf(el: HTMLElement): HTMLElement | null {
+  for (let at = el.parentElement; at; at = at.parentElement) {
+    if (/auto|scroll/.test(getComputedStyle(at).overflowY)) return at
+  }
+  return document.scrollingElement as HTMLElement | null
 }

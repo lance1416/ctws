@@ -336,7 +336,10 @@ function intoBlock(view: EditorView, field: StateField<Preview>, step: 1 | -1): 
   if (n < 1 || n > state.doc.lines) return false
   const next = state.doc.line(n)
   let block: { from: number; to: number } | null = null
-  state.field(field).all.between(next.from, next.to, (from, to, d) => {
+  // In the source there is nothing drawn to step into.
+  const drawn = state.field(field, false)
+  if (!drawn) return false
+  drawn.all.between(next.from, next.to, (from, to, d) => {
     if (d.spec.block && from <= next.from && to >= next.to) block = { from, to }
   })
   if (!block) return false

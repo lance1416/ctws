@@ -53,6 +53,8 @@ type Field = {
   onFind?: () => void
   /** Esc, where it puts the editor away. */
   onEscape?: () => void
+  /** The note as it is kept, nothing drawn (REQ-002 FR-116): a whole page's choice. */
+  source?: boolean
   /** The stand-in text box's own look, while the editor loads or where it could not. */
   fallback?: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>
 }
