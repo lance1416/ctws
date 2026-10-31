@@ -48,8 +48,12 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
         projectId={projectId}
         add={
           <div className="flex flex-col gap-1">
-            <label className="flex h-7.5 items-center gap-2 rounded-control px-2.5 text-subtle hover:bg-hover">
-              <NewIcon size={14} aria-hidden="true" className="shrink-0" />
+            {/* Lined up with the cards under it: the plus where a card's status is, as wide, and
+                the words where a card's title starts (a card's 1 of border and 10 inside). */}
+            <label className="flex h-7.5 items-center gap-2 rounded-control px-[11px] text-subtle hover:bg-hover">
+              <span aria-hidden="true" className="flex w-4 shrink-0 justify-center">
+                <NewIcon size={14} />
+              </span>
               <input
                 ref={box}
                 {...field}
