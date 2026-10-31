@@ -67,7 +67,8 @@ test('beside the page, the inspector is its right edge from under the header to 
   const header = (await page.getByRole('banner').boundingBox())!
   expect(Math.round(1440 - (box.x + box.width))).toBe(0)
   expect(Math.round(box.y - (header.y + header.height))).toBe(0)
-  expect(Math.round(900 - (box.y + box.height))).toBe(0)
+  // Down to the status bar, which stays in sight under it (DES-001 "底部状态栏").
+  expect(Math.round(900 - 24 - (box.y + box.height))).toBe(0)
   const s = await style(pane)
   expect(s.radius).toBe('0px')
   expect(s.border).toBe('0px')

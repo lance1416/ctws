@@ -15,11 +15,18 @@ function measure(zone: Locator, surface: string) {
     const s = getComputedStyle(box)
     const z = el.getBoundingClientRect()
     // The lowest edge of everything on the surface outside the zone and its ancestors.
+    // What scrolls inside a box of its own (a long note's editor) shows down to that box's edge.
+    const shownBottom = (n: Element) => {
+      let bottom = n.getBoundingClientRect().bottom
+      for (let up = n.parentElement; up && up !== box; up = up.parentElement)
+        if (/auto|scroll|hidden/.test(getComputedStyle(up).overflowY))
+          bottom = Math.min(bottom, up.getBoundingClientRect().bottom)
+      return bottom
+    }
     const above = Array.from(box.querySelectorAll('*'))
       .filter((n) => !el.contains(n) && !n.contains(el))
-      .map((n) => n.getBoundingClientRect())
-      .filter((r) => r.height > 0)
-      .reduce((m, r) => Math.max(m, r.bottom), -Infinity)
+      .filter((n) => n.getBoundingClientRect().height > 0)
+      .reduce((m, n) => Math.max(m, shownBottom(n)), -Infinity)
     const inner = el.firstElementChild as HTMLElement
     return {
       top: z.top,

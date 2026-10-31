@@ -108,7 +108,7 @@ export function NoteEditor({
             value={title}
             autoFocus={note === null}
             onChange={(e) => setTitle(e.target.value)}
-            className={`min-w-0 flex-1 bg-transparent text-title text-ink outline-none placeholder:text-subtle ${
+            className={`min-w-0 flex-1 bg-transparent max-lg:min-h-11 text-title text-ink outline-none placeholder:text-subtle ${
               named ? 'placeholder:text-ink' : ''
             }`}
           />

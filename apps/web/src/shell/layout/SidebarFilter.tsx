@@ -24,7 +24,8 @@ export function SidebarFilter({
   return (
     <label
       data-field
-      className="mx-1.5 mb-1.5 flex h-7.5 shrink-0 items-center gap-2 rounded-control border border-line bg-panel px-2 text-subtle"
+      // 44 high where a finger presses it (the phone's notes list).
+      className="mx-1.5 mb-1.5 flex h-7.5 shrink-0 items-center max-lg:h-11 gap-2 rounded-control border border-line bg-panel px-2 text-subtle"
     >
       <PLACE_ICON.search size={14} aria-hidden="true" />
       <input

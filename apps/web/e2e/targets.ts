@@ -8,8 +8,8 @@ import type { Page } from '@playwright/test'
  */
 export const PHONE = { width: 390, height: 844 }
 
-/** What may be under 44: a link or a mention inside a note's own text. */
-const INLINE = ['[data-note-md] *']
+/** What may be under 44: a link or a mention inside a note's own text, read or being written. */
+const INLINE = ['[data-note-md] *', '[data-markdown-editor] *']
 
 const TARGETS =
   'button, a[href], [role=tab], [role=radio], [role=option], input:not([type=hidden]), select, textarea'
