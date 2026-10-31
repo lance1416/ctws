@@ -463,6 +463,36 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   await expect(page.getByRole('dialog', { name: 'Task details' })).toHaveCount(0)
 })
 
+test('full screen: the outline when there are headings, Ctrl F, and Esc leaves', async ({
+  page,
+}) => {
+  await seedNote(page, 'No headings here.')
+  await editDetail(page)
+  await page.getByRole('button', { name: 'Full screen' }).click()
+  const layer = page.getByRole('dialog', { name: '读一下' })
+  // No headings, no outline: the text alone, in the middle.
+  await expect(writingSource(page)).toBeFocused()
+  await expect(layer.getByRole('navigation', { name: 'Outline' })).toHaveCount(0)
+  await page.keyboard.press('ControlOrMeta+End')
+  await page.keyboard.type('\n\n## Plan\n\nThe plan.')
+  await expect(layer.getByRole('navigation', { name: 'Outline' }).getByRole('button')).toHaveText([
+    'Plan',
+  ])
+
+  await page.keyboard.press('ControlOrMeta+f')
+  const bar = layer.getByRole('search', { name: 'Find in this note' })
+  await page.keyboard.type('plan')
+  await expect(bar).toContainText('1 of 2')
+  // Esc in the bar closes the bar, not the layer.
+  await page.keyboard.press('Escape')
+  await expect(bar).toHaveCount(0)
+  await expect(layer).toBeVisible()
+  await expect(writingSource(page)).toBeFocused()
+  // Esc in the text leaves full screen.
+  await page.keyboard.press('Escape')
+  await expect(layer).toHaveCount(0)
+})
+
 test('the writing mode stands the single-key shortcuts down', async ({ page }) => {
   await seedNote(page, '原文')
   await editDetail(page)

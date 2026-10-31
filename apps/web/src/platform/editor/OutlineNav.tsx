@@ -1,10 +1,10 @@
-import type { Heading } from '../logic/outline'
+import type { Heading } from './outline'
 
 /**
  * A NOTE'S OUTLINE (REQ-002 FR-109, artboard 34): its headings down the right of the page, the
  * section the cursor is in marked; a press jumps there. A note with no headings has none.
  */
-export function NoteOutline({
+export function OutlineNav({
   headings,
   current,
   onJump,

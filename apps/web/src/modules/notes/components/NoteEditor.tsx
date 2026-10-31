@@ -6,11 +6,11 @@ import { problemText } from '../../../platform/http/api'
 import { area } from '../../../platform/ui/formStyles'
 import { MarkdownField } from '../../../shell/links'
 import { createNote, noteKeys, notesQuery, patchNote } from '../api'
-import { outlineOf, sectionAt } from '../logic/outline'
+import { FindBar } from '../../../platform/editor/FindBar'
+import { OutlineNav } from '../../../platform/editor/OutlineNav'
+import { outlineOf, sectionAt } from '../../../platform/editor/outline'
 import { noteTitle } from '../logic/title'
-import { FindBar } from './FindBar'
 import { FolderTag, NoteMenu, PinButton } from './NoteMenu'
-import { NoteOutline } from './NoteOutline'
 
 /** How long the text rests before what is typed is saved. */
 const SAVE_AFTER_MS = 800
@@ -132,7 +132,7 @@ export function NoteEditor({
           </p>
         )}
       </div>
-      <NoteOutline
+      <OutlineNav
         headings={headings}
         current={sectionAt(headings, cursor)}
         onJump={(h) => editor.current?.goTo(h.offset)}

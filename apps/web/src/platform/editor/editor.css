@@ -19,11 +19,12 @@
   overflow-wrap: break-word;
 }
 
-/* An editor in a field's box: the box wears the app's one focus ring (styles.css), as a text
-   box's does; the editor itself draws none. */
+/* An editor in a field's box: the box's edge is the focus ring, 2px in the task colour at its
+   outer edge, with no grey line left inside it (DES-001 "输入框的焦点"); the editor draws none. */
 [data-markdown-editor][data-boxed]:has(.cm-focused) {
-  outline: 2px solid var(--color-task);
-  outline-offset: 2px;
+  border-color: var(--color-task);
+  outline: 1px solid var(--color-task);
+  outline-offset: 0;
 }
 
 [data-markdown-editor] .cm-content {

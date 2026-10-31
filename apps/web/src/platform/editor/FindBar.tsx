@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { EditorHandle } from '../../../platform/editor/MarkdownEditor'
-import { CloseIcon, FindNextIcon, FindPreviousIcon, PLACE_ICON } from '../../../platform/ui/icons'
+import type { EditorHandle } from './MarkdownEditor'
+import { CloseIcon, FindNextIcon, FindPreviousIcon, PLACE_ICON } from '../ui/icons'
 
 const STEP =
   'grid size-7 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink disabled:opacity-40'
