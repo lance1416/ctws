@@ -22,10 +22,9 @@ const ROW_PX = 48
 const KEYBOARD_PX = 120
 
 /**
- * Where the row's top goes with a keyboard up: the foot of what shows of the page, which is the top
- * of Safari's own bar over the keyboard (up, down, Done). Measured from the visible viewport's own
- * top and height, not from the window's height: Safari counts its floating address bar in that,
- * and the row stood that much too high (BUG-100). Null with no keyboard.
+ * Where the row's foot goes with a keyboard up: the foot of what shows of the page. On Safari
+ * that is the top of its own floating address bar, over its bar of up, down and Done; nothing of
+ * the page can go lower. Null with no keyboard.
  */
 function useKeyboardFoot(): number | null {
   const [foot, setFoot] = useState<number | null>(null)
@@ -130,6 +129,12 @@ export function KeyboardRow() {
       ))}
       <span className="flex-1" />
       <RowButton action="undo" label="Undo" editor={editor} />
+      {/* Safari's own floating bar (the address) sits between what shows of the page and the
+          keyboard, and no page can put anything under it. The row stops above it; its ground runs
+          on down behind it to the keyboard, so no text shows through the gap (BUG-100). */}
+      {foot !== null && (
+        <span aria-hidden="true" className="absolute inset-x-0 top-full h-24 bg-chrome" />
+      )}
     </div>
   )
 }

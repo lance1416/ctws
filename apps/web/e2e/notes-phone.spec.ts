@@ -118,3 +118,25 @@ test('a tap on the row writes and keeps the editor’s focus, the keyboard up (B
   await expect.poll(async () => (await serverNote(page, note.id)).body).toBe('## Plan')
   await expect(row).toBeVisible()
 })
+
+test('a button pressed while an IME composes waits for the words, then acts (BUG-102)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const note = await apiPost<{ id: string }>(page, '/notes', { title: 'Prep', body: '' })
+  await page.goto(`/notes/${note.id}`)
+  await page.locator('[data-markdown-editor] .cm-content').tap()
+  const cdp = await page.context().newCDPSession(page)
+  for (const t of ['l', 'li', 'lia'])
+    await cdp.send('Input.imeSetComposition', {
+      text: t,
+      selectionStart: t.length,
+      selectionEnd: t.length,
+    })
+  await page
+    .getByRole('toolbar', { name: 'Formatting' })
+    .getByRole('button', { name: 'Link' })
+    .tap()
+  await cdp.send('Input.insertText', { text: '链接' })
+  await expect.poll(async () => (await serverNote(page, note.id)).body).toBe('链接[]()')
+})

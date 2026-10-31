@@ -241,9 +241,16 @@ export default function MarkdownEditor({
       vimEscape(v)
       return true
     },
-    act: (action) => {
+    act: function act(action) {
       const v = view.current
       if (!v) return
+      // An IME still composing: the words chosen first, then the button, after them (BUG-102).
+      if (v.composing) {
+        v.contentDOM.addEventListener('compositionend', () => setTimeout(() => act(action)), {
+          once: true,
+        })
+        return
+      }
       if (action === 'undo') undo(v)
       else if (action === 'mention') {
         // An `@` that starts a word, so its list opens.
