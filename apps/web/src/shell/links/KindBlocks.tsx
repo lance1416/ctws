@@ -1,7 +1,7 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
 import { useContext, useState, type ComponentType, type ReactNode } from 'react'
 import { Avatar } from '../../platform/ui/Avatar'
-import { Block, BlockFailed } from '../../platform/ui/Block'
+import { Block, BlockFailed, SkeletonRows } from '../../platform/ui/Block'
 import { BUTTON, ICON_BUTTON, SWIPE } from '../../platform/ui/buttonStyles'
 import { DeleteConfirm } from '../../platform/ui/DeleteConfirm'
 import { SwipeRow } from '../../platform/ui/SwipeRow'
@@ -51,6 +51,8 @@ type KindBlockProps = {
   things: Row[]
   linked: Item[]
   failed: boolean
+  /** Its rows are still being read: not empty yet, so not said to be, nor put last. */
+  pending: boolean
   onRetry: () => void
   add: { label: string; run: () => void }
   onUnlink: (id: Item['relationId']) => void
@@ -134,6 +136,7 @@ export function useKindBlocks({
       things,
       linked,
       failed: (mine?.isError ?? false) || links.isError,
+      pending: (mine?.isPending ?? false) || links.isPending,
       onRetry: () => {
         mine?.retry()
         void links.refetch()
@@ -155,9 +158,10 @@ export function useKindBlocks({
   })
   const joinOf = joining ? blocks.find((b) => b.kind === joining) : undefined
   const size = (b: KindBlockProps) => b.things.length + b.linked.length
-  const full = blocks.filter((b) => size(b) > 0)
+  // One still being read keeps its place, so the page does not reorder as the reads come back.
+  const full = blocks.filter((b) => size(b) > 0 || b.pending)
   return {
-    blocks: [...full, ...blocks.filter((b) => size(b) === 0)].map((b) => (
+    blocks: [...full, ...blocks.filter((b) => !full.includes(b))].map((b) => (
       <KindBlock key={b.kind} {...b} />
     )),
     full: full.length,
@@ -200,6 +204,7 @@ function KindBlock({
   things,
   linked,
   failed,
+  pending,
   onRetry,
   add,
   onUnlink,
@@ -313,7 +318,7 @@ function KindBlock({
       kind={kind}
       title={title}
       count={count ?? rows.length}
-      empty={rows.length === 0 && !failed ? none : null}
+      empty={rows.length === 0 && !failed && !pending ? none : null}
       actions={
         rows.length === 0 && addSays ? (
           <button
@@ -340,6 +345,8 @@ function KindBlock({
     >
       {failed ? (
         <BlockFailed what={title.toLocaleLowerCase()} onRetry={onRetry} />
+      ) : pending && rows.length === 0 ? (
+        <SkeletonRows rows={2} />
       ) : (
         // Alone on a wide row, the rows go across in columns of 22rem, not one line the row's width
         // (FR-011 rule 2, U-19); a narrow block is one column as before.

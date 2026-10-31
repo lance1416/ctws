@@ -130,9 +130,10 @@ test('a project’s blocks: what is in it first, the empty ones as their heads, 
   const blocks = page.locator('[data-project-under] > section')
   await expect(page.getByRole('region', { name: 'Meetings' })).toContainText('Second interview')
   // The meetings coming up and the people on it, in FR-055's order; then the empty ones, which
-  // are their heads saying so.
-  const names = await blocks.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))
-  expect(names.slice(0, 2)).toEqual(['Meetings', 'People'])
+  // are their heads saying so. A block still reading keeps its place, so this is once all are in.
+  const order = () => blocks.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')))
+  await expect.poll(async () => (await order()).slice(0, 2)).toEqual(['Meetings', 'People'])
+  const names = await order()
   const reading = page.getByRole('region', { name: 'Reading' })
   await expect(reading).toContainText('None yet')
   expect(names.indexOf('Reading')).toBeGreaterThan(1)
