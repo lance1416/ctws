@@ -131,9 +131,10 @@ export function KeyboardRow() {
       <RowButton action="undo" label="Undo" editor={editor} />
       {/* Safari's own floating bar (the address) sits between what shows of the page and the
           keyboard, and no page can put anything under it. The row stops above it; its ground runs
-          on down behind it to the keyboard, so no text shows through the gap (BUG-100). */}
+          on down to the foot of the screen, so no text shows through the gap or through the
+          keyboard, which is itself see-through (BUG-100). */}
       {foot !== null && (
-        <span aria-hidden="true" className="absolute inset-x-0 top-full h-24 bg-chrome" />
+        <span aria-hidden="true" className="absolute inset-x-0 top-full h-screen bg-chrome" />
       )}
     </div>
   )
