@@ -43,7 +43,9 @@ export function ProjectOutline({ projectId }: { projectId: ProjectId }) {
               isFinished(task.status) ? 'text-subtle' : 'text-ink'
             }`}
           >
-            <span aria-hidden="true" className="flex shrink-0">
+            {/* A parent's square and a leaf's ring are not as wide: both sit centred in one cell,
+                so every title starts at the same place. */}
+            <span aria-hidden="true" className="flex w-4 shrink-0 justify-center">
               {children ? (
                 <ProgressSquare status={task.status} children={children} />
               ) : (

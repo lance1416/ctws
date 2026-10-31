@@ -65,14 +65,13 @@ export function MeetingPage({
   return (
     <div className="flex flex-col gap-4">
       <MeetingHead meeting={m} />
-      {/* Two columns at any width: the tasks go under the notes, the column's full width (U-05). */}
+      {/* Two columns at any width: the tasks go under the notes, the column's full width (U-05),
+          one block after another however tall the left column is. */}
       <div className="grid items-start gap-4 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         <Profile meeting={m} />
         <div className="flex min-w-0 flex-col gap-4">
           <OccurrenceNotes key={m.recurrenceId} meeting={m} writing={writing} />
           <EarlierInSeries meeting={m} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-4 lg:col-start-2">
           {blocks}
           {picker}
         </div>

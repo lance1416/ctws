@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import {
   editDetail,
+  openDetail,
   pressSignOut,
   makeProject,
   makeTask,
@@ -273,4 +274,61 @@ test('a task deleted in the inspector takes the inspector with it (BUG-090)', as
   await expect(inspector).toHaveCount(0)
   await expect(page).not.toHaveURL(/inspect=/)
   expect(await serverTasks(page, pid)).toHaveLength(0)
+})
+
+test('deleted from its pane, a tree’s task hands focus to the row above, asked for no more (BUG-094)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '列提纲')
+  const id = await makeTask(page, pid, '写方案')
+  await makeTask(page, pid, '改稿')
+  await page.goto(`/projects/${pid}`)
+  await openDetail(page, '写方案')
+  const pane = page.getByRole('dialog', { name: 'Task details' })
+  await expect(pane).toContainText('写方案')
+  // Every read of it from the Delete on: there should be none.
+  const asked: number[] = []
+  page.on('response', (r) => {
+    if (new URL(r.url()).pathname === `/api/v1/tasks/${id}` && r.request().method() === 'GET')
+      asked.push(r.status())
+  })
+  await editDetail(page)
+  await pane.getByRole('button', { name: 'Delete task' }).click()
+  await page
+    .getByRole('alertdialog', { name: 'Confirm deleting this task' })
+    .getByRole('button', { name: 'Delete' })
+    .click()
+  await expect(pane).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Task: 写方案', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Task: 列提纲', exact: true })).toBeFocused()
+  expect(asked).toEqual([])
+})
+
+test('deleted in the inspector beside its tree, a task hands focus to the row above (BUG-094)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, 'P')
+  await makeTask(page, pid, '列提纲')
+  const id = await makeTask(page, pid, '写方案')
+  await page.goto(`/projects/${pid}?inspect=task:${id}`)
+  const inspector = page.getByRole('complementary', { name: 'Inspector' })
+  await expect(inspector).toContainText('写方案')
+  const asked: number[] = []
+  page.on('response', (r) => {
+    if (new URL(r.url()).pathname === `/api/v1/tasks/${id}` && r.request().method() === 'GET')
+      asked.push(r.status())
+  })
+  await inspector.getByRole('button', { name: 'Edit', exact: true }).last().click()
+  await inspector.getByRole('button', { name: 'Delete task' }).click()
+  await page
+    .getByRole('alertdialog', { name: 'Confirm deleting this task' })
+    .getByRole('button', { name: 'Delete' })
+    .click()
+  await expect(inspector).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Task: 写方案', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Task: 列提纲', exact: true })).toBeFocused()
+  expect(asked).toEqual([])
 })

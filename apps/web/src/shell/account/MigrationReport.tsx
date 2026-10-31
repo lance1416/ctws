@@ -614,10 +614,12 @@ function Plain({
         {items.map((item) => {
           const to = where(item.type, item.id)
           return (
+            // Every part's rows share these columns, the last as wide as the longest reason with its
+            // Looks right, so what it was and what it is stand at the same places all down the page.
             <li
               key={item.key}
               data-report-item={item.key}
-              className="grid min-h-11 grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-line px-3.5 py-1.5 last:border-b-0 max-lg:grid-cols-[auto_minmax(0,1fr)] max-lg:gap-y-2 max-lg:py-3"
+              className="grid min-h-11 grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_18rem] items-center gap-x-3 border-b border-line px-3.5 py-1.5 last:border-b-0 max-lg:grid-cols-[auto_minmax(0,1fr)] max-lg:gap-y-2 max-lg:py-3"
             >
               {to ? (
                 // Put right on its own page (MR-06).

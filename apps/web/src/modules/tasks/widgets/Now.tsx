@@ -20,9 +20,12 @@ const ROW_PX = 38
 const CAPTION_PX = 22
 const GAP_PX = 10
 
-/** Status, title, where it sits, its deadline, what to do: Today's columns, a little narrower. */
+/**
+ * Status, title, where it sits, its deadline, what to do: Today's columns, a little narrower. Both
+ * lists share them, so the last is as wide as Start, the widest thing in it.
+ */
 const ROW =
-  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_190px_96px_auto] items-center gap-x-3 rounded-control px-3 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
+  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_190px_96px_56px] items-center gap-x-3 rounded-control px-3 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
 const CAPTION = 'px-3 pb-1.5 text-meta font-medium tracking-[0.06em] text-subtle uppercase'
 
 const opens = (t: { id: string; projectId: string }) => `/projects/${t.projectId}?task=${t.id}`

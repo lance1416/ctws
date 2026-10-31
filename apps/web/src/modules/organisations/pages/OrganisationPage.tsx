@@ -54,7 +54,8 @@ export function OrganisationPage({ organisation: o }: { organisation: Organisati
         className={`grid items-start gap-4 ${profiled ? 'lg:grid-cols-[17.5rem_minmax(0,1fr)]' : ''}`}
       >
         {profiled && <Profile organisation={o} />}
-        <div className="min-w-0 rounded-block border border-line bg-panel p-4">
+        {/* On the page's ground, as a person's is (artboards 5 and 14): a timeline is no block. */}
+        <div className="min-w-0">
           <Timeline of={{ type: 'organisation', id: o.id }} filters logs />
         </div>
       </div>

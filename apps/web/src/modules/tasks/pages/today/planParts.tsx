@@ -27,7 +27,8 @@ export function PlanButtons({
 }) {
   const save = useSaveGate()
   return (
-    <span className="inline-flex items-center gap-1">
+    // The picker's inset given back: its icon ends where the row's other last things end.
+    <span className="-mr-1.5 inline-flex items-center gap-1">
       {planDays(day).map((d) => (
         <button
           key={d.label}

@@ -90,7 +90,8 @@ function ReadingPage({ item }: { item: ReadingItemResponse }) {
           {/* What it is linked to, then what happened to it: as a person's page has them (R-04).
               On a phone the timeline comes first, as on every thing's page (FR-088, P4-15). */}
           <div className="grid items-start gap-3 max-lg:order-last xl:grid-cols-2">{blocks}</div>
-          <div className="rounded-block border border-line bg-panel p-4">
+          {/* On the page's ground, as a person's is (artboards 5 and 14): a timeline is no block. */}
+          <div>
             <Timeline of={{ type: 'reading', id: item.id }} />
           </div>
           {picker}
