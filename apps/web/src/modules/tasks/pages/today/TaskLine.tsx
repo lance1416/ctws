@@ -14,10 +14,11 @@ import { dueMark } from '../../logic/todayMarks'
 /**
  * THE COLUMNS EVERY LIST ON TODAY SHARES (DES-001 section 4, artboard 12): status, title, where it
  * sits, its mark, and what can be done about it. A row without one of them leaves that cell empty;
- * nothing moves left. Below the desk width the path and the mark give way to the title.
+ * nothing moves left. Below the desk width the path and the mark give way to the title. Inside the
+ * list's 6, a row's 10 puts its status under the block's badge and its title under the block's name.
  */
 export const LINE =
-  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_184px_104px_220px] items-center gap-x-3 rounded-control px-3 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
+  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_184px_104px_220px] items-center gap-x-3 rounded-control px-2.5 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
 
 /** The third column: the project's square and the task it sits under, else the project's name. */
 export function TaskPath({
@@ -165,7 +166,9 @@ export function DoneButton({
       onClick={save.gate(onDone)}
       {...save.props}
       aria-label={`Mark “${title}” done`}
-      className={`${ICON_BUTTON} ${GATED}`}
+      // It ends its row: the inset around its tick is given back, so the tick's right edge is the
+      // row's, where a Start or a carried note ends.
+      className={`${ICON_BUTTON} -mr-1.5 ${GATED}`}
     >
       <DoneIcon size={16} aria-hidden="true" />
     </button>

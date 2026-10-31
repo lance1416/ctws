@@ -60,13 +60,15 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
   const who = person ?? org
   const sent = ymd(new Date(m.occurredAt), timeZone)
   return (
+    // Its face under the block's badge and its words under the block's name, as the other blocks
+    // in Today's right column have them.
     <li
       data-follow-up={m.id}
-      className="flex flex-col gap-1.5 rounded-control px-3 py-2 hover:bg-hover"
+      className="flex flex-col gap-1.5 rounded-control px-1.5 py-2 hover:bg-hover"
     >
       <Link
         to={`/communication/${m.id}`}
-        className="flex min-w-0 items-center gap-2.5 max-lg:min-h-11"
+        className="flex min-w-0 items-center gap-2 max-lg:min-h-11"
       >
         {person ? (
           <Avatar initials={known ? avatarInitials(known) : ([...person.name][0] ?? '')} />

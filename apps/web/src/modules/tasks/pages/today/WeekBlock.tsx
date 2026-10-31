@@ -33,10 +33,13 @@ export function WeekBlock({ today }: { today: string }) {
       count={<span className="font-normal">Closed per project</span>}
       empty={movement.isSuccess && lines.length === 0 ? 'No projects yet' : null}
     >
-      <ul className="grid grid-cols-[20px_96px_minmax(0,1fr)_28px] items-center gap-x-2.5 gap-y-2.5 px-3 py-2.5">
+      {/* The square in a cell as wide as the block's badge, under it; the name under the block's. */}
+      <ul className="grid grid-cols-[24px_96px_minmax(0,1fr)_28px] items-center gap-x-2 gap-y-2.5 px-3 py-2.5">
         {lines.map(({ m, project }) => (
           <li key={m.projectId} data-week-row={m.projectId} className="contents">
-            <ProjectSquare project={project} />
+            <span className="justify-self-center">
+              <ProjectSquare project={project} />
+            </span>
             <span className="truncate text-ui text-ink">{project.name}</span>
             {isQuiet(m) ? (
               <span

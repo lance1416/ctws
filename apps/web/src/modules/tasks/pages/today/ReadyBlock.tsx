@@ -48,9 +48,10 @@ export function ReadyBlock({ today }: { today: string }) {
             <li
               key={t.id}
               data-ready-row={t.id}
-              className="grid grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-control px-3 py-1 hover:bg-hover"
+              // The circle in a cell as wide as the block's badge, under it; the title under its name.
+              className="grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-control px-1.5 py-1 hover:bg-hover"
             >
-              <ToDoIcon size={16} aria-hidden="true" className="text-muted" />
+              <ToDoIcon size={16} aria-hidden="true" className="justify-self-center text-muted" />
               <span className="flex min-w-0 flex-col py-1">
                 <span className="truncate text-ui text-ink">{t.title}</span>
                 <span className="inline-flex min-w-0 items-center gap-1.5 text-meta text-muted">
