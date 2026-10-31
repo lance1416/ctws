@@ -204,34 +204,54 @@ const cellWords = (source: string) =>
     .replace(/\[(@?[^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/(\*\*|__|\*|_|~~|`)/g, '')
 
-/** A table drawn as its grid, its figures lined up; a press enters it to show the source. */
+/** A cell: its words as they read, and where its text starts, counted from the table's start. */
+type Cell = { words: string; at: number }
+
+/**
+ * A table drawn as its grid, its figures lined up. A press on a cell puts the cursor at that
+ * cell's text, which shows the table's source (BUG-096).
+ */
 export class TableWidget extends WidgetType {
-  constructor(readonly rows: readonly (readonly string[])[]) {
+  constructor(readonly rows: readonly (readonly Cell[])[]) {
     super()
   }
-  static of(state: EditorState, node: SyntaxNode): TableWidget {
-    const rows: string[][] = []
+  static of(state: EditorState, node: SyntaxNode, from: number): TableWidget {
+    const rows: Cell[][] = []
     for (let row = node.firstChild; row; row = row.nextSibling) {
       if (row.name !== 'TableHeader' && row.name !== 'TableRow') continue
-      rows.push(row.getChildren('TableCell').map((c) => cellWords(state.sliceDoc(c.from, c.to))))
+      rows.push(
+        row.getChildren('TableCell').map((c) => ({
+          words: cellWords(state.sliceDoc(c.from, c.to)),
+          at: c.from - from,
+        })),
+      )
     }
     return new TableWidget(rows)
   }
   override eq(other: TableWidget) {
     return JSON.stringify(other.rows) === JSON.stringify(this.rows)
   }
-  toDOM() {
+  toDOM(view: EditorView) {
     const table = document.createElement('table')
     table.className = 'cm-md-table'
     this.rows.forEach((cells, i) => {
       const tr = document.createElement('tr')
-      for (const words of cells) {
+      for (const { words, at } of cells) {
         const cell = document.createElement(i === 0 ? 'th' : 'td')
         cell.textContent = words
+        cell.addEventListener('mousedown', (e) => {
+          e.preventDefault()
+          view.dispatch({ selection: { anchor: view.posAtDOM(table) + at } })
+          view.focus()
+        })
         tr.append(cell)
       }
       table.append(tr)
     })
     return table
+  }
+  override ignoreEvent() {
+    // A press is the cells' own: each takes the cursor to its words.
+    return true
   }
 }

@@ -1,6 +1,13 @@
 import { syntaxTree } from '@codemirror/language'
-import { type EditorState, type Range, RangeSet, StateEffect, StateField } from '@codemirror/state'
-import { Decoration, type DecorationSet, EditorView } from '@codemirror/view'
+import {
+  type EditorState,
+  Prec,
+  type Range,
+  RangeSet,
+  StateEffect,
+  StateField,
+} from '@codemirror/state'
+import { Decoration, type DecorationSet, EditorView, keymap } from '@codemirror/view'
 import type { SyntaxNode } from '@lezer/common'
 import { mentionOf } from '../notes/mention'
 import {
@@ -183,10 +190,10 @@ export function previewDecorations(state: EditorState): Range<Decoration>[] {
           blocks.push({ from, to })
           if (!touches(state, from, to))
             out.push(
-              Decoration.replace({ widget: TableWidget.of(state, n.node), block: true }).range(
-                from,
-                to,
-              ),
+              Decoration.replace({
+                widget: TableWidget.of(state, n.node, from),
+                block: true,
+              }).range(from, to),
             )
           else for (const l of linesOf(state, from, to)) out.push(line('cm-md-source').range(l))
           return false
@@ -306,12 +313,36 @@ function preview(state: EditorState): Preview {
   const ranges = previewDecorations(state)
   return {
     all: RangeSet.of(ranges, true),
-    // Only what is drawn in place of text is one thing to the cursor: styled words stay words.
+    // Only what is drawn in place of text is one thing to the cursor: styled words stay words. A
+    // block (a table, a formula, a fence's end) is not: the arrows go into it, and it shows its
+    // source (BUG-096).
     atomic: RangeSet.of(
-      ranges.filter((r) => r.value.point && r.from < r.to),
+      ranges.filter((r) => r.value.point && r.from < r.to && !r.value.spec.block),
       true,
     ),
   }
+}
+
+/** The cursor onto the next line up or down when that line is inside a block drawn whole. */
+function intoBlock(view: EditorView, field: StateField<Preview>, step: 1 | -1): boolean {
+  const { state } = view
+  const sel = state.selection.main
+  if (!sel.empty) return false
+  const line = state.doc.lineAt(sel.head)
+  const n = line.number + step
+  if (n < 1 || n > state.doc.lines) return false
+  const next = state.doc.line(n)
+  let block: { from: number; to: number } | null = null
+  state.field(field).all.between(next.from, next.to, (from, to, d) => {
+    if (d.spec.block && from <= next.from && to >= next.to) block = { from, to }
+  })
+  if (!block) return false
+  const { from, to } = block as { from: number; to: number }
+  view.dispatch({
+    selection: { anchor: step === 1 ? from : state.doc.lineAt(to).from },
+    scrollIntoView: true,
+  })
+  return true
 }
 
 /** The preview's decorations, redrawn when the text, the cursor or the parse moves on. */
@@ -338,5 +369,13 @@ export const livePreview = StateField.define<Preview>({
     EditorView.decorations.from(field, (p) => p.all),
     // A chip or a box is one thing to the cursor: it steps over it and deletes it whole.
     EditorView.atomicRanges.of((view) => view.state.field(field).atomic),
+    // Up and down step over a drawn block, as CodeMirror moves by what is on screen: into it
+    // instead, which shows its source (BUG-096).
+    Prec.high(
+      keymap.of([
+        { key: 'ArrowDown', run: (view) => intoBlock(view, field, 1) },
+        { key: 'ArrowUp', run: (view) => intoBlock(view, field, -1) },
+      ]),
+    ),
   ],
 })

@@ -233,3 +233,51 @@ test('a note downloads as a .md file, its text as written (FR-111)', async ({ pa
   for await (const c of (await file.createReadStream())!) chunks.push(c as Buffer)
   expect(Buffer.concat(chunks).toString('utf8')).toBe(text)
 })
+
+test('a table is entered from above with ↓, and a press on a cell edits it, Tab the next (BUG-096)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const id = await openNote(page, 'Above\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\nEnd')
+  const table = page.locator('[data-markdown-editor] table.cm-md-table')
+  await lineOf(page, 'Above').click()
+  await expect(table).toBeVisible()
+  // ↓ from the line above goes into it, past the blank line: its source shows.
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('ArrowDown')
+  await expect(table).toHaveCount(0)
+  await expect(lineOf(page, '| A | B |')).toBeVisible()
+
+  // Left, it is drawn again; a press on the cell "2" puts the cursor there, and Tab goes on.
+  await lineOf(page, 'End').click()
+  await expect(table).toBeVisible()
+  await table.getByRole('cell', { name: '1' }).click()
+  await expect(table).toHaveCount(0)
+  await page.keyboard.type('0')
+  await page.keyboard.press('Tab')
+  await page.keyboard.type('9')
+  await expect.poll(() => stored(page, id)).toContain('| 01 | 92 |')
+  await expect(editor(page)).toBeFocused()
+})
+
+test('@ lists kinds in search’s order, people first, and Enter takes the first (BUG-097)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  // A note that matches too: by their headings' letters, Notes would come before People.
+  await apiPost(page, '/notes', { title: 'Mira onsite questions', body: 'x' })
+  const mira = await apiPost<{ id: string }>(page, '/people', {
+    givenName: 'Mira',
+    familyName: 'Chen',
+  })
+  const id = await openNote(page, 'Ask ')
+  await lineOf(page, 'Ask').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type('@Mi')
+  const options = page.getByRole('listbox').getByRole('option')
+  await expect(options.first()).toContainText('Mira Chen')
+  await expect(options.nth(1)).toContainText('Mira onsite questions')
+  await page.waitForTimeout(100) // CodeMirror's interactionDelay, as above
+  await page.keyboard.press('Enter')
+  await expect.poll(() => stored(page, id)).toBe(`Ask [@Mira Chen](ctws://person/${mira.id})`)
+})

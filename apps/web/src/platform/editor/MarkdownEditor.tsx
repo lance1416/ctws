@@ -68,13 +68,19 @@ function mentionSource(mentions: EditorMentions) {
     const from = typed.from + typed.text.indexOf('@')
     const found = await mentions.search(context.state.sliceDoc(from + 1, context.pos))
     if (context.aborted) return null
+    // Each kind's heading ranked where search puts it (FR-024): a name alone, CodeMirror would
+    // sort them by their letters, Communications before People (BUG-097).
+    const sections = new Map<string, { name: string; rank: number }>()
+    for (const o of found)
+      if (!sections.has(o.section))
+        sections.set(o.section, { name: o.section, rank: sections.size })
     return {
       from,
       filter: false,
       options: found.map((o) => {
         const completion: Completion = {
           label: o.title,
-          section: o.section,
+          section: sections.get(o.section)!,
           type: o.type,
           // Stored as notes store a mention; drawn as its chip once the cursor leaves the line.
           apply: `[@${o.title}](${mentionAddress(o.type, o.id)})`,
