@@ -40,7 +40,8 @@ export function Workbench() {
         <h1 tabIndex={-1} className="text-title tracking-[-0.01em] text-ink focus:outline-none">
           {longDay(ymd(now, zone))}
         </h1>
-        <span className="font-mono text-prose text-muted tabular-nums">{clockTime(now, zone)}</span>
+        {/* The clock as Today's head has it. */}
+        <span className="font-mono text-ui text-muted tabular-nums">{clockTime(now, zone)}</span>
       </div>
       <MovedPrompt />
       <FixedPlaces.Provider value={columns > 1}>

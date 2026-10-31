@@ -284,13 +284,8 @@ export function CreateTaskDialog({
           hint={
             // Both chords: one guessed from the user agent could teach the wrong key.
             <p className="text-meta text-muted">
-              <kbd className="rounded-key border border-line-strong px-1.5 text-meta leading-5">
-                ⌘↵
-              </kbd>{' '}
-              /{' '}
-              <kbd className="rounded-key border border-line-strong px-1.5 text-meta leading-5">
-                Ctrl↵
-              </kbd>{' '}
+              <kbd className="rounded-key border border-line-strong px-1.5 text-meta">⌘↵</kbd> /{' '}
+              <kbd className="rounded-key border border-line-strong px-1.5 text-meta">Ctrl↵</kbd>{' '}
               Create and add another
             </p>
           }

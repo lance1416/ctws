@@ -56,7 +56,7 @@ function Cell({
           : `text-ink hover:bg-hover ${today ? 'shadow-[inset_0_0_0_1.5px_var(--color-line-strong)]' : ''}`
       } ${out ? 'opacity-40' : ''}`}
     >
-      <span className="text-prose leading-5">{big}</span>
+      <span className="text-prose">{big}</span>
       <span className={`text-meta tabular-nums ${selected ? 'text-on-project/85' : 'text-subtle'}`}>
         {small ?? ' '}
       </span>

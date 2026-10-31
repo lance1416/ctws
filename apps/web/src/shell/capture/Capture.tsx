@@ -319,7 +319,8 @@ export function Capture() {
               >
                 {landing ? (
                   <>
-                    <ProjectSquare project={landing} className="-ml-0.5 size-4 text-[9px]" />
+                    {/* A project square at its smallest, 20 with 11 initials: 2 from the chip's edges all round. */}
+                    <ProjectSquare project={landing} className="-ml-1" />
                     <span className="truncate">{landing.name}</span>
                   </>
                 ) : (

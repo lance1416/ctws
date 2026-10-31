@@ -115,7 +115,7 @@ export function CaptureSheet({
             className={`${chip} ${kind === 'reading' && !project ? 'bg-reading-bg text-reading-t' : 'bg-project-bg text-project-t'}`}
           >
             {project ? (
-              <ProjectSquare project={project} className="size-4 text-[9px]" />
+              <ProjectSquare project={project} />
             ) : kind === 'task' ? (
               <InboxIcon size={14} aria-hidden="true" className="shrink-0" />
             ) : (
