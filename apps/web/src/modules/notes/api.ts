@@ -1,6 +1,8 @@
 import {
   api,
   type CreateNoteBody,
+  type NoteFolderId,
+  type NoteFolderResponse,
   type NoteId,
   type NoteResponse,
   type UpdateNoteBody,
@@ -12,6 +14,7 @@ import { call, everyPage } from '../../platform/http/api'
 export const noteKeys = {
   all: ['notes'] as const,
   list: ['notes', 'list'] as const,
+  folders: ['notes', 'folders'] as const,
 }
 
 /** Every note, the latest edited first. */
@@ -34,4 +37,23 @@ export function patchNote(id: NoteId, body: UpdateNoteBody): Promise<NoteRespons
 
 export function deleteNote(id: NoteId): Promise<void> {
   return call(api.notes.remove, { params: { id } })
+}
+
+/** Every folder, by name (FR-110). */
+export const foldersQuery = () =>
+  queryOptions({
+    queryKey: noteKeys.folders,
+    queryFn: async ({ signal }) => (await call(api.noteFolders.list, {}, { signal })).folders,
+  })
+
+export function createFolder(name: string): Promise<NoteFolderResponse> {
+  return call(api.noteFolders.create, { body: { name } })
+}
+
+export function renameFolder(id: NoteFolderId, name: string): Promise<NoteFolderResponse> {
+  return call(api.noteFolders.update, { params: { id }, body: { name } })
+}
+
+export function deleteFolder(id: NoteFolderId): Promise<void> {
+  return call(api.noteFolders.remove, { params: { id } })
 }

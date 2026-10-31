@@ -265,14 +265,15 @@
   color: var(--color-muted);
 }
 
-/* Ctrl F's places in the note (artboard 34): each on the amber ground, the bar's one solid. */
+/* Ctrl F's places in the note (artboard 34): each on the amber ground, the bar's one solid: on
+   light the deeper amber, as white on warn itself is under 4.5:1 (DES-001 "Find"). */
 .cm-md-found {
   background: var(--color-warn-bg);
   border-radius: 0.125rem;
 }
 
 .cm-md-found-here {
-  background: var(--color-warn);
+  background: light-dark(var(--color-warn-t), var(--color-warn));
   color: var(--color-on-ink);
   border-radius: 0.125rem;
 }

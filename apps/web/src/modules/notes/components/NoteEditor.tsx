@@ -9,7 +9,7 @@ import { createNote, noteKeys, notesQuery, patchNote } from '../api'
 import { outlineOf, sectionAt } from '../logic/outline'
 import { noteTitle } from '../logic/title'
 import { FindBar } from './FindBar'
-import { NoteMenu } from './NoteMenu'
+import { FolderTag, NoteMenu, PinButton } from './NoteMenu'
 import { NoteOutline } from './NoteOutline'
 
 /** How long the text rests before what is typed is saved. */
@@ -102,11 +102,15 @@ export function NoteEditor({
               named ? 'placeholder:text-ink' : ''
             }`}
           />
-          {made.current && <NoteMenu title={title.trim() || named || ''} body={body} />}
+          {note && note.anchor === null && <PinButton note={note} />}
+          {made.current && <NoteMenu note={note} title={title.trim() || named || ''} body={body} />}
         </div>
-        <p className="-mt-2 min-h-4 text-meta text-subtle" aria-live="polite">
-          {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
-        </p>
+        <div className="-mt-1 flex min-h-5.5 items-center gap-2">
+          {note && <FolderTag note={note} />}
+          <p className="text-meta text-subtle" aria-live="polite">
+            {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
+          </p>
+        </div>
         {finding !== null && (
           <FindBar editor={editor.current} nonce={finding} onClose={() => setFinding(null)} />
         )}
