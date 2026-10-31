@@ -161,6 +161,14 @@
   padding-inline: 0.75rem !important;
 }
 
+/* The cursor's line in a fence stays where the fence's lines are, inside its edges: the ground a
+   line takes elsewhere, without running out past them. */
+.cm-md-codeline.cm-md-active {
+  margin-inline: 0;
+  padding-inline: 0.75rem !important;
+  background: var(--color-hover);
+}
+
 /* The block's first and last lines keep half a rem clear above and below it inside themselves,
    as padding, and draw their part of the block behind the text: CodeMirror measures a line
    without its margins, and a margin put every line after the block a little off where a press
@@ -189,6 +197,16 @@
   z-index: -1;
   background: var(--color-ground);
   border-inline: 1px solid var(--color-line);
+}
+
+.cm-md-codefirst.cm-md-active,
+.cm-md-codelast.cm-md-active {
+  background: none;
+}
+
+.cm-md-codefirst.cm-md-active::before,
+.cm-md-codelast.cm-md-active::before {
+  background: var(--color-hover);
 }
 
 .cm-md-codefirst::before {

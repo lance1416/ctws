@@ -490,6 +490,13 @@ test('the cursor shows on a dark ground, and a press anywhere on a line puts it 
   }))
   expect(drawn).toBe(ink)
 
+  // The cursor's line in a fence stays inside the fence: where the line next to it is.
+  await lineOf(page, 'const b').click()
+  const fenced = (await lineOf(page, 'const b').boundingBox())!
+  const beside = (await lineOf(page, 'const a').boundingBox())!
+  expect([fenced.x, fenced.width]).toEqual([beside.x, beside.width])
+  await expect(lineOf(page, 'const b')).toHaveClass(/cm-md-active/)
+
   // Near its top, its middle and its foot, every line below a code block, a table and a formula
   // as well as above them: what the editor measures is where the line is drawn.
   for (const words of [
@@ -511,5 +518,39 @@ test('the cursor shows on a dark ground, and a press anywhere on a line puts it 
         `${words}, near its ${at}`,
       ).toContainText(words)
     }
+  }
+})
+
+test('up and down move one line at a time past a code block, a table and a formula', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  /** The line of the note, as kept, the letter was typed on. */
+  const typedOn = async (id: string, letter: string) =>
+    (await stored(page, id))
+      .split('\n')
+      .find((l) => l.includes(letter))
+      ?.replace(letter, '')
+  for (const block of [
+    ['```js', 'code one', 'code two', '```'],
+    ['| A | B |', '| - | - |', '| 1 | 2 |'],
+    ['$$', 'x^2', '$$'],
+  ]) {
+    const id = await openNote(
+      page,
+      ['# H', 'para', '', ...block, '', '## Heading two', 'last line'].join('\n'),
+    )
+    await lineOf(page, 'last line').click()
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.type('X')
+    await expect.poll(() => typedOn(id, 'X'), block[0]).toBe('## Heading two')
+    await page.keyboard.press('Backspace')
+    // Down from the line above the block: the blank line, then the block's first line.
+    await lineOf(page, 'para').click()
+    await page.keyboard.press('Home')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.type('Y')
+    await expect.poll(() => typedOn(id, 'Y'), block[0]).toBe(block[0])
   }
 })
