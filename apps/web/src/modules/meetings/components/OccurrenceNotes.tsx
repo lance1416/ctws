@@ -12,7 +12,7 @@ import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { area } from '../../../platform/ui/formStyles'
 import { CollapseIcon, ExpandIcon, MoreIcon, OpenFullIcon } from '../../../platform/ui/icons'
 import { useAccountToday } from '../../../shell/auth'
-import { MentionArea, useMentionText } from '../../../shell/links'
+import { MarkdownField } from '../../../shell/links'
 import { meetingKeys, rewriteNote, seriesNotesQuery, writeOccurrenceNote } from '../api'
 import { headingsOf } from '../logic/headings'
 
@@ -206,7 +206,6 @@ function Writer({
         ...was.filter((n) => n.id !== saved.id),
       ]),
   })
-  const mentioned = useMentionText(text, setText)
   const typed = useRef(text)
   typed.current = text
   useEffect(() => {
@@ -225,19 +224,16 @@ function Writer({
   }
   return (
     <div className="flex flex-col gap-2 px-4 py-3">
-      <MentionArea
-        {...mentioned}
-        aria-label="Notes for this meeting"
+      {/* In a block (artboard 34): no box of its own, as tall as what is written. */}
+      <MarkdownField
+        value={text}
+        onChange={setText}
+        label="Notes for this meeting"
         autoFocus
-        rows={10}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault()
-            finish()
-          }
-        }}
+        onEscape={finish}
         placeholder="What was said, what was decided, who does what"
-        className={`${area} font-mono`}
+        className="min-h-40"
+        fallback={{ rows: 10, className: area }}
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-meta text-subtle" aria-live="polite">

@@ -107,7 +107,8 @@ test('@ finds someone, keeps the link and draws its chip off the line (FR-108)',
   // (CodeMirror's interactionDelay, 75ms).
   await page.waitForTimeout(100)
   await page.keyboard.press('Enter')
-  await page.keyboard.type(' today')
+  // The space after it comes with it, as the text box gave one.
+  await page.keyboard.type('today')
   await expect.poll(() => stored(page, id)).toBe(`Ask [@Mira Chen](ctws://person/${mira.id}) today`)
   // On its line, the words as typed; off it, the chip.
   await expect(lineOf(page, 'Ask')).toContainText('@Mira Chen')
@@ -279,7 +280,7 @@ test('@ lists kinds in search’s order, people first, and Enter takes the first
   await expect(options.nth(1)).toContainText('Mira onsite questions')
   await page.waitForTimeout(100) // CodeMirror's interactionDelay, as above
   await page.keyboard.press('Enter')
-  await expect.poll(() => stored(page, id)).toBe(`Ask [@Mira Chen](ctws://person/${mira.id})`)
+  await expect.poll(() => stored(page, id)).toBe(`Ask [@Mira Chen](ctws://person/${mira.id}) `)
 })
 
 test('the editor arriving late takes no focus from a menu opened meanwhile', async ({ page }) => {
@@ -295,4 +296,22 @@ test('the editor arriving late takes no focus from a menu opened meanwhile', asy
   await expect(page.getByRole('menuitem', { name: 'Download .md' })).toBeVisible()
   await expect(page.locator('[data-markdown-editor] .cm-content')).toBeVisible()
   await expect(page.getByRole('menuitem', { name: 'Download .md' })).toBeVisible()
+})
+
+test('typed into the stand-in while the editor loads, nothing is lost as it takes over', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const id = (await apiPost<{ id: string }>(page, '/notes', { title: 'Prep', body: '' })).id
+  await page.route(/MarkdownEditor/, async (route) => {
+    await new Promise((r) => setTimeout(r, 1200))
+    await route.continue()
+  })
+  await page.goto(`/notes/${id}`)
+  const box = page.getByRole('textbox', { name: 'Note' })
+  await box.click()
+  // Across the moment the editor replaces the box: it takes the focus and the caret too.
+  await box.pressSequentially('abcdefghijkl', { delay: 150 })
+  await expect(page.locator('[data-markdown-editor] .cm-content')).toBeFocused()
+  await expect.poll(() => stored(page, id)).toBe('abcdefghijkl')
 })

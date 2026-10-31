@@ -2,6 +2,8 @@ import type { ObjectType } from '@ctws/contracts'
 import { mentionAddress } from '@ctws/core'
 import {
   autocompletion,
+  completionStatus,
+  startCompletion,
   type Completion,
   type CompletionContext,
   type CompletionResult,
@@ -9,7 +11,7 @@ import {
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Prec, StateEffect, StateField } from '@codemirror/state'
 import { EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { type RefObject, useEffect, useRef } from 'react'
@@ -60,12 +62,50 @@ const MENTION_QUERY = /(?:^|[\s([{（，。,;；:：])@[^\s@]{1,40}$/u
 /** Which thing each offered row stands for, for its mark in the list. */
 const optionOf = new WeakMap<Completion, MentionOption>()
 
+/**
+ * The `@` whose list Esc put away (FR-042): it stays away for those words, as in the text box; a
+ * new `@` asks again. Its place moves with the text written before it.
+ */
+const putAway = StateEffect.define<number>()
+const awayAt = StateField.define<number | null>({
+  create: () => null,
+  update: (at, tr) => {
+    for (const e of tr.effects) if (e.is(putAway)) return e.value
+    return at === null ? null : tr.changes.mapPos(at, -1, 1)
+  },
+})
+
+/** The `@` before the cursor that starts a mention being typed, if there is one. */
+const mentionStart = (context: { matchBefore: CompletionContext['matchBefore'] }) => {
+  const typed = context.matchBefore(MENTION_QUERY)
+  // The match may start at the space before the `@`.
+  return typed ? typed.from + typed.text.indexOf('@') : null
+}
+
+/** Esc on an open list: noted, so the list stays away; the list's own Esc then closes it. */
+const putAwayKey = Prec.highest(
+  keymap.of([
+    {
+      key: 'Escape',
+      run: (view) => {
+        if (completionStatus(view.state) !== 'active') return false
+        const head = view.state.selection.main.head
+        const line = view.state.doc.lineAt(head)
+        const typed = MENTION_QUERY.exec(line.text.slice(0, head - line.from))
+        if (typed) {
+          const at = line.from + typed.index + typed[0].indexOf('@')
+          view.dispatch({ effects: putAway.of(at) })
+        }
+        return false
+      },
+    },
+  ]),
+)
+
 function mentionSource(mentions: EditorMentions) {
   return async (context: CompletionContext): Promise<CompletionResult | null> => {
-    const typed = context.matchBefore(MENTION_QUERY)
-    if (!typed) return null
-    // The match may start at the space before the `@`.
-    const from = typed.from + typed.text.indexOf('@')
+    const from = mentionStart(context)
+    if (from === null || context.state.field(awayAt, false) === from) return null
     const found = await mentions.search(context.state.sliceDoc(from + 1, context.pos))
     if (context.aborted) return null
     // Each kind's heading ranked where search puts it (FR-024): a name alone, CodeMirror would
@@ -82,8 +122,9 @@ function mentionSource(mentions: EditorMentions) {
           label: o.title,
           section: sections.get(o.section)!,
           type: o.type,
-          // Stored as notes store a mention; drawn as its chip once the cursor leaves the line.
-          apply: `[@${o.title}](${mentionAddress(o.type, o.id)})`,
+          // Stored as notes store a mention, a space after it as the text box gave one; drawn as
+          // its chip once the cursor leaves the line.
+          apply: `[@${o.title}](${mentionAddress(o.type, o.id)}) `,
         }
         optionOf.set(completion, o)
         return completion
@@ -105,9 +146,12 @@ export default function MarkdownEditor({
   autoFocus = false,
   mentions,
   className = '',
+  boxed = false,
   handle,
   onCursor,
   onFind,
+  onEscape,
+  takeOver,
 }: {
   value: string
   onChange: (next: string) => void
@@ -117,21 +161,32 @@ export default function MarkdownEditor({
   autoFocus?: boolean
   mentions?: EditorMentions
   className?: string
+  /** In a field's box (a task's notes): the box takes the app's focus ring. */
+  boxed?: boolean
   /** Filled while the editor is on the page. */
   handle?: RefObject<EditorHandle | null>
   /** Where the cursor is, as it moves: the outline's current section. */
   onCursor?: (offset: number) => void
   /** Ctrl F in the editor, where the page has a find bar; elsewhere it is the browser's. */
   onFind?: () => void
+  /** Esc, where it puts the editor away (a meeting's notes); the `@` list's own Esc comes first. */
+  onEscape?: () => void
+  /** Where the box it replaces had its caret, when it had the focus: the editor takes over there. */
+  takeOver?: RefObject<number | null>
 }) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
   const changed = useRef(onChange)
   changed.current = onChange
+  // What this editor has said its text is, since a value last came from outside: the page's
+  // answer may come back a keystroke late, and an echo is not news.
+  const written = useRef(new Set<string>())
   const moved = useRef(onCursor)
   moved.current = onCursor
   const finds = useRef(onFind)
   finds.current = onFind
+  const escapes = useRef(onEscape)
+  escapes.current = onEscape
 
   useEffect(() => {
     const extensions = [
@@ -145,6 +200,14 @@ export default function MarkdownEditor({
             return true
           },
         },
+        {
+          key: 'Escape',
+          run: () => {
+            if (!escapes.current) return false
+            escapes.current()
+            return true
+          },
+        },
         ...editorKeys,
       ]),
       findInNote,
@@ -155,7 +218,11 @@ export default function MarkdownEditor({
       EditorView.lineWrapping,
       EditorView.contentAttributes.of({ 'aria-label': label, 'aria-multiline': 'true' }),
       EditorView.updateListener.of((u) => {
-        if (u.docChanged) changed.current(u.state.doc.toString())
+        if (u.docChanged) {
+          const text = u.state.doc.toString()
+          written.current.add(text)
+          changed.current(text)
+        }
         if (u.docChanged || u.selectionSet) moved.current?.(u.state.selection.main.head)
       }),
     ]
@@ -163,6 +230,8 @@ export default function MarkdownEditor({
     if (mentions)
       extensions.push(
         mentionDisplay.of(mentions),
+        awayAt,
+        putAwayKey,
         autocompletion({
           override: [mentionSource(mentions)],
           icons: false,
@@ -177,9 +246,17 @@ export default function MarkdownEditor({
           ],
         }),
       )
+    // The stand-in's caret, taken once: let go a moment later, as a remount in React's strict
+    // mode comes straight after and takes it too.
+    const given = takeOver?.current ?? null
+    if (takeOver && given !== null) setTimeout(() => (takeOver.current = null))
     const created = new EditorView({
       parent: host.current!,
-      state: EditorState.create({ doc: value, extensions }),
+      state: EditorState.create({
+        doc: value,
+        extensions,
+        ...(given !== null ? { selection: { anchor: Math.min(given, value.length) } } : {}),
+      }),
     })
     view.current = created
     if (handle)
@@ -199,7 +276,11 @@ export default function MarkdownEditor({
     // Arrived late (its code is fetched on first use), it takes the focus only if nothing has it
     // since: a menu opened meanwhile stays open.
     const free = document.activeElement === null || document.activeElement === document.body
-    if (autoFocus && free) created.focus()
+    if ((autoFocus || given !== null) && free) {
+      created.focus()
+      // Taken over in the middle of an `@`: the box's list went with the box; this one asks again.
+      if (given !== null && mentions) startCompletion(created)
+    }
     return () => {
       created.destroy()
       view.current = null
@@ -211,9 +292,24 @@ export default function MarkdownEditor({
   // A value from outside (a save's answer, another tab) replaces the text when it differs.
   useEffect(() => {
     const v = view.current
-    if (!v || v.state.doc.toString() === value) return
-    v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } })
+    if (!v || v.state.doc.toString() === value || written.current.has(value)) return
+    written.current.clear()
+    // A cursor at the end stays at the end (the first words typed before the editor arrived);
+    // anywhere else it keeps its place, as far as the new text goes.
+    const { head } = v.state.selection.main
+    const atEnd = head === v.state.doc.length
+    v.dispatch({
+      changes: { from: 0, to: v.state.doc.length, insert: value },
+      selection: { anchor: atEnd ? value.length : Math.min(head, value.length) },
+    })
   }, [value])
 
-  return <div ref={host} data-markdown-editor className={className} />
+  return (
+    <div
+      ref={host}
+      data-markdown-editor
+      {...(boxed ? { 'data-boxed': '' } : {})}
+      className={className}
+    />
+  )
 }

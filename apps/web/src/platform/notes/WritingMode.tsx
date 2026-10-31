@@ -1,13 +1,17 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
-import { NoteBody } from './NoteBody'
 import { BUTTON } from '../ui/buttonStyles'
 import { LAYER } from '../ui/layers'
 
+/** What the layer hands the editor it holds: the text, and where every keystroke goes. */
+export type WritingField = { value: string; onChange: (next: string) => void; label: string }
+
 /**
- * A full-screen editor for a note's Markdown source, beside its preview. Every keystroke reports
- * upward, so the unsaved-edit guard sees edits made here.
+ * FULL SCREEN (REQ-002 FR-106, artboard 34 "Whole page"): the one editor over the whole window, at
+ * the reading measure; it draws the note as it will read, so there is no preview beside it. Every
+ * keystroke reports upward, so the unsaved-edit guard sees edits made here. The editor is the
+ * caller's (`field`): this layer is the platform's, the editor the shell's.
  */
 export function WritingMode({
   heading,
@@ -15,6 +19,7 @@ export function WritingMode({
   problem = null,
   onChange,
   onClose,
+  field,
 }: {
   heading: string
   /** Read once, on opening: a refetch behind the layer never replaces what is being typed. */
@@ -23,21 +28,14 @@ export function WritingMode({
   problem?: string | null
   onChange: (next: string) => void
   onClose: () => void
+  field: (props: WritingField) => ReactNode
 }) {
-  // Local text so the preview can be debounced while the textarea is not.
   const [text, setText] = useState(source)
-  const [preview, setPreview] = useState(source)
-  useEffect(() => {
-    const t = setTimeout(() => setPreview(text), 250)
-    return () => clearTimeout(t)
-  }, [text])
 
   useEffect(() => {
     enterOverlay()
     return exitOverlay
   }, [])
-
-  const area = useRef<HTMLTextAreaElement>(null)
 
   return (
     <Dialog.Root
@@ -51,8 +49,10 @@ export function WritingMode({
         <Dialog.Content
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
+            // Into the text, the editor or the box standing in for it while it loads.
             e.preventDefault()
-            area.current?.focus()
+            if (e.currentTarget instanceof HTMLElement)
+              e.currentTarget.querySelector<HTMLElement>('.cm-content, textarea')?.focus()
           }}
           className={`fixed inset-0 ${LAYER.cover} flex flex-col bg-panel text-ink focus:outline-none`}
         >
@@ -72,35 +72,17 @@ export function WritingMode({
               Leave full screen
             </Dialog.Close>
           </div>
-          {/* Explicit equal rows when stacked: automatic rows let a long preview squeeze the
-              textarea to a sliver. */}
-          <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1">
-            <div className="flex min-h-0 flex-col border-line max-lg:border-b lg:border-r">
-              <label htmlFor="writing-source" className="px-4 pt-3 text-meta text-muted">
-                {/* Not “Notes”: the pane's Notes textarea is still mounted behind this layer. */}
-                Markdown source
-              </label>
-              <textarea
-                id="writing-source"
-                ref={area}
-                value={text}
-                onChange={(e) => {
-                  setText(e.target.value)
-                  onChange(e.target.value)
-                }}
-                spellCheck={false}
-                className="min-h-0 flex-1 resize-none bg-panel px-4 py-3 font-mono text-ui text-ink focus:outline-none"
-              />
-            </div>
-            <div className="min-h-0 overflow-y-auto px-4 py-3">
-              <span className="text-meta text-muted">Preview</span>
-              <div data-writing-preview className="mt-1 max-w-reading">
-                {preview.trim() === '' ? (
-                  <p className="text-ui text-subtle">No notes yet</p>
-                ) : (
-                  <NoteBody source={preview} />
-                )}
-              </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+            <div className="mx-auto max-w-reading">
+              {field({
+                value: text,
+                onChange: (next) => {
+                  setText(next)
+                  onChange(next)
+                },
+                // Not "Notes": the pane's own field is still mounted behind this layer.
+                label: 'Writing',
+              })}
             </div>
           </div>
         </Dialog.Content>

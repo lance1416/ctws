@@ -10,6 +10,7 @@ import {
   serverTask,
   navLink,
   setDue,
+  editorText,
 } from './helpers'
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
@@ -568,14 +569,17 @@ test('@ in the notes offers things by kind; the one chosen is mentioned', async 
   const notes = page.getByRole('textbox', { name: 'Notes' })
   await notes.click()
   await notes.pressSequentially('@Mir')
-  const list = page.getByRole('listbox', { name: 'Mention' })
+  // The editor's list (REQ-002 FR-108): search's, by kind.
+  const list = page.getByRole('listbox')
   await expect(list.getByRole('option')).toHaveText([/Mira Chen$/, /Mirage Labs$/])
   await expect(list).toContainText('People')
   await expect(list).toContainText('Organisations')
+  await page.waitForTimeout(100) // CodeMirror's interactionDelay: no Enter in the list's first 75ms
   await notes.press('Enter')
   await expect(list).toHaveCount(0)
   await notes.pressSequentially('说可以帮忙看简历')
-  await expect(notes).toHaveValue('@Mira Chen 说可以帮忙看简历')
+  // On its line, the words as typed; stored, the link.
+  await expect.poll(() => editorText(notes)).toBe('@Mira Chen 说可以帮忙看简历')
 
   const saved = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.ok())
   await page.getByRole('button', { name: /^Save/ }).click()
@@ -612,7 +616,8 @@ test('@ works in a message too; Esc puts the list away, not the form', async ({ 
   const said = form.getByRole('textbox', { name: 'What was said' })
   await said.click()
   await said.pressSequentially('Ask @Mi')
-  const list = page.getByRole('listbox', { name: 'Mention' })
+  // The editor's list (REQ-002 FR-108): search's, by kind.
+  const list = page.getByRole('listbox')
   await expect(list.getByRole('option')).toHaveText([/Mira Chen$/])
   await said.press('Escape')
   await expect(list).toHaveCount(0)
@@ -622,7 +627,7 @@ test('@ works in a message too; Esc puts the list away, not the form', async ({ 
   await expect(list).toHaveCount(0)
   await said.pressSequentially(' and @Mira')
   await list.getByRole('option', { name: 'Mira Chen' }).click()
-  await expect(said).toHaveValue('Ask @Mir and @Mira Chen ')
+  await expect.poll(() => editorText(said)).toBe('Ask @Mir and @Mira Chen ')
 
   const logged = page.waitForResponse(
     (r) => r.request().method() === 'POST' && /\/communication$/.test(r.url()) && r.ok(),
@@ -645,6 +650,7 @@ test('@Mi puts Mira, whose name starts so, before Femi, who has it inside (BUG-0
   const notes = page.getByRole('textbox', { name: 'Notes' })
   await notes.click()
   await notes.pressSequentially('@Mi')
-  const list = page.getByRole('listbox', { name: 'Mention' })
+  // The editor's list (REQ-002 FR-108): search's, by kind.
+  const list = page.getByRole('listbox')
   await expect(list.getByRole('option').first()).toHaveText(/Mira Chen$/)
 })

@@ -29,7 +29,7 @@ import { ProgressSquare } from './ProgressSquare'
 import { StageDot, StagePicker } from './StageField'
 import { StatusMark } from '../../../platform/ui/StatusMark'
 import { DateDecisions, StatusRadios } from './TaskFields'
-import { MentionArea } from '../../../shell/links'
+import { MarkdownField } from '../../../shell/links'
 import type { useTaskDetailForm } from './useTaskDetailForm'
 import { useTaskPlace } from './useTaskPlace'
 
@@ -345,14 +345,14 @@ export function TaskEditForm({
             </button>
           </div>
           {/* Notes are prose, so the one reading measure in the app: 68ch. */}
-          <MentionArea
-            id="detail-notes"
+          <MarkdownField
             value={watch('notes') ?? ''}
             // Empty notes are null, not '': a PATCH clearing them has to say null.
-            onText={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
-            onMention={edit.mention}
-            rows={5}
+            onChange={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
+            label="Notes"
+            boxed
             className={`${area} mt-1.5 max-w-reading`}
+            fallback={{ id: 'detail-notes', rows: 5, className: `${area} mt-1.5 max-w-reading` }}
           />
         </div>
         {writing && (
@@ -361,6 +361,7 @@ export function TaskEditForm({
             source={watch('notes') ?? ''}
             onChange={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
             onClose={() => setWriting(false)}
+            field={(f) => <MarkdownField {...f} autoFocus className="min-h-[60vh]" />}
           />
         )}
       </form>

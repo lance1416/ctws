@@ -19,6 +19,13 @@
   overflow-wrap: break-word;
 }
 
+/* An editor in a field's box: the box wears the app's one focus ring (styles.css), as a text
+   box's does; the editor itself draws none. */
+[data-markdown-editor][data-boxed]:has(.cm-focused) {
+  outline: 2px solid var(--color-task);
+  outline-offset: 2px;
+}
+
 [data-markdown-editor] .cm-content {
   padding: 0;
   caret-color: var(--color-ink);

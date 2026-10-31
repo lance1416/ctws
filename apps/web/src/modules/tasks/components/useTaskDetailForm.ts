@@ -1,9 +1,7 @@
 import type { TaskResponse, UpdateTaskBody } from '@ctws/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { mentionsAsLinks, mentionsAsWords } from '../../../platform/notes/mention'
 import { fromDayTimeInput, toDayTimeInput } from '../../../platform/time/dates'
 import { useTimeZone } from '../../../shell/auth'
 import { patchTask, taskKeys } from '../api'
@@ -27,17 +25,13 @@ export function useTaskDetailForm(task: TaskResponse) {
   const timeZone = useTimeZone()
   // What Esc left the edit with, for when Edit is pressed again (FR-029).
   const draft = `task:edit:${task.id}`
-  // The notes' mentions are typed as their words (I-09); where each goes is kept for the save.
-  const mentions = useRef(new Map<string, string>())
+  // The notes as stored, mentions and all: the editor writes them so (REQ-002 FR-106).
   const defaults = (): DetailTaskForm => {
-    const notes = task.notes === null ? null : mentionsAsWords(task.notes)
-    // Added to, never emptied: this runs on every render, after a mention may have been chosen.
-    for (const [words, href] of notes?.links ?? []) mentions.current.set(words, href)
     return {
       projectId: task.projectId,
       parentId: task.parentId,
       title: task.title,
-      notes: notes?.text ?? null,
+      notes: task.notes,
       status: task.status,
       scheduledOn: task.scheduledOn,
       dueAt: fromDayTimeInput(toDayTimeInput(task.dueAt, timeZone), timeZone),
@@ -62,7 +56,6 @@ export function useTaskDetailForm(task: TaskResponse) {
       // Crossing projects is a move, which carries the subtree along; the old parent is not in
       // the new project. It goes in the same PATCH, so a refused move changes nothing else.
       // A stage is its project's, so it does not come along.
-      if (patch.notes) patch.notes = mentionsAsLinks(patch.notes, mentions.current)
       if (changed.has('projectId') || changed.has('parentId'))
         Object.assign(patch, {
           projectId: values.projectId,
@@ -115,10 +108,7 @@ export function useTaskDetailForm(task: TaskResponse) {
   /** Cancel, answered Discard: it is let go. */
   const discard = () => forgetDraft(draft)
 
-  /** A mention chosen in the notes: where its words go, for the save. */
-  const mention = (words: string, address: string) => mentions.current.set(words, address)
-
-  return { form, isDirty, save, submit, start, keep, discard, mention }
+  return { form, isDirty, save, submit, start, keep, discard }
 }
 
 type Kept = { values: DetailTaskForm; changed: (keyof DetailTaskForm)[] }

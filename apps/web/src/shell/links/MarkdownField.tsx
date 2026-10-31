@@ -5,6 +5,8 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useLayoutEffect,
+  useRef,
   useState,
   type ReactNode,
   type RefObject,
@@ -41,12 +43,16 @@ type Field = {
   placeholder?: string
   autoFocus?: boolean
   className?: string
+  /** In a field's box: the box takes the focus ring. */
+  boxed?: boolean
   /** The editor's own controls, once it has arrived (the outline's jump). */
   handle?: RefObject<EditorHandle | null>
   /** Where the cursor is, as it moves. */
   onCursor?: (offset: number) => void
   /** Ctrl F in the editor, where the page has a find bar. */
   onFind?: () => void
+  /** Esc, where it puts the editor away. */
+  onEscape?: () => void
   /** The stand-in text box's own look, while the editor loads or where it could not. */
   fallback?: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>
 }
@@ -58,12 +64,15 @@ type Field = {
  */
 export function MarkdownField({ fallback, ...field }: Field) {
   const mentions = useEditorMentions()
-  const standIn = <StandIn {...field} box={fallback ?? {}} />
+  // Where the stand-in's caret was if it had the focus as the editor arrived: the editor takes
+  // over there, and nothing typed in between is lost.
+  const handover = useRef<number | null>(null)
+  const standIn = <StandIn {...field} box={fallback ?? {}} handover={handover} />
   return (
     <>
       <StandInOnFailure standIn={standIn}>
         <Suspense fallback={standIn}>
-          <MarkdownEditor {...field} mentions={mentions.editor} />
+          <MarkdownEditor {...field} mentions={mentions.editor} takeOver={handover} />
         </Suspense>
       </StandInOnFailure>
       {mentions.portals}
@@ -79,12 +88,30 @@ function StandIn({
   placeholder,
   autoFocus,
   box,
-}: Field & { box: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'> }) {
+  handover,
+}: Field & {
+  box: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>
+  handover: RefObject<number | null>
+}) {
   const mentioned = useMentionText(value, onChange)
+  const area = useRef<HTMLTextAreaElement | null>(null)
+  // As it goes, not as it is typed in: the editor has arrived.
+  useLayoutEffect(() => {
+    const box = area.current
+    return () => {
+      // The box shows mentions as their words: its caret counts those, the stored text the
+      // links. At the end, the end, however long the text is by the time it arrives;
+      // elsewhere, the nearest place both agree on.
+      if (box && document.activeElement === box)
+        handover.current =
+          box.selectionStart === box.value.length ? Number.MAX_SAFE_INTEGER : box.selectionStart
+    }
+  }, [handover])
   return (
     <MentionArea
       {...box}
       {...mentioned}
+      ref={area}
       aria-label={label}
       {...(placeholder ? { placeholder } : {})}
       {...(autoFocus ? { autoFocus } : {})}

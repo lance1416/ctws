@@ -8,6 +8,7 @@ import {
   registerFreshUser,
   sidewaysScroll,
   navLink,
+  editorText,
 } from './helpers'
 
 /**
@@ -381,30 +382,31 @@ test("KaTeX's stylesheet ships only woff2, like the app's own two faces", async 
 
 // ------------------------------------------------------------------------- the writing mode (H)
 
-const writingSource = (page: Page) => page.getByLabel('Markdown source')
+/** The full screen's editor (REQ-002 FR-106): the one editor, at the reading measure. */
+const writingSource = (page: Page) => page.getByRole('textbox', { name: 'Writing' })
 
 test('the full-screen writing mode round-trips the source unchanged', async ({ page }) => {
   const pid = await seedNote(page, '第一行\n\n第二段')
   await editDetail(page)
-  // The pane holds the SOURCE, which is what is stored.
-  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
-    '第一行\n\n第二段',
-  )
+  // The pane holds the note as it is stored.
+  await expect
+    .poll(() => editorText(page.getByRole('textbox', { name: 'Notes', exact: true })))
+    .toBe('第一行\n\n第二段')
 
   await page.getByRole('button', { name: 'Full screen' }).click()
-  await expect(writingSource(page)).toHaveValue('第一行\n\n第二段')
+  await expect(writingSource(page)).toBeFocused()
+  await expect.poll(() => editorText(writingSource(page))).toBe('第一行\n\n第二段')
 
   const written =
     '# 标题\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n$x^2$\n\n```mermaid\ngraph TD; A-->B;\n```'
   await writingSource(page).fill(written)
-  // The other half of the layer is the rendering of exactly that text.
-  await expect(page.locator('[data-writing-preview] h1')).toHaveText('标题')
-  await expect(page.locator('[data-writing-preview] table')).toBeVisible()
+  // The editor draws what is written, off the cursor's line: no preview beside it.
+  const writing = page.getByRole('dialog', { name: '读一下' })
+  await expect(writing.locator('.cm-md-h2')).toHaveText('标题')
+  await expect(writing.locator('table.cm-md-table')).toBeVisible()
 
   await page.getByRole('button', { name: 'Leave full screen' }).click()
   await expect(writingSource(page)).toHaveCount(0)
-  // Byte for byte, back in the pane's own field.
-  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(written)
 
   const saved = patchAnswered(page, 'tasks/')
   await page.getByRole('button', { name: 'Save' }).click()
@@ -436,7 +438,9 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   await page.getByRole('listitem').filter({ hasText: '读一下' }).first().click()
   await editDetail(page)
   await page.getByRole('button', { name: 'Full screen' }).click()
-  await writingSource(page).fill('原文，又写了一段')
+  await writingSource(page).click()
+  await page.keyboard.press('End')
+  await page.keyboard.type('，又写了一段')
 
   // The browser's back button is the one way out of a layer that covers the whole window.
   await page.goBack()
@@ -448,9 +452,9 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
   )
   await page.getByRole('button', { name: 'Keep editing' }).click()
   // The typing survived the question.
-  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue(
-    '原文，又写了一段',
-  )
+  await expect
+    .poll(() => editorText(page.getByRole('textbox', { name: 'Notes', exact: true })))
+    .toBe('原文，又写了一段')
   // And Discard really does leave, which is what makes the question a question. Opening the task
   // was a step in the history of its own, so Back leaves the task's sheet, onto its project.
   await page.goBack()
@@ -466,7 +470,7 @@ test('the writing mode stands the single-key shortcuts down', async ({ page }) =
   await writingSource(page).fill('')
   await writingSource(page).press('/')
   // `/` is the capture shortcut. Typed into a note it is a slash.
-  await expect(writingSource(page)).toHaveValue('/')
+  await expect.poll(() => editorText(writingSource(page))).toBe('/')
   await expect(page.getByRole('dialog', { name: 'Search' })).toHaveCount(0)
 })
 
