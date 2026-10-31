@@ -287,11 +287,12 @@ function classNameRules() {
       `/${cls('rounded(-(none|xs|sm|md|lg|xl|2xl|3xl|4xl))?')}/`,
       'Off the radius scale: rounded-key, -control, -card, -block, -phone-card, -phone-sheet or -full.',
     ),
-    // THE TYPE SCALE IS SIX STEPS (FR-008): hero, title, subject, prose, ui, meta, and initials.
-    // Tailwind's sizes are gone from the theme too.
+    // THE TYPE SCALE IS SIX STEPS (FR-008): hero, title, subject, prose, ui, meta, and initials;
+    // a phone's rows have row and row-sub (FR-082). Tailwind's sizes are gone from the theme too.
+    // A size written in place (`text-[9px]`) reaches past the scale as surely as one of those.
     ...textRule(
-      `/${cls('text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)')}/`,
-      'Off the type scale: text-hero, -title, -subject, -prose, -ui, -meta or -initials.',
+      `/${cls('text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl|\\[[\\d.]+(px|rem|em)\\])')}/`,
+      'Off the type scale: text-hero, -title, -subject, -prose, -ui, -meta, -initials, -row or -row-sub.',
     ),
     // WEIGHTS ARE 400 AND 500 (FR-007). 600 belongs to the subject and title steps themselves,
     // and 700 to nothing.

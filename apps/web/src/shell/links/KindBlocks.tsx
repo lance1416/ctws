@@ -431,9 +431,12 @@ function ThingRow({
           </span>
         )
       )}
+      {/* On a phone, a row's two steps (FR-082). */}
       <span className="flex min-w-0 flex-col py-1.5">
-        <span className="truncate">{row.title}</span>
-        {row.sub && <span className="truncate text-meta text-muted">{row.sub}</span>}
+        <span className="truncate max-lg:text-row">{row.title}</span>
+        {row.sub && (
+          <span className="truncate text-meta text-muted max-lg:text-row-sub">{row.sub}</span>
+        )}
       </span>
       {row.trail ?? <span className="min-w-0 truncate text-meta text-muted">{row.fact ?? ''}</span>}
     </OpensBeside>

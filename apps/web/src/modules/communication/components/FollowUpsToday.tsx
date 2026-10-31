@@ -76,8 +76,11 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
           <OrganisationMark name={org?.name ?? '?'} />
         )}
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-ui text-ink">{m.subject ?? 'No subject'}</span>
-          <span className="flex flex-wrap gap-x-2.5 text-meta text-muted">
+          {/* On a phone, a row's two steps (FR-082). */}
+          <span className="truncate text-ui text-ink max-lg:text-row">
+            {m.subject ?? 'No subject'}
+          </span>
+          <span className="flex flex-wrap gap-x-2.5 text-meta text-muted max-lg:text-row-sub">
             {who && <span>{who.name}</span>}
             <span>Sent {shortDay(sent, today)}</span>
           </span>

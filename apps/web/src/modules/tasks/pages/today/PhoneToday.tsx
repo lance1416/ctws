@@ -278,8 +278,8 @@ function PhoneTaskRow({
           onClick={() => (open ? setOpen(false) : onOpen())}
           className="flex min-w-0 flex-1 flex-col py-2.5 text-left"
         >
-          <span className="truncate text-prose text-ink">{t.title}</span>
-          <span className="flex min-w-0 items-center gap-1.5 text-ui text-muted">
+          <span className="truncate text-row text-ink">{t.title}</span>
+          <span className="flex min-w-0 items-center gap-1.5 text-row-sub text-muted">
             {project && <ProjectSquare project={project} />}
             <span className="truncate">{t.parentTitle ?? t.projectName}</span>
             {carried && (

@@ -77,8 +77,8 @@ export function BirthdaysPhone() {
           >
             <Avatar initials={r.initials} size={32} />
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-prose text-ink">{r.name}</span>
-              <span className="text-ui text-muted">
+              <span className="truncate text-row text-ink">{r.name}</span>
+              <span className="text-row-sub text-muted">
                 {weekdayOf(r.day, true)}, {monthDay(r.day)}
               </span>
             </span>

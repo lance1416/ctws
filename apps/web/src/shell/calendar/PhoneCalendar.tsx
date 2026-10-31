@@ -138,7 +138,8 @@ export function PhoneCalendar() {
               aria-selected={day === chosen}
               aria-label={`${longDay(day)}${dots.length ? `, ${dots.length} kinds of things` : ''}`}
               onClick={() => choose(day)}
-              className={`flex h-13 flex-col items-center justify-start gap-0.5 rounded-card pt-1 ${
+              // 2 + the day's 28 + its lunar name's 16 (12 is a phone's smallest, FR-082) + the dots.
+              className={`flex h-14 flex-col items-center justify-start gap-0.5 rounded-card pt-0.5 ${
                 day === chosen && !isToday ? 'bg-hover' : ''
               } ${inMonth ? '' : 'opacity-40'}`}
             >
@@ -150,7 +151,7 @@ export function PhoneCalendar() {
                 {Number(day.slice(8))}
               </span>
               <span
-                className={`text-[10px] leading-3 ${name && name.is !== 'day' ? 'text-stop-t' : 'text-subtle'}`}
+                className={`max-w-full truncate text-meta ${name && name.is !== 'day' ? 'text-stop-t' : 'text-subtle'}`}
               >
                 {name?.text ?? ''}
               </span>
@@ -212,12 +213,12 @@ function DayList({ parts }: { parts: ReturnType<typeof dayParts> }) {
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span
-                  className={`truncate text-prose ${e.done ? 'text-subtle line-through' : 'text-ink'}`}
+                  className={`truncate text-row ${e.done ? 'text-subtle line-through' : 'text-ink'}`}
                 >
                   {e.title}
                 </span>
                 {e.kind === 'occurrence' && e.joinUrl && (
-                  <span className="flex items-center gap-1.5 text-ui text-muted">
+                  <span className="flex items-center gap-1.5 text-row-sub text-muted">
                     <JoinIcon size={14} aria-hidden="true" />
                     {callName(e.joinUrl)}
                   </span>

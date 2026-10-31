@@ -108,7 +108,7 @@ export function More() {
 }
 
 const ROW =
-  'flex min-h-12 items-center gap-3 border-b border-line px-3.5 text-prose text-ink last:border-b-0 hover:bg-hover'
+  'flex min-h-12 items-center gap-3 border-b border-line px-3.5 text-row text-ink last:border-b-0 hover:bg-hover'
 
 function Group({ title, children }: { title?: string; children: ReactNode }) {
   return (

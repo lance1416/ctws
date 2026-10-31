@@ -140,7 +140,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
               >
                 <span
                   data-row-title
-                  className={`truncate text-prose ${done ? 'text-subtle' : 'text-ink'}`}
+                  className={`truncate text-row ${done ? 'text-subtle' : 'text-ink'}`}
                 >
                   {deeper && <span className="text-subtle">… </span>}
                   {t.title}
@@ -177,7 +177,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
               type="button"
               data-tree-new-task
               onClick={() => openNew(creator)}
-              className="flex min-h-12 w-full items-center gap-3 px-4 text-prose text-muted"
+              className="flex min-h-12 w-full items-center gap-3 px-4 text-row text-muted"
             >
               <NewIcon size={18} aria-hidden="true" />
               New task

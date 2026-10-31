@@ -67,16 +67,18 @@
     'JetBrains Mono Variable', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
     monospace;
 
-  /* THE TYPE SCALE IS SIX STEPS AND ONE EXCEPTION (FR-008), and Tailwind's own sizes are
-     removed so an off-scale size has no class to reach for.
+  /* THE TYPE SCALE IS SIX STEPS, ONE EXCEPTION AND A PHONE'S ROWS (FR-008, FR-082), and
+     Tailwind's own sizes are removed so an off-scale size has no class to reach for.
        hero     40/48  500  the one big number on a screen
        title    26/34  600  a page's title (tracking -0.01em)
        subject  18/26  600  a subheading; the inspector's title
-       prose    15/24  400  what you wrote: notes, body text, a phone's rows
+       prose    15/24  400  what you wrote: notes, body text
        ui       13/20  400 or 500  rows, buttons, fields, block names -- the body's default
        meta     12/16  400  counts, dates, second lines; mono text is this size too
        initials 11/16  600  a project square's or an avatar's letters (tracking 0.02em), the only
                             text under 12px
+       row      15/22  400 or 500  a phone's list row
+       row-sub  13/18  400  that row's second line
      Weights: 400 and 500 everywhere; 600 only on `subject` and `title` (FR-007), never 700.
      The lint holds `font-semibold` to those two steps.
 
@@ -104,6 +106,10 @@
   --text-initials--line-height: 1rem;
   --text-initials--font-weight: 600;
   --text-initials--letter-spacing: 0.02em;
+  --text-row: 0.9375rem;
+  --text-row--line-height: 1.375rem;
+  --text-row-sub: 0.8125rem;
+  --text-row-sub--line-height: 1.125rem;
 
   /* RADIUS BY ROLE (FR-009), and Tailwind's own steps removed: `key` 4 for a key cap, `control`
      6 for controls and chips, `card` 8 for a board card, `block` 10 for blocks and everything that
