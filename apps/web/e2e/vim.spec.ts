@@ -162,3 +162,22 @@ test('a phone has no vim, whatever the account says', async ({ page }) => {
   await page.keyboard.type('i typed')
   await expect.poll(() => stored(page, id)).toBe('i typed')
 })
+
+test('on: with the @ list open, Esc closes the list and stays in INSERT; the next is NORMAL', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await vimOn(page)
+  await apiPost(page, '/people', { name: 'Mira Chen' })
+  await openNote(page, 'Ask')
+  await page.locator('[data-markdown-editor] .cm-line').first().click()
+  await page.keyboard.press('A')
+  await page.keyboard.type(' @Mi')
+  const list = page.getByRole('listbox')
+  await expect(list.getByRole('option').first()).toContainText('Mira Chen')
+  await page.keyboard.press('Escape')
+  await expect(list).toHaveCount(0)
+  await expect(mode(page)).toContainText('INSERT')
+  await page.keyboard.press('Escape')
+  await expect(mode(page)).toContainText('NORMAL')
+})
