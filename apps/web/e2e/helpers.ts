@@ -174,6 +174,9 @@ export async function editDetail(page: Page): Promise<void> {
   // The pane has handed focus to the title field, so the controls are really there before the
   // caller's next locator runs.
   await page.getByRole('textbox', { name: 'Title' }).waitFor()
+  // And the notes' editor itself, not the box standing in for it while its code loads: a fill
+  // that lands as one replaces the other is a race of the test's, not a person's.
+  await page.locator('[data-markdown-editor] .cm-content').first().waitFor()
 }
 
 // Picks a status in the open detail panel: the five marker shapes the rows use, as a radio group.

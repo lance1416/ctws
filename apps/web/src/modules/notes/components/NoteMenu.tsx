@@ -120,7 +120,8 @@ export function FolderTag({ note }: { note: NoteResponse }) {
     <button
       type="button"
       onClick={() => askReveal(note.id)}
-      className="inline-flex h-5.5 items-center rounded-control px-1.5 text-meta text-muted hover:bg-hover"
+      // Its ground always the hover grey, as a tag's; not only under the pointer (DES-001 NB4-08).
+      className="inline-flex h-5.5 items-center rounded-control bg-hover px-1.5 text-meta text-muted hover:text-ink"
     >
       {folder.name}
     </button>
