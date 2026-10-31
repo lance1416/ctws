@@ -473,7 +473,7 @@ test('full screen: the outline when there are headings, Ctrl F, and Esc leaves',
   const layer = page.getByRole('dialog', { name: '读一下' })
   // No headings, no outline: the text alone, in the middle.
   await expect(writingSource(page)).toBeFocused()
-  // The status bar stays in sight below it (DES-001 NB3-04): vim's mode is written there. Outside
+  // The status bar stays in sight below it: vim's mode is written there. Outside
   // the layer, so out of the accessibility tree while it is open: found by its markup.
   const status = (await page.locator('footer[aria-label="Status"]').boundingBox())!
   const cover = (await layer.boundingBox())!

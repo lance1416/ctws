@@ -260,7 +260,7 @@ export default function MarkdownEditor({
     const extensions = [
       vimSlot.of([]),
       // The selection drawn by the editor, in the app's select colour: vim hides the browser's
-      // own, and VISUAL would show nothing (DES-001 NB4-04).
+      // own, and VISUAL would show nothing.
       drawSelection(),
       history(),
       keymap.of([

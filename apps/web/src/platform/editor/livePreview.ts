@@ -80,7 +80,7 @@ export function previewDecorations(state: EditorState): Range<Decoration>[] {
   const inBlock = (pos: number) => blocks.some((b) => pos >= b.from && pos <= b.to)
   // The cursor's own line, on its hover ground (artboard 34).
   // Only a bare cursor's: a line's ground is drawn over the selection, which is behind the text,
-  // and would hide what is selected (DES-001 NB4-04, VISUAL).
+  // and would hide what is selected, vim's VISUAL among them.
   if (state.selection.ranges.every((r) => r.empty))
     for (const n of active) out.push(line('cm-md-active').range(doc.line(n).from))
 

@@ -137,7 +137,7 @@ test('a pinned note is listed first, under Pinned, and a note on a thing has no 
   await pin.click()
   await expect(section(page, 'Pinned')).toContainText('Weekend plan')
   await expect(pin).toHaveAttribute('aria-pressed', 'true')
-  // Ink while pinned, muted while not: the two read apart (NB2-01).
+  // Ink while pinned, muted while not: the two read apart.
   const colour = () => pin.evaluate((el) => getComputedStyle(el).color)
   // Off the button, whose hover is ink either way.
   await page.mouse.move(0, 0)
