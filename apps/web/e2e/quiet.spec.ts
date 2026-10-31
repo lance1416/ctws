@@ -59,6 +59,34 @@ test('the tree shows what is left to do, and the count is the way back to the re
   await expect(row(page, '写迁移')).toHaveCount(0)
 })
 
+test('a row just finished stays to be undone, and Hide done folds it with the rest', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '改版')
+  await makeTask(page, pid, '写迁移', { status: 'done' })
+  await makeTask(page, pid, '配色重做')
+  await openTree(page, pid)
+  await expect(page.getByRole('button', { name: '1 done' })).toBeVisible()
+
+  // Finished here: it stays where it was, greyed, a press from being undone (04-projects.md).
+  await page.getByRole('button', { name: 'Complete “配色重做”' }).click()
+  await expect
+    .poll(async () => (await serverTasks(page, pid)).map((t) => t.status).sort())
+    .toEqual(['done', 'done'])
+  await expect(row(page, '配色重做')).toBeVisible()
+  // Its group reads as open, so its press folds every closed row away, this one too.
+  const hide = page.getByRole('button', { name: 'Hide done' })
+  await expect(hide).toHaveAttribute('aria-pressed', 'true')
+  await hide.click()
+  await expect(row(page, '配色重做')).toHaveCount(0)
+  await expect(row(page, '写迁移')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '2 done' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+})
+
 test('each parent folds its own finished rows, and says how many (FR-054)', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
@@ -148,7 +176,7 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
   done = patched()
   await page.keyboard.press('x')
   await done
-  await expect(row(page, '配色重做').getByRole('img', { name: 'Backlog' })).toBeVisible()
+  await expect(row(page, '配色重做').getByRole('img', { name: 'To do' })).toBeVisible()
 })
 
 test('a project whose every task is finished shows them folded, not an empty project', async ({

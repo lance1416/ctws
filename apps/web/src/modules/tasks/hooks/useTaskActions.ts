@@ -6,10 +6,16 @@ import {
   type TaskId,
 } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { isFinished } from '../logic/status'
-import { patchTask, type ProjectTasks, ROW_WRITES, taskKeys } from '../api'
+import { isFinished, REOPEN, reopenedTo, type StatusMove } from '../logic/status'
+import { patchTask, type ProjectTasks, ROW_WRITES, taskChanges, taskKeys } from '../api'
 
 type TodayTasks = TodayTaskResponse[]
+
+/**
+ * What each task was when this client finished it, for this visit: what it comes back to, at once
+ * and without asking (BUG-095). One finished elsewhere asks its change log.
+ */
+const before = new Map<TaskId, 'todo' | 'in_progress'>()
 
 /**
  * One-click edits from a list row. Status changes are optimistic; date changes wait for the
@@ -50,9 +56,41 @@ export function useTaskActions(onError: (message: string) => void) {
     meta: { changes: ['task'], awaits: [taskKeys.all], ownsError: true },
   })
 
+  /** The status the row has now, from whichever list holds it. */
+  const statusOf = (id: TaskId): TaskStatus | undefined => {
+    for (const [, data] of qc.getQueriesData<ProjectTasks>({ queryKey: taskKeys.lists })) {
+      const hit = data?.tasks.find((t) => t.id === id)
+      if (hit) return hit.status
+    }
+    for (const key of [taskKeys.todays, ['tasks', 'ready']] as const)
+      for (const [, data] of qc.getQueriesData<{ id: TaskId; status: TaskStatus }[]>({
+        queryKey: key,
+      })) {
+        const hit = data?.find((t) => t.id === id)
+        if (hit) return hit.status
+      }
+    return undefined
+  }
+
+  const set = (id: TaskId, status: TaskStatus, after?: () => void) => {
+    if (isFinished(status)) {
+      const was = statusOf(id)
+      if (was && !isFinished(was)) before.set(id, was === 'in_progress' ? 'in_progress' : 'todo')
+    }
+    run.mutate({ id, body: { status } }, { onSettled: () => after?.() })
+  }
+
   return {
-    setStatus: (id: TaskId, status: TaskStatus, after?: () => void) =>
-      run.mutate({ id, body: { status } }, { onSettled: () => after?.() }),
+    /** A status, or `REOPEN`: back to what it was before it was finished, to do if unknown. */
+    setStatus: (id: TaskId, move: StatusMove, after?: () => void) => {
+      if (move !== REOPEN) return set(id, move, after)
+      const known = before.get(id)
+      before.delete(id)
+      if (known) return set(id, known, after)
+      void taskChanges(id)
+        .catch(() => [])
+        .then((changes) => set(id, reopenedTo(changes), after))
+    },
     patch: (id: TaskId, body: UpdateTaskBody, after?: () => void) =>
       run.mutate({ id, body }, { onSettled: () => after?.() }),
   }

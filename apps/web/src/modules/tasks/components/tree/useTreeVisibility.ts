@@ -65,13 +65,17 @@ function visibleTasks(
  * A finished row folds away under its parent (FR-054), which says "12 done" and opens them on a
  * press, remembered per project; the project's own finished rows fold the same way at the end. A
  * finished parent with unfinished children stays, and so does a row finished right here, for this
- * mount, so a second `x` can undo it.
+ * mount, greyed where it was so a second `x` can undo it. A group holding such a row reads as open:
+ * its "Hide done" folds every closed row in it away, the ones just finished too (04-projects.md).
  */
 export function useTreeVisibility(projectId: ProjectId, all: readonly TaskResponse[]) {
   const [open, setOpen] = useState<ReadonlySet<DoneGroup>>(() => loadShownDone(projectId))
   const [kept, setKept] = useState<ReadonlySet<string>>(() => new Set())
 
   const shown = useMemo(() => visibleTasks(all, open, kept), [all, open, kept])
+  /** The rows finished right here that are on screen in `group` only because they were. */
+  const keptIn = (group: DoneGroup) =>
+    all.filter((t) => kept.has(t.id) && isFinished(t.status) && groupOf(t) === group)
 
   const save = (next: ReadonlySet<DoneGroup>) => {
     setOpen(next)
@@ -82,10 +86,16 @@ export function useTreeVisibility(projectId: ProjectId, all: readonly TaskRespon
     /** What `visible` would be for these tasks: for a list newer than the last render. */
     visibleOf: (tasks: readonly TaskResponse[]) => visibleTasks(tasks, open, kept).visible,
     closed: shown.closed,
-    isOpen: (group: DoneGroup) => open.has(group),
+    isOpen: (group: DoneGroup) => open.has(group) || keptIn(group).length > 0,
     toggle: (group: DoneGroup) => {
+      const folding = keptIn(group)
       const next = new Set(open)
-      if (!next.delete(group)) next.add(group)
+      if (open.has(group) || folding.length > 0) {
+        // Hide done: the group shut, and what was kept in it goes with the rest.
+        next.delete(group)
+        if (folding.length > 0)
+          setKept((prev) => new Set([...prev].filter((id) => !folding.some((t) => t.id === id))))
+      } else next.add(group)
       save(next)
     },
     /** Opens the groups that fold this task or a finished row above it away, so it shows. */

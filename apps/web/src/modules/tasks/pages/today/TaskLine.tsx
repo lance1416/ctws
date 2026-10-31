@@ -1,4 +1,4 @@
-import type { TaskId, TaskStatus, TodayTaskResponse } from '@ctws/contracts'
+import type { TaskId, TodayTaskResponse } from '@ctws/contracts'
 import type { KeyboardEvent, ReactNode } from 'react'
 import { useSaveGate } from '../../../../platform/http/online'
 import { GATED, ICON_BUTTON } from '../../../../platform/ui/buttonStyles'
@@ -8,7 +8,7 @@ import { ProgressSquare } from '../../components/ProgressSquare'
 import { StatusButton } from '../../components/StatusControls'
 import { SavedMark, WaitingBadge } from '../../components/TaskRowParts'
 import { blockedLabel } from '../../logic/blockedLabel'
-import { toggleDoneTarget } from '../../logic/status'
+import { type StatusMove, toggleDoneTarget } from '../../logic/status'
 import { dueMark } from '../../logic/todayMarks'
 
 /**
@@ -96,7 +96,7 @@ export function TaskLine({
   rowRef: (el: HTMLElement | null) => () => void
   onOpen: () => void
   onKeyDown: (e: KeyboardEvent) => void
-  onStatus: (status: TaskStatus) => void
+  onStatus: (status: StatusMove) => void
   action: ReactNode
 }) {
   const blocked = blockedLabel(t.blockedBy)

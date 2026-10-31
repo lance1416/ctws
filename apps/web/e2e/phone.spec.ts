@@ -7,6 +7,7 @@ import {
   makeReading,
   makeTask,
   registerFreshUser,
+  serverTask,
   WEB,
 } from './helpers'
 import { addDays } from '@ctws/core/day'
@@ -411,9 +412,19 @@ test('a project on a phone: its tree alone, a row 44 and over, tags under its na
   await expect(rows.filter({ hasText: 'Amazon' })).toContainText('0/2')
   await expect(rows.filter({ hasText: 'Phone screen' })).toContainText(/\w{3} \d+/)
 
-  // The circle finishes a leaf; the name opens it in the sheet.
+  // The circle finishes a leaf, and it stays to be undone, as on a desk (BUG-095); undone, it is
+  // what it was. Finished again, Hide done folds it with the rest.
   await page.getByRole('button', { name: 'Done “Onsite”' }).click()
+  await expect(page.getByRole('button', { name: 'Not done “Onsite”' })).toBeVisible()
+  await page.getByRole('button', { name: 'Not done “Onsite”' }).click()
+  await expect(page.getByRole('button', { name: 'Done “Onsite”' })).toBeVisible()
+  await expect.poll(async () => (await serverTask(page, jh, 'Onsite')).status).toBe('todo')
+  await page.getByRole('button', { name: 'Done “Onsite”' }).click()
+  await expect(page.getByRole('button', { name: 'Not done “Onsite”' })).toBeVisible()
+  await page.getByRole('button', { name: 'Hide done' }).click()
   await expect(rows.filter({ hasText: 'Onsite' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '1 done' })).toBeVisible()
+  // The name opens it in the sheet.
   await rows
     .filter({ hasText: 'Phone screen' })
     .getByRole('button', { name: /^Phone screen/ })

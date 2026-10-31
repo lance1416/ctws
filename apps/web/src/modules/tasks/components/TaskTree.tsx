@@ -1,12 +1,6 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import {
-  type ProjectId,
-  type StageId,
-  type TaskId,
-  type TaskResponse,
-  type TaskStatus,
-} from '@ctws/contracts'
+import { type ProjectId, type StageId, type TaskId, type TaskResponse } from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useDelayed } from '../../../platform/time/useDelayed'
@@ -14,7 +8,7 @@ import { BlockFailed } from '../../../platform/ui/Block'
 import { MoveToProject, useProjects } from '../../../shell/projects'
 import { patchTask, projectTasksQuery, taskKeys } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
-import { isFinished } from '../logic/status'
+import { isFinished, REOPEN, type StatusMove } from '../logic/status'
 import { blockLength, flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
 import { Toast } from '../../../platform/ui/Toast'
@@ -112,9 +106,9 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
 
   const actions = useTaskActions(setError)
   /** Every status change the tree makes: a row finished here stays on screen, however it was. */
-  const setStatus = (id: TaskId, status: TaskStatus) => {
+  const setStatus = (id: TaskId, status: StatusMove) => {
     setError(null)
-    if (isFinished(status)) shown.keep([id])
+    if (status !== REOPEN && isFinished(status)) shown.keep([id])
     actions.setStatus(id, status)
   }
   const adder = useInlineAdd({

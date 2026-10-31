@@ -1,11 +1,10 @@
 import type { ProjectId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { projectTasksQuery } from '../api'
-import { isFinished } from '../logic/status'
-import { flatten } from '../logic/tree/flatten'
+import { outlineRows } from '../logic/tree/outline'
+import { StatusMark } from '../../../platform/ui/StatusMark'
 import { leafCounts } from '../logic/tree/leafCounts'
 import { ProgressSquare } from './ProgressSquare'
-import { StatusMark } from '../../../platform/ui/StatusMark'
 import { useTaskParam } from './tree/useTreeParams'
 
 /** How far the outline sits in under its project's row, and each level further. */
@@ -13,9 +12,9 @@ const FIRST_INDENT = 22
 const LEVEL = 18
 
 /**
- * THE OPEN PROJECT'S OUTLINE in the sidebar (FR-021, artboard 8): its parents at every depth and
- * the leaves straight under it, in the tree's order, each with its progress or its status. A click
- * opens it on the page, in the inspector, as a row's would, so a long tree is a jump away.
+ * THE OPEN PROJECT'S OUTLINE in the sidebar (FR-020, artboard 8): its parents at every depth and
+ * its own leaves, each with its progress or its status, what is finished gone (`outlineRows`). A
+ * click opens it on the page, in the inspector, as a row's would, so a long tree is a jump away.
  */
 export function ProjectOutline({ projectId }: { projectId: ProjectId }) {
   const tasks = useQuery(projectTasksQuery(projectId)).data?.tasks ?? []
@@ -23,7 +22,7 @@ export function ProjectOutline({ projectId }: { projectId: ProjectId }) {
   if (tasks.length === 0) return null
   const byId = new Map(tasks.map((t) => [t.id, t]))
   const counts = leafCounts(tasks)
-  const rows = flatten(tasks, new Set()).filter((row) => row.depth === 1 || row.hasChildren)
+  const rows = outlineRows(tasks)
   return (
     // A group of jumps, not a second list of the tasks: the page's tree is the list (and what a
     // screen reader walks as one).
@@ -39,9 +38,7 @@ export function ProjectOutline({ projectId }: { projectId: ProjectId }) {
             aria-current={row.id === openId ? 'true' : undefined}
             data-outline-row={row.id}
             style={{ paddingLeft: FIRST_INDENT + (row.depth - 1) * LEVEL }}
-            className={`mx-1.5 flex h-7.5 w-[calc(100%-0.75rem)] items-center gap-2 rounded-control pr-2 text-left text-ui hover:bg-hover aria-[current]:bg-select ${
-              isFinished(task.status) ? 'text-subtle' : 'text-ink'
-            }`}
+            className="mx-1.5 flex h-7.5 w-[calc(100%-0.75rem)] items-center gap-2 rounded-control pr-2 text-left text-ui text-ink hover:bg-hover aria-[current]:bg-select"
           >
             {/* A parent's square and a leaf's ring are not as wide: both sit centred in one cell,
                 so every title starts at the same place. */}

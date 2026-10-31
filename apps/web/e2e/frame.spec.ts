@@ -28,14 +28,60 @@ test('the icon bar holds the eleven places in order, the current one selected', 
   expect(names).toEqual(PLACES)
   await expect(bar.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
 
-  // A place's name and its key show on hover, as its title.
-  await expect(bar.getByRole('link', { name: 'People' })).toHaveAttribute('title', /People\s+G E/)
+  // A place's name and its key show beside it at once, on the pointer or the keyboard (FR-019),
+  // over the sidebar, not the browser's slow title.
+  const people = bar.getByRole('link', { name: 'People' })
+  const tip = people.locator('[data-icon-tip]')
+  await expect(tip).toBeHidden()
+  await people.hover()
+  await expect(tip).toBeVisible()
+  await expect(tip).toHaveText('PeopleG E')
+  const [cell, said] = [(await people.boundingBox())!, (await tip.boundingBox())!]
+  expect(said.x).toBeGreaterThan(cell.x + cell.width)
+  await page.mouse.move(800, 400)
+  await expect(tip).toBeHidden()
+  await bar.getByRole('link', { name: 'Calendar' }).focus()
+  await page.keyboard.press('Shift+Tab')
+  await page.keyboard.press('Tab')
+  await expect(bar.getByRole('link', { name: 'Calendar' }).locator('[data-icon-tip]')).toBeVisible()
+  await expect(people).not.toHaveAttribute('title')
 
   await bar.getByRole('link', { name: 'People' }).click()
   await expect(page).toHaveURL(/\/people$/)
   await expect(bar.getByRole('link', { name: 'People' })).toHaveAttribute('aria-current', 'page')
   // A kind's module brings its sidebar, named for it.
   await expect(page.getByRole('complementary', { name: 'People' })).toBeVisible()
+})
+
+test('an icon’s tip waits for a resting pointer, then follows it along the bar at once', async ({
+  page,
+}) => {
+  // The page's timers on a clock the test turns, so 300ms is exactly that.
+  await page.clock.install({ time: new Date('2026-10-22T09:00:00Z') })
+  await registerFreshUser(page)
+  await page.clock.pauseAt(new Date('2026-10-22T09:01:00Z'))
+  const bar = page.getByRole('navigation', { name: 'Modules' })
+  const tipOf = (name: string) => bar.getByRole('link', { name }).locator('[data-icon-tip]')
+  // From off the bar: signing up ends on Today's cell, whose tip has come and made the bar quick.
+  await page.mouse.move(800, 400)
+
+  await bar.getByRole('link', { name: 'People' }).hover()
+  await page.clock.runFor(299)
+  await expect(tipOf('People')).toBeHidden()
+  await page.clock.runFor(1)
+  await expect(tipOf('People')).toBeVisible()
+  // One has shown: the next cell's comes with no wait, and the last one goes.
+  await bar.getByRole('link', { name: 'Organisations' }).hover()
+  await expect(tipOf('Organisations')).toBeVisible()
+  await expect(tipOf('People')).toBeHidden()
+  // Off the bar and back: a rest again.
+  await page.mouse.move(800, 400)
+  await expect(tipOf('Organisations')).toBeHidden()
+  await bar.getByRole('link', { name: 'Meetings' }).hover()
+  await page.clock.runFor(100)
+  await expect(tipOf('Meetings')).toBeHidden()
+  await page.clock.runFor(200)
+  await expect(tipOf('Meetings')).toBeVisible()
 })
 
 test('the top bar is 48 high and the icon bar 52 wide', async ({ page }) => {

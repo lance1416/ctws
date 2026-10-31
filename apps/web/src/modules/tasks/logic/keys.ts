@@ -1,6 +1,6 @@
 import type { TaskStatus } from '@ctws/contracts'
 import { pressesWith, type KeyTable } from '../../../platform/keyboard/keyTable'
-import { toggleDoneTarget, toggleStartTarget } from './status'
+import { type StatusMove, toggleDoneTarget, toggleStartTarget } from './status'
 
 /** The two status keys, alike wherever a task row has focus. */
 type StatusAction = 'start' | 'complete'
@@ -10,7 +10,7 @@ const STATUS_ROWS = [
 ] as const
 
 /** What the status keys do to a task with `status`: each says the status to set. */
-export const statusActions = (status: TaskStatus, set: (next: TaskStatus) => void) => ({
+export const statusActions = (status: TaskStatus, set: (next: StatusMove) => void) => ({
   start: () => set(toggleStartTarget(status)),
   complete: () => set(toggleDoneTarget(status)),
 })

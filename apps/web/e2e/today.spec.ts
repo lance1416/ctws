@@ -10,6 +10,7 @@ import {
   meetingToday,
   registerFreshUser,
   serverTask,
+  taskPatched,
 } from './helpers'
 import { addDaysYmd, dayOffset, dueAgo, nextMondayYmd } from './days'
 
@@ -394,6 +395,24 @@ test('Ready to start offers what waits for nothing and is not on Today already',
   await ready.getByRole('button', { name: 'Start “可以开始的”' }).click()
   await expect(rowOf(block(page, 'In progress'), '可以开始的')).toBeVisible()
   await expect(ready).not.toContainText('可以开始的')
+})
+
+test('a task finished and reopened is offered in Ready to start again, To do (BUG-095)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '可开始')
+  await makeTask(page, pid, '可以开始的')
+  await page.goto(`/projects/${pid}`)
+  let saved = taskPatched(page)
+  await page.getByRole('button', { name: 'Complete “可以开始的”' }).click()
+  await saved
+  saved = taskPatched(page)
+  await page.getByRole('button', { name: 'Reopen “可以开始的”' }).click()
+  await saved
+  expect((await serverTask(page, pid, '可以开始的')).status).toBe('todo')
+  await page.getByRole('link', { name: 'Today' }).click()
+  await expect(block(page, 'Ready to start')).toContainText('可以开始的')
 })
 
 test('This week counts what each project closed, and says when one has gone quiet', async ({

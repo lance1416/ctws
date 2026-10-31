@@ -81,6 +81,14 @@ export const movementQuery = (day: string) =>
   })
 
 /** Leaves that could be started now (FR-041), the server's order. */
+/** A task's own recorded changes, newest first: what a finished one comes back to (BUG-095). */
+export async function taskChanges(id: TaskId): Promise<{ type: string; payload: unknown }[]> {
+  const { entries } = await call(api.timeline.of, {
+    query: { type: 'task', id, kinds: 'change' },
+  })
+  return entries.flatMap((e) => (e.kind === 'change' ? [e.event] : []))
+}
+
 export const readyQuery = (day: string) =>
   queryOptions({
     queryKey: taskKeys.ready(day),

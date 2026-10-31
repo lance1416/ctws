@@ -14,7 +14,7 @@ import { useEveryProject } from '../../../shell/projects'
 import { useRegistry } from '../../../shell/registry'
 import { projectTasksQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
-import { isFinished } from '../logic/status'
+import { isFinished, toggleDoneTarget } from '../logic/status'
 import { blockLength, flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
 import { treeDue } from '../logic/tree/treeDue'
@@ -124,7 +124,12 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
               ) : (
                 <button
                   type="button"
-                  onClick={() => actions.setStatus(t.id, done ? 'todo' : 'done')}
+                  onClick={() => {
+                    // Finished here, it stays where it was to be undone, as on a desk (BUG-095);
+                    // undone, it is what it was before.
+                    if (!done) shown.keep([t.id])
+                    actions.setStatus(t.id, toggleDoneTarget(t.status))
+                  }}
                   aria-label={done ? `Not done “${t.title}”` : `Done “${t.title}”`}
                   className="grid size-11 shrink-0 place-items-center"
                 >

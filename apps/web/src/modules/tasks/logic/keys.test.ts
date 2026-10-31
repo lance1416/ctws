@@ -18,7 +18,7 @@ describe('the status keys', () => {
     run('todo', 'complete')
     run('done', 'complete')
     run('todo', 'start')
-    expect(set).toEqual(['done', 'backlog', 'in_progress'])
+    expect(set).toEqual(['done', 'reopen', 'in_progress'])
   })
 
   it('are not ours with Alt, Ctrl or Meta held', () => {

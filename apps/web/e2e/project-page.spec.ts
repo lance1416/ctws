@@ -392,7 +392,7 @@ test('a node linked to an organisation carries its mark after the name', async (
   await expect(page.locator('[data-row-organisation]')).toHaveCount(1)
 })
 
-test('the open project’s outline in the sidebar lists its parents and its own leaves', async ({
+test('the open project’s outline in the sidebar lists its open parents and its own leaves', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -401,6 +401,10 @@ test('the open project’s outline in the sidebar lists its parents and its own 
   const role = await makeTask(page, pid, 'SDE II, AWS Payments', {}, amazon)
   await makeTask(page, pid, 'System design round', {}, role)
   await makeTask(page, pid, 'Update the LinkedIn headline')
+  // What is finished goes, a leaf or a parent with all it holds, so a long project stays short.
+  await makeTask(page, pid, 'Write the cover letter', { status: 'done' })
+  const shopify = await makeTask(page, pid, 'Shopify')
+  await makeTask(page, pid, 'Final round', { status: 'cancelled' }, shopify)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/projects/${pid}`)
 
