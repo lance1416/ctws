@@ -65,7 +65,9 @@ export function WritingMode({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className={`fixed inset-0 ${LAYER.cover} bg-panel`} />
+        <Dialog.Overlay
+          className={`fixed inset-x-0 top-0 bottom-0 lg:bottom-6 ${LAYER.cover} bg-panel`}
+        />
         <Dialog.Content
           aria-describedby={undefined}
           onEscapeKeyDown={(e) => {
@@ -83,7 +85,7 @@ export function WritingMode({
             if (e.currentTarget instanceof HTMLElement)
               e.currentTarget.querySelector<HTMLElement>('.cm-content, textarea')?.focus()
           }}
-          className={`fixed inset-0 ${LAYER.cover} flex flex-col bg-panel text-ink focus:outline-none`}
+          className={`fixed inset-x-0 top-0 bottom-0 lg:bottom-6 ${LAYER.cover} flex flex-col bg-panel text-ink focus:outline-none`}
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
             <div className="min-w-0">
@@ -98,6 +100,7 @@ export function WritingMode({
               Leave full screen
             </Dialog.Close>
           </div>
+          {/* The status bar stays below it on a desk (its 24, `StatusBar`): vim's mode is there. */}
           {/* The text in the middle; with headings, the outline beside it, the pair centred. */}
           <div className="flex min-h-0 flex-1 justify-center gap-10 overflow-y-auto px-4 py-6">
             <div className="flex w-full max-w-reading min-w-0 flex-col gap-3">
