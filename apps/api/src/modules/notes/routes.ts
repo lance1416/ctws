@@ -6,8 +6,9 @@ import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
 import type { LinkRegistry } from '../../shell/links'
 import { getNote, listNotes, wordCount } from './queries'
+import { createFolder, deleteFolder, listFolders, renameFolder } from './folders'
 import { createNote, deleteNote, updateNote } from './service'
-import type { Note } from './tables'
+import type { Note, NoteFolder } from './tables'
 
 /** Names each note's anchor through the registry, one lookup per kind. */
 async function respond(
@@ -39,12 +40,21 @@ async function respond(
             title: names.get(`${n.anchorType}:${n.anchorId}`) ?? null,
           }
         : null,
+    folderId: n.folderId,
+    pinnedAt: n.pinnedAt?.toISOString() ?? null,
     words: wordCount(n.body),
     heldAt: n.heldAt?.toISOString() ?? null,
     createdAt: n.createdAt.toISOString(),
     updatedAt: n.updatedAt.toISOString(),
   }))
 }
+
+const folderShown = (f: NoteFolder) => ({
+  id: f.id,
+  name: f.name,
+  createdAt: f.createdAt.toISOString(),
+  updatedAt: f.updatedAt.toISOString(),
+})
 
 export const noteRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = async (
   app,
@@ -80,6 +90,22 @@ export const noteRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
 
     on(api.notes.remove, async (req) => {
       await deleteNote(app.db, actorOf(req), req.params.id)
+    }),
+
+    on(api.noteFolders.list, async (req) => ({
+      folders: (await listFolders(app.db, currentUser(req).workspaceId)).map(folderShown),
+    })),
+
+    on(api.noteFolders.create, async (req) =>
+      folderShown(await createFolder(app.db, actorOf(req), req.body)),
+    ),
+
+    on(api.noteFolders.update, async (req) =>
+      folderShown(await renameFolder(app.db, actorOf(req), req.params.id, req.body)),
+    ),
+
+    on(api.noteFolders.remove, async (req) => {
+      await deleteFolder(app.db, actorOf(req), req.params.id)
     }),
   ])
 }

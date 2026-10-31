@@ -8,16 +8,24 @@ import {
 import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
-import { NotFound } from '../../platform/errors'
+import { DomainError, NotFound } from '../../platform/errors'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { instantOf } from '../../platform/zone'
 import { eventLog } from '../../shell/events'
 import { bury } from '../../shell/tombstones'
 import type { LinkRegistry } from '../../shell/links'
 import { syncMentions } from '../../shell/relations'
+import { folderOf } from './folders'
 import { type Note, notes } from './tables'
 
 const subject = (id: NoteId) => ({ type: 'note' as const, id })
+
+/** A note hung on a thing goes where the thing is: no folder, no pin (FR-110). */
+class OnAThing extends DomainError {
+  constructor() {
+    super('conflict', { detail: 'A note on something goes where that thing is' })
+  }
+}
 
 /**
  * The columns an anchor becomes, once the thing is known to be one this workspace can see. A note
@@ -118,10 +126,27 @@ export async function updateNote(
       set.body = patch.body
       await log.append(subject(id), 'edited', {})
     }
-    if (Object.keys(set).length === 0) return row
+    // Where it is kept, not what it says: no edit, so its edited time stays (FR-110).
+    const shelf: Partial<Note> = {}
+    const anchored = ('anchorType' in set ? set.anchorType : row.anchorType) !== null
+    if (patch.folderId !== undefined && patch.folderId !== row.folderId) {
+      if (patch.folderId !== null) {
+        if (anchored) throw new OnAThing()
+        await folderOf(tx, ctx.workspaceId, patch.folderId)
+      }
+      shelf.folderId = patch.folderId
+    }
+    if (patch.pinned !== undefined && patch.pinned !== (row.pinnedAt !== null)) {
+      if (patch.pinned && anchored) throw new OnAThing()
+      shelf.pinnedAt = patch.pinned ? ctx.now : null
+    }
+    // Hung on a thing now: it leaves its folder and its pin.
+    if (anchored && row.anchorType === null)
+      Object.assign(shelf, { folderId: null, pinnedAt: null })
+    if (Object.keys(set).length === 0 && Object.keys(shelf).length === 0) return row
     const [updated] = await tx
       .update(notes)
-      .set({ ...set, updatedAt: ctx.now })
+      .set({ ...shelf, ...set, ...(Object.keys(set).length > 0 ? { updatedAt: ctx.now } : {}) })
       .where(eq(notes.id, id))
       .returning()
     if (set.body !== undefined) await syncMentions(tx, ctx, subject(id), 'body', set.body)

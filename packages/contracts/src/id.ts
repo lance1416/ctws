@@ -46,6 +46,9 @@ export type CommunicationId = z.infer<typeof communicationId>
 export const noteId = idOf<'NoteId'>()
 export type NoteId = z.infer<typeof noteId>
 
+export const noteFolderId = idOf<'NoteFolderId'>()
+export type NoteFolderId = z.infer<typeof noteFolderId>
+
 export const workspaceId = idOf<'WorkspaceId'>()
 export type WorkspaceId = z.infer<typeof workspaceId>
 
