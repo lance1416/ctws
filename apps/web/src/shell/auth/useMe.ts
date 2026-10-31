@@ -1,6 +1,7 @@
 import { api, type MeResponse } from '@ctws/contracts'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, call } from '../../platform/http/api'
+import { setVimKeys } from '../../platform/editor/vim'
 import { setShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { browserZone, ymd } from '../../platform/time/dates'
 import { setServerNow } from '../../platform/time/serverClock'
@@ -24,6 +25,8 @@ export const meQuery = () =>
         if (me.clockPinned) setServerNow(me.now)
         // Single keys on or off is the account's (FR-029); the keyboard reads this copy of it.
         setShortcutsEnabled(me.singleKeyShortcuts)
+        // So are vim's keys in the editor (REQ-002 FR-112).
+        setVimKeys(me.vimKeys)
         return me
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
@@ -65,6 +68,21 @@ export function useSetSingleKeys() {
   // Said at once, before the press's render: the switch is drawn from it.
   return (on: boolean) => {
     setShortcutsEnabled(on)
+    save.mutate(on)
+  }
+}
+
+/** Vim's keys in the editor on or off, kept with the account (FR-112): at once here, then saved. */
+export function useSetVimKeys() {
+  const qc = useQueryClient()
+  const save = useMutation({
+    mutationFn: (on: boolean) => call(api.auth.updateMe, { body: { vimKeys: on } }),
+    meta: { refresh: false },
+    onSuccess: (me) => qc.setQueryData(meKey, me),
+    onError: () => void qc.invalidateQueries({ queryKey: meKey }),
+  })
+  return (on: boolean) => {
+    setVimKeys(on)
     save.mutate(on)
   }
 }

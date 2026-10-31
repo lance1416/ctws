@@ -1,6 +1,7 @@
 import { Fragment, useRef, useState } from 'react'
 import { keyLabel } from '../../platform/keyboard/keys'
 import { singleKeysOf, type KeyTable } from '../../platform/keyboard/keyTable'
+import { useVimKeys } from '../../platform/editor/vim'
 import { useShortcutsEnabled } from '../../platform/keyboard/enabled'
 import { ICON_BUTTON, KEY } from '../../platform/ui/buttonStyles'
 import {
@@ -31,6 +32,9 @@ const switchOrder = (anywhere: KeyTable, tables: readonly KeyTable[]): KeyTable[
 
 type Group = { title: string; icon: IconComponent; tint: string; rows: KeyTable['rows'] }
 
+/** Vim's keys in the editor, listed while they are on (REQ-002 FR-112, artboard 36). */
+const VIM_TITLE = 'In the editor, with Vim keys on'
+
 /**
  * Where each group stands (artboard 24): three columns, a group in its column in this order. A
  * module's table goes where its title says; one with a title not here goes last in the third.
@@ -38,7 +42,7 @@ type Group = { title: string; icon: IconComponent; tint: string; rows: KeyTable[
 const COLUMNS: readonly (readonly string[])[] = [
   ['Anywhere', 'Go to'],
   ['New', 'On a project', 'On a board, with a card focused', 'On the Workbench'],
-  ['In a tree or list, with a row focused', 'In search', 'In a form'],
+  ['In a tree or list, with a row focused', 'In search', 'In a form', VIM_TITLE],
 ]
 
 /**
@@ -49,6 +53,7 @@ const COLUMNS: readonly (readonly string[])[] = [
  */
 export function ShortcutHelp({ onClose }: { onClose: () => void }) {
   const enabled = useShortcutsEnabled()
+  const vim = useVimKeys()
   const setSingleKeys = useSetSingleKeys()
   const registry = useRegistry()
   const [filter, setFilter] = useState('')
@@ -110,6 +115,22 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
         { keys: 'Esc', does: 'Close; what you typed is kept', presses: {} },
       ],
     },
+    // Vim's own, a few to start from; no `:w`, as notes save as they are typed.
+    ...(vim
+      ? [
+          {
+            title: VIM_TITLE,
+            icon: EditIcon,
+            tint: grey,
+            rows: [
+              { keys: 'i', does: 'Type before the cursor', presses: {} },
+              { keys: 'Esc', does: 'Back to Normal; again, close what is open', presses: {} },
+              { keys: 'dd', does: 'Delete the line', presses: {} },
+              { keys: 'u', does: 'Undo', presses: {} },
+            ],
+          },
+        ]
+      : []),
   ]
   // Tables under one title are one group: Today's row keys are the tree's, said once.
   const merged = new Map<string, Group>()

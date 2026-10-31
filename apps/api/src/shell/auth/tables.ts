@@ -29,6 +29,8 @@ export const users = pgTable(
     // Single-key shortcuts on (FR-029): off, only keys with Ctrl or Alt act. Kept with the
     // account, so it stays off on another computer.
     singleKeyShortcuts: boolean('single_key_shortcuts').notNull().default(true),
+    /** The editor takes vim's keys (REQ-002 FR-112): off unless the account turns it on. */
+    vimKeys: boolean('vim_keys').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

@@ -151,7 +151,12 @@ describe('first-user bootstrap', () => {
     const res = await post(ctx, body)
     const cookie = String(res.headers['set-cookie']).split(';')[0]!
     const me = () => ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: { cookie } })
-    expect((await me()).json()).toMatchObject({ singleKeyShortcuts: true, timezone: 'UTC' })
+    // Vim's keys are off until the account turns them on (REQ-002 FR-112).
+    expect((await me()).json()).toMatchObject({
+      singleKeyShortcuts: true,
+      vimKeys: false,
+      timezone: 'UTC',
+    })
     const off = await ctx.app.inject({
       method: 'PATCH',
       url: '/api/v1/auth/me',
@@ -159,8 +164,20 @@ describe('first-user bootstrap', () => {
       payload: { singleKeyShortcuts: false },
     })
     expect(off.statusCode).toBe(200)
-    // The other field is left as it was.
-    expect((await me()).json()).toMatchObject({ singleKeyShortcuts: false, timezone: 'UTC' })
+    // The other fields are left as they were.
+    expect((await me()).json()).toMatchObject({
+      singleKeyShortcuts: false,
+      vimKeys: false,
+      timezone: 'UTC',
+    })
+    const vim = await ctx.app.inject({
+      method: 'PATCH',
+      url: '/api/v1/auth/me',
+      headers: { ...headers, cookie },
+      payload: { vimKeys: true },
+    })
+    expect(vim.statusCode).toBe(200)
+    expect((await me()).json()).toMatchObject({ singleKeyShortcuts: false, vimKeys: true })
     const nothing = await ctx.app.inject({
       method: 'PATCH',
       url: '/api/v1/auth/me',

@@ -337,6 +337,13 @@
       "when": 1793459470502,
       "tag": "0047_note_folders",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793464918408,
+      "tag": "0048_vim_keys",
+      "breakpoints": true
     }
   ]
 }

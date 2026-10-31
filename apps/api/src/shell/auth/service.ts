@@ -133,21 +133,25 @@ export async function setTimezone(db: Queryable, userId: UserId, timezone: strin
   await db.update(users).set({ timezone }).where(eq(users.id, userId))
 }
 
-/** Whether single keys act for this account (FR-029). */
-export async function singleKeyShortcuts(db: Queryable, userId: UserId): Promise<boolean> {
-  const [row] = await db
-    .select({ on: users.singleKeyShortcuts })
-    .from(users)
-    .where(eq(users.id, userId))
-  return row?.on ?? true
-}
-
-export async function setSingleKeyShortcuts(
+/** The account's keyboard choices: single keys (FR-029) and vim's keys (REQ-002 FR-112). */
+export async function keyChoices(
   db: Queryable,
   userId: UserId,
-  on: boolean,
+): Promise<{ singleKeyShortcuts: boolean; vimKeys: boolean }> {
+  const [row] = await db
+    .select({ singleKeyShortcuts: users.singleKeyShortcuts, vimKeys: users.vimKeys })
+    .from(users)
+    .where(eq(users.id, userId))
+  return row ?? { singleKeyShortcuts: true, vimKeys: false }
+}
+
+export async function setKeyChoices(
+  db: Queryable,
+  userId: UserId,
+  choices: { singleKeyShortcuts?: boolean | undefined; vimKeys?: boolean | undefined },
 ): Promise<void> {
-  await db.update(users).set({ singleKeyShortcuts: on }).where(eq(users.id, userId))
+  const set = Object.fromEntries(Object.entries(choices).filter(([, v]) => v !== undefined))
+  if (Object.keys(set).length > 0) await db.update(users).set(set).where(eq(users.id, userId))
 }
 
 /** When the password was last changed here, or null for the one set at sign-up. */

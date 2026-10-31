@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent } from 'react'
+import { keyDone } from '../editor/escape'
 import { useShortcutsEnabled } from './enabled'
 import { isTypingTarget } from './keys'
 import { isOverlayOpen } from './overlayState'
@@ -131,8 +132,9 @@ export function useDocumentKeys<A extends string>(
     if (heldBack(e) === null && isSingleKey(pressOf(e)) && claim?.(e)) e.stopPropagation()
   })
   const onKey = useEffectEvent((e: KeyboardEvent) => {
-    // Answered already where it was pressed (the editor's Ctrl Shift K reads as Ctrl K here).
-    if (e.defaultPrevented) return
+    // Answered already where it was pressed (the editor's Ctrl Shift K reads as Ctrl K here);
+    // not one the editor passed on (its Ctrl K, kept from vim).
+    if (keyDone(e)) return
     if (heldBack(e) !== null) {
       skipped?.()
       return

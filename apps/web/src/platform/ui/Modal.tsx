@@ -8,6 +8,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
+import { escapeInEditor } from '../editor/escape'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
 import { BUTTON } from './buttonStyles'
 import { LAYER } from './layers'
@@ -141,8 +142,10 @@ export function Modal({
                 last.focus()
               }
             }}
-            // Escape on the question is "Keep editing", as it is on a pane's.
+            // Escape on the question is "Keep editing", as it is on a pane's. An editor's own Esc
+            // (its `@` list, vim back to NORMAL) is done for it, and the layer stays (FR-112).
             onEscapeKeyDown={(e) => {
+              if (escapeInEditor()) return e.preventDefault()
               if (!guard.asking) return
               e.preventDefault()
               guard.keep()

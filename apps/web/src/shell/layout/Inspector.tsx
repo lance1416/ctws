@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { keyDone } from '../../platform/editor/escape'
 import { BUTTON, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import {
   BackIcon,
@@ -149,7 +150,7 @@ export function Inspector() {
       back()
       return
     }
-    if (e.key !== 'Escape' || e.defaultPrevented) return
+    if (e.key !== 'Escape' || keyDone(e.nativeEvent)) return
     e.preventDefault()
     close()
   }

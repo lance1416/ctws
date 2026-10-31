@@ -21,6 +21,7 @@ import {
   EmailIcon,
   LightIcon,
   MovedIcon,
+  PLACE_ICON,
   PasswordIcon,
   SignOutIcon,
   SystemIcon,
@@ -30,7 +31,8 @@ import {
 import { Segmented } from '../../platform/ui/Segmented'
 import { applyTheme, onSchemeChange, readTheme, type Theme } from '../../platform/ui/theme'
 import { ZoneBox, zoneFrom } from '../../platform/ui/ZoneBox'
-import { meKey, useMe } from '../auth/useMe'
+import { useVimKeys } from '../../platform/editor/vim'
+import { meKey, useMe, useSetVimKeys } from '../auth/useMe'
 import { useSignOut } from '../layout/signOut'
 import { changePassword, migrationQuery, setTimeZone } from './api'
 
@@ -85,6 +87,9 @@ export function Account() {
           <Row icon={LightIcon} name="Theme">
             <ThemeSwitch />
           </Row>
+        </Block>
+        <Block badge={{ icon: PLACE_ICON.keys, tint: SETTING_TINT }} title="Editing">
+          <VimKeys />
         </Block>
         <Block
           badge={{ icon: PasswordIcon, tint: SETTING_TINT }}
@@ -232,6 +237,38 @@ function ThemeSwitch() {
       current={theme}
       onPick={(id) => applyTheme(id as Theme)}
     />
+  )
+}
+
+const OFF_ON = [
+  { id: 'off', label: 'Off' },
+  { id: 'on', label: 'On' },
+] as const
+
+/**
+ * Vim's keys in every editor but the phone's (REQ-002 FR-112, artboard 36): two choices, so a
+ * segmented switch as for the theme, what it does said beside it.
+ */
+function VimKeys() {
+  const on = useVimKeys()
+  const set = useSetVimKeys()
+  return (
+    <Row icon={PLACE_ICON.keys} name="Vim keys">
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
+        <Segmented
+          label="Vim keys"
+          picks
+          segments={OFF_ON}
+          current={on ? 'on' : 'off'}
+          onPick={(id) => set(id === 'on')}
+        />
+        <p className="max-w-64 text-meta text-muted">
+          {on
+            ? 'Esc goes back to Normal first; press it again to close what is open.'
+            : 'Every note editor: notes, meeting notes, a task’s notes, a message. Not on the phone.'}
+        </p>
+      </div>
+    </Row>
   )
 }
 

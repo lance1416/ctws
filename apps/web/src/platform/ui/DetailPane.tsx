@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { tabbable } from 'tabbable'
+import { keyDone } from '../editor/escape'
 import { useWidePane } from './paneLayout'
 import { CloseIcon } from './icons'
 import { LAYER } from './layers'
@@ -51,7 +52,7 @@ export function DetailPane({
     if (e.key === 'Escape') {
       // A body that backs out of something of its own (a menu, an inline edit) calls
       // `preventDefault`, and the pane stays open.
-      if (e.defaultPrevented) return
+      if (keyDone(e.nativeEvent)) return
       e.preventDefault()
       onClose()
       return

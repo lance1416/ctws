@@ -2,6 +2,7 @@ import type { ObjectType } from '@ctws/contracts'
 import { mentionAddress } from '@ctws/core'
 import {
   autocompletion,
+  closeCompletion,
   completionStatus,
   startCompletion,
   type Completion,
@@ -11,13 +12,16 @@ import {
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
-import { EditorState, Prec, StateEffect, StateField } from '@codemirror/state'
+import { Compartment, EditorState, Prec, StateEffect, StateField } from '@codemirror/state'
 import { EditorView, keymap, placeholder as placeholderText } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
-import { type RefObject, useEffect, useRef } from 'react'
-import { editorKeys, history, pasteLink } from './commands'
+import { type RefObject, useEffect, useRef, useState } from 'react'
+import { editorKeys, history, insertLink, pasteLink } from './commands'
 import { find, findDone, findInNote, type Found, findStep } from './find'
 import { livePreview } from './livePreview'
+import { holdEscape, passOn, releaseEscape } from './escape'
+import { loadVim, reportMode, useVimKeys, vimEscape, vimHoldsEscape } from './vim'
+import { usePhone } from '../ui/phone'
 import { mentionDisplay, type MentionDisplay } from './widgets'
 import './editor.css'
 
@@ -103,33 +107,42 @@ const putAwayKey = Prec.highest(
 )
 
 function mentionSource(mentions: EditorMentions) {
-  return async (context: CompletionContext): Promise<CompletionResult | null> => {
+  // No `@` being typed is said at once, not as a promise: a pending list would take the next Esc
+  // to close it, and vim's Esc out of INSERT with it.
+  return (context: CompletionContext): Promise<CompletionResult | null> | null => {
     const from = mentionStart(context)
     if (from === null || context.state.field(awayAt, false) === from) return null
-    const found = await mentions.search(context.state.sliceDoc(from + 1, context.pos))
-    if (context.aborted) return null
-    // Each kind's heading ranked where search puts it (FR-024): a name alone, CodeMirror would
-    // sort them by their letters, Communications before People (BUG-097).
-    const sections = new Map<string, { name: string; rank: number }>()
-    for (const o of found)
-      if (!sections.has(o.section))
-        sections.set(o.section, { name: o.section, rank: sections.size })
-    return {
-      from,
-      filter: false,
-      options: found.map((o) => {
-        const completion: Completion = {
-          label: o.title,
-          section: sections.get(o.section)!,
-          type: o.type,
-          // Stored as notes store a mention, a space after it as the text box gave one; drawn as
-          // its chip once the cursor leaves the line.
-          apply: `[@${o.title}](${mentionAddress(o.type, o.id)}) `,
-        }
-        optionOf.set(completion, o)
-        return completion
-      }),
-    }
+    return offered(mentions, context, from)
+  }
+}
+
+async function offered(
+  mentions: EditorMentions,
+  context: CompletionContext,
+  from: number,
+): Promise<CompletionResult | null> {
+  const found = await mentions.search(context.state.sliceDoc(from + 1, context.pos))
+  if (context.aborted) return null
+  // Each kind's heading ranked where search puts it (FR-024): a name alone, CodeMirror would
+  // sort them by their letters, Communications before People (BUG-097).
+  const sections = new Map<string, { name: string; rank: number }>()
+  for (const o of found)
+    if (!sections.has(o.section)) sections.set(o.section, { name: o.section, rank: sections.size })
+  return {
+    from,
+    filter: false,
+    options: found.map((o) => {
+      const completion: Completion = {
+        label: o.title,
+        section: sections.get(o.section)!,
+        type: o.type,
+        // Stored as notes store a mention, a space after it as the text box gave one; drawn as
+        // its chip once the cursor leaves the line.
+        apply: `[@${o.title}](${mentionAddress(o.type, o.id)}) `,
+      }
+      optionOf.set(completion, o)
+      return completion
+    }),
   }
 }
 
@@ -187,23 +200,49 @@ export default function MarkdownEditor({
   finds.current = onFind
   const escapes = useRef(onEscape)
   escapes.current = onEscape
+  // Vim's keys, when the account has them and this is not a phone (FR-112): in their own slot.
+  const vimKeys = useVimKeys()
+  const phone = usePhone()
+  const vimOn = vimKeys && !phone
+  const [vimSlot] = useState(() => new Compartment())
+
+  /** Ctrl F, where the page has a find bar; the browser's otherwise. */
+  const findKey = {
+    key: 'Mod-f',
+    run: () => {
+      if (!finds.current) return false
+      finds.current()
+      return true
+    },
+  }
+
+  /**
+   * This editor's Esc, for a layer that hears it first (`escapeInEditor`): its `@` list closed, or
+   * vim back to NORMAL; anything else is the layer's.
+   */
+  const [takeEscape] = useState(() => () => {
+    const v = view.current
+    if (!v) return false
+    if (completionStatus(v.state)) {
+      closeCompletion(v)
+      return true
+    }
+    if (!vimHoldsEscape(v)) return false
+    vimEscape(v)
+    return true
+  })
 
   useEffect(() => {
     const extensions = [
+      vimSlot.of([]),
       history(),
       keymap.of([
-        {
-          key: 'Mod-f',
-          run: () => {
-            if (!finds.current) return false
-            finds.current()
-            return true
-          },
-        },
+        findKey,
         {
           key: 'Escape',
-          run: () => {
-            if (!escapes.current) return false
+          // Not while vim holds it: its Esc is back to NORMAL first (FR-112).
+          run: (v) => {
+            if (!escapes.current || vimHoldsEscape(v)) return false
             escapes.current()
             return true
           },
@@ -224,6 +263,8 @@ export default function MarkdownEditor({
           changed.current(text)
         }
         if (u.docChanged || u.selectionSet) moved.current?.(u.state.selection.main.head)
+        if (u.selectionSet || u.focusChanged) reportMode(u.view, u.view.hasFocus)
+        if (u.focusChanged) (u.view.hasFocus ? holdEscape : releaseEscape)(takeEscape)
       }),
     ]
     if (placeholder) extensions.push(placeholderText(placeholder))
@@ -283,12 +324,69 @@ export default function MarkdownEditor({
         startCompletion(created)
     }
     return () => {
+      reportMode(created, false)
+      releaseEscape(takeEscape)
       created.destroy()
       view.current = null
       if (handle) handle.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one view per mount; `value` follows below.
   }, [])
+
+  // Vim's keys taken on or off; fetched the first time they are wanted.
+  useEffect(() => {
+    const v = view.current
+    if (!v) return
+    if (!vimOn) {
+      v.dispatch({ effects: vimSlot.reconfigure([]) })
+      reportMode(v, false)
+      return
+    }
+    let gone = false
+    void loadVim().then(({ vim, getCM }) => {
+      const at = view.current
+      if (gone || !at) return
+      at.dispatch({
+        effects: vimSlot.reconfigure([
+          // Ahead of vim's own: Esc in NORMAL is the page's, and Ctrl F and Ctrl Shift K stay
+          // the editor's, not vim's paging (artboard 34, "Vim, when it is on").
+          Prec.highest([
+            EditorView.domEventHandlers({
+              keydown: (e, editor) => {
+                // Ctrl K is search everywhere (FR-029), never vim's: passed on untouched.
+                const mod = e.ctrlKey || e.metaKey
+                if (mod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
+                  passOn(e)
+                  return true
+                }
+                if (e.key !== 'Escape') return false
+                // A list about to be asked for (CodeMirror waits a beat after each key) would take
+                // a quick Esc; in INSERT that Esc is vim's.
+                if (completionStatus(editor.state) === 'pending') closeCompletion(editor)
+                if (vimHoldsEscape(editor)) return false
+                if (completionStatus(editor.state)) return false
+                if (escapes.current) {
+                  escapes.current()
+                  e.preventDefault()
+                }
+                // Not the editor's: it goes on to the pane or layer around it, which closes.
+                passOn(e)
+                return true
+              },
+            }),
+            keymap.of([findKey, { key: 'Shift-Mod-k', run: insertLink }]),
+          ]),
+          vim(),
+        ]),
+      })
+      getCM(at)?.on('vim-mode-change', () => reportMode(at, at.hasFocus))
+      reportMode(at, at.hasFocus)
+    })
+    return () => {
+      gone = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the slot and its keys are this editor's.
+  }, [vimOn])
 
   // A value from outside (a save's answer, another tab) replaces the text when it differs.
   useEffect(() => {

@@ -37,7 +37,7 @@ const toggleWrap =
  * Ctrl Shift K (FR-029, REQ-002 §5): the selection becomes a link's words, the cursor where the
  * address goes; with nothing selected, `[]()` with the cursor in the words.
  */
-const insertLink: StateCommand = ({ state, dispatch }) => {
+export const insertLink: StateCommand = ({ state, dispatch }) => {
   const tr = state.changeByRange((range) => {
     const words = state.sliceDoc(range.from, range.to)
     const insert = `[${words}]()`

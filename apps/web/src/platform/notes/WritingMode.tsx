@@ -4,6 +4,7 @@ import { FindBar } from '../editor/FindBar'
 import type { EditorHandle } from '../editor/MarkdownEditor'
 import { outlineOf, sectionAt } from '../editor/outline'
 import { OutlineNav } from '../editor/OutlineNav'
+import { escapeInEditor } from '../editor/escape'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
 import { BUTTON } from '../ui/buttonStyles'
 import { LAYER } from '../ui/layers'
@@ -71,13 +72,10 @@ export function WritingMode({
         <Dialog.Content
           aria-describedby={undefined}
           onEscapeKeyDown={(e) => {
-            // Esc that is the find bar's or the `@` list's closes those, not the layer.
+            // Esc that is the find bar's is the bar's; the editor's (its `@` list, vim back to
+            // NORMAL) is done here, as the editor will not see a key the layer has kept.
             const at = e.target instanceof Element ? e.target : null
-            if (
-              at?.closest('[role="search"]') ||
-              document.querySelector('.cm-tooltip-autocomplete')
-            )
-              e.preventDefault()
+            if (at?.closest('[role="search"]') || escapeInEditor()) e.preventDefault()
           }}
           onOpenAutoFocus={(e) => {
             // Into the text, the editor or the box standing in for it while it loads.

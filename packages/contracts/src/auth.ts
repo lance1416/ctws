@@ -28,12 +28,15 @@ export const loginBody = z
   .strict()
 
 /** The account's own settings it may change (artboard 30): its zone, for now. */
-/** What the account page changes: its time zone, and whether single keys act (FR-029). */
+/**
+ * What the account page changes: its time zone, whether single keys act (FR-029), and whether the
+ * editor takes vim's keys (REQ-002 FR-112).
+ */
 export const updateMeBody = z
-  .object({ timezone: canonicalTimeZone, singleKeyShortcuts: z.boolean() })
+  .object({ timezone: canonicalTimeZone, singleKeyShortcuts: z.boolean(), vimKeys: z.boolean() })
   .partial()
   .strict()
-  .refine((b) => b.timezone !== undefined || b.singleKeyShortcuts !== undefined, {
+  .refine((b) => Object.values(b).some((v) => v !== undefined), {
     message: 'nothing to change',
   })
 
@@ -67,6 +70,8 @@ export const meResponse = userResponse.extend({
   passwordChangedAt: instant.nullable(),
   /** Whether keys without Ctrl or Alt act (FR-029); kept with the account. */
   singleKeyShortcuts: z.boolean(),
+  /** Whether the editor takes vim's keys on a desk (REQ-002 FR-112); off unless turned on. */
+  vimKeys: z.boolean(),
 })
 
 export type MeResponse = z.infer<typeof meResponse>

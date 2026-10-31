@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "vim_keys" boolean DEFAULT false NOT NULL;
