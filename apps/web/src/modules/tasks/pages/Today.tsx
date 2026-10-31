@@ -268,28 +268,30 @@ function PlannedBlock({
 }) {
   const ready = useQuery({ ...readyQuery(day), enabled: planned.length === 0 })
   const badge = { icon: PLACE_ICON.calendar, tint: 'bg-hover text-muted' }
+  const offered = offeredReady(ready.data ?? [], listed).slice(0, SHOWN)
+  // Nothing planned and nothing to offer: its head alone, as any empty block is.
+  if (planned.length === 0 && offered.length === 0)
+    return <Block badge={badge} title="Planned for today" empty="Nothing yet" />
   if (planned.length === 0)
     return (
       <Block badge={badge} title="Planned for today" count="Nothing yet">
         <ul className="p-1.5">
-          {offeredReady(ready.data ?? [], listed)
-            .slice(0, SHOWN)
-            .map((t) => (
-              <li key={t.id} data-plan-row={t.id} className={LINE}>
-                {/* Its status, as every task row starts (C-04). */}
-                <StatusMark status={t.status} size={16} />
-                <span className="truncate text-ui text-ink">{t.title}</span>
-                <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
-                <span className="max-lg:hidden" />
-                <RowAction
-                  label={`Plan “${t.title}” for today`}
-                  onPress={() => onPlan(t.id)}
-                  className="justify-self-end"
-                >
-                  Plan
-                </RowAction>
-              </li>
-            ))}
+          {offered.map((t) => (
+            <li key={t.id} data-plan-row={t.id} className={LINE}>
+              {/* Its status, as every task row starts (C-04). */}
+              <StatusMark status={t.status} size={16} />
+              <span className="truncate text-ui text-ink">{t.title}</span>
+              <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
+              <span className="max-lg:hidden" />
+              <RowAction
+                label={`Plan “${t.title}” for today`}
+                onPress={() => onPlan(t.id)}
+                className="justify-self-end"
+              >
+                Plan
+              </RowAction>
+            </li>
+          ))}
         </ul>
       </Block>
     )
