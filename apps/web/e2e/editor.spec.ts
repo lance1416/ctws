@@ -281,3 +281,18 @@ test('@ lists kinds in search’s order, people first, and Enter takes the first
   await page.keyboard.press('Enter')
   await expect.poll(() => stored(page, id)).toBe(`Ask [@Mira Chen](ctws://person/${mira.id})`)
 })
+
+test('the editor arriving late takes no focus from a menu opened meanwhile', async ({ page }) => {
+  await registerFreshUser(page)
+  const note = await apiPost<{ id: string }>(page, '/notes', { title: 'Prep', body: 'Words.' })
+  // Its code held back, as on a slow line.
+  await page.route(/MarkdownEditor/, async (route) => {
+    await new Promise((r) => setTimeout(r, 1500))
+    await route.continue()
+  })
+  await page.goto(`/notes/${note.id}`)
+  await page.getByRole('button', { name: 'More', exact: true }).click()
+  await expect(page.getByRole('menuitem', { name: 'Download .md' })).toBeVisible()
+  await expect(page.locator('[data-markdown-editor] .cm-content')).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Download .md' })).toBeVisible()
+})

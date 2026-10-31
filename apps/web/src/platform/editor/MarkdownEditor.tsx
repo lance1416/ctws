@@ -196,7 +196,10 @@ export default function MarkdownEditor({
         findStep: (step) => findStep(created, step),
         findDone: () => findDone(created),
       }
-    if (autoFocus) created.focus()
+    // Arrived late (its code is fetched on first use), it takes the focus only if nothing has it
+    // since: a menu opened meanwhile stays open.
+    const free = document.activeElement === null || document.activeElement === document.body
+    if (autoFocus && free) created.focus()
     return () => {
       created.destroy()
       view.current = null
