@@ -189,6 +189,42 @@ describe('refreshing after a write', () => {
     people.stop()
   })
 
+  it('does not ask again for what a write removed, still watched or not', async () => {
+    const qc = client()
+    const list = watch(qc, ['tasks', 'list', 'p1'])
+    const gone = watch(qc, ['tasks', 'one', 't1'])
+    const itsLinks = watch(qc, ['tasks', 'dependencies', 't1'])
+    await vi.waitFor(() => expect(itsLinks.read).toHaveBeenCalledTimes(1))
+    await write(qc, {
+      changes: ['task'],
+      gone: [
+        ['tasks', 'one', 't1'],
+        ['tasks', 'dependencies', 't1'],
+      ],
+    })
+    await settle()
+    expect(list.read).toHaveBeenCalledTimes(2)
+    expect(gone.read).toHaveBeenCalledTimes(1)
+    expect(itsLinks.read).toHaveBeenCalledTimes(1)
+    for (const w of [list, gone, itsLinks]) w.stop()
+  })
+
+  it('asks again for what a failed write meant to remove', async () => {
+    const qc = client()
+    const one = watch(qc, ['tasks', 'one', 't1'])
+    await vi.waitFor(() => expect(one.read).toHaveBeenCalledTimes(1))
+    const failing = new MutationObserver(qc, {
+      mutationFn: async () => {
+        throw new Error('refused')
+      },
+      meta: { changes: ['task'], gone: [['tasks', 'one', 't1']] },
+    })
+    await failing.mutate().catch(() => undefined)
+    await settle()
+    expect(one.read).toHaveBeenCalledTimes(2)
+    one.stop()
+  })
+
   it('leaves the cache alone for a write that opts out', async () => {
     const qc = client()
     const me = watch(qc, ['me'])

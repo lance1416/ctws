@@ -133,6 +133,8 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
               )}
               <button
                 type="button"
+                // The row's focus carrier, as the desk tree's handle is (BUG-094).
+                data-handle-id={t.id}
                 onClick={() => inspect({ type: 'task', id: t.id })}
                 className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1 self-stretch py-2 text-left"
               >
@@ -173,6 +175,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
           <li>
             <button
               type="button"
+              data-tree-new-task
               onClick={() => openNew(creator)}
               className="flex min-h-12 w-full items-center gap-3 px-4 text-prose text-muted"
             >

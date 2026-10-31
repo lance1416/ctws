@@ -19,6 +19,11 @@ declare module '@tanstack/react-query' {
       changes?: readonly ObjectType[]
       /** Query keys this write waits for; the rest refetch without being waited on. */
       awaits?: readonly QueryKey[]
+      /**
+       * Queries of what the write removed (a deleted task's own reads): once it has landed they are
+       * not asked again, even while still on screen, since what they read answers 404.
+       */
+      gone?: readonly QueryKey[]
       /** False for a write after which nothing should refetch (signing out). */
       refresh?: false
       /** True for a write that says its own failure where it happened; else the frame says it. */
@@ -40,16 +45,18 @@ const matches = (keys: readonly QueryKey[]) => (query: Query) =>
  * After a write the `stale` queries are stale: the watched ones refetch now, the rest on their
  * next mount. Resolves once the `awaits` ones are back. Their in-flight reads are cancelled first,
  * because invalidating a query that has no data yet reuses its in-flight fetch, whose answer
- * predates the write.
+ * predates the write. The `gone` ones are cancelled and left: what they read is no more.
  */
 export async function refreshQueries(
   qc: QueryClient,
   stale: Stale,
   awaits: readonly QueryKey[] = [],
+  gone: readonly QueryKey[] = [],
 ): Promise<void> {
-  const isStale = stale === 'all' ? () => true : matches(stale)
-  const isAwaited = matches(awaits)
-  await qc.cancelQueries({ predicate: (q) => isStale(q) || isAwaited(q) })
+  const isGone = matches(gone)
+  const isStale = (q: Query) => !isGone(q) && (stale === 'all' || matches(stale)(q))
+  const isAwaited = (q: Query) => !isGone(q) && matches(awaits)(q)
+  await qc.cancelQueries({ predicate: (q) => isStale(q) || isAwaited(q) || isGone(q) })
   void qc.invalidateQueries({ predicate: (q) => isStale(q) && !isAwaited(q) })
   if (awaits.length > 0) await qc.invalidateQueries({ predicate: isAwaited })
 }
@@ -68,24 +75,29 @@ const union = (a: Stale, b: Stale): Stale => (a === 'all' || b === 'all' ? 'all'
  */
 export function refreshAfterWrites(client: () => QueryClient, staleFor: StaleFor): MutationCache {
   let owed: Stale = []
-  const refresh = async (meta: Mutation['meta']) => {
+  let removed: QueryKey[] = []
+  const refresh = async (meta: Mutation['meta'], landed: boolean) => {
     if (meta?.refresh === false) return
     owed = union(owed, meta?.changes ? staleFor(meta.changes) : 'all')
+    // Only a write that landed removed anything; a failed one left it all in place.
+    if (landed) removed = [...removed, ...(meta?.gone ?? [])]
     const qc = client()
     // The write being settled is still counted; one that refreshes nothing (a capture wrapping
     // the write that does) is not waited for.
     if (qc.isMutating({ predicate: (m) => m.meta?.refresh !== false }) > 1) return
     const stale = owed
+    const gone = removed
     owed = []
-    await refreshQueries(qc, stale, meta?.awaits)
+    removed = []
+    await refreshQueries(qc, stale, meta?.awaits, gone)
   }
   return new MutationCache({
     onMutate: () => clearWriteFailure(),
     onError: (error, _variables, _context, mutation) => {
       if (!mutation.meta?.ownsError) reportWriteFailure(error)
     },
-    onSuccess: (_data, _variables, _context, mutation) => refresh(mutation.meta),
+    onSuccess: (_data, _variables, _context, mutation) => refresh(mutation.meta, true),
     onSettled: (_data, error, _variables, _context, mutation) =>
-      error ? refresh(mutation.meta) : undefined,
+      error ? refresh(mutation.meta, false) : undefined,
   })
 }

@@ -8,6 +8,7 @@ import {
   registerFreshUser,
   serverTasks,
   taskPatched,
+  WEB,
 } from './helpers'
 
 // Deleting a task, and the panel's guard against losing edits on navigation. Every claim about
@@ -276,26 +277,37 @@ test('a task deleted in the inspector takes the inspector with it (BUG-090)', as
   expect(await serverTasks(page, pid)).toHaveLength(0)
 })
 
+/**
+ * Every read of the task or its dependencies from now on, as "status path": once Delete is
+ * pressed there should be none, since what they read is gone (BUG-094).
+ */
+function readsOf(page: Page, id: string): string[] {
+  const asked: string[] = []
+  page.on('response', (r) => {
+    const path = new URL(r.url()).pathname
+    if (path.startsWith(`/api/v1/tasks/${id}`) && r.request().method() === 'GET')
+      asked.push(`${r.status()} ${path}`)
+  })
+  return asked
+}
+
 test('deleted from its pane, a tree’s task hands focus to the row above, asked for no more (BUG-094)', async ({
   page,
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '列提纲')
+  const first = await makeTask(page, pid, '列提纲')
   const id = await makeTask(page, pid, '写方案')
+  // Waiting on the row above, so what shows it reads its dependencies too.
+  await page.request.put(`/api/v1/tasks/${id}/dependencies/${first}`, { headers: WEB })
   await makeTask(page, pid, '改稿')
   await page.goto(`/projects/${pid}`)
   await openDetail(page, '写方案')
   const pane = page.getByRole('dialog', { name: 'Task details' })
   await expect(pane).toContainText('写方案')
-  // Every read of it from the Delete on: there should be none.
-  const asked: number[] = []
-  page.on('response', (r) => {
-    if (new URL(r.url()).pathname === `/api/v1/tasks/${id}` && r.request().method() === 'GET')
-      asked.push(r.status())
-  })
   await editDetail(page)
   await pane.getByRole('button', { name: 'Delete task' }).click()
+  const asked = readsOf(page, id)
   await page
     .getByRole('alertdialog', { name: 'Confirm deleting this task' })
     .getByRole('button', { name: 'Delete' })
@@ -311,18 +323,16 @@ test('deleted in the inspector beside its tree, a task hands focus to the row ab
 }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  await makeTask(page, pid, '列提纲')
+  const first = await makeTask(page, pid, '列提纲')
   const id = await makeTask(page, pid, '写方案')
+  // Waiting on the row above, so what shows it reads its dependencies too.
+  await page.request.put(`/api/v1/tasks/${id}/dependencies/${first}`, { headers: WEB })
   await page.goto(`/projects/${pid}?inspect=task:${id}`)
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   await expect(inspector).toContainText('写方案')
-  const asked: number[] = []
-  page.on('response', (r) => {
-    if (new URL(r.url()).pathname === `/api/v1/tasks/${id}` && r.request().method() === 'GET')
-      asked.push(r.status())
-  })
   await inspector.getByRole('button', { name: 'Edit', exact: true }).last().click()
   await inspector.getByRole('button', { name: 'Delete task' }).click()
+  const asked = readsOf(page, id)
   await page
     .getByRole('alertdialog', { name: 'Confirm deleting this task' })
     .getByRole('button', { name: 'Delete' })
@@ -331,4 +341,34 @@ test('deleted in the inspector beside its tree, a task hands focus to the row ab
   await expect(page.getByRole('button', { name: 'Task: 写方案', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Task: 列提纲', exact: true })).toBeFocused()
   expect(asked).toEqual([])
+})
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true })
+
+  test('deleted from its sheet, a task hands focus to the row above, asked for no more (BUG-094)', async ({
+    page,
+  }) => {
+    await registerFreshUser(page)
+    const pid = await makeProject(page, 'P')
+    const first = await makeTask(page, pid, '列提纲')
+    const id = await makeTask(page, pid, '写方案')
+    await page.request.put(`/api/v1/tasks/${id}/dependencies/${first}`, { headers: WEB })
+    await page.goto(`/projects/${pid}`)
+    await page.locator(`[data-handle-id="${id}"]`).click()
+    // On a phone the inspector is a sheet over the page.
+    const sheet = page.getByRole('complementary', { name: 'Inspector' })
+    await expect(sheet).toBeVisible()
+    await sheet.getByRole('button', { name: 'Edit', exact: true }).last().click()
+    await page.getByRole('button', { name: 'Delete task' }).click()
+    const asked = readsOf(page, id)
+    await page
+      .getByRole('dialog')
+      .last()
+      .getByRole('button', { name: 'Delete', exact: true })
+      .click()
+    await expect(page.locator(`[data-handle-id="${id}"]`)).toHaveCount(0)
+    await expect(page.locator(`[data-handle-id="${first}"]`)).toBeFocused()
+    expect(asked).toEqual([])
+  })
 })

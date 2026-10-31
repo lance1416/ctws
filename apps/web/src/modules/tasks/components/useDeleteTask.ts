@@ -1,9 +1,8 @@
 import type { TaskResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { flushSync } from 'react-dom'
 import { useForgetRecent } from '../../../shell/search'
-import { deleteTask, projectTasksQuery } from '../api'
+import { deleteTask, projectTasksQuery, taskKeys } from '../api'
 import { WRITE_AWAITS } from './useTaskDetailForm'
 
 /**
@@ -36,14 +35,18 @@ export function useDeleteTask(
   }
   const forget = useForgetRecent()
   const remove = useMutation({
-    mutationFn: async () => {
-      await deleteTask(task.id)
-      // Before the write's refresh, and at once: what showed it stops reading it, so the refresh
-      // does not ask for what is gone and get a 404 (BUG-094).
-      flushSync(() => onDeleted?.())
+    mutationFn: () => deleteTask(task.id),
+    meta: {
+      changes: ['task'],
+      awaits: WRITE_AWAITS,
+      ownsError: true,
+      // Still on screen while the refresh runs, its own reads are not asked again (BUG-094).
+      gone: [taskKeys.one(task.id), taskKeys.dependencies(task.id)],
     },
-    meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
-    onSuccess: () => forget('task', task.id),
+    onSuccess: () => {
+      forget('task', task.id)
+      onDeleted?.()
+    },
   })
   const message =
     descendants === null

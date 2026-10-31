@@ -87,6 +87,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
                 ref={box}
                 {...field}
                 data-bare
+                data-tree-new-task
                 placeholder="New task"
                 aria-label="New task"
                 aria-invalid={invalid}
