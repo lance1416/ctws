@@ -134,7 +134,7 @@ export function OutlineNav({
           : 'self-stretch bg-ground'
       }`}
     >
-      <nav aria-label="Outline" className="sticky top-0 max-h-dvh overflow-y-auto px-3 py-4">
+      <div className="sticky top-0 max-h-dvh overflow-y-auto px-3 py-4">
         <div className="flex items-center justify-between pb-2 pl-2">
           <h2 className="text-meta text-muted">Outline</h2>
           <button
@@ -147,27 +147,29 @@ export function OutlineNav({
             <BarExpandIcon size={16} aria-hidden="true" />
           </button>
         </div>
-        <ul className="flex flex-col gap-px">
-          {headings.map((h) => {
-            const here = h === current
-            return (
-              <li key={h.offset}>
-                <button
-                  type="button"
-                  aria-current={here ? 'location' : undefined}
-                  onClick={() => onJump(h)}
-                  className={`w-full rounded-control px-2 py-1 text-left text-ui hover:bg-hover ${
-                    h.depth === 2 ? 'pl-5' : ''
-                  } ${here ? 'bg-select text-ink' : 'text-muted'}`}
-                >
-                  {/* Two lines of a long heading before it is cut. */}
-                  <span className="line-clamp-2">{h.words}</span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
+        <nav aria-label="Outline">
+          <ul className="flex flex-col gap-px">
+            {headings.map((h) => {
+              const here = h === current
+              return (
+                <li key={h.offset}>
+                  <button
+                    type="button"
+                    aria-current={here ? 'location' : undefined}
+                    onClick={() => onJump(h)}
+                    className={`w-full rounded-control px-2 py-1 text-left text-ui hover:bg-hover ${
+                      h.depth === 2 ? 'pl-5' : ''
+                    } ${here ? 'bg-select text-ink' : 'text-muted'}`}
+                  >
+                    {/* Two lines of a long heading before it is cut. */}
+                    <span className="line-clamp-2">{h.words}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+      </div>
     </aside>
   )
 }

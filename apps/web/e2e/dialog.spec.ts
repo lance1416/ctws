@@ -418,6 +418,7 @@ test('the ? list is the board’s three columns, and its switch names the keys i
     'In a tree or list, with a row focused',
     'In search',
     'In a form',
+    'On a note',
   ])
   await expect(help).toContainText('Fold, or go to the parent')
   await expect(help).toContainText('Open a pinned resource')

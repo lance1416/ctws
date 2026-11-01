@@ -8,10 +8,21 @@ import { keyDone } from './focused'
 export const OUTLINE_KEYS = '] or Ctrl+Alt+B'
 export const SOURCE_KEYS = 'Ctrl+Shift+V'
 
-/** Whether a press is one of the page's own, which the editor and its vim pass on untouched. */
-export const isNoteKey = (e: KeyboardEvent): boolean =>
+/**
+ * The outline's: Ctrl Alt B, and Ctrl \ as Notion folds its side bar, in case a browser keeps the
+ * first to itself (Safari and Chrome file bookmarks with ⌘⌥B on a Mac); the one kept is decided
+ * on a real Safari.
+ */
+const isOutlineKey = (e: KeyboardEvent) =>
   (e.ctrlKey || e.metaKey) &&
-  ((e.altKey && !e.shiftKey && e.code === 'KeyB') || (e.shiftKey && !e.altKey && e.code === 'KeyV'))
+  !e.shiftKey &&
+  ((e.altKey && e.code === 'KeyB') || (!e.altKey && e.code === 'Backslash'))
+
+const isSourceKey = (e: KeyboardEvent) =>
+  (e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && e.code === 'KeyV'
+
+/** Whether a press is one of the page's own, which the editor and its vim pass on untouched. */
+export const isNoteKey = (e: KeyboardEvent): boolean => isOutlineKey(e) || isSourceKey(e)
 
 /**
  * The keys of a note's whole page: `]` hides or shows the outline when nothing is being typed, as
@@ -29,7 +40,8 @@ export function useNoteKeys(
     if (keyDone(e) || (isOverlayOpen() && !inOverlay)) return
     const mod = e.ctrlKey || e.metaKey
     let run: (() => void) | undefined
-    if (isNoteKey(e)) run = e.code === 'KeyB' ? outline : source
+    if (isOutlineKey(e)) run = outline
+    else if (isSourceKey(e)) run = source
     else if (e.key === ']' && !mod && !e.altKey && singleKeys && !isTypingTarget(e.target))
       run = outline
     if (!run) return
