@@ -44,8 +44,8 @@ const VIM_TITLE = 'In the editor, with Vim keys on'
  * module's table goes where its title says; one with a title not here goes last in the third.
  */
 const COLUMNS: readonly (readonly string[])[] = [
-  ['Anywhere', 'Go to'],
-  ['New', 'On a project', 'On a board, with a card focused', 'On the Workbench', NOTE_TITLE],
+  ['Anywhere', 'Go to', NOTE_TITLE],
+  ['New', 'On a project', 'On a board, with a card focused', 'On the Workbench'],
   ['In a tree or list, with a row focused', 'In search', 'In a form', VIM_TITLE],
 ]
 
@@ -177,99 +177,105 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal title="Keyboard shortcuts" onClose={onClose} initialFocus={box} palette wide>
-      <div className="flex h-14 items-center gap-3 border-b border-line pr-3 pl-5">
-        <span className="inline-grid size-7 place-items-center rounded-control bg-hover text-muted">
-          <PLACE_ICON.keys size={16} aria-hidden="true" />
-        </span>
-        <h2 className="text-subject text-ink">Keyboard shortcuts</h2>
-        <span aria-hidden="true" className="flex-1" />
-        <label
-          data-field
-          className="flex h-7.5 w-70 items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-subtle"
-        >
-          <PLACE_ICON.search size={16} aria-hidden="true" />
-          <input
-            ref={box}
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter keys"
-            aria-label="Filter keys"
-            className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
-          />
-        </label>
-        <button type="button" onClick={onClose} aria-label="Close" className={ICON_BUTTON}>
-          <CloseIcon size={16} aria-hidden="true" />
-        </button>
-      </div>
+      {/* No taller than the window less 88 (artboard 24): the head and the two lines at the foot
+          stay, the columns between scroll in the layer, so the foot is always in sight. */}
+      <div className="flex max-h-[calc(100dvh-88px)] flex-col">
+        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line pr-3 pl-5">
+          <span className="inline-grid size-7 place-items-center rounded-control bg-hover text-muted">
+            <PLACE_ICON.keys size={16} aria-hidden="true" />
+          </span>
+          <h2 className="text-subject text-ink">Keyboard shortcuts</h2>
+          <span aria-hidden="true" className="flex-1" />
+          <label
+            data-field
+            className="flex h-7.5 w-70 items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-subtle"
+          >
+            <PLACE_ICON.search size={16} aria-hidden="true" />
+            <input
+              ref={box}
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter keys"
+              aria-label="Filter keys"
+              className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+            />
+          </label>
+          <button type="button" onClick={onClose} aria-label="Close" className={ICON_BUTTON}>
+            <CloseIcon size={16} aria-hidden="true" />
+          </button>
+        </div>
 
-      {shown.length === 0 ? (
-        <p className="px-5 py-6 text-ui text-muted">No keys match “{filter.trim()}”.</p>
-      ) : (
-        <div className="grid grid-cols-3 gap-x-8 px-5 pt-4 pb-1 max-lg:grid-cols-2 max-sm:grid-cols-1">
-          {placed.map((column, i) => (
-            <div key={i} className="flex min-w-0 flex-col">
-              {column.map((g) => (
-                <section key={g.title} className="mb-4">
-                  <h3 className="flex h-8 items-center gap-2 text-ui font-medium text-ink">
-                    <span
-                      className={`inline-grid size-5 place-items-center rounded-control ${g.tint}`}
-                    >
-                      <g.icon size={12} aria-hidden="true" />
-                    </span>
-                    {g.title}
-                  </h3>
-                  <dl>
-                    {g.rows.map((row) => (
-                      <div
-                        key={`${g.title}-${row.keys}`}
-                        className="grid min-h-7 grid-cols-[7.25rem_minmax(0,1fr)_auto] items-center gap-x-2.5"
-                      >
-                        <dt className="flex flex-wrap items-center gap-1">
-                          <Caps keys={row.keys} />
-                        </dt>
-                        <dd className="text-ui text-ink">{row.does}</dd>
-                        <dd className="text-meta whitespace-nowrap text-warn-t">
-                          {row.was ? `was ${row.was}` : ''}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
+        <div className="min-h-0 overflow-y-auto">
+          {shown.length === 0 ? (
+            <p className="px-5 py-6 text-ui text-muted">No keys match “{filter.trim()}”.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-x-8 px-5 pt-4 pb-1 max-lg:grid-cols-2 max-sm:grid-cols-1">
+              {placed.map((column, i) => (
+                <div key={i} className="flex min-w-0 flex-col">
+                  {column.map((g) => (
+                    <section key={g.title} className="mb-4">
+                      <h3 className="flex h-8 items-center gap-2 text-ui font-medium text-ink">
+                        <span
+                          className={`inline-grid size-5 place-items-center rounded-control ${g.tint}`}
+                        >
+                          <g.icon size={12} aria-hidden="true" />
+                        </span>
+                        {g.title}
+                      </h3>
+                      <dl>
+                        {g.rows.map((row) => (
+                          <div
+                            key={`${g.title}-${row.keys}`}
+                            className="grid min-h-7 grid-cols-[7.25rem_minmax(0,1fr)_auto] items-center gap-x-2.5"
+                          >
+                            <dt className="flex flex-wrap items-center gap-1">
+                              <Caps keys={row.keys} />
+                            </dt>
+                            <dd className="text-ui text-ink">{row.does}</dd>
+                            <dd className="text-meta whitespace-nowrap text-warn-t">
+                              {row.was ? `was ${row.was}` : ''}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
 
-      {/* Single-key shortcuts take keys from assistive technology, so they can be turned off
+        {/* Single-key shortcuts take keys from assistive technology, so they can be turned off
           (WCAG 2.1.4). Last in the list: one line, the keys as caps, and the switch. Arrows,
           Enter, Esc and Alt combinations stay: a treeview cannot work without them. */}
-      <label className="mx-5 mb-4 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-ui text-ink">
-        <input
-          type="checkbox"
-          role="switch"
-          checked={enabled}
-          onChange={(e) => setSingleKeys(e.target.checked)}
-          className="size-4 accent-ink"
-        />
-        Single-key shortcuts
-        <span className="inline-flex flex-wrap items-center gap-1">
-          {spans(singles).map((k) => (
-            <kbd key={k} className={KEY}>
-              {k.toUpperCase()}
-            </kbd>
-          ))}
-        </span>
-        <span className="text-meta text-subtle">
-          Arrows, Enter, Esc and {keyLabel('keys with Ctrl or Alt')} always work. Kept with your
-          account.
-        </span>
-      </label>
-      <div className="flex h-10 items-center gap-2 rounded-b-block border-t border-line bg-chrome px-5 text-meta">
-        <span className="text-warn-t">was …</span>
-        <span className="text-subtle">This key changes in the redesign.</span>
-        <span aria-hidden="true" className="flex-1" />
-        <span className="text-subtle">Hover any button to see its key.</span>
+        <label className="mx-5 mt-2 mb-4 flex shrink-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 text-ui text-ink">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={enabled}
+            onChange={(e) => setSingleKeys(e.target.checked)}
+            className="size-4 accent-ink"
+          />
+          Single-key shortcuts
+          <span className="inline-flex flex-wrap items-center gap-1">
+            {spans(singles).map((k) => (
+              <kbd key={k} className={KEY}>
+                {k.toUpperCase()}
+              </kbd>
+            ))}
+          </span>
+          <span className="text-meta text-subtle">
+            Arrows, Enter, Esc and {keyLabel('keys with Ctrl or Alt')} always work. Kept with your
+            account.
+          </span>
+        </label>
+        <div className="flex h-10 shrink-0 items-center gap-2 rounded-b-block border-t border-line bg-chrome px-5 text-meta">
+          <span className="text-warn-t">was …</span>
+          <span className="text-subtle">This key changes in the redesign.</span>
+          <span aria-hidden="true" className="flex-1" />
+          <span className="text-subtle">Hover any button to see its key.</span>
+        </div>
       </div>
     </Modal>
   )

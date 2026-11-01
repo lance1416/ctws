@@ -276,8 +276,10 @@
   background: var(--color-chrome);
 }
 
+/* No room of its own above or below: the blank lines round it are the gap, as for a paragraph;
+   KaTeX's own margin on a display formula goes with it. */
 .cm-md-math-block {
-  padding-block: 0.5rem;
+  padding-block: 0;
   text-align: center;
 }
 
@@ -422,4 +424,8 @@
   [data-markdown-editor] .cm-src .cm-scroller {
     font-size: 1rem;
   }
+}
+
+.cm-md-math-block .katex-display {
+  margin: 0;
 }

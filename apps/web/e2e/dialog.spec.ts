@@ -411,11 +411,11 @@ test('the ? list is the board’s three columns, and its switch names the keys i
   expect(sections).toEqual([
     'Anywhere',
     'Go to',
+    'On a note',
     'New',
     'On a project',
     'On a board, with a card focused',
     'On the Workbench',
-    'On a note',
     'In a tree or list, with a row focused',
     'In search',
     'In a form',

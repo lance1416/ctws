@@ -81,7 +81,7 @@ export function OutlineButton({ outline, keys }: { outline: Outline; keys: strin
       title={`${says} (${keys})`}
       data-outline-switch
       onClick={outline.toggle}
-      className={`${ICON_BUTTON} aria-pressed:text-ink`}
+      className={`${ICON_BUTTON} aria-pressed:bg-select aria-pressed:text-ink`}
     >
       <TreeIcon size={16} aria-hidden="true" />
     </button>

@@ -14,7 +14,7 @@ export function SourceButton({ source, onSource }: { source: boolean; onSource: 
       aria-label="Source"
       title={`${sourceWords(source)} (${SOURCE_KEYS})`}
       onClick={onSource}
-      className={`${ICON_BUTTON} aria-pressed:text-ink`}
+      className={`${ICON_BUTTON} aria-pressed:bg-select aria-pressed:text-ink`}
     >
       <FileCodeIcon size={16} aria-hidden="true" />
     </button>
