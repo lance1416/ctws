@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { useComposing } from '../../../platform/keyboard/composition'
 import { inlineEditProps } from '../../../platform/ui/useInlineEdit'
 
@@ -13,6 +13,7 @@ export function RowNameField({
   error,
   onCommit,
   onCancel,
+  lead,
 }: {
   initial?: string
   label: string
@@ -20,6 +21,11 @@ export function RowNameField({
   error: string | null
   onCommit: (name: string) => void
   onCancel: () => void
+  /**
+   * What stays in front of the name while it is written (a note's mark): the row keeps its height
+   * and its look, the name alone becomes the field (FR-114).
+   */
+  lead?: ReactNode
 }) {
   const composing = useComposing()
   const [name, setName] = useState(initial)
@@ -40,19 +46,35 @@ export function RowNameField({
       onCommit(kept)
     }
   }
+  const input = (
+    <input
+      aria-label={label}
+      aria-invalid={error ? true : undefined}
+      value={name}
+      autoFocus
+      onFocus={(e) => e.currentTarget.select()}
+      onChange={(e) => setName(e.target.value)}
+      onBlur={commit}
+      {...inlineEditProps(composing, { onCommit: commit, onCancel: cancel })}
+      {...(lead ? { 'data-bare': '' } : {})}
+      className={
+        lead
+          ? 'h-full min-w-0 flex-1 bg-transparent text-ui text-ink outline-none'
+          : 'h-7.5 rounded-control border border-line bg-panel px-2 text-ui text-ink outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-task'
+      }
+    />
+  )
   return (
     <div className="mx-1.5 flex flex-col gap-1 pb-1">
-      <input
-        aria-label={label}
-        aria-invalid={error ? true : undefined}
-        value={name}
-        autoFocus
-        onFocus={(e) => e.currentTarget.select()}
-        onChange={(e) => setName(e.target.value)}
-        onBlur={commit}
-        {...inlineEditProps(composing, { onCommit: commit, onCancel: cancel })}
-        className="h-7.5 rounded-control border border-line bg-panel px-2 text-ui text-ink outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-task"
-      />
+      {lead ? (
+        // The row as it was, its ring the field's: 2px in the task colour at its edge.
+        <div className="-mb-1 flex h-7.5 items-center gap-2 rounded-control bg-panel px-2 outline-2 -outline-offset-2 outline-task">
+          {lead}
+          {input}
+        </div>
+      ) : (
+        input
+      )}
       {error && (
         <p role="alert" className="px-2 text-meta text-stop-t">
           {error}

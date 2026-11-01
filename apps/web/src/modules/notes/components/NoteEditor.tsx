@@ -148,6 +148,8 @@ export function NoteEditor({
           <div className="flex items-start gap-2 text-title">
             <input
               aria-label="Title"
+              // Written where it reads, as the text is: the cursor shows where, no ring round it.
+              data-bare
               placeholder={named ?? 'Title'}
               value={title}
               autoFocus={note === null}
@@ -173,7 +175,7 @@ export function NoteEditor({
             </span>
           </div>
           <div className="-mt-1 flex min-h-5.5 items-center gap-2">
-            {note && <FolderTag note={note} />}
+            <FolderTag folderId={note?.folderId ?? folderId} noteId={note?.id ?? null} />
             <p className="text-meta text-subtle" aria-live="polite">
               {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
             </p>

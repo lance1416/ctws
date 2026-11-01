@@ -30,9 +30,15 @@ test('a note’s row is renamed in place: Enter keeps it, Esc and an empty name 
   await registerFreshUser(page)
   const note = await apiPost<{ id: string }>(page, '/notes', { title: 'Stripe', body: 'x' })
   await page.goto(`/notes/${note.id}`)
+  const below = (await row(page, 'Stripe').boundingBox())!
   await menuOf(page, 'Stripe')
   await page.getByRole('menuitem', { name: 'Rename' }).click()
   const field = page.getByRole('textbox', { name: 'Rename Stripe' })
+  // In its row: the row keeps its height and its mark, nothing under it moves.
+  const same = sidebar(page).locator(`[data-note-row="${note.id}"]`)
+  await expect(field).toBeFocused()
+  expect((await same.boundingBox())!.height).toBe(below.height)
+  await expect(same.locator('svg')).toBeVisible()
   await field.fill('Stripe: what I know')
   await page.keyboard.press('Enter')
   await expect(row(page, 'Stripe: what I know')).toBeVisible()
@@ -112,6 +118,8 @@ test('a folder’s + makes a note in it: Untitled at its top, the title focused'
   await page.getByRole('button', { name: 'New note in Reading notes' }).click()
   await expect(page).toHaveURL(/\/notes\/new\?folder=/)
   await expect(folder).toContainText('Untitled')
+  // The page says which folder from the start, before a word is written.
+  await expect(page.getByRole('main').getByRole('button', { name: 'Reading notes' })).toBeVisible()
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
   await page.keyboard.type('Thinking in Systems')
   await expect

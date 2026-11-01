@@ -1,4 +1,4 @@
-import type { NoteFolderId, NoteResponse } from '@ctws/contracts'
+import type { NoteFolderId, NoteId, NoteResponse } from '@ctws/contracts'
 import { sourceWords } from '../../../platform/editor/SourceButton'
 import { SOURCE_KEYS } from '../../../platform/editor/noteKeys'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
@@ -137,13 +137,20 @@ export function PinButton({ note }: { note: NoteResponse }) {
  * The head's tag for the folder a note is in, its name alone: a folder is no kind, and the folder
  * glyph is a project's. A press shows the note in the sidebar (DES-001).
  */
-export function FolderTag({ note }: { note: NoteResponse }) {
-  const folder = useQuery(foldersQuery()).data?.find((f) => f.id === note.folderId)
+export function FolderTag({
+  folderId,
+  noteId,
+}: {
+  folderId: NoteFolderId | null
+  /** The note it is on; none for one not yet made, in a folder from the start (FR-115). */
+  noteId: NoteId | null
+}) {
+  const folder = useQuery(foldersQuery()).data?.find((f) => f.id === folderId)
   if (!folder) return null
   return (
     <button
       type="button"
-      onClick={() => askReveal(note.id)}
+      onClick={() => noteId && askReveal(noteId)}
       // Its ground always the hover grey, as a tag's; not only under the pointer.
       className="inline-flex h-5.5 items-center rounded-control bg-hover px-1.5 text-meta text-muted hover:text-ink"
     >

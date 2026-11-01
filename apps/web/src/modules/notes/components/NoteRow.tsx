@@ -61,6 +61,7 @@ export function NoteRow({
         <RowNameField
           initial={note.title ?? ''}
           label={`Rename ${title}`}
+          lead={<Icon size={14} aria-hidden="true" className={`shrink-0 ${KIND_TEXT[type]}`} />}
           error={rename.isError ? problemText(rename.error) : null}
           onCommit={(name) =>
             rename.mutate({ note, title: name }, { onSuccess: () => setRenaming(false) })
