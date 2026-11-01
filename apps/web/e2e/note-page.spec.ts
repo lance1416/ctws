@@ -46,8 +46,8 @@ test('the outline is a panel on the right that folds away four ways, kept with t
   await outlineSwitch(page).click()
   await panel(page).getByRole('button', { name: 'Hide the outline' }).click()
   await expect(panel(page)).toHaveCount(0)
-  await page.getByRole('textbox', { name: 'Title' }).blur()
-  await page.locator('body').focus()
+  // Nothing being typed in: the editor lets go of the focus.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
   await page.keyboard.press(']')
   await expect(panel(page)).toBeVisible()
 

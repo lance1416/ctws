@@ -1,4 +1,4 @@
-import type { NoteResponse } from '@ctws/contracts'
+import type { NoteFolderId, NoteResponse } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { EditorHandle } from '../../../platform/editor/MarkdownEditor'
@@ -35,11 +35,14 @@ const SAVE_AFTER_MS = 800
 export function NoteEditor({
   note,
   onMade,
+  folderId = null,
   above,
   below,
 }: {
   note: NoteResponse | null
   onMade?: (made: NoteResponse) => void
+  /** The folder a note not yet made is made in (FR-115). */
+  folderId?: NoteFolderId | null
   above?: ReactNode
   below?: ReactNode
 }) {
@@ -58,7 +61,7 @@ export function NoteEditor({
       const fields = { title: next.title.trim() || null, body: next.body }
       const saved = made.current
         ? await patchNote(made.current.id, fields)
-        : await createNote(fields)
+        : await createNote({ ...fields, ...(folderId ? { folderId } : {}) })
       const first = made.current === null
       made.current = saved
       if (first) onMade?.(saved)
@@ -79,20 +82,33 @@ export function NoteEditor({
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a save per pause in the typing.
   }, [title, body])
+  // Renamed in the sidebar while it is open (FR-114): the title takes the new name, unless what
+  // is in the box is still being written.
+  useEffect(() => {
+    const was = made.current
+    if (!note || !was || note.id !== was.id || note.title === was.title) return
+    if (title !== (was.title ?? '')) return
+    made.current = { ...was, title: note.title }
+    setTitle(note.title ?? '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a rename from elsewhere only.
+  }, [note?.title])
   // Leaving with the last words still resting: they are saved on the way out, not dropped with
   // the timer that was to save them.
-  const latest = useRef({ title, body })
-  latest.current = { title, body }
+  const latest = useRef({ title, body, folderId })
+  latest.current = { title, body, folderId }
   useEffect(
     () => () => {
-      const { title: t, body: b } = latest.current
+      const { title: t, body: b, folderId: f } = latest.current
       const was = made.current
       const fields = { title: t.trim() || null, body: b }
       const pending = was
         ? was.body !== b || (was.title ?? '') !== t
         : b.trim() !== '' || t.trim() !== ''
       const out = pending
-        ? (was ? patchNote(was.id, fields) : createNote(fields)).catch(() => undefined)
+        ? (was
+            ? patchNote(was.id, fields)
+            : createNote({ ...fields, ...(f ? { folderId: f } : {}) })
+          ).catch(() => undefined)
         : Promise.resolve()
       void out.then(() => qc.invalidateQueries({ queryKey: noteKeys.all }))
     },

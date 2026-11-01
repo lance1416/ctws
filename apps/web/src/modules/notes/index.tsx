@@ -34,7 +34,15 @@ export const notesModule: WorkspaceModule = {
     // `new` too: the note it makes keeps the editor it was typed in (see Note).
     { path: ':id', element: <Note />, handle: THING },
   ],
-  creates: [{ kind: 'note', key: 'n', label: 'Note', to: `/${NOTES_ID}/new` }],
+  creates: [
+    {
+      kind: 'note',
+      key: 'n',
+      label: 'Note',
+      // From a note, the new one goes where that one is (FR-115): the page reads its folder.
+      to: (about) => `/${NOTES_ID}/new${about?.type === 'note' ? `?from=${about.id}` : ''}`,
+    },
+  ],
   chords: [{ id: 'notes', key: 'n', label: 'Notes', resolve: () => `/${NOTES_ID}`, order: 55 }],
   weekCounts: [{ key: 'meetingsWithNotes', label: 'With notes', icon: KIND_ICON.note, order: 20 }],
   relations: [

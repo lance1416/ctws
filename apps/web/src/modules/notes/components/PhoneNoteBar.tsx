@@ -12,7 +12,7 @@ import { foldersQuery } from '../api'
 import { useFolderActions } from '../hooks/useFolderActions'
 import { useShelveNote } from '../hooks/useShelveNote'
 import { NOTES_ID } from '../logic/id'
-import { FolderNameField } from './FolderNameField'
+import { RowNameField } from './RowNameField'
 import { downloadNote } from './NoteMenu'
 import { sourceWords } from '../../../platform/editor/SourceButton'
 
@@ -189,7 +189,7 @@ function FolderSheet({ note, onClose }: { note: NoteResponse; onClose: () => voi
         </li>
         <li className="px-2.5 pt-1">
           {making ? (
-            <FolderNameField
+            <RowNameField
               label="New folder"
               error={actions.create.isError ? problemText(actions.create.error) : null}
               onCommit={(name) =>

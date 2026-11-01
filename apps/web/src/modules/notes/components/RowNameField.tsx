@@ -3,10 +3,11 @@ import { useComposing } from '../../../platform/keyboard/composition'
 import { inlineEditProps } from '../../../platform/ui/useInlineEdit'
 
 /**
- * A folder's name written in its row (FR-110): a new folder's, or a rename. Enter keeps it, Esc
- * or leaving it empty backs out; a name already taken says so under it and stays to be changed.
+ * A name written in its own row of the sidebar: a new folder's, a folder's or a note's rename
+ * (FR-110, FR-114). Enter or leaving it keeps it, Esc or leaving it empty backs out; a name
+ * already taken says so under it and stays to be changed.
  */
-export function FolderNameField({
+export function RowNameField({
   initial = '',
   label,
   error,

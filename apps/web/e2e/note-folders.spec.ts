@@ -102,12 +102,12 @@ test('renamed in its row; deleted, asked first, its notes left in none', async (
   // An empty one goes at once.
   await row('Empty').hover()
   await page.getByRole('button', { name: 'More for Empty' }).click()
-  await page.getByRole('menuitem', { name: 'Delete' }).click()
+  await page.getByRole('menuitem', { name: 'Delete…' }).click()
   await expect(row('Empty')).toHaveCount(0)
 
   await row('Reading notes').hover()
   await page.getByRole('button', { name: 'More for Reading notes' }).click()
-  await page.getByRole('menuitem', { name: 'Delete' }).click()
+  await page.getByRole('menuitem', { name: 'Delete…' }).click()
   const ask = page.getByRole('alertdialog', { name: 'Delete Reading notes' })
   await expect(ask).toContainText(
     'Delete Reading notes? The folder goes; its note stays, in Not in a folder.',

@@ -1,7 +1,7 @@
-import { idFrom, noteId, type NoteResponse } from '@ctws/contracts'
+import { idFrom, type NoteFolderId, noteId, type NoteResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { problemText } from '../../../platform/http/api'
 import { shortDay, ymd } from '../../../platform/time/dates'
 import { DangerAction, DangerZone } from '../../../platform/ui/DangerZone'
@@ -19,8 +19,9 @@ import { noteTitle } from '../logic/title'
 
 /**
  * `/notes/:id`: one note, written in place (FR-050, FR-074), or what happened to it; `/notes/new`
- * (N N): one on its own, made by its first words. One route for both, so the editor the first
- * words were typed in stays as the address turns into the note's own.
+ * (N N): one on its own, made by its first words, in `?folder=` when a folder made it (FR-115), or
+ * in the folder of the note `?from=` when N N was pressed on one. One route for both, so the
+ * editor the first words were typed in stays as the address turns into the note's own.
  */
 export function Note() {
   const { id = '' } = useParams()
@@ -30,6 +31,14 @@ export function Note() {
   const [born, setBorn] = useState<string | null>(null)
   const fresh = id === 'new'
   const note = fresh ? undefined : notes.data?.find((n) => n.id === idFrom(noteId, id))
+  const [search] = useSearchParams()
+  const from = fresh ? notes.data?.find((n) => n.id === search.get('from')) : undefined
+  const folderId = (search.get('folder') ?? from?.folderId ?? null) as NoteFolderId | null
+  // Said as the folder it is made in, so the sidebar can show it there.
+  useEffect(() => {
+    if (from?.folderId && !search.get('folder'))
+      navigate(`/${NOTES_ID}/new?folder=${from.folderId}`, { replace: true })
+  }, [from, search, navigate])
   const gone = !fresh && notes.isSuccess && !note
   useForgetWhenGone('note', fresh ? null : id, gone)
   useSubjectOf(note ? { type: 'note', id: note.id, title: noteTitle(note) } : null)
@@ -56,6 +65,7 @@ export function Note() {
       <NoteEditor
         key={note && note.id !== born ? note.id : 'new'}
         note={note ?? null}
+        folderId={folderId}
         onMade={(made) => {
           setBorn(made.id)
           navigate(`/${NOTES_ID}/${made.id}`, { replace: true })

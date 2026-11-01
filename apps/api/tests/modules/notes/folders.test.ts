@@ -80,6 +80,20 @@ describe('folders', () => {
     expect(after.body).toBe('Appetite, not estimates.')
   })
 
+  it('make a note in themselves, from their own New note (FR-115)', async () => {
+    const ctx = await setup()
+    const reading = await folder(ctx, 'Reading notes')
+    const made = await note(ctx, { title: 'Untitled', body: 'x', folderId: reading.id })
+    expect(made.folderId).toBe(reading.id)
+    const person = await createPerson(ctx, { name: 'Mira Chen' })
+    const hung = await call(ctx, 'POST', '/notes', {
+      body: 'x',
+      folderId: reading.id,
+      anchor: { type: 'person', id: person.id },
+    })
+    expect(hung.statusCode).toBe(409)
+  })
+
   it('are not another workspace’s to file into', async () => {
     const mine = await setup()
     const theirs = await setup()

@@ -59,6 +59,12 @@ export async function createNote(
 ): Promise<Note> {
   return db.transaction(async (tx) => {
     const anchored = await anchorColumns(registry, tx, ctx, body.anchor)
+    // Made in a folder, from the folder's own New note (FR-115): a note on a thing has none.
+    const folderId = body.folderId ?? null
+    if (folderId !== null) {
+      if (body.anchor) throw new OnAThing()
+      await folderOf(tx, ctx.workspaceId, folderId)
+    }
     const [row] = await tx
       .insert(notes)
       .values({
@@ -67,6 +73,7 @@ export async function createNote(
         title: body.title ?? null,
         body: body.body,
         ...anchored,
+        folderId,
         createdAt: ctx.now,
         updatedAt: ctx.now,
       })

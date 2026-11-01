@@ -4,30 +4,33 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { type ReactNode, useState } from 'react'
 import { problemText } from '../../../platform/http/api'
 import { DeleteConfirm } from '../../../platform/ui/DeleteConfirm'
-import { CollapseIcon, MoreIcon } from '../../../platform/ui/icons'
+import { CollapseIcon, MoreIcon, NewIcon } from '../../../platform/ui/icons'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { useFolderActions } from '../hooks/useFolderActions'
-import { FolderNameField } from './FolderNameField'
+import { RowNameField } from './RowNameField'
 
 /** What a note dragged in the sidebar is dropped on: a folder, or none (FR-110). */
 export const dropOn = (folder: NoteFolderResponse | null) => `folder:${folder?.id ?? 'none'}`
 
 /**
- * A FOLDER IN THE SIDEBAR (FR-110, DES-001 "文件夹和置顶"): its name and count, opened to its
- * notes. On hover its "…", and the same menu on a right press: Rename, in its row; Delete, asked
- * first unless it is empty, its notes left in none. A note dragged onto it goes in.
+ * A FOLDER IN THE SIDEBAR (FR-110, FR-115, artboard 38): its name and count, opened to its notes.
+ * On hover its count gives way to "+", a new note in it, and "…", the same menu as a right press:
+ * New note; Rename, in its row; Delete…, asked first unless it is empty, its notes left in none.
+ * A note dragged onto it goes in.
  */
 export function FolderRow({
   folder,
   count,
   open,
   onToggle,
+  onNewNote,
   children,
 }: {
   folder: NoteFolderResponse
   count: number
   open: boolean
   onToggle: () => void
+  onNewNote: () => void
   children: ReactNode
 }) {
   const actions = useFolderActions()
@@ -41,7 +44,7 @@ export function FolderRow({
   return (
     <li data-folder-row={folder.id}>
       {renaming ? (
-        <FolderNameField
+        <RowNameField
           initial={folder.name}
           label={`Rename ${folder.name}`}
           error={actions.rename.isError ? problemText(actions.rename.error) : null}
@@ -77,6 +80,17 @@ export function FolderRow({
             />
             <span className="flex-1 truncate text-left">{folder.name}</span>
           </button>
+          <button
+            type="button"
+            aria-label={`New note in ${folder.name}`}
+            title={`New note in ${folder.name}`}
+            onClick={onNewNote}
+            className={`size-6 place-items-center rounded-control text-muted group-focus-within:grid group-hover:grid hover:text-ink ${
+              menu ? 'grid' : 'hidden'
+            }`}
+          >
+            <NewIcon size={14} aria-hidden="true" />
+          </button>
           <DropdownMenu.Root open={menu} onOpenChange={setMenu} modal={false}>
             <DropdownMenu.Trigger
               aria-label={`More for ${folder.name}`}
@@ -89,6 +103,11 @@ export function FolderRow({
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
               <DropdownMenu.Content align="end" sideOffset={4} className={MENU_SURFACE}>
+                <DropdownMenu.Item onSelect={onNewNote} className={MENU_ITEM}>
+                  New note
+                  <span className="ml-auto pl-4 text-meta text-subtle">N N</span>
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator className="my-1 h-px bg-line" />
                 <DropdownMenu.Item onSelect={() => setRenaming(true)} className={MENU_ITEM}>
                   Rename
                 </DropdownMenu.Item>
@@ -96,7 +115,7 @@ export function FolderRow({
                   onSelect={() => (count === 0 ? remove() : setAsking(true))}
                   className={`${MENU_ITEM} text-stop-t`}
                 >
-                  Delete
+                  Delete…
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>

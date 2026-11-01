@@ -42,8 +42,6 @@ export function NoteMenu({
   source: boolean
   onSource: () => void
 }) {
-  const folders = useQuery(foldersQuery()).data ?? []
-  const shelve = useShelveNote()
   const filing = note !== null && note.anchor === null
   return (
     <DropdownMenu.Root modal={false}>
@@ -57,31 +55,7 @@ export function NoteMenu({
               <DropdownMenu.Label className="px-2 pt-1 pb-0.5 text-meta text-muted">
                 Move to folder
               </DropdownMenu.Label>
-              <DropdownMenu.RadioGroup
-                value={note.folderId ?? NONE}
-                onValueChange={(v) =>
-                  shelve.mutate({ id: note.id, folderId: v === NONE ? null : (v as NoteFolderId) })
-                }
-              >
-                {folders.map((f) => (
-                  <DropdownMenu.RadioItem key={f.id} value={f.id} className={MENU_ITEM}>
-                    <span className="flex-1 truncate">{f.name}</span>
-                    <DropdownMenu.ItemIndicator className="text-meta text-muted">
-                      ✓
-                    </DropdownMenu.ItemIndicator>
-                  </DropdownMenu.RadioItem>
-                ))}
-                <DropdownMenu.RadioItem value={NONE} className={MENU_ITEM}>
-                  <span className="flex-1">No folder</span>
-                  <DropdownMenu.ItemIndicator className="text-meta text-muted">
-                    ✓
-                  </DropdownMenu.ItemIndicator>
-                </DropdownMenu.RadioItem>
-              </DropdownMenu.RadioGroup>
-              {/* Made in the sidebar's own row, and this note put in it (DES-001). */}
-              <DropdownMenu.Item onSelect={() => askNewFolder(note.id)} className={MENU_ITEM}>
-                New folder…
-              </DropdownMenu.Item>
+              <MoveToFolder note={note} />
               <DropdownMenu.Separator className="my-1 h-px bg-line" />
             </>
           )}
@@ -95,6 +69,45 @@ export function NoteMenu({
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+  )
+}
+
+/**
+ * The folders a note on its own can go in, the one it is in ticked, then none, then a new one
+ * made in the sidebar's own row with this note put in it (FR-110, DES-001): the note page's "…"
+ * lists them under its label, the sidebar's under "Move to a folder…".
+ */
+export function MoveToFolder({ note }: { note: NoteResponse }) {
+  const folders = useQuery(foldersQuery()).data ?? []
+  const shelve = useShelveNote()
+  return (
+    <>
+      <DropdownMenu.RadioGroup
+        value={note.folderId ?? NONE}
+        onValueChange={(v) =>
+          shelve.mutate({ id: note.id, folderId: v === NONE ? null : (v as NoteFolderId) })
+        }
+      >
+        {folders.map((f) => (
+          <DropdownMenu.RadioItem key={f.id} value={f.id} className={MENU_ITEM}>
+            <span className="flex-1 truncate">{f.name}</span>
+            <DropdownMenu.ItemIndicator className="text-meta text-muted">
+              ✓
+            </DropdownMenu.ItemIndicator>
+          </DropdownMenu.RadioItem>
+        ))}
+        <DropdownMenu.RadioItem value={NONE} className={MENU_ITEM}>
+          <span className="flex-1">No folder</span>
+          <DropdownMenu.ItemIndicator className="text-meta text-muted">
+            ✓
+          </DropdownMenu.ItemIndicator>
+        </DropdownMenu.RadioItem>
+      </DropdownMenu.RadioGroup>
+      {/* Made in the sidebar's own row, and this note put in it (DES-001). */}
+      <DropdownMenu.Item onSelect={() => askNewFolder(note.id)} className={MENU_ITEM}>
+        New folder…
+      </DropdownMenu.Item>
+    </>
   )
 }
 

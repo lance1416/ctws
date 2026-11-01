@@ -5,14 +5,13 @@ import {
   DragOverlay,
   PointerSensor,
   pointerWithin,
-  useDraggable,
   useDroppable,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useState } from 'react'
-import { NavLink, useMatch } from 'react-router-dom'
+import { useMatch, useNavigate, useSearchParams } from 'react-router-dom'
 import { problemText } from '../../../platform/http/api'
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { KIND_ICON, NewIcon, PinIcon } from '../../../platform/ui/icons'
@@ -25,16 +24,12 @@ import { useShelveNote } from '../hooks/useShelveNote'
 import { NOTES_ID } from '../logic/id'
 import { shelvesOf } from '../logic/shelves'
 import { noteTitle } from '../logic/title'
-import { FolderNameField } from './FolderNameField'
+import { RowNameField } from './RowNameField'
 import { dropOn, FolderRow } from './FolderRow'
+import { NOTE_ROW, NoteRow } from './NoteRow'
 
 /** How many notes on other things are listed before their "All N". */
 const ON_THINGS_SHOWN = 5
-
-const ROW = ({ isActive }: { isActive: boolean }) =>
-  `mx-1.5 flex h-7.5 items-center gap-2 rounded-control px-2 text-ui hover:bg-hover ${
-    isActive ? 'bg-select font-medium text-ink' : 'text-ink'
-  }`
 
 /**
  * THE NOTES SIDEBAR (REQ-002 FR-110, artboard 34, DES-001 "文件夹和置顶"): the pinned, then the
@@ -56,12 +51,16 @@ export function NotesSidebar() {
   const [dragged, setDragged] = useState<NoteResponse | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const here = useMatch(`/${NOTES_ID}/:id`)?.params.id
+  const navigate = useNavigate()
+  // A note being made in a folder (FR-115): it sits at the top of it until it is written in.
+  const [search] = useSearchParams()
+  const newIn = here === 'new' ? (search.get('folder') as NoteFolderId | null) : null
   const all = notes.data ?? []
   const filtering = typed.trim() !== ''
   const s = shelvesOf(all, folders.data ?? [], typed)
   const current = all.find((n) => n.id === here)
   const isOpen = (id: NoteFolderId) =>
-    filtering || (!closed.has(id) && (opened.has(id) || current?.folderId === id))
+    filtering || newIn === id || (!closed.has(id) && (opened.has(id) || current?.folderId === id))
   const open = (id: NoteFolderId) => {
     setOpened((was) => new Set([...was, id]))
     setClosed((was) => new Set([...was].filter((c) => c !== id)))
@@ -99,6 +98,20 @@ export function NotesSidebar() {
   }
 
   const onThings = allOnThings || filtering ? s.onThings : s.onThings.slice(0, ON_THINGS_SHOWN)
+  // The notes as they are listed, for the one after a note deleted from the list (FR-114).
+  const order = [...s.pinned, ...s.folders.flatMap((f) => f.notes), ...s.loose, ...onThings]
+  const row = (n: NoteResponse) => (
+    <NoteRow
+      key={n.id}
+      note={n}
+      onDeleted={() => {
+        const left = order.filter((o) => o.id !== n.id)
+        const next = left[order.findIndex((o) => o.id === n.id)] ?? left.at(-1)
+        navigate(next ? `/${NOTES_ID}/${next.id}` : `/${NOTES_ID}`)
+      }}
+    />
+  )
+  const newNote = (folderId: NoteFolderId) => navigate(`/${NOTES_ID}/new?folder=${folderId}`)
   const nothing =
     s.pinned.length + s.loose.length + s.onThings.length === 0 &&
     s.folders.every((f) => f.notes.length === 0)
@@ -121,9 +134,7 @@ export function NotesSidebar() {
         >
           {s.pinned.length > 0 && (
             <Section title="Pinned" icon={<PinIcon size={12} aria-hidden="true" />}>
-              {s.pinned.map((n) => (
-                <NoteRow key={n.id} note={n} />
-              ))}
+              {s.pinned.map(row)}
             </Section>
           )}
           {!filtering && (
@@ -148,15 +159,15 @@ export function NotesSidebar() {
                   count={inside.length}
                   open={isOpen(folder.id)}
                   onToggle={() => toggle(folder.id)}
+                  onNewNote={() => newNote(folder.id)}
                 >
-                  {inside.map((n) => (
-                    <NoteRow key={n.id} note={n} />
-                  ))}
+                  {newIn === folder.id && <Untitled />}
+                  {inside.map(row)}
                 </FolderRow>
               ))}
               {creating && (
                 <li>
-                  <FolderNameField
+                  <RowNameField
                     label="New folder"
                     error={actions.create.isError ? problemText(actions.create.error) : null}
                     onCommit={(name) =>
@@ -186,25 +197,21 @@ export function NotesSidebar() {
             s.folders.length > 0 &&
             s.folders.map(({ folder, notes: inside }) => (
               <Section key={folder.id} title={folder.name}>
-                {inside.map((n) => (
-                  <NoteRow key={n.id} note={n} />
-                ))}
+                {inside.map(row)}
               </Section>
             ))}
           {(s.loose.length > 0 || dragged) && (
-            <Loose notes={s.loose} hasFolders={s.folders.length > 0} />
+            <Loose hasFolders={s.folders.length > 0}>{s.loose.map(row)}</Loose>
           )}
           {s.onThings.length > 0 && (
             <Section title="On other things">
-              {onThings.map((n) => (
-                <NoteRow key={n.id} note={n} />
-              ))}
+              {onThings.map(row)}
               {onThings.length < s.onThings.length && (
                 <li>
                   <button
                     type="button"
                     onClick={() => setAllOnThings(true)}
-                    className={`${ROW({ isActive: false })} w-[calc(100%-0.75rem)] pl-8 text-muted`}
+                    className={`${NOTE_ROW({ isActive: false })} w-[calc(100%-0.75rem)] pl-8 text-muted`}
                   >
                     All {s.onThings.length} on other things
                   </button>
@@ -232,16 +239,24 @@ export function NotesSidebar() {
 }
 
 /** The notes in no folder; a note dropped here comes out of its folder. */
-function Loose({ notes, hasFolders }: { notes: readonly NoteResponse[]; hasFolders: boolean }) {
+function Loose({ hasFolders, children }: { hasFolders: boolean; children: ReactNode }) {
   const drop = useDroppable({ id: dropOn(null) })
   return (
     <div ref={drop.setNodeRef} className={drop.isOver ? 'rounded-control bg-select' : ''}>
-      <Section title={hasFolders ? 'Not in a folder' : 'On their own'}>
-        {notes.map((n) => (
-          <NoteRow key={n.id} note={n} />
-        ))}
-      </Section>
+      <Section title={hasFolders ? 'Not in a folder' : 'On their own'}>{children}</Section>
     </div>
+  )
+}
+
+/** The note being made in a folder, before it is written in: "Untitled", the page's own. */
+function Untitled() {
+  return (
+    <li>
+      <span aria-current="page" className={NOTE_ROW({ isActive: true })}>
+        <KIND_ICON.note size={14} aria-hidden="true" className={`shrink-0 ${KIND_TEXT.note}`} />
+        <span className="truncate font-normal text-subtle">Untitled</span>
+      </span>
+    </li>
   )
 }
 
@@ -266,29 +281,6 @@ function Section({
       </h3>
       <ul className="flex flex-col gap-px">{children}</ul>
     </section>
-  )
-}
-
-/**
- * A note, by name, with its kind's mark: a note's own, or what it hangs on. One on its own is
- * dragged to a folder; one on a thing goes where the thing is.
- */
-function NoteRow({ note }: { note: NoteResponse }) {
-  const type = note.anchor?.type ?? 'note'
-  const Icon = KIND_ICON[type]
-  const drag = useDraggable({ id: note.id, disabled: note.anchor !== null })
-  return (
-    <li
-      data-note-row={note.id}
-      ref={drag.setNodeRef}
-      {...drag.listeners}
-      className={drag.isDragging ? 'opacity-40' : ''}
-    >
-      <NavLink to={`/${NOTES_ID}/${note.id}`} className={ROW}>
-        <Icon size={14} aria-hidden="true" className={`shrink-0 ${KIND_TEXT[type]}`} />
-        <span className="truncate">{noteTitle(note)}</span>
-      </NavLink>
-    </li>
   )
 }
 

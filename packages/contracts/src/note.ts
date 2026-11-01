@@ -38,7 +38,15 @@ const noteFields = {
   anchor: anchor.nullable(),
 }
 
-export const createNoteBody = z.object(noteFields).partial().required({ body: true }).strict()
+export const createNoteBody = z
+  .object({
+    ...noteFields,
+    /** Made in a folder (REQ-002 FR-115): a note on its own only (409). */
+    folderId: noteFolderId.nullable(),
+  })
+  .partial()
+  .required({ body: true })
+  .strict()
 export type CreateNoteBody = z.infer<typeof createNoteBody>
 
 export const updateNoteBody = patchOf({
