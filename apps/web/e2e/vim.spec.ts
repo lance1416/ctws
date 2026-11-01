@@ -123,6 +123,8 @@ test('on: Esc in INSERT stays in full screen and in the task’s pane; in NORMAL
   await page.getByRole('button', { name: 'Full screen' }).click()
   const layer = page.getByRole('dialog', { name: '读一下' })
   await expect(layer.locator('[data-markdown-editor] .cm-content')).toBeVisible()
+  // Vim's keys arrive after the editor (fetched on first use): an i before them is typed.
+  await expect(mode(page)).toContainText('NORMAL')
   await page.keyboard.press('i')
   await expect(mode(page)).toContainText('INSERT')
   await page.keyboard.press('Escape')

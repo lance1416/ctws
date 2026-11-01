@@ -136,7 +136,9 @@ test('Tab runs from the first field to Create person', async ({ page }) => {
   await page.goto('/people/new')
   await expect(box(page, 'Given name')).toBeFocused()
   const create = page.getByRole('button', { name: /^Create person/ })
-  for (let i = 0; i < 60; i++) {
+  // As many presses as there are stops: the birthday's calendar has five or six weeks of days,
+  // by the month it opens on.
+  for (let i = 0; i < 120; i++) {
     if (await create.evaluate((el) => el === document.activeElement)) break
     await page.keyboard.press('Tab')
   }
