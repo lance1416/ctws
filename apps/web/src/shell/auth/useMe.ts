@@ -88,7 +88,7 @@ export function useSetVimKeys() {
 }
 
 /** The account's choices for how a note is laid out (REQ-002 FR-109, FR-116). */
-export type NoteChoice = 'outlineShown' | 'readableLines' | 'sourceView'
+type NoteChoice = 'outlineShown' | 'readableLines' | 'sourceView'
 
 /** As the account was made: an outline beside, the full width, the note drawn. */
 const UNCHOSEN: Record<NoteChoice, boolean> = {

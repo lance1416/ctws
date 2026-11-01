@@ -178,6 +178,26 @@ describe('first-user bootstrap', () => {
     })
     expect(vim.statusCode).toBe(200)
     expect((await me()).json()).toMatchObject({ singleKeyShortcuts: false, vimKeys: true })
+    // A note's layout (REQ-002 FR-109, FR-116): the outline shown, the full width, drawn, until
+    // the account says otherwise; each kept apart.
+    expect((await me()).json()).toMatchObject({
+      outlineShown: true,
+      readableLines: false,
+      sourceView: false,
+    })
+    const layout = await ctx.app.inject({
+      method: 'PATCH',
+      url: '/api/v1/auth/me',
+      headers: { ...headers, cookie },
+      payload: { outlineShown: false, sourceView: true },
+    })
+    expect(layout.statusCode).toBe(200)
+    expect((await me()).json()).toMatchObject({
+      outlineShown: false,
+      readableLines: false,
+      sourceView: true,
+      vimKeys: true,
+    })
     const nothing = await ctx.app.inject({
       method: 'PATCH',
       url: '/api/v1/auth/me',

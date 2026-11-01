@@ -2,7 +2,6 @@
 export { Login } from './Login'
 export {
   meQuery,
-  type NoteChoice,
   useAccountToday,
   useMe,
   useNoteChoice,

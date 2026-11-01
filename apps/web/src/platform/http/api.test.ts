@@ -18,6 +18,9 @@ const ME = {
   passwordChangedAt: null,
   singleKeyShortcuts: true,
   vimKeys: false,
+  outlineShown: true,
+  readableLines: false,
+  sourceView: false,
 }
 
 const json = (body: unknown, status = 200) =>

@@ -19,6 +19,7 @@ const MARKS = new Set([
 
 const mark = Decoration.mark({ class: 'cm-src-mark' })
 const heading = Decoration.line({ class: 'cm-src-heading' })
+const code = Decoration.line({ class: 'cm-src-code' })
 const linked = Decoration.mark({ class: 'cm-src-link' })
 const mentioned = Decoration.mark({ class: 'cm-src-mention' })
 
@@ -26,7 +27,12 @@ function decorations(state: EditorState): DecorationSet {
   const out: Range<Decoration>[] = []
   syntaxTree(state).iterate({
     enter(node) {
-      if (/^ATXHeading\d$/.test(node.name)) {
+      if (node.name === 'FencedCode') {
+        // Its lines between the fences keep the code's own colours.
+        const first = state.doc.lineAt(node.from).number + 1
+        const last = state.doc.lineAt(node.to).number - 1
+        for (let n = first; n <= last; n++) out.push(code.range(state.doc.line(n).from))
+      } else if (/^ATXHeading\d$/.test(node.name)) {
         out.push(heading.range(state.doc.lineAt(node.from).from))
       } else if (node.name === 'Link') {
         // `[words](address)`: the words a mention's or a link's colour, the rest marks.

@@ -286,25 +286,25 @@
 }
 
 /* Code inside a fence, in the reader's colours; elsewhere a mark is the marks' own grey. */
-.cm-md-codeline .cm-code-keyword {
+:is(.cm-md-codeline, .cm-src-code) .cm-code-keyword {
   color: var(--color-code-keyword);
 }
-.cm-md-codeline .cm-code-string {
+:is(.cm-md-codeline, .cm-src-code) .cm-code-string {
   color: var(--color-code-string);
 }
-.cm-md-codeline .cm-code-number {
+:is(.cm-md-codeline, .cm-src-code) .cm-code-number {
   color: var(--color-code-number);
 }
-.cm-md-codeline .cm-code-comment {
+:is(.cm-md-codeline, .cm-src-code) .cm-code-comment {
   color: var(--color-code-comment);
 }
-.cm-md-codeline .cm-code-fn {
+:is(.cm-md-codeline, .cm-src-code) .cm-code-fn {
   color: var(--color-code-fn);
 }
-.cm-md-codeline .cm-code-attr {
+:is(.cm-md-codeline, .cm-src-code) .cm-code-attr {
   color: var(--color-code-attr);
 }
-.cm-md-codeline .cm-code-punct {
+:is(.cm-md-codeline, .cm-src-code) .cm-code-punct {
   color: var(--color-code-punct);
 }
 
