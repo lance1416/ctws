@@ -136,13 +136,57 @@ test('Tab runs from the first field to Create person', async ({ page }) => {
   await page.goto('/people/new')
   await expect(box(page, 'Given name')).toBeFocused()
   const create = page.getByRole('button', { name: /^Create person/ })
-  // As many presses as there are stops: the birthday's calendar has five or six weeks of days,
-  // by the month it opens on.
-  for (let i = 0; i < 120; i++) {
+  // Every stop the form has, once each, then Create: as many presses as the page has stops, read
+  // from the page, never a number that holds only for some months.
+  const stops = await page
+    .locator('main')
+    .evaluate(
+      (main) =>
+        [
+          ...main.querySelectorAll<HTMLElement>('a, button, input, select, textarea, [tabindex]'),
+        ].filter((el) => el.tabIndex >= 0 && !el.hasAttribute('disabled') && el.offsetParent)
+          .length,
+    )
+  for (let i = 0; i < stops; i++) {
     if (await create.evaluate((el) => el === document.activeElement)) break
     await page.keyboard.press('Tab')
   }
   await expect(create).toBeFocused()
+})
+
+test('the birthday’s days are one Tab stop; the arrows go from day to day (BUG-108)', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  await page.goto('/people/new')
+  const block = page.getByRole('region', { name: 'Birthday' })
+  const days = block.locator('[data-cell]')
+  // However many weeks the month has, one of its days is in the Tab order.
+  await expect(days.first()).toBeVisible()
+  expect(await days.evaluateAll((all) => all.filter((d) => d.tabIndex === 0).length)).toBe(1)
+  await block.getByRole('button', { name: 'Next month' }).focus()
+  await page.keyboard.press('Tab')
+  const first = await page.evaluate(() => (document.activeElement as HTMLElement).dataset.cell)
+  expect(first).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  // The next day, then that day a week on: counted from the day itself, not the clock.
+  const plus = (day: string, n: number) => {
+    const d = new Date(`${day}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() + n)
+    return d.toISOString().slice(0, 10)
+  }
+  const at = () => page.evaluate(() => (document.activeElement as HTMLElement).dataset.cell)
+  await page.keyboard.press('ArrowRight')
+  await expect.poll(at).toBe(plus(first!, 1))
+  // A week on where the grid has one, else a week back.
+  const down = (await block.locator(`[data-cell="${plus(first!, 8)}"]`).count()) === 1
+  await page.keyboard.press(down ? 'ArrowDown' : 'ArrowUp')
+  const week = plus(first!, down ? 8 : -6)
+  await expect.poll(at).toBe(week)
+  // Tab leaves the days in one press, and Shift Tab comes back to the day last in hand.
+  await page.keyboard.press('Tab')
+  expect(await at()).toBeUndefined()
+  await page.keyboard.press('Shift+Tab')
+  await expect.poll(at).toBe(week)
 })
 
 test('the birthday is out from the start, with nothing chosen until a day is (N-01)', async ({

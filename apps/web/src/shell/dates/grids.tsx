@@ -1,6 +1,6 @@
 import { addDays, daysInMonth, LUNAR_MONTHS } from '@ctws/core'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useRef } from 'react'
+import { type ReactNode, useLayoutEffect, useRef } from 'react'
 import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { BackIcon, ForwardIcon } from '../../platform/ui/icons'
 import { MONTHS } from '../../platform/time/dates'
@@ -50,6 +50,9 @@ function Cell({
       onClick={onPick}
       aria-label={label}
       aria-pressed={selected}
+      data-cell={label}
+      {...(today ? { 'data-today': '' } : {})}
+      {...(out ? { 'data-out': '' } : {})}
       className={`flex h-13 flex-col items-center justify-center rounded-control ${
         selected
           ? `${accent} text-on-project`
@@ -61,6 +64,60 @@ function Cell({
         {small ?? ' '}
       </span>
     </button>
+  )
+}
+
+/** The key a press moves the focus by, in a grid `cols` wide. */
+const STEP: Record<string, (cols: number) => number> = {
+  ArrowLeft: () => -1,
+  ArrowRight: () => 1,
+  ArrowUp: (cols) => -cols,
+  ArrowDown: (cols) => cols,
+}
+
+/**
+ * The cells, one Tab stop for all of them (BUG-108, as the calendar's grid, BUG-057): the stop is
+ * the cell last in hand, else the chosen one, else today, else the first of the month; the arrows
+ * go from cell to cell, Home and End to the first and the last. Tab leaves the grid in one press.
+ */
+function Cells({ cols, children }: { cols: number; children: ReactNode }) {
+  const grid = useRef<HTMLDivElement>(null)
+  const held = useRef<string | null>(null)
+  const cells = () => [...(grid.current?.querySelectorAll<HTMLElement>('[data-cell]') ?? [])]
+  useLayoutEffect(() => {
+    const all = cells()
+    const stop =
+      all.find((c) => c.dataset.cell === held.current) ??
+      all.find((c) => c.getAttribute('aria-pressed') === 'true') ??
+      all.find((c) => c.hasAttribute('data-today')) ??
+      all.find((c) => !c.hasAttribute('data-out')) ??
+      all[0]
+    for (const c of all) c.tabIndex = c === stop ? 0 : -1
+  })
+  return (
+    <div
+      ref={grid}
+      className={`grid gap-0.5 ${cols === 4 ? 'grid-cols-4' : 'grid-cols-7'}`}
+      onFocus={(e) => {
+        const at = e.target instanceof HTMLElement ? e.target.dataset.cell : undefined
+        if (!at) return
+        held.current = at
+        for (const c of cells()) c.tabIndex = c === e.target ? 0 : -1
+      }}
+      onKeyDown={(e) => {
+        const all = cells()
+        const now = all.indexOf(e.target as HTMLElement)
+        if (now === -1) return
+        const step = STEP[e.key]
+        const next =
+          e.key === 'Home' ? 0 : e.key === 'End' ? all.length - 1 : step ? now + step(cols) : null
+        if (next === null) return
+        e.preventDefault()
+        all[Math.min(Math.max(next, 0), all.length - 1)]?.focus()
+      }}
+    >
+      {children}
+    </div>
   )
 }
 
@@ -143,7 +200,7 @@ export function DayGrid({
         nextLabel="Next month"
       />
       <WeekdayRow />
-      <div className="grid grid-cols-7 gap-0.5">
+      <Cells cols={7}>
         {cells.map((day) => (
           <Cell
             key={day}
@@ -159,7 +216,7 @@ export function DayGrid({
             onPick={() => onPick(day)}
           />
         ))}
-      </div>
+      </Cells>
     </div>
   )
 }
@@ -248,7 +305,7 @@ export function LunarGrid({
         nextLabel="Next lunar month"
       />
       <WeekdayRow />
-      <div className="grid grid-cols-7 gap-0.5">
+      <Cells cols={7}>
         {Array.from({ length: lead }, (_, i) => (
           <span key={`lead-${i}`} />
         ))}
@@ -277,7 +334,7 @@ export function LunarGrid({
             />
           )
         })}
-      </div>
+      </Cells>
     </div>
   )
 }
@@ -307,7 +364,7 @@ export function MonthGrid({
         prevLabel="Previous year"
         nextLabel="Next year"
       />
-      <div className="grid grid-cols-4 gap-0.5">
+      <Cells cols={4}>
         {MONTHS.map((name, i) => {
           const month = `${year}-${pad(i + 1)}`
           return (
@@ -322,7 +379,7 @@ export function MonthGrid({
             />
           )
         })}
-      </div>
+      </Cells>
     </div>
   )
 }
