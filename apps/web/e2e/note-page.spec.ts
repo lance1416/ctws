@@ -178,16 +178,18 @@ test('the source keeps the cursor on its line and the line where it was on the s
   await registerFreshUser(page)
   // Long enough to scroll either way: the page is what moves to keep the line still.
   const filler = Array.from({ length: 40 }, (_, i) => `Line ${i + 1}.`)
-  await openNote(page, [...filler, ...NOTE, ...filler])
+  await openNote(page, [...filler.slice(0, 12), ...NOTE, ...filler])
   const line = page.locator('[data-markdown-editor] .cm-line').filter({ hasText: 'End.' })
-  await line.scrollIntoViewIfNeeded()
-  await page.getByRole('main').evaluate((el) => el.scrollBy(0, 200))
+  await page.getByRole('main').evaluate((el) => el.scrollBy(0, 300))
   await line.click()
   const before = (await line.boundingBox())!.y
   await page.keyboard.press('Control+Shift+V')
   await expect(page.locator('[data-markdown-editor] .cm-src')).toBeVisible()
   await expect(page.locator('[data-markdown-editor] .cm-activeLine')).toHaveText('End.')
-  expect(Math.abs((await line.boundingBox())!.y - before)).toBeLessThanOrEqual(1)
+  // Once the mono face has arrived (fetched on first use) and the lines are its height.
+  await expect
+    .poll(async () => Math.abs((await line.boundingBox())!.y - before))
+    .toBeLessThanOrEqual(1)
 })
 
 test('Ctrl Shift V only switches the view: nothing is pasted with it', async ({

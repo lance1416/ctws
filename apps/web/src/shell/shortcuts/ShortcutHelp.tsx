@@ -45,8 +45,8 @@ const VIM_TITLE = 'In the editor, with Vim keys on'
  */
 const COLUMNS: readonly (readonly string[])[] = [
   ['Anywhere', 'Go to'],
-  ['New', 'On a project', 'On a board, with a card focused', 'On the Workbench'],
-  ['In a tree or list, with a row focused', 'In search', 'In a form', NOTE_TITLE, VIM_TITLE],
+  ['New', 'On a project', 'On a board, with a card focused', 'On the Workbench', NOTE_TITLE],
+  ['In a tree or list, with a row focused', 'In search', 'In a form', VIM_TITLE],
 ]
 
 /**
