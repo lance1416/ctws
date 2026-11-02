@@ -351,6 +351,13 @@
       "when": 1793489697821,
       "tag": "0049_note_layout",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793624027839,
+      "tag": "0050_nested_folders",
+      "breakpoints": true
     }
   ]
 }

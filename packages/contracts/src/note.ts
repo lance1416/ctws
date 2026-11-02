@@ -97,15 +97,31 @@ export const noteListQuery = z
 
 export const notesResponse = z.object({ notes: z.array(noteResponse), page: pageInfo })
 
-/** A folder of notes (FR-110): one level, its name its own in the workspace. */
+/**
+ * A folder of notes (FR-110, FR-117): up to three deep, its name its own among the folders beside
+ * it, open or closed in the sidebar as it was left.
+ */
 export const noteFolderParams = z.object({ id: noteFolderId }).strict()
 
-export const noteFolderBody = z.object({ name: nameText }).strict()
+/** A new folder: its name, and the folder it goes in; none puts it at the top. */
+export const noteFolderBody = z
+  .object({ name: nameText, parentId: noteFolderId.nullable().optional() })
+  .strict()
 export type NoteFolderBody = z.infer<typeof noteFolderBody>
+
+/** A folder renamed, moved (null: to the top), or opened or closed in the sidebar. */
+export const noteFolderPatch = z
+  .object({ name: nameText, parentId: noteFolderId.nullable(), open: z.boolean() })
+  .partial()
+  .strict()
+  .refine((b) => Object.values(b).some((v) => v !== undefined), { message: 'nothing to change' })
+export type NoteFolderPatch = z.infer<typeof noteFolderPatch>
 
 export const noteFolderResponse = z.object({
   id: noteFolderId,
+  parentId: noteFolderId.nullable(),
   name: z.string(),
+  open: z.boolean(),
   createdAt: instant,
   updatedAt: instant,
 })

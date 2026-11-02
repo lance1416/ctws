@@ -6,7 +6,7 @@ import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser } from '../../shell/auth'
 import type { LinkRegistry } from '../../shell/links'
 import { getNote, listNotes, wordCount } from './queries'
-import { createFolder, deleteFolder, listFolders, renameFolder } from './folders'
+import { createFolder, deleteFolder, listFolders, updateFolder } from './folders'
 import { createNote, deleteNote, updateNote } from './service'
 import type { Note, NoteFolder } from './tables'
 
@@ -51,7 +51,9 @@ async function respond(
 
 const folderShown = (f: NoteFolder) => ({
   id: f.id,
+  parentId: f.parentId,
   name: f.name,
+  open: f.open,
   createdAt: f.createdAt.toISOString(),
   updatedAt: f.updatedAt.toISOString(),
 })
@@ -101,7 +103,7 @@ export const noteRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     ),
 
     on(api.noteFolders.update, async (req) =>
-      folderShown(await renameFolder(app.db, actorOf(req), req.params.id, req.body)),
+      folderShown(await updateFolder(app.db, actorOf(req), req.params.id, req.body)),
     ),
 
     on(api.noteFolders.remove, async (req) => {

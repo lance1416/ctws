@@ -5,11 +5,25 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
-import { check, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import {
+  type AnyPgColumn,
+  boolean,
+  check,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
 
-/** A folder of notes (REQ-002 FR-110): one level, its name its own in the workspace. */
+/**
+ * A folder of notes (REQ-002 FR-110, FR-117): up to three deep, its name its own among the folders
+ * beside it, open or closed in the sidebar as it was left. Deleting one moves what is in it up a
+ * level first (`deleteFolder`); the parent's own `on delete set null` is only a backstop.
+ */
 export const noteFolders = pgTable(
   'note_folders',
   {
@@ -18,11 +32,18 @@ export const noteFolders = pgTable(
       .$type<WorkspaceId>()
       .notNull()
       .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
+    parentId: uuid('parent_id')
+      .$type<NoteFolderId>()
+      .references((): AnyPgColumn => noteFolders.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
+    open: boolean('open').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('note_folders_workspace_name_key').on(t.workspaceId, t.name)],
+  // At the top, where there is no parent, the names are each other's too: nulls not distinct.
+  (t) => [
+    unique('note_folders_parent_name_key').on(t.workspaceId, t.parentId, t.name).nullsNotDistinct(),
+  ],
 )
 
 export type NoteFolder = typeof noteFolders.$inferSelect

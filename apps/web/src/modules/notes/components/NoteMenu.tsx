@@ -8,6 +8,7 @@ import { MoreIcon, PinIcon } from '../../../platform/ui/icons'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { foldersQuery } from '../api'
 import { fileNameOf } from '../logic/download'
+import { foldersInTree } from '../logic/shelves'
 import { askNewFolder, askReveal } from '../hooks/sidebarAsk'
 import { useShelveNote } from '../hooks/useShelveNote'
 
@@ -88,20 +89,27 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
           shelve.mutate({ id: note.id, folderId: v === NONE ? null : (v as NoteFolderId) })
         }
       >
-        {folders.map((f) => (
-          <DropdownMenu.RadioItem key={f.id} value={f.id} className={MENU_ITEM}>
-            <span className="flex-1 truncate">{f.name}</span>
-            <DropdownMenu.ItemIndicator className="text-meta text-muted">
-              ✓
-            </DropdownMenu.ItemIndicator>
-          </DropdownMenu.RadioItem>
-        ))}
+        {/* None first, then the tree, then a new one (artboard 40). */}
         <DropdownMenu.RadioItem value={NONE} className={MENU_ITEM}>
           <span className="flex-1">No folder</span>
           <DropdownMenu.ItemIndicator className="text-meta text-muted">
             ✓
           </DropdownMenu.ItemIndicator>
         </DropdownMenu.RadioItem>
+        {foldersInTree(folders).map(({ folder: f, depth }) => (
+          <DropdownMenu.RadioItem
+            key={f.id}
+            value={f.id}
+            // Each level 16 further in; the one it is in already in the quieter grey.
+            style={{ paddingLeft: `${0.5 + (depth - 1)}rem` }}
+            className={`${MENU_ITEM} ${f.id === note.folderId ? 'text-subtle' : ''}`}
+          >
+            <span className="flex-1 truncate">{f.name}</span>
+            <DropdownMenu.ItemIndicator className="text-meta text-muted">
+              ✓
+            </DropdownMenu.ItemIndicator>
+          </DropdownMenu.RadioItem>
+        ))}
       </DropdownMenu.RadioGroup>
       {/* Made in the sidebar's own row, and this note put in it (DES-001). */}
       <DropdownMenu.Item onSelect={() => askNewFolder(note.id)} className={MENU_ITEM}>

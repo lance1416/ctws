@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { apiPost, registerFreshUser } from './helpers'
+import { apiPost, registerFreshUser, WEB } from './helpers'
 
 /**
  * FOLDERS AND PINS (REQ-002 FR-110, artboard 34, DES-001 "文件夹和置顶"): a note on its own goes
@@ -110,7 +110,7 @@ test('renamed in its row; deleted, asked first, its notes left in none', async (
   await page.getByRole('menuitem', { name: 'Delete…' }).click()
   const ask = page.getByRole('alertdialog', { name: 'Delete Reading notes' })
   await expect(ask).toContainText(
-    'Delete Reading notes? The folder goes; its note stays, in Not in a folder.',
+    'Delete Reading notes? The folder goes; its 1 note stays, one level up.',
   )
   await ask.getByRole('button', { name: 'Delete Reading notes' }).click()
   await expect(row('Reading notes')).toHaveCount(0)
@@ -153,4 +153,145 @@ test('a pinned note is listed first, under Pinned, and a note on a thing has no 
   await expect(page.getByRole('button', { name: 'Pin', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'More', exact: true }).click()
   await expect(page.getByRole('menuitem', { name: 'New folder…' })).toHaveCount(0)
+})
+
+// ------------------------------------------------------------------- folders in folders (FR-117)
+
+type KeptFolder = { id: string; parentId: string | null; name: string; open: boolean }
+
+async function serverFolders(page: Page): Promise<KeptFolder[]> {
+  const res = await page.request.get('/api/v1/notes/folders')
+  return ((await res.json()) as { folders: KeptFolder[] }).folders
+}
+
+const folderRow = (page: Page, name: string) =>
+  sidebar(page)
+    .locator('[data-folder-row]')
+    .filter({
+      has: page.getByRole('button', { name, exact: true }),
+    })
+
+async function folderMenu(page: Page, name: string) {
+  await sidebar(page).getByRole('button', { name, exact: true }).hover()
+  await page.getByRole('button', { name: `More for ${name}` }).click()
+}
+
+async function newFolderIn(page: Page, parent: string, name: string) {
+  await folderMenu(page, parent)
+  await page.getByRole('menuitem', { name: 'New folder' }).click()
+  await page.getByRole('textbox', { name: `New folder in ${parent}` }).fill(name)
+  await page.keyboard.press('Enter')
+  await expect(sidebar(page).getByRole('button', { name, exact: true })).toBeVisible()
+}
+
+test('folders go three deep: a note dragged into the third, no fourth to make', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const note = await apiPost<{ id: string }>(page, '/notes', { title: 'Offer letter', body: 'x' })
+  await page.goto('/notes')
+  await newFolder(page, 'Job hunt prep')
+  await newFolderIn(page, 'Job hunt prep', 'Offers')
+  await newFolderIn(page, 'Offers', 'London')
+  // The third has no New folder; the first two did.
+  await folderMenu(page, 'London')
+  await expect(page.getByRole('menuitem', { name: 'New note' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'New folder' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+
+  const row = sidebar(page).locator(`[data-note-row="${note.id}"]`)
+  await row.dragTo(sidebar(page).getByRole('button', { name: 'London', exact: true }), {
+    steps: 8,
+  })
+  const london = (await serverFolders(page)).find((f) => f.name === 'London')!
+  await expect
+    .poll(async () => (await page.request.get(`/api/v1/notes/${note.id}`)).json())
+    .toMatchObject({ folderId: london.id })
+  // Every folder over it counts it.
+  await expect(folderRow(page, 'Job hunt prep').locator('[data-count]').first()).toHaveText('1')
+})
+
+test('a folder dragged under itself is not taken, and says why', async ({ page }) => {
+  await registerFreshUser(page)
+  const a = await apiPost<KeptFolder>(page, '/notes/folders', { name: 'A' })
+  const b = await apiPost<KeptFolder>(page, '/notes/folders', { name: 'B', parentId: a.id })
+  await page.request.patch(`/api/v1/notes/folders/${a.id}`, { headers: WEB, data: { open: true } })
+  await page.goto('/notes')
+  const target = sidebar(page).getByRole('button', { name: 'B', exact: true })
+  await expect(target).toBeVisible()
+  const from = (await sidebar(page).getByRole('button', { name: 'A', exact: true }).boundingBox())!
+  const to = (await target.boundingBox())!
+  await page.mouse.move(from.x + 40, from.y + from.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(to.x + 40, to.y + to.height / 2, { steps: 10 })
+  await expect(page.getByRole('status').filter({ hasText: 'Folders go three deep' })).toBeVisible()
+  await page.mouse.up()
+  expect((await serverFolders(page)).find((f) => f.id === a.id)?.parentId).toBeNull()
+  expect((await serverFolders(page)).find((f) => f.id === b.id)?.parentId).toBe(a.id)
+})
+
+test('a folder deleted leaves what it held one level up, a name taken numbered', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const job = await apiPost<KeptFolder>(page, '/notes/folders', { name: 'Job hunt prep' })
+  const offers = await apiPost<KeptFolder>(page, '/notes/folders', {
+    name: 'Offers',
+    parentId: job.id,
+  })
+  await apiPost(page, '/notes/folders', { name: 'Talks', parentId: job.id })
+  await apiPost(page, '/notes/folders', { name: 'Talks', parentId: offers.id })
+  const n = await apiPost<{ id: string }>(page, '/notes', { title: 'Offer letter', body: 'x' })
+  await page.request.patch(`/api/v1/notes/${n.id}`, {
+    headers: WEB,
+    data: { folderId: offers.id },
+  })
+  await page.request.patch(`/api/v1/notes/folders/${job.id}`, {
+    headers: WEB,
+    data: { open: true },
+  })
+  await page.goto('/notes')
+  await folderMenu(page, 'Offers')
+  await page.getByRole('menuitem', { name: 'Delete…' }).click()
+  const ask = page.getByRole('alertdialog', { name: 'Delete Offers' })
+  await expect(ask).toContainText(
+    'Delete Offers? The folder goes; its 1 folder and 1 note stay, one level up. Talks becomes Talks 2.',
+  )
+  await ask.getByRole('button', { name: 'Delete Offers' }).click()
+  await expect(sidebar(page).getByRole('button', { name: 'Talks 2', exact: true })).toBeVisible()
+  const now = await serverFolders(page)
+  expect(now.find((f) => f.name === 'Talks 2')?.parentId).toBe(job.id)
+  expect(
+    ((await (await page.request.get(`/api/v1/notes/${n.id}`)).json()) as { folderId: string })
+      .folderId,
+  ).toBe(job.id)
+})
+
+test('each folder stays open or closed as it was left, and opens over the note shown', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const a = await apiPost<KeptFolder>(page, '/notes/folders', { name: 'A' })
+  const b = await apiPost<KeptFolder>(page, '/notes/folders', { name: 'B', parentId: a.id })
+  const n = await apiPost<{ id: string }>(page, '/notes', { title: 'Deep', body: 'x' })
+  await page.request.patch(`/api/v1/notes/${n.id}`, { headers: WEB, data: { folderId: b.id } })
+  // Shown, the chain over it opens itself.
+  await page.goto(`/notes/${n.id}`)
+  await expect(sidebar(page).locator(`[data-note-row="${n.id}"]`)).toBeVisible()
+  // Opened by hand, it stays open on the next visit; closed, it stays closed.
+  await page.goto('/notes')
+  const toggle = sidebar(page).getByRole('button', { name: 'A', exact: true })
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click()
+  await expect
+    .poll(async () => (await serverFolders(page)).find((f) => f.id === a.id)?.open)
+    .toBe(true)
+  await page.reload()
+  await expect(sidebar(page).getByRole('button', { name: 'A', exact: true })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  )
+  await sidebar(page).getByRole('button', { name: 'A', exact: true }).click()
+  await expect
+    .poll(async () => (await serverFolders(page)).find((f) => f.id === a.id)?.open)
+    .toBe(false)
 })

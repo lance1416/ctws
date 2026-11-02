@@ -13,6 +13,7 @@ import { useFolderActions } from '../hooks/useFolderActions'
 import { useShelveNote } from '../hooks/useShelveNote'
 import { NOTES_ID } from '../logic/id'
 import { RowNameField } from './RowNameField'
+import { foldersInTree } from '../logic/shelves'
 import { downloadNote } from './NoteMenu'
 import { sourceWords } from '../../../platform/editor/SourceButton'
 
@@ -163,12 +164,14 @@ function FolderSheet({ note, onClose }: { note: NoteResponse; onClose: () => voi
   return (
     <BottomSheet title="Move to a folder" onClose={onClose}>
       <ul className="py-1 pb-2">
-        {folders.map((f) => (
+        {foldersInTree(folders).map(({ folder: f, depth }) => (
           <li key={f.id}>
             <button
               type="button"
               aria-pressed={note.folderId === f.id}
               onClick={() => put(f.id)}
+              // Each level 16 further in (artboard 40).
+              style={{ paddingLeft: `${1 + (depth - 1)}rem` }}
               className={ROW}
             >
               <span className="flex-1 truncate">{f.name}</span>

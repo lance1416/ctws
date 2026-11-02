@@ -1,6 +1,6 @@
 import type { NoteFolderResponse, NoteResponse } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { shelvesOf } from './shelves'
+import { everyShelf, shelvesOf } from './shelves'
 
 const AT = '2026-10-31T09:00:00.000Z'
 let n = 0
@@ -22,9 +22,11 @@ function note(title: string, more: Partial<NoteResponse> = {}): NoteResponse {
   }
 }
 
-const folder = (name: string): NoteFolderResponse => ({
+const folder = (name: string, parent: NoteFolderResponse | null = null): NoteFolderResponse => ({
   id: id() as NoteFolderResponse['id'],
+  parentId: parent?.id ?? null,
   name,
+  open: false,
   createdAt: AT,
   updatedAt: AT,
 })
@@ -57,6 +59,25 @@ describe('the notes sidebar’s places', () => {
     const s = shelvesOf(notes, [job, ideas], 'SALARY')
     expect(s.folders.map((f) => f.folder.name)).toEqual(['Job hunt prep'])
     expect([s.pinned, s.loose, s.onThings].map((l) => l.length)).toEqual([0, 0, 0])
+  })
+
+  it('lays folders out as a tree, each counting the notes under it at any depth', () => {
+    const offers = folder('Offers', job)
+    const london = folder('London', offers)
+    const s = shelvesOf(
+      [note('Stripe', { folderId: offers.id }), note('Rent', { folderId: london.id }), ...notes],
+      [job, ideas, offers, london],
+    )
+    const top = s.folders.find((f) => f.folder.name === 'Job hunt prep')!
+    expect(top.count).toBe(3)
+    expect(top.folders.map((f) => [f.folder.name, f.count])).toEqual([['Offers', 2]])
+    expect(top.folders[0]!.folders.map((f) => f.folder.name)).toEqual(['London'])
+    expect(everyShelf(s.folders).map((f) => f.folder.name)).toEqual([
+      'Job hunt prep',
+      'Offers',
+      'London',
+      'Ideas',
+    ])
   })
 
   it('keeps a note whose folder is gone among those in none', () => {

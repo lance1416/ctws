@@ -37,8 +37,12 @@ async function note(ctx: Harness, body: object): Promise<NoteResponse> {
   return res.json()
 }
 
-async function folder(ctx: Harness, name: string): Promise<NoteFolderResponse> {
-  const res = await call(ctx, 'POST', '/notes/folders', { name })
+async function folder(
+  ctx: Harness,
+  name: string,
+  parent: NoteFolderResponse | null = null,
+): Promise<NoteFolderResponse> {
+  const res = await call(ctx, 'POST', '/notes/folders', { name, parentId: parent?.id ?? null })
   expect(res.statusCode, res.body).toBe(201)
   return res.json()
 }
@@ -149,5 +153,88 @@ describe('a note hung on a thing', () => {
     expect(hung.statusCode, hung.body).toBe(200)
     const after = hung.json() as NoteResponse
     expect([after.folderId, after.pinnedAt]).toEqual([null, null])
+  })
+})
+
+describe('folders in folders (FR-117)', () => {
+  const list = async (ctx: Harness) =>
+    ((await call(ctx, 'GET', '/notes/folders')).json() as { folders: NoteFolderResponse[] }).folders
+
+  it('go three deep, a name its own among those beside it', async () => {
+    const ctx = await setup()
+    const job = await folder(ctx, 'Job hunt prep')
+    const offers = await folder(ctx, 'Offers', job)
+    const london = await folder(ctx, 'London', offers)
+    expect(london.parentId).toBe(offers.id)
+    const fourth = await call(ctx, 'POST', '/notes/folders', {
+      name: 'Too far',
+      parentId: london.id,
+    })
+    expect(fourth.statusCode).toBe(409)
+    expect(fourth.json().detail).toBe('Folders go three deep')
+    // Beside each other two cannot share a name, at the top too; under another they can.
+    await folder(ctx, 'Offers')
+    expect(
+      (await call(ctx, 'POST', '/notes/folders', { name: 'Offers', parentId: job.id })).statusCode,
+    ).toBe(409)
+    expect((await call(ctx, 'POST', '/notes/folders', { name: 'Job hunt prep' })).statusCode).toBe(
+      409,
+    )
+  })
+
+  it('move with all they hold, never under themselves or past three deep', async () => {
+    const ctx = await setup()
+    const a = await folder(ctx, 'A')
+    const b = await folder(ctx, 'B', a)
+    await folder(ctx, 'C', b)
+    const d = await folder(ctx, 'D')
+    const e = await folder(ctx, 'E', d)
+    expect(
+      (await call(ctx, 'PATCH', `/notes/folders/${a.id}`, { parentId: b.id })).statusCode,
+    ).toBe(409)
+    // D holds two levels: it can go under A, not under B.
+    expect(
+      (await call(ctx, 'PATCH', `/notes/folders/${d.id}`, { parentId: b.id })).statusCode,
+    ).toBe(409)
+    const moved = await call(ctx, 'PATCH', `/notes/folders/${d.id}`, { parentId: a.id })
+    expect(moved.statusCode).toBe(200)
+    const now = await list(ctx)
+    expect(now.find((f) => f.id === d.id)?.parentId).toBe(a.id)
+    expect(now.find((f) => f.id === e.id)?.parentId).toBe(d.id)
+    expect(
+      (await call(ctx, 'PATCH', `/notes/folders/${d.id}`, { parentId: null })).json().parentId,
+    ).toBeNull()
+  })
+
+  it('deleted, leave what they hold one level up, a name taken there numbered', async () => {
+    const ctx = await setup()
+    const talks = await folder(ctx, 'Talks')
+    const ideas = await folder(ctx, 'Ideas')
+    const inner = await folder(ctx, 'Talks', ideas)
+    const same = await folder(ctx, 'Ideas', ideas)
+    const n = await note(ctx, { title: 'Kept', body: 'x' })
+    await call(ctx, 'PATCH', `/notes/${n.id}`, { folderId: ideas.id })
+    expect((await call(ctx, 'DELETE', `/notes/folders/${ideas.id}`)).statusCode).toBe(204)
+    const now = await list(ctx)
+    expect(now.map((f) => [f.name, f.parentId]).sort()).toEqual(
+      [
+        ['Ideas', null],
+        ['Talks', null],
+        ['Talks 2', null],
+      ].sort(),
+    )
+    expect(now.find((f) => f.id === inner.id)?.name).toBe('Talks 2')
+    expect(now.find((f) => f.id === same.id)?.name).toBe('Ideas')
+    expect(now.find((f) => f.id === talks.id)?.name).toBe('Talks')
+    expect(((await call(ctx, 'GET', `/notes/${n.id}`)).json() as NoteResponse).folderId).toBeNull()
+  })
+
+  it('open and close as they are left, which is no edit', async () => {
+    const ctx = await setup()
+    const a = await folder(ctx, 'A')
+    expect(a.open).toBe(false)
+    const opened = (await call(ctx, 'PATCH', `/notes/folders/${a.id}`, { open: true })).json()
+    expect(opened.open).toBe(true)
+    expect(opened.updatedAt).toBe(a.updatedAt)
   })
 })

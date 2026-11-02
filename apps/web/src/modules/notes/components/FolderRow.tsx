@@ -1,5 +1,5 @@
 import type { NoteFolderResponse } from '@ctws/contracts'
-import { useDroppable } from '@dnd-kit/core'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { type ReactNode, useState } from 'react'
 import { problemText } from '../../../platform/http/api'
@@ -9,14 +9,18 @@ import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { useFolderActions } from '../hooks/useFolderActions'
 import { RowNameField } from './RowNameField'
 
-/** What a note dragged in the sidebar is dropped on: a folder, or none (FR-110). */
+/** What a note or a folder dragged in the sidebar is dropped on: a folder, or none (FR-110). */
 export const dropOn = (folder: NoteFolderResponse | null) => `folder:${folder?.id ?? 'none'}`
 
+/** A folder being dragged, told apart from a note's id. */
+export const dragOf = (folder: NoteFolderResponse) => `move:${folder.id}`
+
 /**
- * A FOLDER IN THE SIDEBAR (FR-110, FR-115, artboard 38): its name and count, opened to its notes.
- * On hover its count gives way to "+", a new note in it, and "…", the same menu as a right press:
- * New note; Rename, in its row; Delete…, asked first unless it is empty, its notes left in none.
- * A note dragged onto it goes in.
+ * A FOLDER IN THE SIDEBAR (FR-110, FR-115, FR-117, artboards 38 and 40): its name and the count of
+ * every note under it, opened to the folders in it and its notes, each level 16 further in. On
+ * hover its count gives way to "+", a new note in it, and "…", the same menu as a right press:
+ * New note; New folder, but on the third level; Rename, in its row; Delete…, asked first unless it
+ * is empty. A note or a folder dragged onto it goes in, where it may (`refuses` otherwise).
  */
 export function FolderRow({
   folder,
@@ -24,6 +28,9 @@ export function FolderRow({
   open,
   onToggle,
   onNewNote,
+  onNewFolder,
+  asked,
+  refuses,
   children,
 }: {
   folder: NoteFolderResponse
@@ -31,18 +38,24 @@ export function FolderRow({
   open: boolean
   onToggle: () => void
   onNewNote: () => void
+  /** A folder in this one; none on the third level. */
+  onNewFolder: (() => void) | null
+  /** The question before it goes; null when it is empty, and goes unasked. */
+  asked: string | null
+  /** A folder being dragged may not go in here: too deep, or into itself. */
+  refuses: boolean
   children: ReactNode
 }) {
   const actions = useFolderActions()
   const [menu, setMenu] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [asking, setAsking] = useState(false)
-  const drop = useDroppable({ id: dropOn(folder) })
+  const drop = useDroppable({ id: dropOn(folder), disabled: refuses })
+  const drag = useDraggable({ id: dragOf(folder), disabled: renaming })
   const remove = () => actions.remove.mutate(folder.id, { onSuccess: () => setAsking(false) })
-  const notes = count === 1 ? 'its note stays' : `its ${count} notes stay`
 
   return (
-    <li data-folder-row={folder.id}>
+    <li data-folder-row={folder.id} className={drag.isDragging ? 'opacity-40' : ''}>
       {renaming ? (
         <RowNameField
           initial={folder.name}
@@ -58,13 +71,17 @@ export function FolderRow({
         />
       ) : (
         <div
-          ref={drop.setNodeRef}
+          ref={(el) => {
+            drop.setNodeRef(el)
+            drag.setNodeRef(el)
+          }}
+          {...drag.listeners}
           onContextMenu={(e) => {
             e.preventDefault()
             setMenu(true)
           }}
           className={`group mx-1.5 flex h-7.5 items-center rounded-control text-ui text-ink hover:bg-hover ${
-            drop.isOver ? 'bg-select' : ''
+            drop.isOver ? 'bg-select outline-1 -outline-offset-1 outline-task' : ''
           }`}
         >
           <button
@@ -107,12 +124,17 @@ export function FolderRow({
                   New note
                   <span className="ml-auto pl-4 text-meta text-muted">N N</span>
                 </DropdownMenu.Item>
+                {onNewFolder && (
+                  <DropdownMenu.Item onSelect={onNewFolder} className={MENU_ITEM}>
+                    New folder
+                  </DropdownMenu.Item>
+                )}
                 <DropdownMenu.Separator className="my-1 h-px bg-line" />
                 <DropdownMenu.Item onSelect={() => setRenaming(true)} className={MENU_ITEM}>
                   Rename
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  onSelect={() => (count === 0 ? remove() : setAsking(true))}
+                  onSelect={() => (asked === null ? remove() : setAsking(true))}
                   className={`${MENU_ITEM} text-stop-t`}
                 >
                   Delete…
@@ -130,11 +152,11 @@ export function FolderRow({
           </span>
         </div>
       )}
-      {open && <ul className="flex flex-col gap-px pl-5.5">{children}</ul>}
-      {asking && (
+      {open && <ul className="flex flex-col gap-px pl-4">{children}</ul>}
+      {asking && asked !== null && (
         <DeleteConfirm
           label={`Delete ${folder.name}`}
-          message={`Delete ${folder.name}? The folder goes; ${notes}, in Not in a folder.`}
+          message={asked}
           confirm={`Delete ${folder.name}`}
           busy={actions.remove.isPending}
           onConfirm={remove}

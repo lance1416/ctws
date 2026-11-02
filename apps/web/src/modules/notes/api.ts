@@ -2,6 +2,7 @@ import {
   api,
   type CreateNoteBody,
   type NoteFolderId,
+  type NoteFolderPatch,
   type NoteFolderResponse,
   type NoteId,
   type NoteResponse,
@@ -46,12 +47,15 @@ export const foldersQuery = () =>
     queryFn: async ({ signal }) => (await call(api.noteFolders.list, {}, { signal })).folders,
   })
 
-export function createFolder(name: string): Promise<NoteFolderResponse> {
-  return call(api.noteFolders.create, { body: { name } })
+export function createFolder(
+  name: string,
+  parentId: NoteFolderId | null = null,
+): Promise<NoteFolderResponse> {
+  return call(api.noteFolders.create, { body: { name, parentId } })
 }
 
-export function renameFolder(id: NoteFolderId, name: string): Promise<NoteFolderResponse> {
-  return call(api.noteFolders.update, { params: { id }, body: { name } })
+export function patchFolder(id: NoteFolderId, body: NoteFolderPatch): Promise<NoteFolderResponse> {
+  return call(api.noteFolders.update, { params: { id }, body })
 }
 
 export function deleteFolder(id: NoteFolderId): Promise<void> {
