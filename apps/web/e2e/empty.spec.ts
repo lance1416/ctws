@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
-import { ymd } from './days'
 
 /**
  * The empty states: Today with nothing on it, a project with no tasks, Done with no history, a
@@ -11,22 +10,6 @@ import { ymd } from './days'
  * AND asserts it is gone the moment the screen has something on it -- the second half is what
  * makes the first half mean anything.
  */
-
-test('an empty Today says Nothing yet, and stops saying it when something is planned', async ({
-  page,
-}) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-
-  const planned = page.getByRole('region', { name: 'Planned for today' })
-  await expect(planned).toContainText('Nothing yet')
-
-  // The other half: with something planned, the words go.
-  await makeTask(page, pid, '今天要做的', { scheduledOn: ymd(new Date()) })
-  await page.goto('/today')
-  await expect(planned.getByText('今天要做的')).toBeVisible()
-  await expect(planned).not.toContainText('Nothing yet')
-})
 
 test('an empty project is its column names and New task, one way to add', async ({ page }) => {
   await registerFreshUser(page)

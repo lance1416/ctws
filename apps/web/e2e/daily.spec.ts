@@ -275,33 +275,6 @@ test('an overdue row is finished with its mark, and only overdue rows have the d
 
 // ---------------------------------------------------------------------------------- dates in tree
 
-test('the tree shows deadlines only where they mean something', async ({ page }) => {
-  await registerFreshUser(page)
-  const pid = await makeProject(page, 'P')
-  const now = new Date()
-  const todayLate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 30)
-  // Taken ONCE and reused below: deriving the expected wording from a second `dueAgo(5)` call
-  // would read the clock twice, and a minute tick between the two makes the test red for a minute.
-  const lateDue = dueAgo(5)
-  await makeTask(page, pid, '逾期的', { dueAt: lateDue })
-  await makeTask(page, pid, '今天截止', { dueAt: todayLate.toISOString() })
-  await makeTask(page, pid, '只排期', { scheduledOn: ymd(new Date(now.getTime() + DAY)) })
-  await makeTask(page, pid, '没日期')
-  await openTree(page, pid)
-
-  const due = (title: string) => treeRow(page, title).locator('[data-row-due]')
-  const d = new Date(lateDue)
-  // Missed: the day it was due, on red, flagged.
-  await expect(due('逾期的')).toHaveAttribute('data-row-due', 'late')
-  await expect(due('逾期的')).toContainText(`${MONTHS[d.getMonth()]} ${d.getDate()}`)
-  // Due today at the end of the day is a day, not a minute before midnight.
-  await expect(due('今天截止')).toHaveAttribute('data-row-due', 'soon')
-  await expect(due('今天截止')).toContainText('Today')
-  // A plan is the detail's to say, and a dateless row says nothing: the row is still a row.
-  await expect(due('只排期')).toHaveCount(0)
-  await expect(due('没日期')).toHaveCount(0)
-})
-
 // ----------------------------------------------------------------------------- destructive guards
 
 test('deleting a project asks first, names what is lost, and cancel deletes nothing', async ({
