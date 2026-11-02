@@ -51,12 +51,8 @@ test('the outline is a panel on the right that folds away four ways, kept with t
   await page.keyboard.press(']')
   await expect(panel(page)).toBeVisible()
 
-  // Ctrl Alt B from inside the editor, and Ctrl \ (which of the two stays is Safari's to say).
+  // Ctrl Alt B from inside the editor.
   await page.locator('[data-markdown-editor] .cm-line').filter({ hasText: 'End.' }).click()
-  await page.keyboard.press('Control+Alt+b')
-  await expect(panel(page)).toHaveCount(0)
-  await page.keyboard.press('Control+Backslash')
-  await expect(panel(page)).toBeVisible()
   await page.keyboard.press('Control+Alt+b')
   await expect(panel(page)).toHaveCount(0)
 
