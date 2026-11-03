@@ -22,8 +22,8 @@ import {
 
 /**
  * Adds a minute per account. A pasted link is fetched from its site, the API's one request out,
- * so a script cannot turn this into a way to aim it elsewhere; not yet measured: thirty is far
- * past anyone pasting by hand.
+ * so a script cannot turn this into a way to aim it elsewhere. Thirty is far past anyone pasting
+ * by hand.
  */
 const ADDS_PER_MINUTE = 30
 

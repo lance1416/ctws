@@ -9,7 +9,7 @@ import { readingItems } from './tables'
 const counted = z.object({ finished: z.coerce.number().int() })
 
 /**
- * The review's "Reading finished" (FR-081): items marked done in the week, once each, read from
+ * The review's "Reading finished": items marked done in the week, once each, read from
  * their change log, and still here.
  */
 export const readingWeekCounts: WeekCounts = async (q, workspaceId, window) => {

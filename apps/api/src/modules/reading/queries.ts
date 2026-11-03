@@ -25,7 +25,7 @@ type ReadingItem = typeof readingItems.$inferSelect
 export type ReadingItemRow = ReadingItem & { projectName: string | null; statusSince: Date }
 
 /**
- * When the item last took the status it has (FR-072, FR-073): "Since Sep 30" on a card, started
+ * When the item last took the status it has: "Since Sep 30" on a card, started
  * and finished on its page. Its log says; one never changed has had its status since it was added.
  * Correlated through the literal `reading_items`: a drizzle column would render unqualified.
  */

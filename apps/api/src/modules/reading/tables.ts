@@ -31,7 +31,7 @@ export const readingItems = pgTable(
     status: text('status').$type<(typeof READING_STATUSES)[number]>().notNull(),
     /** The day you mean to finish it by. */
     planOn: date('plan_on'),
-    /** The project it belongs to and who recommended it (FR-042): fields, no longer edges. */
+    /** The project it belongs to and who recommended it: fields, no longer edges. */
     projectId: uuid('project_id').$type<ProjectId>(),
     /** No foreign key: the people table is another module's; a read drops a person it cannot see. */
     recommendedBy: uuid('recommended_by').$type<PersonId>(),

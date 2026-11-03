@@ -108,7 +108,7 @@ export async function updateReadingItem(
   })
 }
 
-/** Deletes an item for good (FR-035): a tombstone, and the row goes. */
+/** Deletes an item for good: a tombstone, and the row goes. */
 export async function deleteReadingItem(db: Db, ctx: Actor, id: ReadingId): Promise<void> {
   await db.transaction(async (tx) => {
     const current = await lockReadingItem(tx, ctx.workspaceId, id)
