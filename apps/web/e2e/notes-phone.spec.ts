@@ -58,8 +58,13 @@ test('folders in folders on a phone: each opens to its own, counted whole; ‹ t
   await expect(folders.getByRole('link')).toHaveText([/AAA\s*3/])
   await folders.getByRole('link', { name: /AAA/ }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'AAA' })).toBeVisible()
-  await expect(page.getByRole('link', { name: /BBB\s*2/ })).toBeVisible()
-  await expect(page.locator('[data-note-row]')).toHaveText(['In A'])
+  // Its own places, a card each: the folders in it, then its notes.
+  await expect(page.getByRole('region', { name: 'Folders' }).getByRole('link')).toHaveText([
+    /BBB\s*2/,
+  ])
+  await expect(page.getByRole('region', { name: 'Notes' }).locator('[data-note-row]')).toHaveText([
+    'In A',
+  ])
   await page.getByRole('link', { name: /BBB/ }).click()
   await page.getByRole('link', { name: /CCC\s*1/ }).click()
   await expect(page.locator('[data-note-row]')).toHaveText(['In C'])

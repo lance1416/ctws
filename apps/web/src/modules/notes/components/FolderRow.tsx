@@ -148,7 +148,8 @@ export function FolderRow({
               menu ? 'hidden' : ''
             }`}
           >
-            {count}
+            {/* An empty folder says no number, not 0. */}
+            {count || null}
           </span>
         </div>
       )}

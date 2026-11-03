@@ -18,7 +18,8 @@ const CARD = 'overflow-hidden rounded-phone border border-line bg-panel'
  * NOTES ON A PHONE (REQ-002 FR-110, artboard 35): the filter, then the pinned, the folders, the
  * notes in none and those on other things, each place a card. A folder, at any of its three
  * levels (FR-117), opens on the same page (`?folder=`) to its pinned notes, the folders in it and
- * then its other notes, "‹" back to the folder it is in, or to Notes.
+ * its other notes, a card each as the list's own places, "‹" back to the folder it is in, or to
+ * Notes.
  */
 export function PhoneNotes() {
   const notes = useQuery(notesQuery())
@@ -47,17 +48,28 @@ export function PhoneNotes() {
           }
           actions={newNote}
         />
-        <Place title={null}>
-          {open.pinned.map((n) => (
-            <NoteRow key={n.id} note={n} />
-          ))}
-          {open.folders.map((f) => (
-            <FolderRow key={f.folder.id} shelf={f} />
-          ))}
-          {open.notes.map((n) => (
-            <NoteRow key={n.id} note={n} />
-          ))}
-        </Place>
+        {/* The places of the list itself, each its own card; one with none is not drawn. */}
+        {open.pinned.length > 0 && (
+          <Place title="Pinned" icon={<PinIcon size={12} aria-hidden="true" />}>
+            {open.pinned.map((n) => (
+              <NoteRow key={n.id} note={n} />
+            ))}
+          </Place>
+        )}
+        {open.folders.length > 0 && (
+          <Place title="Folders">
+            {open.folders.map((f) => (
+              <FolderRow key={f.folder.id} shelf={f} />
+            ))}
+          </Place>
+        )}
+        {open.notes.length > 0 && (
+          <Place title="Notes">
+            {open.notes.map((n) => (
+              <NoteRow key={n.id} note={n} />
+            ))}
+          </Place>
+        )}
       </div>
     )
 
@@ -109,31 +121,29 @@ function Place({
   icon,
   children,
 }: {
-  title: string | null
+  title: string
   icon?: ReactNode
   children: ReactNode
 }) {
   return (
-    <section aria-label={title ?? undefined} className="flex flex-col gap-1.5">
-      {title && (
-        <h2 className="flex items-center gap-1.5 px-1 text-meta text-muted">
-          {icon}
-          {title}
-        </h2>
-      )}
+    <section aria-label={title} className="flex flex-col gap-1.5">
+      <h2 className="flex items-center gap-1.5 px-1 text-meta text-muted">
+        {icon}
+        {title}
+      </h2>
       <ul className={`${CARD} divide-y divide-line`}>{children}</ul>
     </section>
   )
 }
 
-/** A folder, by name, with every note in it and in the folders under it. */
+/** A folder, by name, with every note in it and in the folders under it; none, no number. */
 function FolderRow({ shelf: { folder, count } }: { shelf: Shelf }) {
   return (
     <li>
       <Link to={`/${NOTES_ID}?folder=${folder.id}`} className={ROW}>
         <span className="flex-1 truncate">{folder.name}</span>
         <span data-count className="text-meta text-muted tabular-nums">
-          {count}
+          {count || null}
         </span>
         <CollapseIcon size={16} aria-hidden="true" className="text-muted" />
       </Link>
