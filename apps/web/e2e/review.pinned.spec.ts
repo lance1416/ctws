@@ -34,7 +34,8 @@ test('beside the table: the stages that moved and what else the week held', asyn
 
   const brief = page.getByRole('complementary', { name: 'This week in brief' })
   const stagesMoved = brief.getByRole('region', { name: 'Stages moved' })
-  await expect(stagesMoved.getByRole('heading')).toHaveText(/Stages moved\s*1/)
+  await expect(stagesMoved.getByRole('heading')).toHaveText('Stages moved')
+  await expect(stagesMoved.locator('[data-count]')).toHaveText('1')
   await expect(stagesMoved.getByRole('listitem')).toHaveText([/SDE II.*Onsite/])
   const also = brief.getByRole('region', { name: 'Also this week' })
   await expect(also.getByRole('listitem')).toHaveText([
