@@ -15,7 +15,7 @@ import { dayOffset, dueAgo } from './days'
  * - "the thread joins the rows" is provable only from its box: one x, the row's height, no radius.
  */
 
-/** Every x of a set of cells, rounded-key to the pixel: sub-pixel layout noise is not a column break. */
+/** Every x of a set of cells, rounded to the pixel: sub-pixel layout noise is not a column break. */
 async function xs(page: Page, selector: string): Promise<number[]> {
   const boxes = await page
     .locator(selector)
