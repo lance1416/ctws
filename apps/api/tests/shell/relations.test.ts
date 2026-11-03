@@ -4,9 +4,9 @@ import { createPerson, createProject, createTask } from '../helpers/builders'
 import { appWithUser, eventsOf, type Harness, secondUser } from '../helpers/harness'
 
 /**
- * RELATIONS WITHOUT A KIND (FR-042, FR-027): any two things, joined by hand with an optional line
- * of why, or by one mentioning the other in its text, which carries the sentence. Read from both
- * ends; a mention comes and goes with the text.
+ * Relations without a kind: any two things, joined by hand with an optional line of why, or by one
+ * mentioning the other in its text, which carries the sentence. Read from both ends; a mention
+ * comes and goes with the text.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -181,7 +181,7 @@ describe('relations made by a mention', () => {
     expect(itemsOf(await related(ctx, 'person', mira.id), 'task')).toEqual([])
   })
 
-  it("drops a mention of another account's thing, or of nothing, when read (TC-122)", async () => {
+  it("drops a mention of another account's thing, or of nothing, when read", async () => {
     const { ctx, task, mira } = await setup()
     const theirs = await secondUser(ctx, 'theirs@example.com')
     const stranger = await createPerson(theirs, { name: 'Nora Diaz' })
@@ -223,7 +223,7 @@ describe('relations made by a mention', () => {
   })
 })
 
-describe('a relation has no direction (BUG-006)', () => {
+describe('a relation has no direction', () => {
   it('answers with the one already there when the pair is related from the other end', async () => {
     const { ctx, task, mira } = await setup()
     const relate = (from: { type: string; id: string }, to: { type: string; id: string }) =>

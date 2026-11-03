@@ -6,14 +6,11 @@ import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
 import { createProject, createTask } from '../../helpers/builders'
 
 /**
- * MOVEMENT's server half: per-project counts and movement, in one query, through the tenant
- * chokepoint.
- *
- * The numbers here are the only ones on the workbench that no other endpoint already reports, so
- * they get their own guards: the per-project correlation (a subquery that correlates a row to
- * itself counts zero and says nothing about it), the week boundary in the user's timezone rather
- * than the server's, and the fact that activity is read from the EVENT LOG -- which is what makes "this has been quiet for nine days" mean anything, because a
- * reorder writes no event by design.
+ * Per-project counts and movement, in one query, through the tenant chokepoint. No other endpoint
+ * reports these numbers, so they get their own guards: the per-project correlation (a subquery
+ * that correlates a row to itself counts zero and says nothing), the week boundary in the user's
+ * timezone rather than the server's, and activity read from the event log, since a reorder writes
+ * no event.
  */
 
 let ctx: Harness
@@ -29,7 +26,7 @@ beforeAll(async () => {
       workspaceId: WorkspaceId
     }
   ).workspaceId
-  // A SECOND user on the SAME app and database: two `appWithUser()` calls would be two unrelated
+  // A second user on the same app and database: two `appWithUser()` calls would be two unrelated
   // databases and any isolation assertion between them would pass trivially.
   otherAuthed = (await secondUser(ctx)).authed
 }, 180_000)
@@ -108,7 +105,7 @@ describe('GET /tasks/movement', () => {
     for (const t of ['m1', 'm2', 'm3']) await createTask(ctx, many, t)
 
     const rows = await movement()
-    // The two counts must DIFFER and both be non-zero: a subquery that correlated a task to
+    // The two counts must differ and both be non-zero: a subquery that correlated a task to
     // itself returns 0 everywhere, and one that forgot the project filter returns the same
     // workspace-wide total for both. Only two different non-zero numbers rule out both.
     expect(rowFor(rows, few).remaining).toBe(1)
@@ -169,7 +166,7 @@ describe('GET /tasks/movement', () => {
     const pid = await createProject(ctx, 'week')
     // Sunday 2026-10-04 at 23:30 in Shanghai = 15:30 UTC. Monday 2026-10-05 at 00:30 there is
     // 16:30 UTC on the Sunday. Both are "last week" and "this week" respectively for a Shanghai
-    // user; a server computing the week in UTC would put BOTH in the same (wrong) week.
+    // user; a server computing the week in UTC would put both in the same week.
     const lastWeek = await createTask(ctx, pid, 'sunday night')
     const thisWeek = await createTask(ctx, pid, 'monday morning')
     await finishAt(lastWeek, '2026-10-04T15:30:00Z')
@@ -180,9 +177,8 @@ describe('GET /tasks/movement', () => {
     const shanghai = await listProjectMovement(ctx.db, workspaceId, 'Asia/Shanghai', now)
     expect(rowFor(shanghai as Row[], pid).doneThisWeek).toBe(1)
 
-    // The same two instants, read by a UTC user: now BOTH fall on Sunday 2026-10-04 UTC, which is
-    // the previous week, so the count is zero. Same rows, same clock, different timezone --
-    // which is the whole point and is invisible to a test run in one zone only.
+    // The same two instants, read by a UTC user: both fall on Sunday 2026-10-04 UTC, the previous
+    // week, so the count is zero.
     const utc = await listProjectMovement(ctx.db, workspaceId, 'UTC', now)
     expect(rowFor(utc as Row[], pid).doneThisWeek).toBe(0)
   })
@@ -196,7 +192,7 @@ describe('GET /tasks/movement', () => {
     const now = new Date('2026-10-07T04:00:00Z')
     const row = async () => rowFor(await listProjectMovement(ctx.db, workspaceId, 'UTC', now), pid)
 
-    // Open: the two children, not the parent above them (FR-043).
+    // Open: the two children, not the parent above them.
     expect((await row()).remaining).toBe(2)
     await finishAt(one, '2026-10-06T09:00:00Z')
     await finishAt(two, '2026-10-06T10:00:00Z')
@@ -274,8 +270,6 @@ describe('GET /tasks/movement', () => {
     expect((await quiet()).lastActivityOn).not.toBe('2026-09-28')
   })
 
-  // ------------------------------------------------------------- overdue, the banner's fourth number
-
   it('counts what is overdue PER PROJECT, not across the workspace', async () => {
     const one = await createProject(ctx, 'one late')
     const three = await createProject(ctx, 'three late')
@@ -286,9 +280,7 @@ describe('GET /tasks/movement', () => {
     await createTask(ctx, three, 'no deadline')
 
     const rows = await movement()
-    // Two DIFFERENT non-zero numbers, for the same reason the open count asserts two: a subquery that
-    // correlated a task to itself reports 0 everywhere, and one that lost its project filter
-    // reports the same workspace-wide total on every row. Only 1 and 3 rule out both.
+    // Two different non-zero numbers, for the same reason as the open count.
     expect(rowFor(rows, one).overdue).toBe(1)
     expect(rowFor(rows, three).overdue).toBe(3)
   })
@@ -324,7 +316,7 @@ describe('GET /tasks/movement', () => {
     ).toBe(204)
     // A deadline a long way off is not overdue.
     await dueAt(await createTask(ctx, pid, 'next decade'), '2099-01-01T09:00:00Z')
-    // Late and planned for a day to come: still a deadline missed (FR-079).
+    // Late and planned for a day to come: still a deadline missed.
     const planned = await createTask(ctx, pid, 'planned again')
     await dueAt(planned, '2020-01-01T09:00:00Z')
     const res = await ctx.app.inject({
@@ -339,15 +331,14 @@ describe('GET /tasks/movement', () => {
   })
 
   /**
-   * The same boundary `listToday` draws, in the SAME zone: a task is overdue when its deadline is
+   * The same boundary `listToday` draws, in the same zone: a task is overdue when its deadline is
    * before midnight of the user's today. This fixture sits in the hour where the two zones
-   * disagree, so a server computing the boundary in UTC gets it wrong for the Shanghai reader --
-   * and the project banner would then contradict the Overdue panel on the very same task.
+   * disagree, so a boundary computed in UTC would contradict the Overdue panel.
    */
   it('draws the overdue boundary at midnight IN THE USER’S TIMEZONE', async () => {
     const pid = await createProject(ctx, 'late by zone')
-    // 2026-10-06 17:00Z is 2026-10-07 01:00 in Shanghai -- during the Shanghai reader's today,
-    // so NOT overdue for them -- and still 2026-10-06 for a UTC reader, so overdue for them.
+    // 2026-10-06 17:00Z is 2026-10-07 01:00 in Shanghai, the Shanghai reader's today, so not
+    // overdue for them; it is still 2026-10-06 for a UTC reader, so overdue for them.
     await dueAt(await createTask(ctx, pid, 'one in the morning'), '2026-10-06T17:00:00Z')
     const now = new Date('2026-10-07T04:00:00Z')
 
@@ -359,7 +350,7 @@ describe('GET /tasks/movement', () => {
   })
 
   /**
-   * THE NEXT DEADLINE STILL STANDING, as the day it falls on in the user's zone: what a project
+   * The next deadline still standing, as the day it falls on in the user's zone: what a project
    * line says when nothing in it is late yet. Earliest of the open ones; never one already past
    * (that is `overdue`'s), never a finished or deleted one.
    */
@@ -389,7 +380,7 @@ describe('GET /tasks/movement', () => {
 
   /**
    * The number in the project's head counts deadlines missed; Today's Overdue lists the missed ones
-   * not yet given a day (FR-079). Two queries, so they are held to each other here, per project:
+   * not yet given a day. Two queries, so they are held to each other here, per project:
    * equal where nothing late is planned, and apart by exactly the late tasks given a day.
    */
   it('agrees with Today’s Overdue, but for the late tasks already given a day', async () => {

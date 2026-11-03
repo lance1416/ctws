@@ -146,12 +146,12 @@ describe('first-user bootstrap', () => {
     expect(res.json()).toMatchObject({ role: 'member' })
   })
 
-  it('keeps single-key shortcuts with the account: on at first, off once turned off (FR-029)', async () => {
+  it('keeps single-key shortcuts with the account: on at first, off once turned off', async () => {
     const ctx = await app()
     const res = await post(ctx, body)
     const cookie = String(res.headers['set-cookie']).split(';')[0]!
     const me = () => ctx.app.inject({ method: 'GET', url: '/api/v1/auth/me', headers: { cookie } })
-    // Vim's keys are off until the account turns them on (REQ-002 FR-112).
+    // Vim's keys are off until the account turns them on.
     expect((await me()).json()).toMatchObject({
       singleKeyShortcuts: true,
       vimKeys: false,
@@ -178,7 +178,7 @@ describe('first-user bootstrap', () => {
     })
     expect(vim.statusCode).toBe(200)
     expect((await me()).json()).toMatchObject({ singleKeyShortcuts: false, vimKeys: true })
-    // A note's layout (REQ-002 FR-109, FR-116): the outline shown, the full width, drawn, until
+    // A note's layout: the outline shown, the full width, drawn, until
     // the account says otherwise; each kept apart.
     expect((await me()).json()).toMatchObject({
       outlineShown: true,

@@ -5,11 +5,8 @@ import { setupWith, type Harness, web, secondUser } from '../../helpers/harness'
 import { createProject, createPerson, createTask } from '../../helpers/builders'
 
 /**
- * PEOPLE, on vCard 4.0's model (RFC 6350).
- *
- * The claim that matters is the one a hand-rolled person model always gets wrong: a person has
- * SEVERAL ways to be reached, not one. Everything else here is the usual tenant and lifecycle
- * work, plus the one thing a replace-the-set write can break -- leaving the old rows behind.
+ * People, on vCard 4.0's model (RFC 6350): a person has several ways to be reached, not one, and
+ * a replace-the-set write must leave none of the old rows behind.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -37,8 +34,8 @@ const unfiled = async (ctx: Harness) =>
 
 describe('people', () => {
   it('keeps several ways to reach one person, in the order they were given', async () => {
-    // THE WHOLE REASON TO FOLLOW vCARD. A single `email` column is wrong the first time somebody
-    // has a work address and a personal one.
+    // A single `email` column is wrong the first time somebody has a work address and a personal
+    // one.
     const ctx = await setup()
     const person = await createPerson(ctx, {
       name: '李雷',
@@ -235,7 +232,7 @@ describe('people', () => {
 })
 
 /**
- * A PERSON'S BIRTHDAY -- one date, given in one calendar, read in both.
+ * A person's birthday: one date, given in one calendar, read in both.
  *
  * Every derived value here (the other calendar, the zodiac, the sign, the age, the next
  * occurrence) is computed on the way out and never stored, so these tests are also what pins
@@ -424,7 +421,7 @@ describe("a person's birthday", () => {
   })
 })
 
-describe('the projects a person is in (FR-061)', () => {
+describe('the projects a person is in', () => {
   it('come the one that moved last first, each with their tasks in it still open', async () => {
     const ctx = await setup()
     const quiet = await createProject(ctx, 'Quiet')

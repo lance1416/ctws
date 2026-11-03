@@ -6,11 +6,9 @@ import { appWithUser, type Harness } from '../../helpers/harness'
 import { createProject, createTask } from '../../helpers/builders'
 
 /**
- * THE HALF OF THE ROLLUP THAT IS NOT IN `@ctws/core`.
- *
- * The fold is covered case by case in `packages/core/src/progress.test.ts`. What only the real
- * database can answer is the part written in SQL: the overdue flag, decided in the ACCOUNT's
- * timezone.
+ * The half of the rollup that is not in `@ctws/core`, whose fold is covered in
+ * `packages/core/src/progress.test.ts`: the part written in SQL, the overdue flag decided in the
+ * account's timezone.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -75,8 +73,7 @@ describe('rollups ride along with the task list', () => {
 
   it('404s for a project in another workspace rather than returning nothing', async () => {
     // The 404 is `listProjectTasks`', which the route calls first; the rollup query is scoped in
-    // its own `where` and would simply find nothing. Both halves matter, so this asserts the
-    // behaviour the endpoint actually has.
+    // its own `where` and would simply find nothing.
     const mine = await setup()
     const theirs = await appWithUser('other@example.com')
     cleanups.push(theirs.stop)
@@ -102,7 +99,7 @@ describe('rollups ride along with the task list', () => {
     await setStatus(ctx, y1, 'done')
 
     const r = await rollups(ctx, pid)
-    // y is (1 + 0) / 2 = 0.5, and the root is (1 + 0.5) / 2 = 0.75: the mean is over DIRECT
+    // y is (1 + 0) / 2 = 0.5, and the root is (1 + 0.5) / 2 = 0.75: the mean is over direct
     // children at every level, so the root is not 2/3 (the done-leaf fraction).
     expect(r[y]!.progress).toBe(0.5)
     expect(r[root]!.progress).toBe(0.75)
@@ -115,7 +112,7 @@ describe('rollups ride along with the task list', () => {
     const kid = await createTask(ctx, pid, '子', root)
     await setStatus(ctx, kid, 'in_progress')
 
-    // The root reads "in progress" because its child is (FR-038): one task being worked on.
+    // The root reads "in progress" because its child is: one task being worked on.
     const r = await rollups(ctx, pid)
     expect(r[root]).toEqual({ progress: 0, inProgress: 1, overdue: 0 })
     expect(r[kid]!.inProgress).toBe(1)
@@ -136,7 +133,7 @@ describe('rollups ride along with the task list', () => {
     const r = await rollups(ctx, pid)
     expect(r[gone]).toBeUndefined()
     // The root is a leaf again. It keeps the status it last derived (done, from the child that is
-    // now gone, FR-039), so it scores as a done leaf; nothing under it is counted.
+    // now gone), so it scores as a done leaf; nothing under it is counted.
     expect(r[root]!.progress).toBe(1)
     expect(r[root]!.inProgress).toBe(0)
   })
@@ -150,9 +147,8 @@ describe('the exclusion rule on a tree built the normal way', () => {
     const kid = await createTask(ctx, pid, '子', root)
     await setStatus(ctx, kid, 'done')
 
-    // WHY THE DEFAULT IS `todo`. The fold excludes a `backlog` node before it looks at its
-    // children, so a backlog default makes this read null however much is finished underneath --
-    // for every tree, everywhere.
+    // Why the default is `todo`: the fold excludes a `backlog` node before it looks at its
+    // children, so a backlog default makes this read null however much is finished underneath.
     expect((await rollups(ctx, pid))[root]!.progress).toBe(1)
   })
 
@@ -161,12 +157,11 @@ describe('the exclusion rule on a tree built the normal way', () => {
     const pid = await createProject(ctx, '改版')
     const root = await createTask(ctx, pid, '以后再说')
     const kid = await createTask(ctx, pid, '子', root)
-    // A parent cannot be filed as backlog by hand any more (FR-038); it is backlog when all of
-    // its children are.
+    // A parent cannot be filed as backlog by hand; it is backlog when all of its children are.
     await setStatus(ctx, kid, 'backlog')
 
-    // The rule itself did not change: something only recorded, not committed to, is not work in
-    // flight and must not pull an average around.
+    // Something only recorded, not committed to, is not work in flight and must not pull an
+    // average around.
     expect((await rollups(ctx, pid))[root]!.progress).toBeNull()
   })
 })
@@ -216,7 +211,7 @@ describe('the overdue flag, decided in the account timezone', () => {
         payload: { scheduledOn },
       })
     // Today in Kiritimati is the 13th. A deadline missed stays missed, whatever day it is given:
-    // only Today's Overdue block leaves out the late ones planned (FR-079).
+    // only Today's Overdue block leaves out the late ones planned.
     await plan('2026-10-14')
     expect((await rollups(ctx, pid))[late]).toMatchObject({ overdue: 1 })
     await plan('2026-10-13')
@@ -236,9 +231,8 @@ describe('the overdue flag, decided in the account timezone', () => {
   })
 
   it('does not call a deadline that passed EARLIER TODAY overdue', async () => {
-    // THE CUT IS THE START OF TODAY, not `now()`. A deadline at 09:00 that it is now 14:00 past
-    // has not "gone" in the sense this app means -- the day it was due is the day in progress,
-    // and the Overdue panel would otherwise fill up with things the person is still working on.
+    // The cut is the start of today, not `now()`: the day it was due is the day in progress, and
+    // the Overdue panel would otherwise fill up with things the person is still working on.
     const ctx = await setup(TZ, NOW)
     const pid = await createProject(ctx, 'P')
     const id = await createTask(ctx, pid, '今天早些时候到期')
@@ -271,18 +265,13 @@ describe('the overdue flag, decided in the account timezone', () => {
 })
 
 /**
- * THE PAGE MUST NOT CONTRADICT ITSELF.
- *
  * A project page is three reads: the rows, the rollup each parent reports, and what each row is
- * waiting for. Run under READ COMMITTED they each take their OWN snapshot, so a write landing
- * between two of them is half-visible: the tree draws a task as open while the number above it
- * already counts it done, and the reader is looking at a page that disagrees with itself.
+ * waiting for. Under READ COMMITTED each takes its own snapshot, so a write landing between two of
+ * them is half-visible: the tree draws a task as open while the number above it counts it done.
  *
  * `projectBoard` holds one snapshot across the three by naming the level in `BOARD_TX`. This runs
- * the same three stores through the same kind of transaction and commits a write IN THE MIDDLE,
- * from another connection -- which is the only arrangement where the two levels differ. Change
- * `BOARD_TX` back to the default and this test says the rollup reported 1 against a tree that
- * shows the task open.
+ * the same stores through the same kind of transaction and commits a write in the middle, from
+ * another connection, the only arrangement where the two levels differ.
  */
 describe('one project page is one snapshot', () => {
   it('does not straddle a write that lands between its reads', async () => {

@@ -17,10 +17,8 @@ import type { Harness } from './harness'
 
 /**
  * One builder per entity, for tests whose subject is what comes after the thing exists. Each posts
- * through the API, so the row is one the app itself would make, and throws on any answer but the
- * one a create gives: a setup that fails stops the test there, not at a confusing later assertion.
- * A test about creating itself writes its own request; so does every link test, since each is
- * about making the link.
+ * through the API, so the row is one the app itself would make, and throws on any answer but a
+ * create's, so a failed setup stops the test there rather than at a later assertion.
  */
 async function create<T>(ctx: Harness, url: string, payload: object): Promise<T> {
   const res = await ctx.app.inject({ method: 'POST', url, headers: ctx.authed, payload })

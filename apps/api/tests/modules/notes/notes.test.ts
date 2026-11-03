@@ -4,9 +4,8 @@ import { createMeeting, createPerson, createProject } from '../../helpers/builde
 import { appWithUser, type Harness } from '../../helpers/harness'
 
 /**
- * NOTES (FR-050, FR-074): Markdown on its own or hung on a thing; a meeting's notes hang on the
- * meeting, one occurrence's on that occurrence; an @ in the body relates; the note shows on what
- * it hangs on.
+ * Notes: Markdown on its own or hung on a thing; a meeting's notes hang on the meeting, one
+ * occurrence's on that occurrence; an @ in the body relates; the note shows on what it hangs on.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -95,7 +94,7 @@ describe('notes', () => {
     expect((hung.json() as NoteResponse).heldAt).toBeNull()
 
     // Newest first: the series note (written now), the meeting's own `created` (now), then the
-    // occurrence's note, which sits on the day it was held, back in March (FR-044, FR-050).
+    // occurrence's note, which sits on the day it was held, back in March.
     expect(await timelineKinds(ctx, 'meeting', meeting.meetingId)).toEqual([
       'note',
       'change',
@@ -122,7 +121,7 @@ describe('notes', () => {
       anchor: { type: 'person', id: '00000000-0000-7000-8000-000000000001' },
     })
     expect(nobody.statusCode).toBe(404)
-    // Only a meeting, project, person or organisation carries notes (FR-050).
+    // Only a meeting, project, person or organisation carries notes.
     const task = await write(ctx, { body: 'x', anchor: { type: 'task', id: person.id } })
     expect(task.statusCode).toBe(400)
   })
@@ -175,7 +174,7 @@ describe('notes', () => {
 })
 
 describe('a note on a meeting that is later deleted', () => {
-  it('keeps the day it was about, and stands on its own (FR-050)', async () => {
+  it('keeps the day it was about, and stands on its own', async () => {
     const ctx = await setup()
     const meeting = await createMeeting(ctx, { title: 'Design review' })
     const written = await write(ctx, {

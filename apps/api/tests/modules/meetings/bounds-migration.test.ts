@@ -4,9 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { migratedTo } from '../../helpers/db'
 
 /**
- * SERIES GOT THEIR SPAN, so a read of a window can skip the ones that miss it. A fresh database
- * has no meetings when the columns arrive; only one that already holds them shows each was given a
- * span that contains every occurrence, overrides included.
+ * A fresh database has no meetings when the span columns arrive; only one that already holds them
+ * shows each series was given a span around every occurrence, overrides included.
  */
 const stops: (() => Promise<void>)[] = []
 afterEach(async () => {

@@ -4,8 +4,8 @@ import { createOrganisation, createPerson } from '../../helpers/builders'
 import { setupWith, type Harness } from '../../helpers/harness'
 
 /**
- * AN ORGANISATION'S MESSAGES (FR-065): what was said with it, and with its people while they held
- * a role there; a message from before someone joined, or after they left, stays off it.
+ * An organisation's messages: what was said with it, and with its people while they held a role
+ * there; a message from before someone joined, or after they left, stays off it.
  */
 const NOW = new Date('2026-10-21T11:00:00.000Z')
 

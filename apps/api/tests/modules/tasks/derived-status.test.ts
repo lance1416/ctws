@@ -4,11 +4,10 @@ import { createProject, createTask } from '../../helpers/builders'
 import { appWithUser, eventsOf, type Harness } from '../../helpers/harness'
 
 /**
- * A PARENT'S STATUS IS ITS CHILDREN'S (FR-038, FR-039, FR-043, FR-041).
- *
- * The status column of a task with subtasks is written by the service, never by a request: it is
- * settled after every change to a child, logged as `status_changed` with `derived: true`, and the
- * review does not count it. Only leaves appear where "in progress" or "ready to start" is listed.
+ * A parent's status is its children's. The status column of a task with subtasks is written by the
+ * service, never by a request: it is settled after every change to a child, logged as
+ * `status_changed` with `derived: true`, and the review does not count it. Only leaves appear where
+ * "in progress" or "ready to start" is listed.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -47,7 +46,7 @@ async function setStatus(ctx: Harness, id: TaskId, status: string) {
 }
 
 describe('a parent takes its status from its children', () => {
-  it("follows FR-038's own example: Done, Cancelled, To do", async () => {
+  it('follows a parent of Done, Cancelled and To do children', async () => {
     const { ctx, projectId } = await setup()
     const amazon = await createTask(ctx, projectId, 'Amazon', undefined, { status: 'in_progress' })
     const a = await createTask(ctx, projectId, 'a', amazon, { status: 'done' })
@@ -197,7 +196,7 @@ describe('only leaves are listed as in progress or ready', () => {
     return res.json().tasks as { id: string; path: { title: string }[] }[]
   }
 
-  it('shows the in-progress leaf with its path, never Amazon itself (FR-037)', async () => {
+  it('shows the in-progress leaf with its path, never Amazon itself', async () => {
     const { ctx, projectId } = await setup()
     const amazon = await createTask(ctx, projectId, 'Amazon')
     const role = await createTask(ctx, projectId, 'SDE II', amazon)
@@ -209,7 +208,7 @@ describe('only leaves are listed as in progress or ready', () => {
     expect(rows[0]?.path.map((s) => s.title)).toEqual(['Amazon', 'SDE II'])
   })
 
-  it('recommends only unblocked to-do leaves (FR-041)', async () => {
+  it('recommends only unblocked to-do leaves', async () => {
     const { ctx, projectId } = await setup()
     const amazon = await createTask(ctx, projectId, 'Amazon')
     const prep = await createTask(ctx, projectId, 'Prepare', amazon)
@@ -234,7 +233,7 @@ describe('only leaves are listed as in progress or ready', () => {
     expect((await ready(ctx)).map((r) => r.id)).toEqual([flights])
   })
 
-  it('leaves the inbox out: what is there is still to be sorted (FR-041, BUG-065)', async () => {
+  it('leaves the inbox out: what is there is still to be sorted', async () => {
     const { ctx, projectId } = await setup()
     const projects = await ctx.app.inject({
       method: 'GET',
@@ -251,7 +250,7 @@ describe('only leaves are listed as in progress or ready', () => {
 })
 
 describe('the review counts leaves', () => {
-  it('lists a closed parent as a heading, not as one more thing finished (FR-043)', async () => {
+  it('lists a closed parent as a heading, not as one more thing finished', async () => {
     const { ctx, projectId } = await setup()
     const amazon = await createTask(ctx, projectId, 'Amazon')
     const a = await createTask(ctx, projectId, 'a', amazon)
@@ -278,7 +277,7 @@ describe('the review counts leaves', () => {
   })
 })
 
-describe('two subtasks finished at once (TC-016)', () => {
+describe('two subtasks finished at once', () => {
   it('settles the parent to done every time, with one derived change, under the tree lock', async () => {
     const { ctx, projectId } = await setup()
     for (let round = 0; round < 10; round++) {

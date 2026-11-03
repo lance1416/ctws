@@ -4,9 +4,8 @@ import { createProject, createTask } from '../helpers/builders'
 import { appWithUser, eventsOf, type Harness } from '../helpers/harness'
 
 /**
- * STAGES (FR-040, FR-058, REQ v1.4): a project's own list of where a thing has got to. Any node
- * may be at one; the list is renamed, reordered, trimmed or merged as a whole; a stage still in
- * use stays.
+ * Stages: a project's own list of where a thing has got to. Any node may be at one; the list is
+ * renamed, reordered, trimmed or merged as a whole; a stage still in use stays.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -83,7 +82,7 @@ describe('a project’s stages', () => {
     const leaf = await createTask(ctx, projectId, 'Prep', stripe)
 
     expect((await setStage(ctx, stripe, applied!.id)).statusCode).toBe(200)
-    // A leaf too (REQ v1.4).
+    // A leaf too.
     expect((await setStage(ctx, leaf, applied!.id)).statusCode).toBe(200)
     const moved = (await setStage(ctx, stripe, onsite!.id)).json() as TaskResponse
     expect(moved.stageId).toBe(onsite!.id)
@@ -156,7 +155,7 @@ describe('a project’s stages', () => {
       ['Phone screen', 2],
       ['Rejected', 0],
     ])
-    // Logged on each task at it as a rename, not a move: its time at the stage goes on (BUG-045).
+    // Logged on each task at it as a rename, not a move: its time at the stage goes on.
     for (const t of [t1, t2]) {
       const logged = await eventsOf(ctx, t)
       expect(logged.filter((e) => e.type === 'stage_renamed').map((e) => e.payload)).toEqual([
@@ -189,7 +188,7 @@ describe('a project’s stages', () => {
     ])
     expect(clash.statusCode).toBe(409)
     expect(clash.json().detail).toBe('Applied already exists')
-    // Case does not make a different name (REQ v1.5).
+    // Case does not make a different name.
     const cased = await put(ctx, projectId, [
       { id: a!.id, name: 'Applied' },
       { id: b!.id, name: 'APPLIED' },
@@ -211,7 +210,7 @@ describe('a project’s stages', () => {
   })
 })
 
-describe('a stage merged into itself (BUG-011)', () => {
+describe('a stage merged into itself', () => {
   it('is refused with 422, and the stage stays', async () => {
     const { ctx, projectId: project } = await setup()
     const made = await ctx.app.inject({
@@ -239,7 +238,7 @@ describe('a stage merged into itself (BUG-011)', () => {
   })
 })
 
-describe('the board carries the stages (BUG-010)', () => {
+describe('the board carries the stages', () => {
   it("lists them in order with each one's count", async () => {
     const { ctx, projectId } = await setup()
     await ctx.app.inject({

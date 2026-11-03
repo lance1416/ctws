@@ -13,8 +13,8 @@ import {
 } from '../helpers/builders'
 
 /**
- * THE REGISTRY -- every kind of thing is named by the module that owns it, and the shell asks that
- * module rather than reading its table. What a page is connected to is the relations' business
+ * Every kind of thing is named by the module that owns it, and the shell asks that module rather
+ * than reading its table. What a page is connected to is the relations' business
  * (tests/shell/relations.test.ts); this is the naming underneath, and the picker built on it.
  */
 
@@ -52,11 +52,8 @@ describe('every kind of thing has a module that answers for it', () => {
 })
 
 /**
- * WHAT THE PICKER IS OFFERED, which is a server decision and not a UI one.
- *
- * The box the person types into shows every kind of thing at once, and each one comes out of its
- * own module's table. Everything that keeps the list honest is decided here: that the object
- * itself is never offered, that another workspace's rows are not, and that a deleted row is not.
+ * What the picker is offered is decided by the server: every kind of thing at once, each out of
+ * its own module's table, never the object itself, another workspace's rows or a deleted row.
  */
 describe('what can go at the other end', () => {
   const candidatesFor = async (ctx: Harness, type: string, id: string, q = '', kinds = '') => {
@@ -195,7 +192,7 @@ describe('what can go at the other end', () => {
       headers: web(ctx),
     })
 
-    // A second user in the SAME app, so the two workspaces really are rows in one database.
+    // A second user in the same app, so the two workspaces really are rows in one database.
     const theirPerson = await createPerson(await secondUser(ctx, 'theirs@example.com'), {
       name: '别人的人',
     })

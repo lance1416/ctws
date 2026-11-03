@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { migratedTo } from '../../helpers/db'
 
 /**
- * TASKS TOOK THEIR PROJECT'S WORKSPACE, so the rows that hang off a task can be held to it by a
+ * Tasks took their project's workspace, so the rows that hang off a task can be held to it by a
  * foreign key. A fresh database has no tasks when the column arrives; only one that already holds
  * them shows whether each got its project's workspace and the keys went on over them.
  */

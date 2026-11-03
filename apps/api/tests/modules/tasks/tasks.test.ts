@@ -233,8 +233,7 @@ describe('update', () => {
     expect((await rowOf(ctx, id))!.completed_at).toBeNull()
   })
 
-  // A parent's status is set independently and never cascades to or from its children:
-  // forcing them to agree breaks down as soon as the parent itself carries work.
+  // A parent's status never cascades down to its children.
   it('marking a parent done leaves its children untouched', async () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
@@ -267,9 +266,8 @@ describe('update', () => {
 })
 
 /**
- * ONE TASK, BY ITS ID: what a link to a task needs to find where the task lives. A task has no page
- * of its own, so its address is its project's page with the task's sheet open over it -- and a
- * link that knows only the task's id has to be able to ask which project that is.
+ * A task has no page of its own: its address is its project's page with the task's sheet open
+ * over it, so a link that knows only the task's id has to be able to ask which project that is.
  */
 describe('read one', () => {
   it('answers with the task, its project included', async () => {
@@ -520,14 +518,10 @@ describe('guards that must not be silently dropped', () => {
 /**
  * The event and the change it describes are one transaction.
  *
- * Two tests, pointing in OPPOSITE directions, because either alone is passed by an implementation
- * that writes the event after the commit:
- *
- * 1. A deferred trigger fails the transaction at COMMIT -- after every statement in it has run.
- *    An event written outside would be committed independently and survive.
- * 2. The EVENT INSERT ITSELF fails. This is the direction the first one cannot see: an
- *    append-after-commit implementation has already committed the task change by then, so the
- *    change survives a failed event. Inside one transaction, the change goes with it.
+ * Tested from both directions, since either alone is passed by an implementation that writes the
+ * event after the commit: a deferred trigger fails the transaction at commit, so an event written
+ * outside it would survive; and the event insert itself fails, so a change already committed
+ * would survive.
  */
 describe('event and mutation share one transaction', () => {
   async function failAtCommit(ctx: Harness) {
@@ -564,8 +558,8 @@ describe('event and mutation share one transaction', () => {
     const ctx = await setup()
     const projectId = await createProject(ctx, 'P')
     const id = await createTask(ctx, projectId, 'before')
-    // Fails the moment a title_changed event is inserted -- an ordinary immediate trigger, so it
-    // raises DURING the mutation's transaction rather than at commit.
+    // An ordinary immediate trigger, so it raises during the mutation's transaction rather than at
+    // commit.
     await ctx.db.execute(
       sql.raw(`
         create function refuse_event() returns trigger language plpgsql as
@@ -581,8 +575,7 @@ describe('event and mutation share one transaction', () => {
 
     expect((await patch(ctx, id, { title: 'after' })).statusCode).toBe(500)
 
-    // THE TITLE DID NOT CHANGE. If the event were appended after the commit, the rename would
-    // already be durable and this would read 'after' with no event to show for it.
+    // Had the event been appended after the commit, the rename would already be durable.
     const titles = await ctx.db.execute(sql`select title from tasks where id = ${id}`)
     expect(titles.rows[0]).toMatchObject({ title: 'before' })
     expect((await eventsOf(ctx, id)).map((e) => e.type)).toEqual(['created'])
@@ -614,13 +607,9 @@ describe('event and mutation share one transaction', () => {
 /**
  * The guard is in the command, not only in the route.
  *
- * Every cross-workspace test above goes through HTTP, so all of them pass against an app whose
- * only check is a route preHandler, while what matters is that a guard cannot be skipped by
- * reaching the work another way (a script, a job, a second route).
- *
- * So these call the commands directly with a workspace id that does not own the task.
- * They do not assert WHERE the check lives -- that would pin an implementation detail and get in
- * the way of honest refactoring -- only that the work itself refuses, whoever asks.
+ * Every cross-workspace test above goes through HTTP and would pass against an app whose only
+ * check is a route preHandler. These call the commands directly with a workspace id that does not
+ * own the task, so the guard cannot be skipped by reaching the work another way.
  */
 describe('a write refuses a foreign workspace without going through a route', () => {
   it('refuses update, move and delete, and leaves the row untouched', async () => {
@@ -628,7 +617,7 @@ describe('a write refuses a foreign workspace without going through a route', ()
     const projectId = await createProject(ctx, 'mine')
     const id = await createTask(ctx, projectId, 'mine')
     const sibling = await createTask(ctx, projectId, 'sibling')
-    // A workspace that exists nowhere: the point is the task is not THIS caller's to touch.
+    // A workspace that exists nowhere.
     const stranger = {
       workspaceId: workspaceId.parse('99999999-9999-4999-8999-999999999999'),
       now: new Date(),

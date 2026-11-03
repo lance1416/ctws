@@ -103,16 +103,13 @@ export async function expectBlockedByTreeLock<T>(ctx: Harness, fire: () => Promi
  * Fires a request while `take` holds a lock on another transaction, asserts the request is still
  * in flight after a moment, then releases the lock and returns the response.
  *
- * This is a MECHANISM test, not a race test. Reproducing the interleaving the lock prevents needs
- * a pause point inside the command transaction -- a hook in production code -- and an attempt at
- * it without one passed with the lock removed, which is the definition of a vacuous test. Holding
- * the lock from outside instead is deterministic in the safe direction: a blocked request stays
- * blocked indefinitely, so the wait cannot end early by luck; it could only ever be too short,
- * and an unblocked request finishes in single-digit milliseconds.
+ * This tests the mechanism, not the race: reproducing the interleaving would need a pause point
+ * inside the command transaction, a hook in production code, and an attempt without one passed
+ * with the lock removed. Holding the lock from outside cannot pass by luck: a blocked request
+ * stays blocked.
  *
- * What it does NOT prove is where in the transaction the lock is taken. A caller that took it last
- * would contend identically here and be useless, so "first statement" rests on the commands, not
- * on this helper.
+ * It does not prove where in the transaction the lock is taken; that it is the first statement
+ * rests on the commands.
  */
 export async function expectBlockedWhile<T>(
   ctx: Harness,

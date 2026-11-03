@@ -5,12 +5,9 @@ import { setupWith, type Harness, web, secondUser } from '../../helpers/harness'
 import { createProject, createReading } from '../../helpers/builders'
 
 /**
- * THE READING LIST.
- *
- * Most of what is worth testing here is not the CRUD: it is the two claims the module is built
- * on. A link may have no title, because capturing one is pasting a url and nothing else. And the
- * module is SEPARATE -- its rows are scoped by workspace on their own, not through a project,
- * because an item need not have one.
+ * The reading list. A link may have no title, because capturing one is pasting a url and nothing
+ * else. Its rows are scoped by workspace on their own, not through a project, because an item need
+ * not have one.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -51,8 +48,7 @@ async function list(ctx: Harness, query = ''): Promise<ReadingItemResponse[]> {
 describe('reading list', () => {
   it('takes a bare url, and leaves the title empty rather than inventing one', async () => {
     // A pasted link is shown by its host until somebody types a title. A server that filled the
-    // title in with the url would leave
-    // nobody able to tell a real title from a placeholder.
+    // title in with the url would leave nobody able to tell a real title from a placeholder.
     const ctx = await setup()
     const item = await createReading(ctx, { kind: 'link', url: 'https://linear.app/now/redesign' })
     expect(item).toMatchObject({ kind: 'link', title: null, author: null, status: 'todo' })
@@ -87,7 +83,7 @@ describe('reading list', () => {
   })
 
   it('files an item under a shell project, and says which', async () => {
-    // A project is the SHELL's dimension: an article about CTWS belongs to CTWS exactly as a task
+    // A project is the shell's dimension: an article about CTWS belongs to CTWS exactly as a task
     // does, and the module hangs its rows on it without owning it.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
@@ -96,8 +92,8 @@ describe('reading list', () => {
   })
 
   it('keeps an item when its project is deleted, rather than throwing a book away', async () => {
-    // Projects are SOFT-deleted, so the edge stays; the module reports only the project you can
-    // still SEE, on both fields at once.
+    // Projects are soft-deleted, so the edge stays; the module reports only the project you can
+    // still see, on both fields at once.
     const ctx = await setup()
     const pid = await createProject(ctx, '临时')
     const item = await filed(ctx, { kind: 'book', title: '留下来的书' }, pid)
@@ -113,7 +109,7 @@ describe('reading list', () => {
   })
 
   it('lists only what belongs to no project, for the line under Reading in Things', async () => {
-    // UNFILED: what is filed under a project is on that project's page; the line counts the rest.
+    // What is filed under a project is on that project's page; the line counts the rest.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')
     await filed(ctx, { kind: 'link', url: 'https://x.test/filed' }, pid)
@@ -121,14 +117,13 @@ describe('reading list', () => {
 
     const loose = await list(ctx, '?unfiled=true')
     expect(loose.map((i) => i.title)).toEqual(['散的书'])
-    // And it is a FILTER, not the whole list: without it both are there.
+    // And it is a filter, not the whole list: without it both are there.
     expect(await list(ctx)).toHaveLength(2)
   })
 
   it('counts an item whose project was deleted as having none', async () => {
-    // Projects are soft-deleted and the row reports only the project you can still SEE, so an
-    // item left behind by a deleted project has to turn up here -- otherwise it would belong to
-    // no list at all: absent from every project page AND from the widget.
+    // The row reports only the project you can still see, so an item left behind by a deleted
+    // project has to turn up here, or it would be on no list at all.
     const ctx = await setup()
     const pid = await createProject(ctx, '没了的项目')
     await filed(ctx, { kind: 'book', title: '留下来的书' }, pid)
@@ -189,7 +184,7 @@ describe('reading list', () => {
     const ctx = await setup()
     const mine = await createReading(ctx, { kind: 'book', title: '我的书' })
 
-    // The SAME app, so this is one database and the isolation under test is real.
+    // The same app, so this is one database and the isolation under test is real.
     const theirs = await secondUser(ctx)
 
     expect(await list(theirs)).toEqual([])
@@ -227,7 +222,7 @@ describe('adding in a flood', () => {
   })
 })
 
-describe('who recommended it (FR-073)', () => {
+describe('who recommended it', () => {
   it('is set, changed and cleared on the item, each a line naming them on its timeline', async () => {
     const ctx = await setup()
     const item = await createReading(ctx, { kind: 'book', title: 'Thinking in Systems' })

@@ -56,9 +56,7 @@ describe('session', () => {
   })
 
   /**
-   * THE WHOLE POINT OF THE HASH. Reading this table gives a digest, not the token, and a digest is
-   * not a credential -- the difference between seeing someone's tasks and being able to act as
-   * them.
+   * Reading this table gives a digest, not the token, and a digest is not a credential.
    */
   it('stores no copy of the token anywhere in the row', async () => {
     const session = await createSession(ctx.db, userId, at())
@@ -117,9 +115,7 @@ describe('session', () => {
     const a = await createSession(ctx.db, userId, at())
     const b = await createSession(ctx.db, userId, at())
 
-    // 32 bytes, base64url: no dashes, no version nibble, nothing a uuid would carry. The old
-    // token was a uuid v4 -- chosen over v7 so the id would not embed a creation timestamp;
-    // this is that decision carried further, to 256 bits with no structure at all.
+    // 32 bytes, base64url: no dashes, no version nibble, nothing a uuid would carry.
     expect(a.token).toMatch(/^[A-Za-z0-9_-]{43}$/)
     expect(a.token).not.toBe(b.token)
     // Two tokens minted back to back share no meaningful prefix, the way time-ordered ids do.
@@ -128,7 +124,7 @@ describe('session', () => {
   })
 
   /**
-   * NO SHAPE GUARD IS NEEDED, and these pin why. A column holding the raw token would need one:
+   * No shape guard is needed, and these pin why. A column holding the raw token would need one:
    * an attacker-controlled cookie reaching Postgres as a `uuid` parameter raises 22P02 rather
    * than matching no rows. Hashing makes every value 64 hex characters before it reaches the
    * database, so none of these can be malformed by the time it is queried.
@@ -149,11 +145,9 @@ describe('session', () => {
 })
 
 /**
- * A SESSION THAT IS USED STAYS ALIVE, and one that is not expires.
- *
- * The window is IDLE, not absolute: thirty days since the app was last used, not since the
- * login. An absolute window signs you out on day thirty with no explanation, and no test that
- * signs in and acts within the same second can tell the two apart -- hence the clock below.
+ * A session that is used stays alive, and one that is not expires. The window is idle, not
+ * absolute: thirty days since the app was last used, not since the login. A test that signs in and
+ * acts within the same second cannot tell the two apart, hence the clock below.
  */
 describe('sliding expiry', () => {
   const hoursAgo = (n: number) => new Date(Date.now() - n * 3_600_000)
@@ -211,8 +205,8 @@ describe('sliding expiry', () => {
   it('sweeps only this user own expired sessions when they sign in again', async () => {
     const userId = await makeUser(`u-${crypto.randomUUID()}@example.com`)
     const other = await makeUser(`o-${crypto.randomUUID()}@example.com`)
-    // FOUR sessions, one of each kind, because the sweep has two conditions and a fixture with
-    // only the obvious row passes whichever of them is dropped.
+    // Four sessions, one of each kind: the sweep has two conditions, and a fixture with only the
+    // obvious row passes whichever of them is dropped.
     const myStale = await createSession(ctx.db, userId, at())
     const myLive = await createSession(ctx.db, userId, at())
     const theirStale = await createSession(ctx.db, other, at())
@@ -229,8 +223,7 @@ describe('sliding expiry', () => {
 
     await createSession(ctx.db, userId, at())
 
-    // Mine that was dead is gone. Mine that was alive stayed. Neither of theirs was touched --
-    // not even the dead one, which is not this login's to tidy.
+    // Mine that was dead is gone, mine that was alive stayed, and neither of theirs was touched.
     expect(await findSessionAccount(ctx.db, myStale.token, at())).toBeNull()
     expect(await findSessionAccount(ctx.db, myLive.token, at())).toMatchObject({
       account: { id: userId },

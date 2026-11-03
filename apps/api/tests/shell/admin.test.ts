@@ -219,7 +219,7 @@ describe('PATCH /admin/users/:id', () => {
     ).toBe(400)
   })
 
-  // Invariant (b): a disabled user's existing session must stop working immediately.
+  // A disabled user's existing session must stop working immediately.
   it('disabling a user revokes their sessions and a valid session stops working at once', async () => {
     const { ctx, admin } = await setup()
     const m = await createUser(ctx, admin.cookie, 'm@example.com', 'member')
@@ -265,7 +265,7 @@ describe('PATCH /admin/users/:id', () => {
 })
 
 describe('last enabled admin', () => {
-  // Invariant (a): an admin must not be able to lock the instance out.
+  // An admin must not be able to lock the instance out.
   it('cannot be disabled', async () => {
     const { ctx, admin } = await setup()
     const res = await call(ctx, admin.cookie, 'PATCH', `/admin/users/${admin.id}`, {

@@ -18,10 +18,10 @@ const CLONE_LOCK_KEY = 7_315_001
 /**
  * A fresh, fully migrated database for one test: a clone of the template that `global-setup.ts`
  * migrated once. The returned `connectionString` points at the clone, so `parseEnv` and friends see
- * an isolated database exactly as they did when each test had its own container.
+ * an isolated database.
  *
- * `stop` closes the pool only. The container is ephemeral and torn down at the end of the run, so
- * dropping the clone would add a failure mode (a lingering connection) for no benefit.
+ * `stop` closes the pool only: the container is torn down at the end of the run, and dropping the
+ * clone could fail on a lingering connection for no benefit.
  */
 export async function withDatabase() {
   const connectionString = await createDatabase(inject('templateDatabase'))

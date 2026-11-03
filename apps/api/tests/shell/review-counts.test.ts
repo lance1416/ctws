@@ -3,10 +3,10 @@ import { createMeeting, createPerson, createReading } from '../helpers/builders'
 import { appWithUser, type Harness } from '../helpers/harness'
 
 /**
- * WHAT ELSE HAPPENED IN A WEEK (FR-081, the review's "Also this week"). A SHELL endpoint over
- * every module: each counts its own things of the window, and the shell only adds them up. The
- * clock is Thursday, October 22, 2026, 12:00 UTC (13:00 in London); the week is Monday the 19th
- * to Sunday the 25th, and it runs only to now.
+ * What else happened in a week, for the review. A shell endpoint over every module: each counts its
+ * own things of the window, and the shell only adds them up. The clock is Thursday, October 22,
+ * 2026, 12:00 UTC (13:00 in London); the week is Monday the 19th to Sunday the 25th, and it runs
+ * only to now.
  */
 
 const NOW = new Date('2026-10-22T12:00:00Z')

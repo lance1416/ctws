@@ -54,7 +54,7 @@ describe('the task calendar', () => {
   })
 
   it('carries a plan for a day gone by to today, as Today does, while it is open', async () => {
-    // Now is the 22nd: one planned for Sunday the 18th and not done is today's (U-10).
+    // Now is the 22nd: one planned for Sunday the 18th and not done is today's.
     const ctx = await setup('carry@example.com', new Date('2026-10-22T08:10:00.000Z'))
     const pid = await createProject(ctx, 'P')
     const carried = await createTask(ctx, pid, '顺延的')
@@ -93,7 +93,7 @@ describe('the task calendar', () => {
   })
 
   it('keeps a deadline met, marked done, and drops its plan and anything dropped', async () => {
-    // The calendar strikes a met deadline through on its day (FR-080); a plan for a finished
+    // The calendar strikes a met deadline through on its day; a plan for a finished
     // task is nothing to do, and a cancelled task met nothing.
     const ctx = await setup()
     const pid = await createProject(ctx, 'CTWS')

@@ -78,9 +78,8 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     expect((await tasksOf(ctx, p)).find((t) => t.id === chain[1])!.parentId).toBeNull()
   })
 
-  // Postgres recursive CTEs have no cycle detection: once a cycle exists, any
-  // later subtree query recurses until memory runs out. This is not an error, it takes the
-  // database down.
+  // Postgres recursive CTEs have no cycle detection: once a cycle exists, any later subtree
+  // query recurses until memory runs out.
   it.each([
     ['its own child', 1],
     ['its own grandchild', 2],
@@ -99,9 +98,8 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     })
     expect(res.statusCode).toBe(409)
     expect(res.headers['content-type']).toContain('application/problem+json')
-    // WHICH 409. Depth and cycle both answer 409, so the status alone passes for a bug that
-    // reports one as the other -- and the two are told apart by what the person is then supposed
-    // to do about it. Asserted on the semantic core of the sentence, not the whole wording.
+    // Depth and cycle both answer 409, so the status alone passes for a bug that reports one as
+    // the other. Asserted on the core of the sentence, not the whole wording.
     expect(res.json().detail).toMatch(/under itself/)
 
     // The tree must be untouched, so a later subtree query cannot recurse forever.
@@ -131,11 +129,9 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     expect((await tasksOf(ctx, p)).find((t) => t.id === chain[0])!.parentId).toBeNull()
   })
 
-  // An accepted judgement call, pinned here because nothing else holds it: when a parent is
-  // given, the PARENT's project wins and the client's `projectId` is ignored, exactly as in
-  // createTask. A child's project must equal its parent's, and making that
-  // unviolable beats validating it. Without this test the next reader can reasonably decide the
-  // client's value should win and see a fully green suite.
+  // When a parent is given, the parent's project wins and the client's `projectId` is ignored,
+  // as in createTask: a child's project must equal its parent's, and making that unviolable
+  // beats validating it.
   it('takes the project from the parent, ignoring the client projectId', async () => {
     const ctx = await setup()
     const a = await createProject(ctx, 'a')
@@ -144,7 +140,7 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     // The moved task brings a subtree, so the cascade has to follow the parent's project too.
     const chain = await createChain(ctx, b, 2)
 
-    // `projectId` names b -- a project this user legitimately owns -- while the parent lives in a.
+    // `projectId` names b, a project this user owns, while the parent lives in a.
     const res = await move(ctx, chain[0]!, { projectId: b, parentId: parent })
     expect(res.statusCode).toBe(200)
     expect(res.json().projectId).toBe(a)
@@ -155,8 +151,7 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     expect(await tasksOf(ctx, b)).toEqual([])
   })
 
-  // Silent corruption: no error, just a permanently wrong answer to
-  // "all tasks of this project".
+  // Otherwise no error, just a permanently wrong answer to "all tasks of this project".
   it('cascades project_id to the whole moved subtree, not just the moved row', async () => {
     const ctx = await setup()
     const from = await createProject(ctx, 'from')
@@ -211,9 +206,8 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     expect(res.statusCode).toBe(200)
   })
 
-  // `liveHeight` must be a HEIGHT, not a row count. Every other depth test uses createChain,
-  // where the two coincide, so substituting `.length` for the max-depth computation passes them
-  // all -- while falsely refusing this move, which is the user-visible bug.
+  // `liveHeight` must be a height, not a row count: every other depth test uses createChain,
+  // where the two coincide.
   it('measures the subtree height, not its node count', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
@@ -301,8 +295,8 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     expect((await eventsOf(ctx, chain[2]!)).filter((e) => e.type === 'moved')).toEqual([])
   })
 
-  // A pure reorder is not progress. 20 drags during a tidy-up must
-  // not become 20 events, or the weekly review and last_activity_at are both wrong.
+  // A pure reorder is not progress: drags during a tidy-up must not become events, or the
+  // weekly review and last_activity_at are both wrong.
   it('records no event when only the rank changes', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')
@@ -463,10 +457,9 @@ describe('moving a task: PATCH /tasks/:id with a position', () => {
     expect((await tasksOf(ctx, p)).map((t) => t.id)).toEqual([b, c, a])
   })
 
-  // The cycle check is read-then-write, so two concurrent moves -- A under B and B under A --
-  // could each pass their own check and together commit a cycle. The guard is a workspace-keyed
-  // advisory lock taken as the transaction's first statement; see expectBlockedByTreeLock for
-  // what this proves and what it does not.
+  // The cycle check is read-then-write, so two concurrent moves, A under B and B under A, could
+  // each pass their own check and together commit a cycle. The guard is a workspace-keyed
+  // advisory lock taken as the transaction's first statement.
   it('contends on the workspace-keyed tree lock', async () => {
     const ctx = await setup()
     const p = await createProject(ctx, 'p')

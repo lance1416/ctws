@@ -23,7 +23,7 @@ type Named = { id: string; isInbox: boolean; name: string; color: string }
 const ordinary = (body: { projects: Listed[] }) => body.projects.filter((p) => !p.isInbox)
 
 describe('projects', () => {
-  // THE IDENTITY COLOUR IS A SLOT, ASSIGNED ONCE by the server: six buckets hashed from the id
+  // The identity colour is a slot, assigned once by the server: six buckets hashed from the id
   // would collide on four projects 72% of the time.
   describe('identity colour', () => {
     const colorsOf = async (ctx: Harness) => {
@@ -45,12 +45,12 @@ describe('projects', () => {
       expect(all.find((p) => p.isInbox)!.color).toBe('blue')
     })
 
-    it('starts from the least used once all eight are taken (FR-052)', async () => {
+    it('starts from the least used once all eight are taken', async () => {
       const ctx = await setup()
       for (let i = 0; i < 8; i += 1) await createProject(ctx, `P${i}`)
       const all = await colorsOf(ctx)
       expect(all).toHaveLength(9)
-      // Predictable rather than lucky: the NINTH project is the first to repeat, and it repeats
+      // Predictable rather than lucky: the ninth project is the first to repeat, and it repeats
       // the first of the equally least used, which the inbox holds.
       expect(all.filter((p) => p.color === 'blue')).toHaveLength(2)
     })
@@ -92,12 +92,11 @@ describe('projects', () => {
         payload: { archived: true },
       })
       await createProject(ctx, 'new')
-      // The archived project is not in the default list, so this asserts on the slot NUMBER
+      // The archived project is not in the default list, so this asserts on the slot number
       // rather than on distinctness: slot 2 is gone even though nothing visible is wearing it.
       const all = await colorsOf(ctx)
       expect(before).toBe('amber')
-      // Un-archiving must not repaint a project, which means the slot stays spoken for -- the same
-      // reason an archived project keeps its rank.
+      // Un-archiving must not repaint a project, so the slot stays spoken for.
       expect(all.find((p) => p.name === 'new')!.color).toBe('green')
     })
   })
@@ -445,10 +444,8 @@ describe('project visibility', () => {
   })
 })
 
-// The project list returns more than nothing but names, so the left rail had nothing to show
-// beside a destination. The tasks module's `openTasks` column is counted by the server in the
-// same query that lists the projects -- never in the client, which would have to fetch every task
-// of every project.
+// The tasks module's `openTasks` column is counted by the server in the same query that lists the
+// projects, never in the client, which would have to fetch every task of every project.
 describe('project open-task counts', () => {
   const listed = async (ctx: Harness, archived = false) => {
     const res = await ctx.app.inject({
@@ -477,11 +474,11 @@ describe('project open-task counts', () => {
     const b = await createProject(ctx, 'B')
 
     // Two roots, one child of the first: depth must not change the count, and the first, a
-    // parent now, is not one more open thing (FR-037).
+    // parent now, is not one more open thing.
     const open1 = await createTask(ctx, a, 'open 1')
     await createTask(ctx, a, 'open child', open1)
     await createTask(ctx, a, 'open 2')
-    // One of each kind that must NOT count.
+    // One of each kind that must not count.
     await patch(ctx, await createTask(ctx, a, 'finished'), { status: 'done' })
     await patch(ctx, await createTask(ctx, a, 'abandoned'), { status: 'cancelled' })
     const gone = await createTask(ctx, a, 'deleted')
@@ -494,7 +491,7 @@ describe('project open-task counts', () => {
         })
       ).statusCode,
     ).toBe(204)
-    // A task in the OTHER project, so the subquery cannot be counting the whole workspace.
+    // A task in the other project, so the subquery cannot be counting the whole workspace.
     await createTask(ctx, b, 'elsewhere')
 
     expect(await listed(ctx)).toEqual({ Inbox: 0, A: 2, B: 1 })
@@ -512,7 +509,7 @@ describe('project open-task counts', () => {
     expect((await listed(ctx)).A).toBe(1)
   })
 
-  it('counts the tasks with one under them, for Move to… (FR-059)', async () => {
+  it('counts the tasks with one under them, for Move to…', async () => {
     const ctx = await setup()
     const a = await createProject(ctx, 'A')
     const amazon = await createTask(ctx, a, 'Amazon')
@@ -544,7 +541,7 @@ describe('project open-task counts', () => {
       headers: theirs,
     })
     const body = other.json() as { projects: { name: string; columns: { openTasks: number } }[] }
-    // They see only their own inbox, and it is empty -- our two tasks are not in anyone else's count.
+    // They see only their own inbox, and it is empty: our two tasks are not in anyone else's count.
     expect(body.projects.map((p) => [p.name, p.columns.openTasks])).toEqual([['Inbox', 0]])
   })
 

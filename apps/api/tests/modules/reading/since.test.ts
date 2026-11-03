@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { setupWith, type Harness } from '../../helpers/harness'
 
 /**
- * SINCE WHEN (FR-072, FR-073): an item says when it took the status it has, from its own log; one
- * never changed has had it since it was added.
+ * An item says when it took the status it has, from its own log; one never changed has had it since
+ * it was added.
  */
 let now = new Date('2026-09-30T09:00:00.000Z')
 

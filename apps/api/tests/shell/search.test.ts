@@ -4,9 +4,9 @@ import { createPerson, createProject, createTask } from '../helpers/builders'
 import { appWithUser, secondUser, web, type Harness } from '../helpers/harness'
 
 /**
- * ONE SEARCH FOR EVERYTHING (FR-024, `GET /search`): every kind's first five and how many there
- * are, in the fixed order; or one kind, a page at a time. Each kind's module reads the text its
- * own way: a person by an alias too.
+ * One search for everything (`GET /search`): every kind's first five and how many there are, in the
+ * fixed order; or one kind, a page at a time. Each kind's module reads the text its own way: a
+ * person by an alias too.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -78,7 +78,7 @@ describe('GET /search', () => {
     expect((await search(theirs, 'q=stripe')).groups).toEqual([])
   })
 
-  it('names an untitled note on a meeting by the meeting and that day (FR-050)', async () => {
+  it('names an untitled note on a meeting by the meeting and that day', async () => {
     const ctx = await setup()
     const post = async (url: string, payload: object) => {
       const res = await ctx.app.inject({ method: 'POST', url, headers: web(ctx), payload })
@@ -113,7 +113,7 @@ describe('GET /search', () => {
   })
 })
 
-describe('how matches rank (FR-024, BUG-087)', () => {
+describe('how matches rank', () => {
   const people = (body: SearchEverythingResponse) =>
     body.groups.find((g) => g.type === 'person')?.items.map((i) => i.title) ?? []
 

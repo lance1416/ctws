@@ -5,9 +5,8 @@ import { createOrganisation, createPerson } from '../../helpers/builders'
 import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
 
 /**
- * ORGANISATIONS AND ROLES (FR-047, FR-064, FR-065, FR-099): a company, a law firm, a school; the
- * roles people hold or held there, known to the month; types as a free list; folding two
- * organisations into one.
+ * Organisations and roles: a company, a law firm, a school; the roles people hold or held there,
+ * known to the month; types as a free list; folding two organisations into one.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -197,7 +196,7 @@ describe('roles', () => {
   })
 })
 
-describe('merging keeps what was said with the merged organisation (BUG-005)', () => {
+describe('merging keeps what was said with the merged organisation', () => {
   it('moves the exchanges across, once each, and the overview still lists them', async () => {
     const ctx = await setup()
     const inc = await createOrganisation(ctx, { name: 'Dbg Inc.' })
@@ -244,7 +243,7 @@ describe('merging keeps what was said with the merged organisation (BUG-005)', (
   })
 })
 
-describe('roles are logged (BUG-007)', () => {
+describe('roles are logged', () => {
   it('records a role added, changed and removed on the person', async () => {
     const ctx = await setup()
     const org = await createOrganisation(ctx, { name: 'Acme' })
@@ -269,7 +268,7 @@ describe('roles are logged (BUG-007)', () => {
       'role_removed',
     ])
     const payloads = events.rows.map((e) => (e as { payload: object }).payload)
-    // Each names the organisation, so the line can say where (BUG-083).
+    // Each names the organisation, so the line can say where.
     expect(payloads[1]).toMatchObject({ organisationName: 'Acme', title: 'Intern' })
     expect(payloads[2]).toMatchObject({
       organisationName: 'Acme',
@@ -280,7 +279,7 @@ describe('roles are logged (BUG-007)', () => {
   })
 })
 
-describe('the overview (BUG-010)', () => {
+describe('the overview', () => {
   it('counts each type, and everything', async () => {
     const ctx = await setup()
     await createOrganisation(ctx, { name: 'Stripe', type: 'Company' })

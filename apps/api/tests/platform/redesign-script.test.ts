@@ -9,7 +9,7 @@ import { migratedTo } from '../helpers/db'
 import { countOf, loadFixture } from '../helpers/fixtures'
 
 /**
- * THE MOVE TO THE NEW LAYOUT, on the "before the redesign" data set (FR-090 to FR-099): the
+ * The move to the new layout, on the "before the redesign" data set: the
  * schema migrations first, then the script, then every guess it was asked to make is checked.
  */
 const stops: (() => Promise<void>)[] = []
@@ -24,7 +24,7 @@ function backupsDir(withDump = true): string {
   const dir = mkdtempSync(join(tmpdir(), 'ctws-backups-'))
   if (withDump) {
     // An old dump from an earlier start, and the one the backup service made just now: the newest
-    // is the one from before this start's schema migrations (BUG-013, BUG-014).
+    // is the one from before this start's schema migrations.
     writeFileSync(join(dir, '20261020T085900Z-pre-redesign.dump'), 'PGDMP fake')
     const later = join(dir, '20261020T091500Z-pre-redesign.dump')
     writeFileSync(later, 'PGDMP after the schema moved')
@@ -64,10 +64,10 @@ describe('the move, on the pre-redesign data', () => {
     const outcome = await run()
     expect(outcome.migrated).toHaveLength(2)
     expect(outcome.failed).toEqual([])
-    // The log says which backup and how many of each (release.md step 4).
+    // The log says which backup and how many of each.
     expect(lines.some((l) => l.includes('20261020T091500Z-pre-redesign.dump'))).toBe(true)
 
-    // Names (FR-095): a compound surname, a middle name, one word, a comma, a space inside.
+    // Names: a compound surname, a middle name, one word, a comma, a space inside.
     const names = await db.execute(sql`
       select name, given_name, middle_name, family_name from people
       where workspace_id = ${A} order by created_at`)
@@ -100,7 +100,7 @@ describe('the move, on the pre-redesign data', () => {
       { name: 'Wendy Li', org: 'Stripe Inc.', title: 'Recruiter' },
       { name: '王磊', org: 'Tencent', title: 'Engineer' },
     ])
-    // A title with no company stays in the note (FR-095).
+    // A title with no company stays in the note.
     expect(await one(db, sql`select note from people where name = 'Cher'`)).toEqual({
       note: 'Title: Singer',
     })
@@ -117,7 +117,7 @@ describe('the move, on the pre-redesign data', () => {
     ])
 
     // Time zones: from the city; the account's (Europe/London) for Cher, who has none. The bare
-    // "Cambridge" goes to the most populous one, the full label to its own (FR-099).
+    // "Cambridge" goes to the most populous one, the full label to its own.
     const zones = await db.execute(sql`
       select name, time_zone, time_zone_source from people
       where workspace_id = ${A} order by created_at`)
@@ -164,7 +164,7 @@ describe('the move, on the pre-redesign data', () => {
       ['Cher', 'Singer'],
     ])
     expect(section('peopleWithoutCity').map((i) => i.title)).toEqual(['Cher'])
-    // Every project is listed with its new colour and initials (FR-091): the six slots by hue.
+    // Every project is listed with its new colour and initials: the six slots by hue.
     expect(section('projectColours').map((i) => [i.title, i.was, i.now])).toEqual([
       ['Inbox', 'project-1', 'blue IN'],
       ['CTWS', 'project-1', 'blue CT'],
@@ -187,7 +187,7 @@ describe('the move, on the pre-redesign data', () => {
     const { db, run } = await moved()
     await run()
 
-    // Amazon was set to In progress by hand; its children are all To do (FR-092).
+    // Amazon was set to In progress by hand; its children are all To do.
     expect(await one(db, sql`select status from tasks where title = 'Amazon'`)).toEqual({
       status: 'todo',
     })
@@ -235,7 +235,7 @@ describe('the move, on the pre-redesign data', () => {
       ),
     ).toEqual({ day: null })
 
-    // The series note is a note on the series; the URL place is the join link (FR-096).
+    // The series note is a note on the series; the URL place is the join link.
     const note = await db.execute(sql`
       select n.body, n.anchor_type, n.occurrence_id, m.note as left_on_meeting
       from notes n join meetings m on m.id = n.anchor_id`)
@@ -261,7 +261,7 @@ describe('the move, on the pre-redesign data', () => {
       },
     ])
     // Everything else: what went where, including the two soft-deleted things that became
-    // tombstones and the two relations to them that went with them (FR-090, FR-094).
+    // tombstones and the two relations to them that went with them.
     expect(report.counts.moved).toMatchObject({
       meetingNotes: 1,
       belongs: 7,
@@ -282,7 +282,7 @@ describe('the move, on the pre-redesign data', () => {
     expect(await countOf(db, "people where name = 'Former Agent'")).toBe(0)
   })
 
-  it('gives everything a Created at its own creation instant, once (FR-093)', async () => {
+  it('gives everything a Created at its own creation instant, once', async () => {
     const { db, run } = await moved()
     await run()
     const missing = await db.execute(sql`
@@ -440,7 +440,7 @@ describe('the move, on the pre-redesign data', () => {
     ).toBe(project.n)
   })
 
-  it('keeps the backup it chose first through a retry, and chooses anew after a rollback (BUG-014)', async () => {
+  it('keeps the backup it chose first through a retry, and chooses anew after a rollback', async () => {
     const { db } = await moved()
     const dir = backupsDir()
     const attempt = (failAt?: string) =>

@@ -4,16 +4,14 @@ import { migratedTo } from '../helpers/db'
 import { countOf, loadFixture } from '../helpers/fixtures'
 
 /**
- * THE REDESIGN MIGRATION, RUN ON DATA WRITTEN UNDER THE OLD MODEL.
+ * The redesign migration, run on data written under the old model. `fixtures/pre-redesign.sql` is
+ * made by `tools/seed/pre-redesign.mjs` through the API at schema 0027 and dumped. It holds the
+ * cases the migration guesses at: names that split several ways, companies written three ways, a
+ * parent set to In progress by hand, a parent with a planned day, a series with a note, every kind
+ * of link.
  *
- * `fixtures/pre-redesign.sql` is the "before the redesign" set from acceptance-data.md, made by
- * `tools/seed/pre-redesign.mjs` through the API at schema 0027 and dumped. It holds the cases the
- * migration guesses at: names that split several ways, companies written three ways, a parent set
- * to In progress by hand, a parent with a planned day, a series with a note, every kind of link.
- *
- * This file grows one `it` per rule in FR-090 to FR-099 as the migration is written. For now it
- * proves the fixture loads under 0027 and says how many of each thing it holds, so the counts the
- * migration must preserve are pinned here rather than in anyone's memory.
+ * This proves the fixture loads under 0027 and pins how many of each thing it holds, the counts the
+ * migration must preserve.
  */
 const stops: (() => Promise<void>)[] = []
 afterEach(async () => {

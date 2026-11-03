@@ -5,10 +5,8 @@ import { setupWith, type Harness, web } from '../../helpers/harness'
 import { createPerson } from '../../helpers/builders'
 
 /**
- * THE BIRTHDAYS VIEW -- one page's worth of data, segmented and counted by the server.
- *
- * The segmenting lives on this side because two clients would each segment it themselves, and two
- * segmentings that disagree is one person showing up twice.
+ * The birthdays page, segmented and counted by the server: two clients segmenting it themselves
+ * could disagree and show one person twice.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -102,8 +100,8 @@ describe('GET /people/birthdays', () => {
     expect(body.circles).toEqual({ friend: 2, work: 1 })
   })
 
-  /** A birthday is today for the whole of the account's day. */
-  it('says which zone each row was counted in (BUG-010)', async () => {
+  /** "Today" is counted on each person's own clock, so each row says which zone that was. */
+  it('says which zone each row was counted in', async () => {
     const ctx = await setupWith(cleanups)
     await createPerson(ctx, {
       name: 'Lena',

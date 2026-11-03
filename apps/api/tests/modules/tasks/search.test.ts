@@ -50,7 +50,7 @@ async function patch(ctx: Harness, id: string, payload: Record<string, unknown>)
 describe('likePattern', () => {
   it('escapes the LIKE wildcards so they are searched for literally', () => {
     // Without this, `100%` matches every task in the workspace and `a_b` matches `axb`: a search
-    // that returns the WRONG rows, which looks like a working search.
+    // that returns the wrong rows, which looks like a working search.
     expect(likePattern('100%')).toBe('%100!%%')
     expect(likePattern('a_b')).toBe('%a!_b%')
     expect(likePattern('a!b')).toBe('%a!!b%')
@@ -124,7 +124,7 @@ describe('GET /search', () => {
   it('puts title matches before notes-only matches', async () => {
     const ctx = await setup()
     const project = await createProject(ctx, 'Alpha')
-    // The notes-only task is created FIRST and then touched LAST, so recency alone would put it
+    // The notes-only task is created first and then touched last, so recency alone would put it
     // on top: the order can only come from the title/notes ranking.
     const notesOnly = await createTask(ctx, project, '毫不相关')
     await createTask(ctx, project, 'widget 重写')
@@ -211,7 +211,7 @@ describe('GET /search', () => {
     })
     expect(res.statusCode).toBe(204)
 
-    // A project delete does NOT soft-delete its tasks, so this tests the project-join filter and
+    // A project delete does not soft-delete its tasks, so this tests the project-join filter and
     // nothing else.
     expect((await search(ctx, 'shade')).map((r) => r.id)).toEqual([survivor])
   })
@@ -221,7 +221,7 @@ describe('GET /search', () => {
     const mine = await createProject(ctx, 'Mine')
     await createTask(ctx, mine, 'secret 我的')
 
-    // A second user in the SAME database: two appWithUser() calls would be two databases, and the
+    // A second user in the same database: two appWithUser() calls would be two databases, and the
     // assertion below would hold with no scoping at all.
     const otherCookie = (await secondUser(ctx)).cookie
 

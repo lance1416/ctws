@@ -10,9 +10,9 @@ import {
 import { setupWith, type Harness } from '../../helpers/harness'
 
 /**
- * WHAT COMES NEXT ON THE BOARD BY STAGE (FR-058): with the project's tasks, the next meeting and
- * the soonest follow-up about each node with a stage, the nodes above it and their organisations.
- * The clock is pinned: Wednesday 21 October 2026, noon in London.
+ * What comes next on the board by stage: with the project's tasks, the next meeting and the soonest
+ * follow-up about each node with a stage, the nodes above it and their organisations. The clock is
+ * pinned: Wednesday 21 October 2026, noon in London.
  */
 const NOW = new Date('2026-10-21T11:00:00.000Z')
 
@@ -81,7 +81,7 @@ describe('GET /tasks?projectId: next', () => {
     )
 
     // Stripe's, through Mira and in this project: one already over and the first screen tomorrow.
-    // Leo's is not Stripe's; Mira's sync in another project is not this card's (FR-058).
+    // Leo's is not Stripe's; Mira's sync in another project is not this card's.
     await createMeeting(ctx, {
       title: 'Intro call',
       startsLocal: '2026-10-20T10:00',

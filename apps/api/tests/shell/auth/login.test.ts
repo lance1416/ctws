@@ -46,10 +46,8 @@ describe('POST /api/v1/auth/login', () => {
     expect(sessionId(res.headers['set-cookie'])).not.toBe(sessionId(ctx.registerSetCookie))
   })
 
-  // ONE TEST FOR BOTH REFUSALS, because the point is that they are INDISTINGUISHABLE: a wrong
-  // password and an address nobody registered have to answer the same thing, or the difference
-  // between them is a way to ask whether an address has an account here. Asserting 401 on one of
-  // them separately proves a strictly weaker claim than asserting both are equal.
+  // One test for both refusals: a wrong password and an address nobody registered have to answer
+  // the same thing, or the difference is a way to ask whether an address has an account here.
   it('refuses a wrong password and an unknown address identically', async () => {
     const ctx = await appWithUser()
     const login = (payload: Record<string, string>) =>

@@ -11,8 +11,8 @@ import {
 import { setupWith, type Harness, secondUser, web } from '../helpers/harness'
 
 /**
- * DELETING FOR GOOD (FR-035, STORY-008): the row goes, with its log, relations and resources, and
- * a tombstone stays so the old address can say what it was, when it went and where it was.
+ * Deleting for good: the row goes, with its log, relations and resources, and a tombstone stays so
+ * the old address can say what it was, when it went and where it was.
  */
 const cleanups: (() => Promise<void>)[] = []
 const setup = () => setupWith(cleanups)

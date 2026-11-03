@@ -3,9 +3,9 @@ import { createMeeting, createPerson } from '../../helpers/builders'
 import { setupWith, type Harness } from '../../helpers/harness'
 
 /**
- * WHO YOU WERE IN TOUCH WITH (FR-060): the latest exchange with each person, a message sent or
- * received or a meeting together, split into the last 30 days and 90 days or more ago. The clock
- * is pinned: Thursday 22 October 2026, noon in London.
+ * Who you were in touch with: the latest exchange with each person, a message sent or received or a
+ * meeting together, split into the last 30 days and 90 days or more ago. The clock is pinned:
+ * Thursday 22 October 2026, noon in London.
  */
 const NOW = new Date('2026-10-22T11:00:00.000Z')
 

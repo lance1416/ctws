@@ -66,7 +66,6 @@ describe('GET /today', () => {
     expect(await today(ctx)).toEqual([])
   })
 
-  // A task that is both overdue and in_progress must appear ONCE.
   // The query labels every row that is not overdue or today as in_progress, relying on its WHERE
   // to let only in-progress rows reach that arm. A `todo` task is the status most likely to be
   // added to that WHERE later, so pin that it is neither listed nor mislabelled today.
@@ -145,8 +144,7 @@ describe('GET /today', () => {
   })
 
   it('cannot see another workspace', async () => {
-    // Both users must live in ONE database: every appWithUser() boots its own Postgres, so two
-    // of them would be isolated trivially and this test could never fail.
+    // Both users must live in one database: two appWithUser() calls would be isolated trivially.
     const a = await setup()
     const b = await secondUser(a)
 
@@ -206,9 +204,8 @@ describe('GET /today', () => {
   })
 })
 
-// A UTC-or-server-local implementation passes every test above and fails here.
-// These call listToday with a fixed clock, so every case runs on every run, whatever time the
-// suite starts, and each asserts the EXACT segment rather than "not today".
+// These call listToday with a fixed clock, so every case runs whatever time the suite starts, and
+// each asserts the exact segment rather than "not today".
 describe('listToday timezone and DST', () => {
   type Case = {
     name: string
@@ -250,7 +247,7 @@ describe('listToday timezone and DST', () => {
       cols: { dueAt: '2026-10-02T10:00:00Z' },
       expected: 'absent',
     },
-    // scheduled_on is a calendar day compared with the LOCAL date, with <=.
+    // scheduled_on is a calendar day compared with the local date, with <=.
     {
       name: 'scheduled Oct 2: local date in Shanghai',
       tz: 'Asia/Shanghai',
@@ -279,8 +276,7 @@ describe('listToday timezone and DST', () => {
       cols: { scheduledOn: '2026-10-01' },
       expected: 'today',
     },
-    // What is being done stays In progress when it is also planned or due today; late still wins
-    // (FR-079, artboard 12: "Due today" is a mark on an In progress row).
+    // What is being done stays In progress when it is also planned or due today; late still wins.
     {
       name: 'in progress and due later today: in progress',
       tz: 'Asia/Shanghai',
@@ -302,7 +298,7 @@ describe('listToday timezone and DST', () => {
       cols: { dueAt: '2026-10-01T10:00:00Z', status: 'in_progress' },
       expected: 'overdue',
     },
-    // A late task planned for a day (FR-079, "交申请"): its deadline stays, and the plan decides.
+    // A late task planned for a day: its deadline stays, and the plan decides.
     {
       name: 'late and planned for today: today’s, not overdue',
       tz: 'Asia/Shanghai',
@@ -385,10 +381,9 @@ describe('listToday timezone and DST', () => {
     },
   ]
 
-  // ONE container for the whole table: listToday takes the timezone and the clock as arguments,
-  // so no row needs its own database. That makes the database shared, so every row creates a task
-  // with its own title, looks it up by ITS OWN id, and asserts only on that row. "absent" means
-  // this id is absent, never that the result is empty.
+  // One database for the whole table, since listToday takes the timezone and the clock as
+  // arguments. Each row looks up its own task by id and asserts only on it: "absent" means this id
+  // is absent, never that the result is empty.
   let shared: Harness
   let projectId: ProjectId
   let workspaceId: WorkspaceId
@@ -422,8 +417,8 @@ describe('listToday timezone and DST', () => {
 })
 
 /**
- * A PARENT'S OWN DEADLINE (FR-043): due today, the parent is a row of today's; missed, it is
- * overdue; either way it carries its children's counts. Tomorrow's is not on Today's lists yet.
+ * A parent's own deadline: due today, the parent is a row of today's; missed, it is overdue; either
+ * way it carries its children's counts. Tomorrow's is not on Today's lists yet.
  */
 describe('a parent by its deadline', () => {
   // 09:10 on Thursday, October 22, in London.
@@ -493,18 +488,12 @@ describe('a parent by its deadline', () => {
 })
 
 /**
- * ONE PERSON'S READ MUST NOT COST EVERYBODY ELSE'S DATA.
- *
  * A task has no workspace of its own: every authenticated read reaches one by joining `projects`
  * and filtering on `workspace_id`. Without an index for that filter the join opens with a
- * sequential scan of EVERY project in the database -- measured on a database holding 92,839 of
- * them, `/today` spent 3.8 of its 5.0ms there and touched 1,359 pages to return five rows. With
- * the index: 0.26ms, and no scan.
+ * sequential scan of every project in the database.
  *
- * ASSERTED ON THE PLAN, not on the schema. "The index exists" is a restatement of the migration
- * and would pass while a reworded query quietly stopped using it; what has to stay true is that
- * this read does not scan the table. It needs a realistically large `projects` to be meaningful:
- * on a handful of rows a sequential scan is the right plan and the planner is correct to pick it.
+ * Asserted on the plan, not on the schema, so a reworded query that stopped using the index
+ * fails. It needs a large `projects`: on a handful of rows a sequential scan is the right plan.
  */
 describe('the tenant join does not scan every project in the database', () => {
   it('uses the workspace index once the table is big enough to matter', async () => {
@@ -526,9 +515,8 @@ describe('the tenant join does not scan every project in the database', () => {
       from workspaces w, generate_series(1, 25) g
       where w.id <> ${workspaceId}
     `)
-    // ...and their tasks, because the shape only matters when BOTH sides are big: with one task
-    // in the database the planner drives from `tasks` and probes projects by primary key, which
-    // is a fine plan and tells us nothing about the filter this test is about.
+    // ...and their tasks: with one task in the database the planner drives from `tasks` and probes
+    // projects by primary key, which says nothing about the filter.
     await ctx.db.execute(sql`
       insert into tasks (id, workspace_id, project_id, title, status, rank)
       select gen_random_uuid(), p.workspace_id, p.id, 't', 'todo', 'a'
@@ -548,8 +536,8 @@ describe('the tenant join does not scan every project in the database', () => {
       .map((r) => Object.values(r as Record<string, unknown>).join(' '))
       .join('\n')
 
-    // ANY plan is acceptable except one that reads every project. Pinning WHICH index would pin
-    // the planner's choice, and it is entitled to a better one.
+    // Any plan is acceptable except one that reads every project; pinning which index would pin
+    // the planner's choice.
     expect(plan, plan).not.toMatch(/Seq Scan on projects/)
   })
 })

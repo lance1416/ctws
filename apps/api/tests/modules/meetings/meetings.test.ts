@@ -6,12 +6,12 @@ import { expectBlockedWhile, setupWith, type Harness, web, secondUser } from '..
 import { createProject, createMeeting, createPerson } from '../../helpers/builders'
 
 /**
- * MEETINGS, on iCalendar's `VEVENT` (RFC 5545).
+ * Meetings, on iCalendar's `VEVENT` (RFC 5545).
  *
  * `occurrences.test.ts` holds the recurrence and DST arithmetic, without a database. What is
  * tested here is everything that arithmetic has to be wired to: the three edit scopes, overrides
- * surviving a round trip, and the window being cut on the ACCOUNT's days while each meeting keeps
- * its OWN zone -- a meeting in Toronto and one in London are not the same wall clock, and neither
+ * surviving a round trip, and the window being cut on the account's days while each meeting keeps
+ * its own zone: a meeting in Toronto and one in London are not the same wall clock, and neither
  * is the account's.
  */
 
@@ -177,7 +177,7 @@ describe('a recurring meeting on the calendar', () => {
       ['occurrence', '2026-11-03T09:00'],
       ['occurrence', '2026-11-10T09:00'],
     ])
-    // Each says it is one of a series, for the calendar's repeat mark (CA-03).
+    // Each says it is one of a series, for the calendar's repeat mark.
     expect(got.every((e) => e.repeats)).toBe(true)
   })
 
@@ -310,7 +310,7 @@ describe('editing one occurrence', () => {
     ])
   })
 
-  it('takes a cancelled week back, and leaves a moved one as it is (FR-068)', async () => {
+  it('takes a cancelled week back, and leaves a moved one as it is', async () => {
     const ctx = await setup()
     const series = await arrange(ctx)
     await cancelOne(ctx, series.meetingId, '2026-10-27T09:00')
@@ -321,7 +321,7 @@ describe('editing one occurrence', () => {
         url: `/api/v1/meetings/${series.meetingId}/occurrences/${at}/restore`,
         headers: web(ctx),
       })
-    // Read by its own address, it says it was cancelled, not that it is gone (BUG-051).
+    // Read by its own address, it says it was cancelled, not that it is gone.
     const read = (at: string) =>
       ctx.app.inject({
         method: 'GET',

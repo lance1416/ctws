@@ -4,9 +4,9 @@ import { createPerson } from '../../helpers/builders'
 import { appWithUser, type Harness } from '../../helpers/harness'
 
 /**
- * A PERSON AFTER THE REDESIGN (FR-049): a name in three parts shown in its script's order and
- * filed by the family name's letter; other names that search finds; circles of your own; a time
- * zone from the city they live in, unless set by hand; birthdays counted on their clock.
+ * A person after the redesign: a name in three parts shown in its script's order and filed by the
+ * family name's letter; other names that search finds; circles of your own; a time zone from the
+ * city they live in, unless set by hand; birthdays counted on their clock.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {

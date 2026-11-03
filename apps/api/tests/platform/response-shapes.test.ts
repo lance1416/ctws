@@ -9,11 +9,10 @@ import {
 import { setupWith, type Harness } from '../helpers/harness'
 
 /**
- * WHAT EACH THING READS BACK AS, FIELD FOR FIELD.
- *
- * A response schema drops what it does not name, so a field the server means to send and the
- * contract forgot would vanish without an error. Each read here is compared whole: a field lost
- * on the way, or one that appears unannounced, fails the comparison.
+ * What each thing reads back as, field for field. A response schema drops what it does not name, so
+ * a field the server means to send and the contract forgot would vanish without an error. Each read
+ * here is compared whole: a field lost on the way, or one that appears unannounced, fails the
+ * comparison.
  */
 
 const cleanups: (() => Promise<void>)[] = []

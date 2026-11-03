@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { appWithUser, type Harness } from '../../helpers/harness'
 
 /**
- * THE ACCOUNT'S OWN SETTINGS (artboard 30): the zone every day is counted in, and the password.
- * A new password needs the current one, and signs the account out everywhere else.
+ * The account's own settings: the zone every day is counted in, and the password. A new password
+ * needs the current one, and signs the account out everywhere else.
  */
 
 const NOW = new Date('2026-10-28T10:24:00Z')

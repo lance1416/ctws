@@ -2,11 +2,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { setupWith, type Harness } from '../helpers/harness'
 
 /**
- * WHAT DAY IT IS IN THE OLD CALENDAR.
- *
- * A SHELL endpoint rather than a module's: "what is 2026-10-10 in the lunar calendar" is a property
- * of the day, not of people or of anything else. It is answered here rather than in the browser
- * because the library that knows is 750 KB.
+ * What day it is in the lunar calendar: a shell endpoint, since that is a property of the day, not
+ * of any module's things. It is answered here rather than in the browser because the library that
+ * knows is 750 KB.
  */
 
 const cleanups: (() => Promise<void>)[] = []

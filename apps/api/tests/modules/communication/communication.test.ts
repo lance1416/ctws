@@ -5,16 +5,16 @@ import { createOrganisation, createPerson, createProject } from '../../helpers/b
 import { appWithUser, type Harness } from '../../helpers/harness'
 
 /**
- * COMMUNICATION (FR-048, FR-070, FR-071, FR-079): exchanges logged by hand; a sent one may wait
- * for a reply by a day and surfaces on Today when the day comes; logging the reply closes it; the
- * overview says which organisations were in touch lately and what is next with each.
+ * Exchanges logged by hand; a sent one may wait for a reply by a day and surfaces on Today when
+ * the day comes; logging the reply closes it; the overview says which organisations were in touch
+ * lately and what is next with each.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
   for (const stop of cleanups.splice(0)) await stop()
 })
 
-// Thursday 2026-10-22 09:10 in London (acceptance-data.md).
+// Thursday 2026-10-22 09:10 in London.
 const NOW = new Date('2026-10-22T08:10:00Z')
 
 async function setup() {

@@ -5,10 +5,8 @@ import { appWithUser, type Harness, secondUser } from '../../helpers/harness'
 import { createProject, createTask } from '../../helpers/builders'
 
 /**
- * THE WEEKLY REVIEW reads the EVENT LOG, which is the whole difference between it and Done.
- * Done lists what is finished right now; this lists what happened in a window. The cases below
- * are the ones where the two give different answers -- if they always agreed, one of them would
- * not need to exist.
+ * The weekly review reads the event log: Done lists what is finished right now, this lists what
+ * happened in a window. The cases below are the ones where the two give different answers.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -66,8 +64,7 @@ describe('the weekly review', () => {
   })
 
   it('reports a task that was finished and then reopened, which Done cannot', async () => {
-    // THE CASE THAT JUSTIFIES THE VIEW. Finishing something on Tuesday is work done, even if it
-    // came back on Thursday; a recount that hides it is the kind of report nobody opens twice.
+    // Finishing something on Tuesday is work done, even if it came back on Thursday.
     const ctx = await setup()
     const pid = await createProject(ctx, '改版')
     const id = await createTask(ctx, pid, '写迁移')
@@ -121,7 +118,7 @@ describe('the weekly review', () => {
       sql`select ((now() - interval '10 days') at time zone 'UTC')::date::text as d`,
     )
     const d = (day.rows[0] as { d: string }).d
-    // The far end is INCLUSIVE: a window of one day contains that whole day.
+    // The far end is inclusive: a window of one day contains that whole day.
     expect((await review(ctx, `&from=${d}&to=${d}`)).projects).toHaveLength(1)
     expect((await review(ctx, `&from=${d}&to=${d}`)).from).toBe(d)
     // And a window that ends the day before does not.

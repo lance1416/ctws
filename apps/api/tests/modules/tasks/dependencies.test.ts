@@ -12,11 +12,8 @@ import {
 import { createProject, createTask } from '../../helpers/builders'
 
 /**
- * ONE TASK WAITING FOR ANOTHER.
- *
- * The edge is stored; "blocked" is derived. These are about keeping the edges honest -- loops
- * refused, tenants separated, both directions readable -- and about the one property the whole
- * feature rests on: finishing the blocker unblocks the other one with NO second write.
+ * One task waiting for another. The edge is stored; "blocked" is derived, so finishing the blocker
+ * unblocks the other one with no second write.
  */
 
 const cleanups: (() => Promise<void>)[] = []
@@ -80,8 +77,8 @@ describe('task dependencies', () => {
   })
 
   it('crosses projects, and says which project the other end is in', async () => {
-    // A release in one project waiting on another project's CI. The two graphs -- parent tree and dependency
-    // -- have no containment relationship, so there is nothing to forbid here.
+    // The parent tree and the dependency graph do not contain each other, so there is nothing to
+    // forbid here.
     const ctx = await setup()
     const ctws = await createProject(ctx, 'CTWS')
     const rrgen = await createProject(ctx, 'rrgen')
@@ -94,8 +91,8 @@ describe('task dependencies', () => {
   })
 
   it('unblocks when the blocker is finished, with no second write', async () => {
-    // THE PROPERTY THE WHOLE FEATURE RESTS ON. Nothing stores "blocked"; it is read off the
-    // blocker's status, so the two can never drift apart.
+    // Nothing stores "blocked"; it is read off the blocker's status, so the two can never drift
+    // apart.
     const ctx = await setup()
     const pid = await createProject(ctx, '改版')
     const ci = await createTask(ctx, pid, '跑通 CI')
@@ -109,7 +106,7 @@ describe('task dependencies', () => {
     await setStatus(ctx, ci, 'done')
     const free = (await blockersOnToday(ctx)).find((t) => t.title === '发 v0.8.0')!
     expect(free.blockedBy).toEqual([])
-    // The edge itself is still there -- it is a fact about the work, not about the moment.
+    // The edge itself is still there: it is a fact about the work, not about the moment.
     expect((await lists(ctx, ship)).blockedBy.map((r) => r.done)).toEqual([true])
   })
 
@@ -151,8 +148,7 @@ describe('task dependencies', () => {
   })
 
   it('allows a diamond, which is not a loop', async () => {
-    // D waits for B and C, both of which wait for A. A naive cycle walk that re-visits a node
-    // once per path would also be the one that explodes here.
+    // D waits for B and C, both of which wait for A.
     const ctx = await setup()
     const pid = await createProject(ctx, '改版')
     const a = await createTask(ctx, pid, 'A')
@@ -219,8 +215,8 @@ describe('task dependencies', () => {
     await ctx.app.inject({ method: 'DELETE', url: `/api/v1/tasks/${ci}`, headers: web(ctx) })
 
     // Soft-deleted: the row survives and the edge with it, but a task nobody can see cannot be
-    // what someone is waiting for. BOTH READ PATHS -- the detail lists and the one the ROWS use,
-    // which are different queries and were not both covered until a mutation said so.
+    // what someone is waiting for. The detail lists and the rows are read by different queries,
+    // so both are checked.
     expect((await lists(ctx, ship)).blockedBy).toEqual([])
     const row = (await blockersOnToday(ctx)).find((t) => t.title === '发 v0.8.0')!
     expect(row.blockedBy).toEqual([])
@@ -264,11 +260,11 @@ describe('task dependencies', () => {
     await undepend(ctx, b, a)
 
     const types = (await eventsOf(ctx, b)).map((e) => e.type)
-    // On the WAITING task: it is the one whose situation changed, and its history is where
+    // On the waiting task: it is the one whose situation changed, and its history is where
     // someone looks to ask why it sat still.
     expect(types).toContain('dependency_added')
     expect(types).toContain('dependency_removed')
-    // Named by its title, so the timeline says what it waited on (FR-045).
+    // Named by its title, so the timeline says what it waited on.
     const payloads = (await eventsOf(ctx, b))
       .filter((e) => e.type.startsWith('dependency_'))
       .map((e) => e.payload)

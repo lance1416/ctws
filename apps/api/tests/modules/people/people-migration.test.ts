@@ -9,13 +9,10 @@ import { hashPassword } from '../../../src/shell/auth/password'
 import { migratedTo } from '../../helpers/db'
 
 /**
- * CONTACTS BECAME PEOPLE, AND NOTHING WRITTEN BEFORE THAT WAS LOST.
- *
- * The rename moved two tables, a column and the type name stored inside every link. A fresh
- * database has no rows when it runs, so the whole suite would stay green even if the migration
- * dropped every person: only a database that already holds people can show it. This one is
- * migrated to the last schema that said "contact", filled through that schema, then carried
- * across.
+ * Contacts became people, and nothing written before that was lost. The rename moved two tables, a
+ * column and the type name stored inside every link. A fresh database has no rows when it runs,
+ * so only one that already holds people can show none was dropped: this one is migrated to the
+ * last schema that said "contact", filled through that schema, then carried across.
  */
 const stops: (() => Promise<void>)[] = []
 afterEach(async () => {

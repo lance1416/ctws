@@ -9,9 +9,8 @@ import {
 import { appWithUser, type Harness, secondUser } from '../helpers/harness'
 
 /**
- * A THING'S TIMELINE (FR-044, FR-045): its own changes, newest first, read through the shell so
- * every kind of thing answers the same way. Other kinds of entry (messages, meetings, notes) join
- * as their modules arrive; this file covers the log itself and the page.
+ * A thing's timeline: its own changes and the entries other modules add (messages, meetings,
+ * notes), newest first, read through the shell so every kind of thing answers the same way.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -124,7 +123,7 @@ describe('GET /timeline', () => {
   })
 })
 
-describe('paging through a long timeline (BUG-002, BUG-003)', () => {
+describe('paging through a long timeline', () => {
   it('reads every entry once across three pages, and says when there are no more', async () => {
     const ctx = await appWithUser()
     cleanups.push(ctx.stop)
@@ -167,7 +166,7 @@ describe('paging through a long timeline (BUG-002, BUG-003)', () => {
   })
 })
 
-describe('the kinds of entry (BUG-001, BUG-009)', () => {
+describe('the kinds of entry', () => {
   it('shows a person the meetings they attended, and the sentences that mention them', async () => {
     const ctx = await appWithUser()
     cleanups.push(ctx.stop)
@@ -231,7 +230,7 @@ describe('the kinds of entry (BUG-001, BUG-009)', () => {
     expect(onProject.json().entries[0].meeting.meetingId).toBe(meeting.meetingId)
   })
 
-  it("gives an organisation the meetings its people attended while there, and related nodes' stage changes (FR-065)", async () => {
+  it("gives an organisation the meetings its people attended while there, and related nodes' stage changes", async () => {
     const ctx = await appWithUser()
     cleanups.push(ctx.stop)
     const shopify = await createOrganisation(ctx, { name: 'Shopify' })

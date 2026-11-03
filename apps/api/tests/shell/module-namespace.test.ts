@@ -16,7 +16,7 @@ beforeAll(async () => {
   ctx = await appWithUser('seam@example.com')
   projectId = await createProject(ctx, 'Seam')
   await createTask(ctx, projectId, 'inside')
-  // A SECOND user on the SAME app and database: two `appWithUser()` calls would be two unrelated
+  // A second user on the same app and database: two `appWithUser()` calls would be two unrelated
   // databases and any isolation assertion between them would pass trivially.
   otherAuthed = (await secondUser(ctx, 'intruder@example.com')).authed
 }, 180_000)
@@ -84,8 +84,7 @@ describe('the tenant chokepoint on the shell', () => {
   })
 
   it('refuses the module read that reaches a workspace THROUGH the project', async () => {
-    // `tasks` carries no workspace id; it borrows the shell's predicate by join. If the module
-    // kept its own copy and that copy drifted, this is the assertion that would fail.
+    // `tasks` carries no workspace id; it borrows the shell's predicate by join.
     expect((await get(`/api/v1/tasks?projectId=${projectId}`, otherAuthed)).statusCode).toBe(404)
     const mine = await get(`/api/v1/tasks?projectId=${projectId}`)
     expect(mine.statusCode).toBe(200)

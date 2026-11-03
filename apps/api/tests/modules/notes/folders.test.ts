@@ -4,8 +4,8 @@ import { createPerson } from '../../helpers/builders'
 import { appWithUser, type Harness } from '../../helpers/harness'
 
 /**
- * FOLDERS AND PINS (REQ-002 FR-110): a note on its own may sit in one folder and be pinned; a note
- * hung on a thing goes where the thing is. Neither is an edit.
+ * Folders and pins: a note on its own may sit in one folder and be pinned; a note hung on a thing
+ * goes where the thing is. Neither is an edit.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -84,7 +84,7 @@ describe('folders', () => {
     expect(after.body).toBe('Appetite, not estimates.')
   })
 
-  it('make a note in themselves, from their own New note (FR-115)', async () => {
+  it('make a note in themselves, from their own New note', async () => {
     const ctx = await setup()
     const reading = await folder(ctx, 'Reading notes')
     const made = await note(ctx, { title: 'Untitled', body: 'x', folderId: reading.id })
@@ -156,7 +156,7 @@ describe('a note hung on a thing', () => {
   })
 })
 
-describe('folders in folders (FR-117)', () => {
+describe('folders in folders', () => {
   const list = async (ctx: Harness) =>
     ((await call(ctx, 'GET', '/notes/folders')).json() as { folders: NoteFolderResponse[] }).folders
 

@@ -47,8 +47,8 @@ describe('rate limiting', () => {
   let ctx: Awaited<ReturnType<typeof withApp>>
 
   beforeAll(async () => {
-    // A low ceiling for this instance only: the test is about the MECHANISM, and asserting the
-    // shipped 600 would mean sending 601 requests to learn the same thing.
+    // A low ceiling for this instance only: the test is about the mechanism, not the shipped
+    // number.
     ctx = await withApp({ authRegistration: 'open', authCeiling: 70 })
   }, 120_000)
 
@@ -81,10 +81,8 @@ describe('rate limiting', () => {
   }, 60_000)
 
   it('buckets by EMAIL, so one account under attack does not lock out the others', async () => {
-    // THE WHOLE POINT OF KEYING BY EMAIL. Behind a reverse proxy every request has the proxy's IP, so an
-    // IP-keyed bucket is one bucket for everybody: a stuffing run against one account would
-    // take the instance offline for its owner, and spreading that run across a thousand
-    // accounts would stay inside a single 20-a-minute allowance.
+    // Behind a reverse proxy every request has the proxy's IP, so an IP-keyed bucket is one bucket
+    // for everybody: a stuffing run against one account would lock everyone out.
     const attempt = (email: string) =>
       ctx.app.inject({
         method: 'POST',
@@ -102,14 +100,9 @@ describe('rate limiting', () => {
   }, 60_000)
 
   it('still has an instance-wide ceiling, however many addresses are named', async () => {
-    // THE HALF A PER-EMAIL BUCKET CANNOT COVER. Per-email buckets protect an account; alone they
-    // leave the INSTANCE unprotected, because ten thousand addresses are ten thousand buckets --
-    // and `authenticate` runs argon2 against a dummy hash even for an address that does not
-    // exist, so that is unbounded CPU for the asking.
-    //
-    // The ceiling is a single counter with no key, so there is nothing to rotate past it. The
-    // second version of this control kept a Map keyed by `req.ip` and swept it on every request,
-    // which an attacker rotating source addresses turns into the amplifier.
+    // Per-email buckets protect an account but not the instance: every address is its own
+    // bucket, and `authenticate` runs argon2 against a dummy hash even for an address that does
+    // not exist. The ceiling is a single counter with no key, so there is nothing to rotate past.
     const refusals = []
     for (let i = 0; i < 70; i++) {
       const res = await ctx.app.inject({

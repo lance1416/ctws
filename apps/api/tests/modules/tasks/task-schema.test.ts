@@ -118,9 +118,8 @@ describe('task tables', () => {
   })
 
   // The rank's lexicographic order only matches its logical order under bytewise comparison
-  // (COLLATE "C"). We assert the column's declared collation rather than an ordering, because the
-  // Alpine test container's default collation already coincides with bytewise, so an ordering
-  // assertion could not fail here while still being wrong on glibc Postgres.
+  // (COLLATE "C"). The declared collation is asserted rather than an ordering because the Alpine
+  // test container's default collation is already bytewise, while glibc Postgres's is not.
   // The other half: the ranks themselves must sort bytewise in the order they were placed.
   it('generates ranks that sort bytewise in placement order', () => {
     const ranks: string[] = []
@@ -173,7 +172,7 @@ describe('task tables', () => {
       `),
     ).toBe(FOREIGN_KEY_VIOLATION)
     // An event names its thing by type and id, with no foreign key to hold it to a workspace:
-    // the log is read through the workspace, never through the thing (RFC-001 2.3).
+    // the log is read through the workspace, never through the thing.
   })
 
   it('removes projects, tasks and events when their workspace is deleted', async () => {

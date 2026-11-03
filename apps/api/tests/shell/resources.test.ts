@@ -4,8 +4,8 @@ import { createProject, createTask } from '../helpers/builders'
 import { appWithUser, eventsOf, type Harness, secondUser } from '../helpers/harness'
 
 /**
- * RESOURCES (FR-046, FR-053): an outside address on any thing, with an optional name; a project
- * pins up to nine of its own in its head, one per digit key.
+ * Resources: an outside address on any thing, with an optional name; a project pins up to nine of
+ * its own in its head, one per digit key.
  */
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {

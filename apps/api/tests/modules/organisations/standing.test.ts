@@ -8,9 +8,9 @@ import { createOrganisation, createProject, createTask } from '../../helpers/bui
 import { setupWith, type Harness } from '../../helpers/harness'
 
 /**
- * WHERE AN ORGANISATION STANDS (FR-064, FR-065, FR-071): the projects it is in through a node
- * related to it, with that node's stage, on its page and in "Organisations in touch". The clock
- * is pinned: Wednesday 21 October 2026, noon in London.
+ * Where an organisation stands: the projects it is in through a node related to it, with that
+ * node's stage, on its page and in "Organisations in touch". The clock is pinned: Wednesday 21
+ * October 2026, noon in London.
  */
 const NOW = new Date('2026-10-21T11:00:00.000Z')
 
