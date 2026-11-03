@@ -58,7 +58,7 @@ function birthdayColumns(b: BirthdayInput | null | undefined) {
 }
 
 /**
- * The name's three parts and what follows from them (FR-049): given as parts, or as one string
+ * The name's three parts and what follows from them: given as parts, or as one string
  * split the way the migration splits it. `current` is the stored name on an edit.
  */
 function nameColumns(
@@ -86,7 +86,7 @@ function nameColumns(
 }
 
 /**
- * The zone a person keeps time in (FR-049): set by hand, or taken from the city they live in. On
+ * The zone a person keeps time in: set by hand, or taken from the city they live in. On
  * an edit, a city change moves a zone that came from the city and leaves one set by hand.
  */
 function zoneColumns(
@@ -257,7 +257,7 @@ export async function updatePerson(
   })
 }
 
-/** Replaces a person's roles as a set, in the order given (FR-047). */
+/** Replaces a person's roles as a set, in the order given. */
 export async function replaceRoles(
   db: Db,
   ctx: Actor,
@@ -275,7 +275,7 @@ export async function replaceRoles(
   })
 }
 
-/** Deletes a person for good (FR-035): a tombstone, and the rows go. */
+/** Deletes a person for good: a tombstone, and the rows go. */
 export async function deletePerson(db: Db, ctx: Actor, id: PersonId): Promise<void> {
   const { workspaceId } = ctx
   await db.transaction(async (tx) => {
@@ -290,7 +290,7 @@ export async function deletePerson(db: Db, ctx: Actor, id: PersonId): Promise<vo
     await tx.execute(
       sql`update reading_items set recommended_by = null where recommended_by = ${id}`,
     )
-    // A message whose last party just went waits for nobody any more (FR-048).
+    // A message whose last party just went waits for nobody any more.
     await tx.execute(sql`
       update communications set awaiting_reply = false, updated_at = ${ctx.now}
       where workspace_id = ${ctx.workspaceId} and awaiting_reply

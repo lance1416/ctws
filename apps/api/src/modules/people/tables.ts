@@ -41,7 +41,7 @@ export const people = pgTable(
       .notNull()
       .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
     /**
-     * vCard `FN`: the name as shown, worked out from the three parts below (FR-049). Kept as the
+     * vCard `FN`: the name as shown, worked out from the three parts below. Kept as the
      * column the old pages read until they are replaced; always equal to the display name.
      */
     name: text('name').notNull(),
@@ -51,7 +51,7 @@ export const people = pgTable(
     familyName: text('family_name'),
     /** The letter the person is filed under, A to Z or `#`, from the family name's pinyin or initial. */
     sortKey: text('sort_key').notNull(),
-    /** IANA zone, from the city they live in unless set by hand (FR-049). */
+    /** IANA zone, from the city they live in unless set by hand. */
     timeZone: text('time_zone'),
     timeZoneSource: text('time_zone_source').$type<'city' | 'manual'>(),
     /** The cities' keys in the bundled table (`name|region|country`), to tell namesakes apart. */
@@ -135,7 +135,7 @@ export const people = pgTable(
 /** What another module points at with a foreign key: a person. */
 export const personKeys = { id: people.id }
 
-/** The projects a person is in (FR-042): a field, replaced as a set; several at once. */
+/** The projects a person is in: a field, replaced as a set; several at once. */
 export const personProjects = pgTable(
   'person_projects',
   {
@@ -157,7 +157,7 @@ export const personProjects = pgTable(
   ],
 )
 
-/** Other names a person goes by (FR-049): a Chinese name, an English name, a nickname. */
+/** Other names a person goes by: a Chinese name, an English name, a nickname. */
 export const personAliases = pgTable(
   'person_aliases',
   {
@@ -174,7 +174,7 @@ export const personAliases = pgTable(
   (t) => [index('person_aliases_person_idx').on(t.personId, t.rank)],
 )
 
-/** The circles you keep (FR-049): a list of your own, in your order; a person may be in several. */
+/** The circles you keep: a list of your own, in your order; a person may be in several. */
 export const circles = pgTable(
   'circles',
   {

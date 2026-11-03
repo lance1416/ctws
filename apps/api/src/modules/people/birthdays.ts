@@ -150,7 +150,7 @@ export async function birthdayEntries(
 
 /**
  * The birthdays page as of now. "Today", and how many days away a birthday is, are counted on
- * the person's own clock (FR-049): in Shanghai the day has begun before it has in London, and the
+ * the person's own clock: in Shanghai the day has begun before it has in London, and the
  * wish should go out when it begins there. The page's own `today` is the account's.
  */
 export async function listBirthdays(

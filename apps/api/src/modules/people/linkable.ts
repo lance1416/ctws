@@ -7,7 +7,7 @@ import { rolesOf } from '../organisations'
 import { people } from './tables'
 
 /**
- * What a text finds a person by: their name, an alias they go by ("Wendy" finds 李雯, FR-024), or
+ * What a text finds a person by: their name, an alias they go by ("Wendy" finds 李雯), or
  * a way to reach them; as the people module's own search reads it.
  */
 const byText = (text: string): SQL | undefined =>
@@ -41,7 +41,7 @@ export const personLinkable: Linkable = {
         id: people.id,
         title: people.name,
         text: ['people.name'],
-        // "Wendy" starts 李雯's other name, so she is among the first (FR-024).
+        // "Wendy" starts 李雯's other name, so she is among the first.
         alsoStarts: (text) => sql`exists (
           select 1 from person_aliases al
           where al.person_id = people.id and ${startsWith('al.name', text)}

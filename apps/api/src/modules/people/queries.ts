@@ -82,7 +82,7 @@ const projectRow = z.object({
 type PersonProject = Named<ProjectId> & { openTasks: number; lastActivityAt: Date | null }
 
 /**
- * The live projects each person is in, the one that moved last first (FR-061): with how many of
+ * The live projects each person is in, the one that moved last first: with how many of
  * their tasks in it are still open, a task being theirs when it is linked to them either way.
  */
 async function projectsOf(

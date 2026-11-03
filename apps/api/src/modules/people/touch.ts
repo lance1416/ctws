@@ -15,7 +15,7 @@ import { people } from './tables'
 type Touched = LastExchange & { personId: PersonId }
 
 /**
- * Who you were in touch with lately and with whom it has been a while (FR-060), by the latest
+ * Who you were in touch with lately and with whom it has been a while, by the latest
  * exchange with each, a message or a meeting together, from whichever module keeps it. Days are
  * the account's. Someone never in touch is in neither list: there is no while to count.
  */

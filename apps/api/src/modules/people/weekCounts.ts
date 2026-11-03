@@ -7,7 +7,7 @@ import { people } from './tables'
 
 const counted = z.object({ added: z.coerce.number().int() })
 
-/** The review's "People added" (FR-081): people made in the week who are still here. */
+/** The review's "People added": people made in the week who are still here. */
 export const peopleWeekCounts: WeekCounts = async (q, workspaceId, window) => {
   const result = await q.execute(sql`
     select count(*) as added from people

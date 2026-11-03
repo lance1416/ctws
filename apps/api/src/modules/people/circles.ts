@@ -26,7 +26,7 @@ export async function listCircles(q: Queryable, workspaceId: WorkspaceId): Promi
 }
 
 /**
- * Makes the list the whole set (FR-049): renames the ones named by id, adds the ones without,
+ * Makes the list the whole set: renames the ones named by id, adds the ones without,
  * deletes the ones left out, and keeps the order given. Deleting a circle only takes the people
  * out of it. A renamed circle's id does not change, so nothing that points at it moves.
  */
