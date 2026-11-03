@@ -74,3 +74,30 @@ test('Today: while one side block is still read, the side is one bar, no block s
     await expect(page.getByRole('region', { name, exact: true })).toBeVisible()
   await expect(waiting).toHaveCount(0)
 })
+
+test('a meeting whose notes are still read says nothing of them, nor Write, till they are in', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await registerFreshUser(page)
+  const made = await apiPost<{ meetingId: string }>(page, '/meetings', {
+    title: 'Weekly sync',
+    startsLocal: '2026-10-20T14:00',
+    timeZone: 'Europe/London',
+    durationMinutes: 30,
+  })
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/api\/v1\/notes\?.*anchor=meeting/, async (route) => {
+    await held
+    await route.continue()
+  })
+  await page.goto(`/meetings/${made.meetingId}?at=2026-10-20T14:00`)
+  await expect(page.getByRole('heading', { level: 1, name: 'Weekly sync' })).toBeVisible()
+  await expect(page.locator('main [aria-busy="true"]')).toHaveCount(1)
+  await expect(page.getByText('Nothing written for this one yet.')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Write the notes' })).toBeHidden()
+  release()
+  await expect(page.getByRole('button', { name: 'Write the notes' })).toBeVisible()
+  await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0)
+})

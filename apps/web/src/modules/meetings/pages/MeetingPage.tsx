@@ -23,7 +23,8 @@ import { useKindBlocks } from '../../../shell/links'
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { useRegistry } from '../../../shell/registry'
 import { usePeople } from '../../people'
-import { cancelMeeting, earlierQuery, meetingKeys, repeatLabel } from '../api'
+import { cancelMeeting, earlierQuery, meetingKeys, repeatLabel, seriesNotesQuery } from '../api'
+import { Waiting } from '../../../platform/ui/Waiting'
 import { Attending } from '../components/Attending'
 import { EarlierInSeries, occurrenceTo } from '../components/EarlierInSeries'
 import { OccurrenceNotes } from '../components/OccurrenceNotes'
@@ -52,7 +53,7 @@ export function MeetingPage({
   writing: boolean
 }) {
   const registry = useRegistry()
-  const { blocks, picker } = useKindBlocks({
+  const { blocks, ready, picker } = useKindBlocks({
     of: { type: 'meeting', id: m.meetingId },
     kinds: (['task'] as const).filter((k) => registry.relations.some((r) => r.type === k)),
     owned: [],
@@ -62,6 +63,11 @@ export function MeetingPage({
     creatorFor: (kind) => registry.creates.find((c) => c.kind === kind) ?? null,
     sayAdd: true,
   })
+  // The notes, the earlier ones and the linked tasks decide the column's shape: it waits for all
+  // of them, one bar. Read here, so the blocks find them in when they are drawn.
+  const notes = useQuery(seriesNotesQuery(m.meetingId))
+  const earlier = useQuery(earlierQuery(m.meetingId, m.startsLocal.slice(0, 10)))
+  const allIn = ready && !notes.isPending && !earlier.isPending
   return (
     <div className="flex flex-col gap-4">
       <MeetingHead meeting={m} />
@@ -70,10 +76,16 @@ export function MeetingPage({
       <div className="grid items-start gap-4 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         <Profile meeting={m} />
         <div className="flex min-w-0 flex-col gap-4">
-          <OccurrenceNotes key={m.recurrenceId} meeting={m} writing={writing} />
-          <EarlierInSeries meeting={m} />
-          {blocks}
-          {picker}
+          {!allIn ? (
+            <Waiting />
+          ) : (
+            <>
+              <OccurrenceNotes key={m.recurrenceId} meeting={m} writing={writing} />
+              <EarlierInSeries meeting={m} />
+              {blocks}
+              {picker}
+            </>
+          )}
         </div>
       </div>
     </div>
