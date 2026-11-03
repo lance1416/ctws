@@ -7,3 +7,16 @@ packages:
 # GHSA-8r5x-fm3f-whwj, GHSA-xw65-4hp5-5hc7) until eslint-plugin-boundaries asks for it.
 overrides:
   handlebars: 4.7.10
+  # Past the security advisories in what our dependencies pull in, each held inside the major its
+  # parent asks for: fast-uri (fastify, @fastify/swagger), ip-address (@fastify/rate-limit), zod
+  # (knip, eslint-plugin-react-hooks), katex (rehype-katex), and, for the tools only, undici
+  # (testcontainers) and esbuild (tsup, drizzle-kit's loader). Drop each once its parent asks for
+  # the fixed one.
+  'fast-uri@>=3.0.0 <3.1.9': 3.1.9
+  'fast-uri@>=4.0.0 <4.2.3': 4.2.3
+  'ip-address@<10.7.4': 10.7.6
+  'zod@<4.6.6': 4.6.7
+  'katex@<0.18.2': 0.19.1
+  'undici@>=8.0.0 <8.12.2': 8.12.3
+  'esbuild@<=0.24.2': 0.25.12
+  'esbuild@>=0.27.3 <0.28.1': 0.28.2
