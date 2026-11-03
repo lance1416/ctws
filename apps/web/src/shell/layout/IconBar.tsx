@@ -7,10 +7,10 @@ import { KIND_TEXT } from '../../platform/ui/kinds'
 import { LAYER } from '../../platform/ui/layers'
 
 /**
- * What a cell says beside it while the bar shows icons only, on the float layer (FR-019, DES-001
- * section 4): the keyboard on it at once; the pointer once it has rested `REST` ms, then at once on
- * each cell it moves to until it leaves the bar, so sweeping across does not flash a tip at each.
- * The browser's own `title` takes a second to come and sometimes never does.
+ * What a cell says beside it while the bar shows icons only: the keyboard on it at once; the
+ * pointer once it has rested `REST` ms, then at once on each cell it moves to until it leaves the
+ * bar, so sweeping across does not flash a tip at each. The browser's own `title` takes a second
+ * to come and sometimes never does.
  */
 const TIP = `pointer-events-none absolute top-1/2 left-full ml-2.5 hidden -translate-y-1/2 items-center gap-2 rounded-control bg-float px-2 py-1 text-ui whitespace-nowrap text-ink shadow-float group-focus-visible:flex data-shown:flex ${LAYER.menu}`
 const REST = 300
@@ -49,10 +49,9 @@ function usePointerTip() {
 }
 
 /**
- * THE ICON BAR (FR-019): 52 wide, a 36px cell per entry, icons only until the button at the foot
- * expands it to names and keys, 216 wide: room for "Communication" and its key. Hovering, or the
- * keyboard, shows the name and the key beside the icon. The current module's cell is selected; a kind's icon wears the kind's colour,
- * a page's is grey. Expanding it leaves the sidebar where it is; `[` is what hides that.
+ * Icons only until the button at the foot expands it to names and keys; expanded, it is wide
+ * enough for "Communication" and its key. Expanding it leaves the sidebar where it is; `[` is what
+ * hides that.
  */
 export function IconBar({
   expanded,

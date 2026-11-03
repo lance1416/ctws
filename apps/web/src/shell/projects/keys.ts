@@ -15,7 +15,7 @@ const digitPresses = Object.fromEntries(DIGITS.map((d) => [d, `open${d}` as cons
 export const digitHandlers = (open: (digit: number) => void) =>
   Object.fromEntries(DIGITS.map((d) => [`open${d}` as const, () => open(Number(d))]))
 
-/** On a project's page (FR-053, artboard 24). */
+/** On a project's page. */
 export const PROJECT_KEYS: KeyTable<ProjectAction> = {
   title: 'On a project',
   rows: [
@@ -31,7 +31,7 @@ export const PROJECT_KEYS: KeyTable<ProjectAction> = {
 /** The launcher's cells for links: two rows of four, the last cell pinning another. */
 export const LAUNCHER_LINKS = 7
 
-/** On the workbench (FR-076, artboard 24): the launcher's links, by the digit on each. */
+/** On the workbench: the launcher's links, by the digit on each. */
 export const WORKBENCH_KEYS: KeyTable<OpenDigit> = {
   title: 'On the Workbench',
   rows: [

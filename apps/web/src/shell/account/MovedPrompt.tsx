@@ -15,7 +15,7 @@ const dismissed = (userId: string) => {
 }
 
 /**
- * The prompt after the move to the new layout (FR-099), over the workbench: how many guesses need
+ * The prompt after the move to the new layout, over the workbench: how many guesses need
  * a look, and Review. Closed, it stays closed here; the report itself is in Account until Done.
  */
 export function MovedPrompt() {

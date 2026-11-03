@@ -43,7 +43,7 @@ import {
   WEEKDAYS,
 } from './monthGrid'
 
-/** Lines a square shows before it says "+N more" (FR-015). */
+/** Lines a square shows before it says "+N more". */
 const PER_SQUARE = 3
 /**
  * From this window width the chosen day stays beside the grid: a square still has about 200 for
@@ -75,11 +75,9 @@ const LEGEND = [
 ] as const
 
 /**
- * THE CALENDAR (FR-080, artboard 13): a month, Monday first, every module's dated things on their
- * days with each day's lunar name. A day's planned tasks are only counted; the chosen day lists
- * them, beside the grid on a wide screen and over it on a narrower one, where something can be
- * planned or a meeting made on it. Nothing is made in the grid: a meeting has its own page and a
- * deadline belongs to a task.
+ * A month of every module's dated things. A day's planned tasks are only counted; the chosen day
+ * lists them. Nothing is made in the grid: a meeting has its own page and a deadline belongs to a
+ * task.
  */
 export function Calendar() {
   return usePhone() ? <PhoneCalendar /> : <DeskCalendar />
@@ -128,9 +126,8 @@ function DeskCalendar() {
       else byDay.set(entry.day, [{ ...entry, moduleId }])
     }
 
-  // An entry whose module opens it over the grid names it in the address; the rest are links.
-  // What has a narrow page opens in the inspector, a meeting as the occurrence clicked (FR-022,
-  // FR-067, DES-001 "日历"); else over the grid where its module opens it; else a link.
+  // What has a narrow page opens in the inspector, a meeting as the occurrence clicked; else over
+  // the grid, named in the address, where its module opens it; else it is a link.
   const opener = (entry: Placed) => {
     if (registry.relationFor(entry.type).Narrow)
       return () =>
@@ -168,7 +165,7 @@ function DeskCalendar() {
       document.querySelector<HTMLElement>(`[data-day="${next}"] [data-day-number]`)?.focus(),
     )
   }
-  // Over the grid, closing hands focus back to the square that opened it (CA-01).
+  // Over the grid, closing hands focus back to the square that opened it.
   const closeDay = () => {
     const was = chosen
     setDay(null)
@@ -460,7 +457,7 @@ function Line({ entry, today, open }: { entry: Placed; today: string; open: (() 
   return open ? (
     <button
       type="button"
-      // The grid is one Tab stop (BUG-057): from the keyboard, Enter opens the day, which lists it.
+      // The grid is one Tab stop; from the keyboard, Enter opens the day, which lists it.
       tabIndex={-1}
       data-entry={entry.kind}
       title={entry.title}

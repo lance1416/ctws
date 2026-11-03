@@ -5,7 +5,7 @@ import { JUMP_PREFIX, NEW_PREFIX, PIN_LINK_KEY } from './chords'
 export type AnywhereAction = 'capture' | 'search' | 'help' | 'sidebar' | 'jump' | 'link' | 'new'
 
 /**
- * The keys that work on every page (FR-029). A jump is the prefix and then a chord's own key, so
+ * The keys that work on every page. A jump is the prefix and then a chord's own key, so
  * each chord is a line of its own, and the prefix is the press that starts any of them.
  */
 export function anywhereKeys(
@@ -30,7 +30,7 @@ export function anywhereKeys(
         does: 'Close the inspector or the overlay',
         presses: {},
       },
-      // Only while focus is in the inspector, where the inspector itself answers it (FR-022).
+      // Only while focus is in the inspector, where the inspector itself answers it.
       { keys: 'Alt+←', does: 'Back, in the inspector', presses: {} },
       ...chords.map((c) => ({
         keys: `${JUMP_PREFIX.toUpperCase()} ${c.key.toUpperCase()}`,
@@ -40,7 +40,7 @@ export function anywhereKeys(
       })),
       ...creates.map((c) => ({
         keys: `${NEW_PREFIX.toUpperCase()} ${c.key.toUpperCase()}`,
-        // The kind's name: the group already says New (artboard 24).
+        // The kind's name: the group already says New.
         does: c.label,
         presses: { [NEW_PREFIX]: 'new' as const },
         ...(c.kind === 'task' ? { was: 'n' } : {}),

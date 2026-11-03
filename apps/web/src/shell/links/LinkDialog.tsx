@@ -5,17 +5,16 @@ import { SearchDialog } from '../search/SearchDialog'
 import { createLink, linkKeys, type Endpoint } from './api'
 
 /**
- * How a new thing of the picker's one kind is made from the words typed (FR-055): `run` takes
+ * How a new thing of the picker's one kind is made from the words typed: `run` takes
  * them on, to a form of its own, which links what it makes.
  */
 export type Makes = { label: string; run: (name: string) => void }
 
 /**
- * LINK (FR-027, artboard 9): one action on anything, `L`. The picker is the search box at 380,
- * scoped with `/` or by the block it was opened from; the chosen row stays lit while one line of
- * why is written at its foot, which Enter skips.
+ * Link, one action on anything. The picker is the search box, scoped with `/` or by the block it
+ * was opened from; the chosen row stays lit while one line of why is written at its foot, which
+ * Enter skips.
  */
-
 export function LinkDialog({
   of,
   only,
@@ -26,14 +25,14 @@ export function LinkDialog({
   /** Offer things of this one kind: the `+` on a kind's own block relates one of that kind. */
   only?: ObjectType | undefined
   /**
-   * The last row makes one under the words typed (FR-055): "New organisation". A block with one
-   * puts a thing on its subject as the People block does: choosing it is the whole act, with no
-   * line of why (BUG-049).
+   * The last row makes one under the words typed: "New organisation". A block with one puts a
+   * thing on its subject as the People block does: choosing it is the whole act, with no line of
+   * why.
    */
   makes?: Makes | undefined
   onClose: () => void
 }) {
-  // A block's `+` knows only the endpoint; the page or the inspector knows its name (BUG-080).
+  // A block's `+` knows only the endpoint; the page or the inspector knows its name.
   const named = useNameOf(of)
   const title = of.title ?? named
   const make = useMutation({
@@ -58,7 +57,7 @@ export function LinkDialog({
         onPick: (to, why) => make.mutate({ to, why }),
         ...(makes ? { asksWhy: false } : {}),
         busy: make.isPending,
-        // Never the server's own words: they name fields, not what happened (BUG-016).
+        // Never the server's own words: they name fields, not what happened.
         error: make.isError ? 'Couldn’t link those. Try again.' : null,
         ...(makes && only
           ? {

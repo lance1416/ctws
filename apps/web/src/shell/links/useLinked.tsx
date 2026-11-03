@@ -21,7 +21,7 @@ export type Linked = {
 export function useLinked(
   of: Endpoint,
   types: readonly ObjectType[] | undefined,
-  /** How a block's + makes a new one of its kind, where it can (FR-055). */
+  /** How a block's + makes a new one of its kind, where it can. */
   makesFor: (kind: ObjectType) => Makes | undefined = () => undefined,
 ) {
   // Which kind the picker is for: any kind from "+ Link", one kind from a block's own `+`.

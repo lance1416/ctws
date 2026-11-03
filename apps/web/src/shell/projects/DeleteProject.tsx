@@ -49,7 +49,7 @@ export function DeleteProject({ id }: { id: ProjectId }) {
       <DangerAction
         label={`Delete ${project.name}`}
         confirmLabel={`Delete ${project.name}`}
-        // First what goes, then what stays (FR-035).
+        // First what goes, then what stays.
         message={
           contents === null
             ? null

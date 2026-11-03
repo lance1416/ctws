@@ -9,9 +9,8 @@ import { PinnedResources } from './PinnedResources'
 import { ProjectSquare } from './ProjectSquare'
 
 /**
- * A PROJECT IN THE INSPECTOR (FR-022, artboard 33): its square and name, how many are open; what
- * it pins; its top level, the whole tree a click on; then the meetings, messages and the rest
- * that modules list in it.
+ * A project in the inspector: its top level, the whole tree a click on; then what modules list in
+ * it.
  */
 export function ProjectNarrow({ id }: { id: string }) {
   const projects = useEveryProject()

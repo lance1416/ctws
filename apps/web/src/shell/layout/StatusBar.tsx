@@ -3,11 +3,8 @@ import { type EditorMode, useEditorMode } from '../../platform/editor/vim'
 import { LAYER } from '../../platform/ui/layers'
 
 /**
- * THE STATUS BAR (DES-001 section 4): the frame's last 24 on a desk, across its whole width. On the
- * left where the cursor is in the editor with the focus, after vim's mode when it has vim's keys
- * (REQ-002 FR-112) and before "Source" when it shows the source (FR-116); on the right what the
- * app is, the version always last. Items 16 apart, no separators. A phone has none: its version
- * ends More.
+ * On the left where the cursor is in the editor with the focus; on the right what the app is, the
+ * version always last. A phone has none: its version ends More.
  */
 export function StatusBar() {
   const editing = useEditorMode()
@@ -24,7 +21,7 @@ export function StatusBar() {
   )
 }
 
-/** Each mode in its own colour, so it reads at a glance (artboard 34, "Vim, when it is on"). */
+/** Each mode in its own colour, so it reads at a glance. */
 const MODE_TINT: Record<NonNullable<EditorMode['mode']>, string> = {
   NORMAL: 'text-ink',
   INSERT: 'text-task-t',

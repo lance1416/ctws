@@ -1,7 +1,7 @@
 import type { ProjectColor } from '@ctws/contracts'
 
 /**
- * The eight project colours (tokens.md). The colour is stored on the project, chosen by the server
+ * The eight project colours. The colour is stored on the project, chosen by the server
  * from those not yet used, rather than hashed from its id: buckets collide. Each names a
  * `--color-project-<name>` token, the same hex in light and dark.
  */

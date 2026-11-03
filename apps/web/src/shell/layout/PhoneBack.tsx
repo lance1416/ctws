@@ -6,7 +6,7 @@ import { useRegistry } from '../registry'
 const OWN_BACK = new Set(['/people', '/projects', '/notes'])
 
 /**
- * THE WAY BACK ON A PHONE (FR-082): on a thing's page, "‹ Meetings" to its kind's list, where
+ * The way back on a phone: on a thing's page, "‹ Meetings" to its kind's list, where
  * the desk has the sidebar beside it. Its forms have Cancel instead.
  */
 export function PhoneBack() {

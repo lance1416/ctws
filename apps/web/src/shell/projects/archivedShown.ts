@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 
 /**
- * Whether the sidebar lists the archived projects under their count (FR-051): the overview's "2
+ * Whether the sidebar lists the archived projects under their count: the overview's "2
  * archived projects" opens it, the sidebar's own row opens and closes it. For this visit only.
  */
 let shown = false

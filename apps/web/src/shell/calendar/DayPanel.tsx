@@ -22,11 +22,7 @@ import { useRegistry } from '../registry'
 import type { DayParts, Placed } from './dayParts'
 import { useLunarName } from './lunarName'
 
-/**
- * ONE DAY OF THE CALENDAR (FR-080, artboard 13): its date and lunar date; its meetings with Join,
- * what is due, who to chase, whose birthday, and the tasks planned for it; then a meeting or a
- * task made on it.
- */
+/** One day of the calendar, and a meeting or a task made on it. */
 export function DayPanel({
   day,
   today,
@@ -38,7 +34,7 @@ export function DayPanel({
   today: string
   parts: DayParts
   opener: (entry: Placed) => (() => void) | null
-  /** Over the grid, a way to close it (CA-01). */
+  /** Over the grid, a way to close it. */
   onClose?: () => void
 }) {
   const lunar = useLunarName(day)

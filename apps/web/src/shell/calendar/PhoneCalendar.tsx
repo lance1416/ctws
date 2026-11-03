@@ -18,7 +18,7 @@ import { useLunarName } from './lunarName'
 import { dayParts, type Placed } from './dayParts'
 import { lunarSquareName, monthRange, monthSquares, shiftMonth, WEEKDAYS } from './monthGrid'
 
-/** A square's dots, one a kind, in this order, three at most (DES-001 "日历"). */
+/** A square's dots, one a kind, in this order, three at most. */
 const DOTS = [
   { kind: 'occurrence', tone: 'bg-meeting' },
   { kind: 'due', tone: 'bg-warn' },
@@ -40,10 +40,8 @@ const callName = (url: string) => {
 }
 
 /**
- * THE CALENDAR ON A PHONE (FR-086, artboard 26): the month, Monday first, each day with its lunar
- * name (a month's first day by the month, a festival by its name) and a dot for each kind of thing
- * on it; today an ink circle, the chosen day shaded. Under it, the chosen day: its meetings, its
- * deadlines, its follow-ups and birthdays. The grid and the day scroll as one page.
+ * The calendar on a phone: a dot for each kind of thing on a day, and the chosen day under the
+ * month. The grid and the day scroll as one page.
  */
 export function PhoneCalendar() {
   const timeZone = useTimeZone()
@@ -81,7 +79,7 @@ export function PhoneCalendar() {
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(y, m - 1, 1)))
   const parts = dayParts(byDay.get(chosen) ?? [])
-  // The chosen day's lunar name in full, its month too (P4-05).
+  // The chosen day's lunar name in full, its month too.
   const chosenLunar = useLunarName(chosen)
 
   return (
@@ -106,7 +104,7 @@ export function PhoneCalendar() {
             >
               <ForwardIcon size={20} aria-hidden="true" />
             </button>
-            {/* New event is a placeholder (FR-089, FR-101): it says so and opens nothing. */}
+            {/* New event is a placeholder: it says so and opens nothing. */}
             <button
               type="button"
               aria-label="New event"
@@ -138,7 +136,7 @@ export function PhoneCalendar() {
               aria-selected={day === chosen}
               aria-label={`${longDay(day)}${dots.length ? `, ${dots.length} kinds of things` : ''}`}
               onClick={() => choose(day)}
-              // 2 + the day's 28 + its lunar name's 16 (12 is a phone's smallest, FR-082) + the dots.
+              // 2 + the day's 28 + its lunar name's 16 (12 is a phone's smallest text) + the dots.
               className={`flex h-14 flex-col items-center justify-start gap-0.5 rounded-container pt-0.5 ${
                 day === chosen && !isToday ? 'bg-hover' : ''
               } ${inMonth ? '' : 'opacity-40'}`}
@@ -234,7 +232,7 @@ function DayList({ parts }: { parts: ReturnType<typeof dayParts> }) {
 }
 
 /**
- * Where a day's row goes: a meeting to its page, where Join is (FR-086); the rest into the sheet
+ * Where a day's row goes: a meeting to its page, where Join is; the rest into the sheet
  * over the page where their kind has a narrow page, else to their page.
  */
 function Opens({

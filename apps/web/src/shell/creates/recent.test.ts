@@ -13,7 +13,7 @@ const ALL = [
   c('note', 'n', 'Note'),
 ]
 
-describe('the New menu (FR-026)', () => {
+describe('the New menu', () => {
   it('offers only what can belong to a project: no person, no organisation', () => {
     const { shown, hidden } = menuOrder(ALL, ['person', 'organisation'], '')
     expect([...shown, ...hidden].map((x) => x.kind)).toEqual([

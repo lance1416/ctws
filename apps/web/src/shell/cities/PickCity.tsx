@@ -26,7 +26,7 @@ export function PickCity({
   onChange: (next: string) => void
   /** The city chosen from the list, with its key and zone; null once the words are typed over. */
   onPick?: (city: City | null) => void
-  /** How a city picked from the list reads until it is typed over ("London, United Kingdom", M-05). */
+  /** How a city picked from the list reads until it is typed over ("London, United Kingdom"). */
   shown?: string | undefined
 }) {
   const [typing, setTyping] = useState(false)
@@ -83,7 +83,7 @@ export function PickCity({
             e.preventDefault()
             setAt((active - 1 + cities.length) % cities.length)
           } else if (e.key === 'Enter' && !(e.ctrlKey || e.metaKey)) {
-            // The list's Enter, never the form's (BUG-082).
+            // The list's Enter, never the form's.
             e.preventDefault()
             const city = cities[active]
             if (city) choose(city)

@@ -8,20 +8,19 @@ import { KIND_TEXT } from '../../platform/ui/kinds'
 import { useRegistry } from '../registry'
 import { menuOrder, recentKinds } from './recent'
 
-/**
- * How the frame opens a creator, for the menu, the `N` keys and the blocks' `+`. What is made
- * stays on the page it was made from, unless `opens`: its module's own sidebar or page (FR-026).
- */
 /** How a New was asked for: whether its page opens once made, and the day it is for, from a calendar. */
 export type NewHow = { opens: boolean; day?: string }
 
+/**
+ * How the frame opens a creator, for the menu, the `N` keys and the blocks' `+`. What is made
+ * stays on the page it was made from, unless `opens`: its module's own sidebar or page.
+ */
 export const NewContext = createContext<(creator: Creator, how?: NewHow) => void>(() => {})
 const useOpenNew = () => useContext(NewContext)
 
 /**
- * THE NEW MENU (FR-026, artboard 9): on a project's page, the kinds that can belong to it; the few
- * used lately shown, the rest found by typing, so the menu never grows. What it makes belongs to
- * the project. `N` then a key does the same from anywhere.
+ * On a project's page, the kinds that can belong to it; the few used lately shown, the rest found
+ * by typing, so the menu never grows. What it makes belongs to the project.
  */
 export function NewMenu({
   projectName,
@@ -30,7 +29,7 @@ export function NewMenu({
 }: {
   projectName: string
   className?: string
-  /** A "+" in a phone's title bar, not the desk's ink New with its key (P4-11). */
+  /** A "+" in a phone's title bar, not the desk's ink New with its key. */
   compact?: boolean
 }) {
   const composing = useComposing()

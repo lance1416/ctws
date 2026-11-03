@@ -5,7 +5,7 @@ import { inColumns } from '../../platform/ui/columns'
 import { useKindBlocks } from '../links/KindBlocks'
 import { useRegistry, type Registry } from '../registry'
 
-/** A project's blocks in FR-055's order; a kind no module draws yet is left out. */
+/** A project's blocks in order; a kind no module draws is left out. */
 const ORDER: readonly ObjectType[] = [
   'meeting',
   'communication',
@@ -15,17 +15,14 @@ const ORDER: readonly ObjectType[] = [
   'note',
 ]
 
-/** The kinds of the project's blocks: those in FR-055's order some module draws. */
+/** The kinds of the project's blocks: those some module draws, in order. */
 export const projectLinkKinds = (registry: Registry): ObjectType[] =>
   ORDER.filter((k) => registry.relations.some((r) => r.type === k))
 
 /**
- * THE PROJECT'S BLOCKS (FR-055, DES-001 section 4): the meetings coming up, who is waiting for a
- * reply, its people, its organisations, its reading and its notes, a block each. Beside the tree
- * when the page has columns to spare, one block a column; under it otherwise, two across. A block
- * with nothing in it is its head, after the full ones; its + makes a new thing in the project, or
- * links one where its kind does not belong to a project. People and organisations are found
- * first: the + puts one already written down on the project, and the last row writes one new.
+ * The project's blocks, a kind each. A block's + makes a new thing in the project, or links one
+ * where its kind does not belong to a project. People and organisations are found first: the +
+ * puts one already written down on the project, and the last row writes one new.
  */
 export function ProjectLinked({
   projectId,
@@ -47,7 +44,7 @@ export function ProjectLinked({
     ...(name ? { ofName: name } : {}),
     kinds,
     owned,
-    // A project's messages are the ones awaiting a reply (artboard 8, U-12).
+    // A project's messages are the ones awaiting a reply.
     titles: { communication: 'Awaiting reply' },
     // A kind the project owns is made in it; another is linked to it.
     creatorFor: (kind) =>
@@ -55,7 +52,7 @@ export function ProjectLinked({
         ? (registry.creates.find((c) => c.kind === kind) ?? null)
         : null,
     // An organisation is linked, not owned; its + can still write a new one down, on its own
-    // form, filled with the words typed, which links it here and comes back (FR-055).
+    // form, filled with the words typed, which links it here and comes back.
     makesFor: (kind) => {
       const creator = registry.creates.find((c) => c.kind === kind)
       return kind === 'organisation' && typeof creator?.to === 'string'

@@ -2,7 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Link } from 'react-router-dom'
 import { MENU_ITEM, MENU_SURFACE } from '../../platform/ui/menuSurface'
 
-/** Who is signed in, their account page (artboard 30), and sign out. */
+/** Who is signed in, their account page, and sign out. */
 export function UserMenu({ email, onLogout }: { email: string; onLogout: () => void }) {
   return (
     <DropdownMenu.Root>

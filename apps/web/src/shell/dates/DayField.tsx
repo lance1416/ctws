@@ -22,7 +22,7 @@ function sayMonth(month: string): string {
 }
 
 /**
- * THE ONE DATE FIELD (FR-034): type a day any way ("Oct 29", "29/10", "tomorrow", "fri") and it
+ * The one date field: type a day any way ("Oct 29", "29/10", "tomorrow", "fri") and it
  * is read when the field is left, or open the grid and point. `month` mode takes a year and month
  * only, for a role's start and end. A typed value that is not a date stays in the box and says so.
  */
@@ -53,7 +53,7 @@ export function DayField({
   className?: string
   clearable?: boolean
   /**
-   * A cell in a table of them (a role's From and To, artboard 11): just the box, its calendar
+   * A cell in a table of them (a role's From and To): just the box, its calendar
    * opened by a click in it or ↓, so a narrow column shows the whole month.
    */
   bare?: boolean
@@ -69,7 +69,7 @@ export function DayField({
   const [text, setText] = useState(() => say(value))
   const [refused, setRefusedTo] = useState(false)
   const typedNow = text.trim()
-  // Why it was not read (FR-034): the day that does not exist, named; never "I".
+  // Why it was not read: the day that does not exist, named; never "I".
   const reason =
     mode === 'month' ? 'Not a month. Try Mar 2023 or 03/2023.' : whyNotADay(typedNow, today)
   const setRefused = (next: boolean) => {

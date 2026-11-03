@@ -28,14 +28,14 @@ export type WorkspaceModule = {
   kind?: KindEntry
   /** Mounted by the shell under `/<id>/`, so the paths are relative. */
   routes: RouteObject[]
-  /** Pages across kinds this module defines (Today, Review), mounted at the root (FR-019). */
+  /** Pages across kinds this module defines (Today, Review), mounted at the root. */
   places?: RouteObject[]
   capture?: CaptureContribution
   chords?: Chord[]
   /** What this module can make from anywhere: `N` then the creator's key, and the New menu. */
   creates?: readonly Creator[]
   project?: ProjectContribution
-  /** What this module adds to a person's page (FR-061). */
+  /** What this module adds to a person's page. */
   person?: PersonContribution
   /**
    * The module's key tables, in its order: the keyboard help shows them, the switch there silences
@@ -47,18 +47,18 @@ export type WorkspaceModule = {
    * zone; a client turning an instant into a day would put a 23:00 deadline on the wrong square.
    */
   calendar?: CalendarContribution
-  /** What it shows on the workbench, each in its place there (FR-076). */
+  /** What it shows on the workbench, each in its place there. */
   widgets?: readonly Widget[]
   /**
-   * Blocks in Today's right column (FR-079): what to answer, start or remember today. Ordered
+   * Blocks in Today's right column: what to answer, start or remember today. Ordered
    * across modules by `order`: Follow up, Ready to start, This week, Birthdays.
    */
   today?: readonly TodayBlock[]
   /** Where this module's things live, for the shell's edge table and backlinks. */
   relations?: readonly RelationContribution[]
-  /** Full lists a block's "All N" opens in the inspector (FR-011, FR-015). */
+  /** Full lists a block's "All N" opens in the inspector. */
   lists?: readonly InspectorList[]
-  /** What it counts of a week, for the review (FR-081). */
+  /** What it counts of a week, for the review. */
   weekCounts?: readonly WeekCount[]
   /**
    * What the module's queries show, by key prefix: a write that changes one of those kinds of
@@ -74,23 +74,23 @@ export type Reads = { queryKey: QueryKey; of: readonly ObjectType[] }
 export type ProjectContribution = {
   /**
    * The rows a project's page is about, like the task tree, and the views its head switches
-   * between (FR-053), the first the default. At most one module gives them.
+   * between, the first the default. At most one module gives them.
    */
   Main?: {
     Component: ComponentType<{ projectId: ProjectId; view: string }>
     views: readonly [ProjectView, ...ProjectView[]]
-    /** What it is on a phone, where there is one view and no dragging (FR-088). */
+    /** What it is on a phone, where there is one view and no dragging. */
     Phone?: ComponentType<{ projectId: ProjectId }>
     /** What a phone's "…" also offers, each in a sheet: Edit stages, where the board has it. */
     phoneMore?: readonly {
       label: string
       Sheet: ComponentType<{ projectId: ProjectId; onClose: () => void }>
     }[]
-    /** Starts what `Component` will read, when the project's page is opened (baseline.md §8). */
+    /** Starts what `Component` will read, when the project's page is opened. */
     prefetch?: (qc: QueryClient, projectId: ProjectId) => void
   }
   /**
-   * This module's own things in a project, for their block on its page (FR-055): the meetings
+   * This module's own things in a project, for their block on its page: the meetings
    * coming up, the people on it, its reading. The shell puts them with what is linked to the
    * project by hand, and the block's + makes a new one in the project.
    */
@@ -102,7 +102,7 @@ export type ProjectContribution = {
     prefetch?: (qc: QueryClient, projectId: ProjectId, today: string) => void
   }
   /**
-   * A project's card on the overview (FR-051, artboard 18), at most one module's: `Moved` beside
+   * A project's card on the overview, at most one module's: `Moved` beside
    * its name, `Facts` under it, and `useOrder`, a hook called once a page, the cards' order.
    */
   Card?: {
@@ -111,12 +111,12 @@ export type ProjectContribution = {
     useOrder: () => (a: ProjectResponse, b: ProjectResponse) => number
   }
   /**
-   * The open project's outline under its row in the sidebar (FR-021, artboard 8): what to jump
+   * The open project's outline under its row in the sidebar: what to jump
    * to on its page. At most one module gives one.
    */
   Outline?: ComponentType<{ projectId: ProjectId }>
   /**
-   * The project's rows as its narrow page in the inspector has them (artboard 33): the top level
+   * The project's rows as its narrow page in the inspector has them: the top level
    * only, and a way to the whole tree. At most one module gives them.
    */
   Narrow?: ComponentType<{ projectId: ProjectId }>
@@ -130,7 +130,7 @@ export type ProjectContribution = {
   /** What deleting a project takes with it, as a phrase ("12 tasks"), or null for nothing. */
   contents?: (qc: QueryClient, projectId: ProjectId) => Promise<string | null>
   /**
-   * Move to…'s second step (FR-059): whether a project has things to put a task under, and the
+   * Move to…'s second step: whether a project has things to put a task under, and the
    * step that picks one. At most one module gives it.
    */
   Parents?: {
@@ -139,7 +139,7 @@ export type ProjectContribution = {
   }
 }
 
-/** What Move to…'s second step is given, and answers with (FR-059). */
+/** What Move to…'s second step is given, and answers with. */
 type ParentStepProps = {
   project: { id: ProjectId; name: string }
   /** How many levels what is put there takes: one for a new line, more for a task with children. */
@@ -175,7 +175,7 @@ export type PersonContribution = {
     prefetch?: (qc: QueryClient, personId: PersonId, today: string) => void
   }
   /**
-   * How a linked thing of this module's kind is drawn on a person's page (artboard 5): a task
+   * How a linked thing of this module's kind is drawn on a person's page: a task
    * with its status and when it is due, not the sentence that linked it; and its block's count in
    * the module's words ("3 open").
    */
@@ -194,17 +194,17 @@ type OwnThing = {
   to?: string
   /** A word or two in the row's first column: "Thu 14:00". */
   lead?: string | null
-  /** Its `lead` is a time still to come: a narrow page says it in the kind's colour (I-06). */
+  /** Its `lead` is a time still to come: a narrow page says it in the kind's colour. */
   upcoming?: boolean
-  /** A person's initials: their avatar stands in the first column instead (FR-049). */
+  /** A person's initials: their avatar stands in the first column instead. */
   initials?: string | null
-  /** A mark in the first column instead: a book's or a link's (artboard 5, U-19). */
+  /** A mark in the first column instead: a book's or a link's. */
   mark?: ReactNode
-  /** Who it is with, an avatar after the lead's words (a message: its day, then them; U-12). */
+  /** Who it is with, an avatar after the lead's words (a message: its day, then them). */
   withInitials?: string | null
   /** A word or two at the row's end. */
   fact?: string | null
-  /** A second line under the title: a meeting's place, a book's author (artboard 5). */
+  /** A second line under the title: a meeting's place, a book's author. */
   sub?: ReactNode
   /** What the row ends with instead of `fact`: a duration and a project, a status. */
   trail?: ReactNode
@@ -216,7 +216,7 @@ export type OwnThings = {
   isError: boolean
   retry: () => void
   /**
-   * Things that join a project rather than being made in it (FR-055): the block's + finds one to
+   * Things that join a project rather than being made in it: the block's + finds one to
    * `add`, or `make`s one under the name typed; each row can `remove` it from the project.
    */
   join?: Join
@@ -242,14 +242,14 @@ export type RelationContribution = {
   /** Where search takes one, when not to `to`: a task to its row in its project's tree. */
   found?: (thing: LinkCandidate) => string
   /**
-   * The row's first column where things of every kind are listed (DES-001 section 4): a status, an
+   * The row's first column where things of every kind are listed: a status, an
    * avatar. Without it the kind's icon on its tint stands there.
    */
   Mark?: ComponentType<{ thing: LinkCandidate }>
   /** The one fact in the third column, from what the kind carries; nothing when there is none. */
   Fact?: ComponentType<{ thing: LinkCandidate }>
   /**
-   * A change this kind logged, as a line of its timeline (FR-045): a mark and words, or null for
+   * A change this kind logged, as a line of its timeline: a mark and words, or null for
    * a change not worth a line of its own.
    */
   describeChange?: (
@@ -258,17 +258,17 @@ export type RelationContribution = {
   ) => ChangeLine | null
   /**
    * Finishing one, for a kind that can be finished: "Mark done" on coming back from a resource
-   * opened from it (FR-028).
+   * opened from it.
    */
   finish?: (id: string) => Promise<unknown>
   /**
-   * Its narrow page in the inspector (FR-022, artboard 33): the full page's blocks, in its order,
+   * Its narrow page in the inspector: the full page's blocks, in its order,
    * in one column, 400 wide. Without it the inspector offers only the full page.
    */
   Narrow?: ComponentType<{ id: string; at?: string | undefined }>
   /** Its edit page, for the inspector's Edit; none where it is edited in place (a task). */
   edit?: (id: string, at?: string) => string
-  /** Its narrow page has a head of its own (a task's pane, artboard 8); the inspector's goes. */
+  /** Its narrow page has a head of its own (a task's pane); the inspector's goes. */
   ownHead?: boolean
 }
 
@@ -302,9 +302,9 @@ export type TodayBlock = {
   id: string
   order: number
   Block: ComponentType<{ today: string }>
-  /** What it is on a phone's Today, after Overdue (FR-083); without one it is not on a phone. */
+  /** What it is on a phone's Today, after Overdue; without one it is not on a phone. */
   Phone?: ComponentType<{ today: string }>
-  /** Starts what the block will read, when Today is opened (baseline.md §8). */
+  /** Starts what the block will read, when Today is opened. */
   prefetch: (qc: QueryClient, today: string) => void
   /** The key of what it reads: Today draws its blocks once every one of them is in. */
   key: (today: string) => QueryKey
@@ -339,7 +339,7 @@ export type CalendarContribution = {
 }
 
 /**
- * The places on the workbench a module fills (FR-076). The shell owns the arrangement (FR-078),
+ * The places on the workbench a module fills. The shell owns the arrangement,
  * the launcher, the next seven days and the widgets not built yet.
  */
 export type WorkbenchPlace = 'now' | 'meetings' | 'awaiting' | 'birthdays' | 'reading'
@@ -363,19 +363,19 @@ export type ModulePage = {
   chord?: string
   /** The count beside the label. A component, so the rail never knows the module's query. */
   Count?: ComponentType
-  /** What a phone's More says beside it (FR-085), where that is not `Count`. */
+  /** What a phone's More says beside it, where that is not `Count`. */
   MoreCount?: ComponentType
   /** The glyph over the label where a phone shows the page as a tab: paths in a 22px box. */
   icon?: ReactNode
   /**
    * A list of its own in the sidebar's place, for a page across kinds that has one: Review's
-   * weeks (FR-081). `label` heads it.
+   * weeks. `label` heads it.
    */
   Sidebar?: { label: string; List: ComponentType }
 }
 
 /**
- * One thing a module counts of a week for the review's "Also this week" (FR-081): the name the
+ * One thing a module counts of a week for the review's "Also this week": the name the
  * server counts it by, its words and its icon, and where it goes among the others.
  */
 export type WeekCount = { key: string; label: string; icon: IconComponent; order: number }
@@ -385,11 +385,11 @@ export type KindEntry = {
   /** Plural: "People", "Meetings". */
   label: string
   to: string
-  /** How many there are, a bare number for the sidebar's head (FR-021), zero included. */
+  /** How many there are, a bare number for the sidebar's head, zero included. */
   Count?: ComponentType
-  /** What a phone's More says beside it (FR-085), where that is not `Count`. */
+  /** What a phone's More says beside it, where that is not `Count`. */
   MoreCount?: ComponentType
-  /** The module's list in its sidebar, under the head (FR-020). */
+  /** The module's list in its sidebar, under the head. */
   List?: ComponentType
   /** One line of what is current ("Next birthday: …"); renders nothing when there is nothing. */
   Status?: ComponentType
@@ -400,7 +400,7 @@ export type KindEntry = {
 }
 
 export type CaptureContribution = {
-  /** Which kind the box makes when this module takes the line (FR-025's Task and Reading). */
+  /** Which kind the box makes when this module takes the line. */
   kind: 'task' | 'reading'
   /** A hook: the module's default capture target, and why there is none when there is none. */
   useTarget: () => CaptureTargetState
@@ -428,16 +428,16 @@ export type CaptureTarget = {
   /**
    * Writes the line into the project picked, or the default place, on the day picked if any; and
    * starts refreshing the lists that now contain it without waiting. Answers where the made thing
-   * opens, for a New made from search, which opens it (FR-026); the capture box stays put.
+   * opens, for a New made from search, which opens it; the capture box stays put.
    */
   submit: (title: string, where: CaptureWhere) => Promise<string>
 }
 
-/** What the box lets the person choose beside the line (FR-025). */
+/** What the box lets the person choose beside the line. */
 type CaptureWhere = {
   projectId: ProjectId | null
   date: string | null
-  /** A task in the project to put it under (a phone's Lands in, FR-084); a reading has none. */
+  /** A task in the project to put it under (a phone's Lands in); a reading has none. */
   parentId?: TaskId | null
 }
 
@@ -445,7 +445,7 @@ type CaptureWhere = {
 export type SearchHit = {
   /** A uuid in practice, so unique across modules; also the row's test handle. */
   id: string
-  /** Which kind it is: the tab it sits under, and what the inspector opens (FR-024). */
+  /** Which kind it is: the tab it sits under, and what the inspector opens. */
   type: ObjectType
   to: string
   title: string
@@ -456,7 +456,7 @@ export type SearchHit = {
 }
 
 /**
- * ONE WAY TO MAKE A THING (FR-026): `N` then `key` anywhere, and a row of the New menu. Either a
+ * One way to make a thing: `N` then `key` anywhere, and a row of the New menu. Either a
  * dialog the shell mounts, given the project the page is on, or a page to go to.
  */
 export type Creator = {
@@ -469,16 +469,16 @@ export type Creator = {
     projectId: ProjectId | null
     /**
      * The thing whose page it was made from, which it is made with where its kind can be: a
-     * meeting from a person's page has them attending (FR-061).
+     * meeting from a person's page has them attending.
      */
     about: { type: ObjectType; id: string; title: string } | null
     onClose: () => void
     /**
      * Open the made thing's page once it is made: it was made from its module's own sidebar or
-     * page (FR-026). Otherwise the page it was made from stays, and its block shows it.
+     * page. Otherwise the page it was made from stays, and its block shows it.
      */
     opens: boolean
-    /** The day it is for, made from a day on the calendar (FR-080): a task planned, a meeting held. */
+    /** The day it is for, made from a day on the calendar: a task planned, a meeting held. */
     day: string | null
   }>
   /** Where to go instead, when the kind is made on its own page; given the page it is made from. */
@@ -492,7 +492,7 @@ export type Chord = {
   key: string
   /** The help overlay's wording. */
   label: string
-  /** The chord this replaced in the redesign (FR-029), shown in the help for one release. */
+  /** The chord this replaced in the redesign, shown in the help for one release. */
   was?: string
   /**
    * Where this chord goes, or null when that cannot be resolved yet. Not a hook: it runs on the
@@ -506,7 +506,7 @@ export type Chord = {
 type ChordContext = { queryClient: QueryClient }
 
 /**
- * A full list in the inspector (FR-011 rule 3, FR-015): the rest of a block that shows five,
+ * A full list in the inspector: the rest of a block that shows five,
  * opened by its "All N" beside the page, which stays put. Named in the address as
  * `?inspect=list:<name>`, or `list:<name>.<arg>` for one that needs to know whose it is.
  */

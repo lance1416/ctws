@@ -5,14 +5,12 @@ import { BUTTON } from '../../platform/ui/buttonStyles'
 import { openCapture } from '../capture/Capture'
 import { useRegistry } from '../registry'
 
-/** The phone's More page: everything without a tab of its own (FR-085). */
+/** The phone's More page: everything without a tab of its own. */
 export const MORE_PATH = '/more'
 
 /**
- * THE PHONE'S TABS (FR-082, artboard 25): Today, Calendar, the capture button, People and More,
- * below 1024 where the rail and sidebar are not drawn. The tab you are on is ink and 500; the
- * workbench, the desk's starting place, is in More. A page reached from More keeps More the tab
- * you are on (P4-19).
+ * The phone's tabs, below 1024 where the rail and sidebar are not drawn. The workbench, the desk's
+ * starting place, is in More. A page reached from More keeps More the tab you are on.
  */
 export function BottomBar() {
   const registry = useRegistry()

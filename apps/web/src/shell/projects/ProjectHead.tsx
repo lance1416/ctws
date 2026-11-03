@@ -16,10 +16,7 @@ export const PROJECT_MAIN = 'project-main-panel'
 
 type View = { id: string; label: string; icon?: IconComponent }
 
-/**
- * THE HEAD OF A PROJECT'S PAGE (FR-053, artboard 8): its square and name, the switch between its
- * views, New and More; under them, the resources it pins.
- */
+/** The head of a project's page. */
 export function ProjectHead({
   id,
   views,
@@ -39,7 +36,7 @@ export function ProjectHead({
       <p className="text-ui text-muted">This project is not here any more.</p>
     ) : (
       // Still being read: the head's own room, its square, its name and the pins' row, so the
-      // page under it does not move when it arrives (DES-001 "加载").
+      // page under it does not move when it arrives.
       <div aria-busy="true" className="flex min-w-0 flex-col gap-3.5">
         <div className="flex h-8.5 items-center gap-3">
           <span className="size-8.5 shrink-0 rounded-control bg-hover" />
@@ -53,7 +50,7 @@ export function ProjectHead({
     <div className="flex min-w-0 flex-col gap-3.5">
       {/* On a narrow screen the name has a line of its own, and the controls wrap under it. */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-        {/* Its name and colour are changed on its edit page, not here (DES-001 v1.23). */}
+        {/* Its name and colour are changed on its edit page, not here. */}
         <div className="flex min-w-0 flex-1 items-center gap-3 max-md:basis-full">
           <ProjectSquare project={project} size={34} />
           <h1
@@ -72,7 +69,7 @@ export function ProjectHead({
             Archived
           </span>
         )}
-        {/* The inbox is a list to empty, never a board (FR-059). */}
+        {/* The inbox is a list to empty, never a board. */}
         {views.length > 1 && !project.isInbox && (
           <Segmented
             label="View"
@@ -83,7 +80,6 @@ export function ProjectHead({
           />
         )}
         <NewMenu projectName={project.name} className="shrink-0" />
-        {/* The inbox is where capture lands, and the server refuses to archive it. */}
         {/* The inbox is edited too (its name), but never archived: capture lands there. */}
         <MoreMenu id={id} archived={project.isInbox ? null : project.archivedAt !== null} />
       </div>
@@ -93,11 +89,10 @@ export function ProjectHead({
 }
 
 /**
- * What else can be done to the project (FR-052): edit its name, colour and initials, where delete
- * is too; archive, which hides it from the rail and the live lists but keeps everything, and is
- * undone from the same menu.
+ * What else can be done to the project: edit it, where delete is too; archive, which hides it from
+ * the rail and the live lists but keeps everything, and is undone from the same menu. `archived`
+ * null: the inbox, which is never archived.
  */
-/** `archived` null: the inbox, which is never archived. */
 export function MoreMenu({
   id,
   archived,

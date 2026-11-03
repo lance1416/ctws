@@ -10,7 +10,7 @@ import { BackHead } from './BackHead'
 /**
  * What an item's pane keeps between its reading and its form: whether it is editing, and whether
  * the form holds unsaved changes. Esc, the × and the way back go through `close`, which does not
- * ask: the form keeps what was typed for when it opens again (FR-029). Its Cancel asks, through
+ * ask: the form keeps what was typed for when it opens again. Its Cancel asks, through
  * `guard.leave`.
  */
 export function useItemPane(onClose: () => void) {

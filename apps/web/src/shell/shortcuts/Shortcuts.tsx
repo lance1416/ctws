@@ -31,7 +31,7 @@ export function Shortcuts({
   onSidebar: () => void
   onLink: () => void
   onNew: (creator: Creator) => void
-  /** N L: a link, hung where you are (FR-029). */
+  /** N L: a link, hung where you are. */
   onPinLink: () => void
 }) {
   const navigate = useNavigate()
@@ -64,7 +64,7 @@ export function Shortcuts({
         const prefix = pending.current
         if (prefix === null) return false
         forget()
-        // The key after a prefix is the chord's, named or not: it reaches nothing else (BUG-018).
+        // The key after a prefix is the chord's, named or not: it reaches nothing else.
         e.preventDefault()
         if (prefix === JUMP_PREFIX) {
           const chord = registry.chordFor(e.key)

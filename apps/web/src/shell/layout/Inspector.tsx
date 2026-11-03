@@ -31,16 +31,16 @@ type Behind = {
   thing: Inspected
   title: string
   scrollTop: number
-  /** The list the next was opened from (artboard 32), for "3 of 7" and ↑ ↓ along it. */
+  /** The list the next was opened from, for "3 of 7" and ↑ ↓ along it. */
   among?: readonly Inspected[]
-  /** That list's action for a row, which the opened page offers too (U-29). */
+  /** That list's action for a row, which the opened page offers too. */
   act?: ListAct
 }
 
 /**
- * THE INSPECTOR (FR-022, artboards 8, 32, 33): a narrow look at something linked from the page
- * you are on, beside the main area from 1280 up and over it below that, never pushing the
- * sidebar. It has its own address (`?inspect=`), so a reload brings it back. Not modal: focus
+ * A narrow look at something linked from the page you are on, beside the main area from 1280 up
+ * and over it below that, never pushing the sidebar. It has its own address (`?inspect=`), so a
+ * reload brings it back. Not modal: focus
  * moves to it when it opens, Esc closes it, and focus goes back to what opened it.
  *
  * It shows the thing's narrow page, its module's. A thing clicked in it takes its place, and
@@ -54,7 +54,7 @@ export function Inspector() {
   const head = useRef<HTMLDivElement>(null)
   const [behind, setBehind] = useState<Behind[]>([])
   const [title, setTitle] = useState('')
-  // On a phone it is a sheet over the whole screen, its bar pulled down to close (DES-001).
+  // On a phone it is a sheet over the whole screen, its bar pulled down to close.
   const phone = usePhone()
   const sheet = useRef<HTMLElement>(null)
   const pull = usePullToClose(sheet, close)
@@ -100,7 +100,7 @@ export function Inspector() {
     },
     name: setTitle,
     back,
-    // Opened from a list: its action for this row, offered on the page too (U-29).
+    // Opened from a list: its action for this row, offered on the page too.
     act: !open
       ? undefined
       : last
@@ -116,7 +116,7 @@ export function Inspector() {
   if (!open) return null
   const view = viewOf(registry, open)
   const { relation, Narrow, Icon } = view
-  // Opened from a list: where it is in it, and the ones either side (artboard 32).
+  // Opened from a list: where it is in it, and the ones either side.
   const place = last?.among ? last.among.findIndex((t) => formatInspect(t) === shown) : -1
   const along = (step: number) => {
     const next = last?.among?.[place + step]
@@ -185,8 +185,7 @@ export function Inspector() {
         onKeyDown={onKeyDown}
         className="fixed inset-x-0 top-[env(safe-area-inset-top)] bottom-0 z-40 flex flex-col rounded-t-phone-sheet bg-float shadow-float"
       >
-        {/* × to close; ‹ beside it once something was opened in it; the kind; Edit. No "Open full
-            page": on a phone the sheet is the thing's page (DES-001 "从底部弹出的面板"). */}
+        {/* No "Open full page": on a phone the sheet is the thing's page. */}
         <div
           ref={head}
           tabIndex={-1}
@@ -375,7 +374,7 @@ function viewOf(
   const dot = open.id.indexOf('.')
   const name = dot < 0 ? open.id : open.id.slice(0, dot)
   const arg = dot < 0 ? '' : open.id.slice(dot + 1)
-  // A list's head is its block's: icon, name, count, the block's action, and close (artboard 32).
+  // A list's head is its block's: icon, name, count, the block's action, and close.
   const none = { relation: null, Narrow: undefined, ownHead: true }
   if (name === LINKED_LIST)
     return { ...none, label: 'Linked', Icon: undefined, list: <LinkedList arg={arg} /> }

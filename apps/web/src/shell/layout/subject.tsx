@@ -54,8 +54,7 @@ export function useInspectedOf(thing: Subject | null): void {
 }
 
 /**
- * What `L` links from: the thing open in the inspector, as N L pins on it (FR-029); else the
- * page's own (BUG-080).
+ * What `L` links from: the thing open in the inspector, as N L pins on it; else the page's own.
  */
 export function useLinkSubject(): Subject | null {
   const held = useContext(SubjectContext)

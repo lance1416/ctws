@@ -29,10 +29,9 @@ export function lunarYearOf(solar: string, lunarMonth: number): number {
 }
 
 /**
- * THE BIRTHDAY PICKER (FR-034, artboard 11): the shared grid with a Solar / Lunar switch that
- * changes the grid itself; "Year not known" keeps only the month and day; the hour (时辰) waits
- * under the grid, folded. What the pick means (its other calendar, the sign, whether it exists)
- * is the server's sentence, given by the caller as `facts`.
+ * The shared grid with a Solar / Lunar switch that changes the grid itself. What the pick means
+ * (its other calendar, the sign, whether it exists) is the server's sentence, given by the caller
+ * as `facts`.
  */
 export function BirthdayPicker({
   value,

@@ -31,7 +31,6 @@ export function deleteLink(id: RelationId): Promise<void> {
   return call(api.relations.remove, { params: { id } })
 }
 
-/** Things this one could be joined to, for the picker. An empty `q` means the likely few. */
 /**
  * Things by name: what `of` could be related to, or, with no `of`, search's answer for `kinds`
  * (the kinds no module searches more closely).
@@ -56,7 +55,7 @@ export const candidatesQuery = (of: Endpoint | null, q: string, kinds?: readonly
       ).candidates,
   })
 
-/** Starts what `useLinked` will read for `of`, before its page is drawn (baseline.md §8). */
+/** Starts what `useLinked` will read for `of`, before its page is drawn. */
 export function prefetchLinks(qc: QueryClient, of: Endpoint, types?: Kinds): void {
   void qc.prefetchQuery(linksQuery(of, types))
 }

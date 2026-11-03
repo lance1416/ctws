@@ -6,7 +6,7 @@ import { ResourceAdd } from './ResourceAdd'
 import { ResourceIcon } from './ResourceIcon'
 
 /**
- * A THING'S RESOURCES (FR-046, FR-056): each address with its service, its name and where it is
+ * A thing's resources: each address with its service, its name and where it is
  * from ("Google Doc", "martinfowler.com"), and a "+" to hang another.
  */
 export function Resources({
@@ -15,7 +15,7 @@ export function Resources({
   projectId,
 }: {
   owner: ResourceOwner
-  /** What the owner is called and the project it sits in, for "Back from" (FR-028). */
+  /** What the owner is called and the project it sits in, for "Back from". */
   title: string
   projectId: string | null
 }) {
@@ -28,7 +28,7 @@ export function Resources({
         <h3 id="resources-head" className="text-ui font-medium text-ink">
           Resources
         </h3>
-        {/* None, said after the head as a block says it (DES-001 "Empty values"). */}
+        {/* None, said after the head as a block says it. */}
         {all.isSuccess && rows.length === 0 && (
           <span className="text-meta text-muted">None yet</span>
         )}

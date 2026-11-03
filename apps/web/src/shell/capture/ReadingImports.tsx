@@ -3,9 +3,9 @@ import { BUTTON, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { PLACE_ICON, ScanIcon, ShareInIcon } from '../../platform/ui/icons'
 
 /**
- * READING'S IMPORTS, NOT BUILT THIS ROUND (FR-102, artboard 26): a book found by its title or its
- * barcode, and links shared in from other apps. Their places are here so the way in is known; each
- * says "Coming later" when pressed (FR-089), and nothing is asked of any book service.
+ * Reading's imports, not built yet: a book found by its title or its barcode, and links shared in
+ * from other apps. Their places are here so the way in is known; nothing is asked of any book
+ * service.
  */
 export function ReadingImports() {
   const [soon, setSoon] = useState(false)

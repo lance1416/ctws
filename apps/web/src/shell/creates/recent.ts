@@ -1,11 +1,11 @@
 import type { Creator } from '../contract'
 
 const KEY = 'ctws:new-recent'
-/** How many kinds the New menu shows before typing (FR-026). */
+/** How many kinds the New menu shows before typing. */
 const SHOWN = 4
 
 /**
- * What can belong to a project, the only kinds a project's New offers (FR-026): a person or an
+ * What can belong to a project, the only kinds a project's New offers: a person or an
  * organisation is made in its own module, from its sidebar's `+` or `N` and a key.
  */
 const OF_A_PROJECT: readonly string[] = [

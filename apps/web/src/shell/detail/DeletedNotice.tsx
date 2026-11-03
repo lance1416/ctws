@@ -14,7 +14,7 @@ import { useEveryProject } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
 
 /**
- * SOMETHING THAT NO LONGER EXISTS (FR-032, FR-035, artboard 23): an old address gives the whole
+ * Something that no longer exists: an old address gives the whole
  * main area to what happened. When it was deleted and where it was, read from what the deletion
  * left, and the way to what held it. With nothing left to read, it still says it was deleted.
  */
@@ -43,7 +43,7 @@ export function DeletedNotice({ type, id }: { type: ObjectType; id: string }) {
       : place?.projectId
         ? { to: `/projects/${place.projectId}`, name: place.projectName ?? 'its project' }
         : overview
-          ? // Nothing held it (a person, an organisation, a project): its kind's overview (DES-001).
+          ? // Nothing held it (a person, an organisation, a project): its kind's overview.
             { to: overview.to, name: overview.label }
           : null
   const project = place?.projectId

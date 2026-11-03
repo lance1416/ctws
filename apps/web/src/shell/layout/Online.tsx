@@ -8,7 +8,7 @@ import { clockTime } from '@ctws/core'
 import { useTimeZone } from '../auth/useMe'
 
 /**
- * OFFLINE (FR-033): an amber pill beside the account while the connection is gone; the page stays
+ * Offline: an amber pill beside the account while the connection is gone; the page stays
  * readable as it was last loaded. Nothing is queued behind your back.
  */
 export function OfflinePill() {
@@ -33,7 +33,7 @@ export function OfflinePill() {
   )
 }
 
-/** BACK ONLINE: lists reload by themselves, and the note fades after a few seconds. */
+/** Back online: lists reload by themselves, and the note fades after a few seconds. */
 export function BackOnline() {
   const online = useOnline()
   const qc = useQueryClient()
@@ -55,7 +55,7 @@ export function BackOnline() {
   return (
     <div
       role="status"
-      // At the foot of the main area, clear of the icon bar's own button (artboard 23).
+      // At the foot of the main area, clear of the icon bar's own button.
       className={`absolute bottom-5 left-5 ${LAYER.cover} flex items-center gap-2.5 rounded-container bg-float px-3.5 py-2.5 text-ui shadow-float max-lg:bottom-20`}
     >
       <OnlineIcon size={16} aria-hidden="true" className="text-go" />

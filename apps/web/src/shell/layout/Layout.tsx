@@ -31,7 +31,7 @@ import { SubjectProvider, useLinkSubject, useSubject } from './subject'
 import { TopBar } from './TopBar'
 
 /**
- * THE FRAME (FR-017), five regions: the top bar; the icon bar; the module's sidebar; the main
+ * The frame, five regions: the top bar; the icon bar; the module's sidebar; the main
  * area; and the inspector, when something is open in it. Below 1280 the sidebar starts hidden
  * and the inspector covers the main area; below 1024 the phone's tab bar stands in for the top
  * bar, the icon bar and the sidebar. The one place that sends a visitor to /login.
@@ -102,19 +102,18 @@ function Frame({
   const [pinning, setPinning] = useState(false)
   const [creating, setCreating] = useState<({ creator: Creator } & NewHow) | null>(null)
   const [barExpanded, setBarExpanded] = useRemembered('ctws:iconbar', () => false)
-  // A choice made by hand is kept whatever the width (handoff §4).
+  // A choice made by hand is kept whatever the width.
   const [sidebarOpen, setSidebarOpen] = useRemembered(
     'ctws:sidebar',
     () => window.matchMedia('(min-width: 1280px)').matches,
   )
   const place = placeOf(pathname)
-  // The pages across kinds have no list beside them (artboard 7) unless they bring one: Review's
-  // weeks (FR-081).
+  // The pages across kinds have no list beside them unless they bring one: Review's weeks.
   const registry = useRegistry()
   const hasSidebar = place !== null && (place.kind !== null || place.to in registry.pageSidebars)
   const subject = useSubject()
   const linkFrom = useLinkSubject()
-  // What a New makes on a project page belongs to the project (FR-026).
+  // What a New makes on a project page belongs to the project.
   const onProject = useMatch('/projects/:id')
   const projectId = onProject?.params.id ? idFrom(projectIdSchema, onProject.params.id) : null
 
@@ -127,7 +126,7 @@ function Frame({
   return (
     <SignOutContext.Provider value={onLogout}>
       <NewContext.Provider value={openNew}>
-        {/* Every note in the app draws its mentions as chips that open the thing (FR-042). */}
+        {/* Every note in the app draws its mentions as chips that open the thing. */}
         <MentionContext.Provider value={drawMention}>
           <div className="flex h-dvh flex-col">
             <div className="contents max-lg:hidden">
@@ -152,7 +151,7 @@ function Frame({
                     <PhoneBack />
                     <Outlet />
                     {/* Inside main: one that opens as a column (Log a message) makes room for
-                      itself as the page's own panes do (K-02). */}
+                      itself as the page's own panes do. */}
                     {creating?.creator.Dialog && (
                       <creating.creator.Dialog
                         projectId={projectId}

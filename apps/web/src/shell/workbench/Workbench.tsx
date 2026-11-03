@@ -14,10 +14,8 @@ import { Launcher } from './Launcher'
 import { NextSevenDays } from './NextSevenDays'
 
 /**
- * THE WORKBENCH (FR-075, artboards 10 and 22): where the day starts. Today's date and the time;
- * then a fixed arrangement of widgets, each doing one thing: what is in hand, the launcher, the
- * next meetings, who owes a reply, birthdays, reading, the week. No editing of the arrangement
- * this round, and no widget scrolls.
+ * Where the day starts: a fixed arrangement of widgets, each doing one thing. The arrangement
+ * cannot be edited, and no widget scrolls.
  */
 export function Workbench() {
   const zone = useTimeZone()
@@ -67,7 +65,7 @@ export function Workbench() {
   )
 }
 
-/** Not built this round (FR-077): its head and what it will be, nothing to press. */
+/** Not built yet: its head and what it will be, nothing to press. */
 function Later({ title, kind, icon }: { title: string; kind?: 'note'; icon?: typeof WeatherIcon }) {
   return (
     <Block

@@ -37,9 +37,8 @@ function Resource({ away }: { away: Away }) {
 }
 
 /**
- * BACK FROM, ON THE WORKBENCH (FR-028, artboards 10 and 22): the top of Now, while what was last
- * opened from CTWS is still offered: the resource, how long ago, the thing it was for, and the two
- * ways to settle it. Nothing when there is none.
+ * Back from, on the workbench: the top of Now, while what was last opened from CTWS is still
+ * offered. Nothing when there is none.
  */
 export function BackFromCard() {
   const now = useNow()
@@ -90,7 +89,7 @@ export function BackFromCard() {
 }
 
 /**
- * BACK FROM, AT THE FOOT (FR-028, artboard 8): coming back to the tab after opening a resource
+ * Back from, at the foot: coming back to the tab after opening a resource
  * from CTWS, a note says where from and what it was for, with Mark done. Closing it leaves the
  * workbench's card.
  */

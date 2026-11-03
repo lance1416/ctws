@@ -15,7 +15,7 @@ const CARD = 'flex min-w-0 flex-col gap-3 rounded-container border border-line b
 const useServerOrder = () => () => 0
 
 /**
- * THE PROJECTS OVERVIEW (FR-051, artboard 18): which projects moved and which went quiet, a card
+ * The projects overview: which projects moved and which went quiet, a card
  * each in the order the module that knows says, then the inbox, then the archived ones' count.
  */
 export function Projects() {
@@ -90,7 +90,7 @@ function ProjectCard({ project }: { project: ProjectResponse }) {
 }
 
 /**
- * The inbox, a card of its own (FR-051): how much waits to be given a project, and the way there.
+ * The inbox, a card of its own: how much waits to be given a project, and the way there.
  * Empty, it is one line.
  */
 function InboxCard({ inbox }: { inbox: ProjectResponse }) {

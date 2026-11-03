@@ -4,7 +4,7 @@ import { serverNow } from '../../platform/time/serverClock'
 import { useMe } from '../auth/useMe'
 
 /**
- * GOING OUT, AND COMING BACK (FR-028): the last resource opened from CTWS, and the thing it was
+ * Going out, and coming back: the last resource opened from CTWS, and the thing it was
  * opened from. Only the last one is kept; it is offered back for a day, until it is settled (Mark
  * done, Still on it) or another is opened.
  */

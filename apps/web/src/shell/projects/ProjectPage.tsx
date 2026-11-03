@@ -36,9 +36,8 @@ export function useProjectCrumbs(): Crumbs {
 }
 
 /**
- * A project's page (artboard 8): its head, the rows it is about in the view picked there, and
- * everything linked to it; delete is on its edit page (FR-052). A project is worked in, so it has a page;
- * other records open as a pane over their list.
+ * A project's page; delete is on its edit page. A project is worked in, so it has a page; other
+ * records open as a pane over their list.
  */
 export function ProjectPage() {
   const { id, project, gone } = useOpenProject()
@@ -63,7 +62,7 @@ function OpenProject({ id }: { id: ProjectId }) {
   const registry = useRegistry()
   const main = registry.projectMain
   const [asked, pickView] = useViewParam(main?.views ?? [])
-  // The inbox is a list to empty: its tree, whatever the address asks (FR-059).
+  // The inbox is a list to empty: its tree, whatever the address asks.
   const project = useEveryProject().data?.find((p) => p.id === id)
   const inbox = project?.isInbox === true
   const goOut = useGoOut()
@@ -89,12 +88,12 @@ function OpenProject({ id }: { id: ProjectId }) {
       window.open(url, '_blank', 'noopener,noreferrer')
     }),
   })
-  // Across the page's columns (DES-001 section 4): the tree takes half, its blocks the rest, or
+  // Across the page's columns: the tree takes half, its blocks the rest, or
   // they go under it when there is no column to spare.
   const page = useRef<HTMLDivElement>(null)
   const columns = useColumns(page)
   // A wide view (the board) is the whole main area, the blocks left to the tree: under a board
-  // the page would scroll and its columns too, two scrolls at once (U-13, artboards 20 and 21).
+  // the page would scroll and its columns too, two scrolls at once.
   const wide = views.find((v) => v.id === view)?.wide === true
   const { main: mainColumns, side } = wide
     ? { main: columns, side: columns }

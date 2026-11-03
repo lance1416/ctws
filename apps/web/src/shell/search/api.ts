@@ -16,7 +16,7 @@ const searchKeys = {
 const recentQuery = (recent: readonly string[]) =>
   recent.length > 0 ? { recent: recent.join(',') } : {}
 
-/** Every kind's first five for these words, and how many each has (FR-024, `GET /search`). */
+/** Every kind's first five for these words, and how many each has (`GET /search`). */
 export const everythingQuery = (q: string, recent: readonly string[] = []) =>
   queryOptions({
     queryKey: searchKeys.everything(q, recent),

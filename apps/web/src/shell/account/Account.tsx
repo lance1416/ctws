@@ -50,9 +50,8 @@ const SHORTEST = 12
 const SETTING_TINT = 'bg-hover text-muted'
 
 /**
- * THE ACCOUNT (artboard 30): who is signed in, and Sign out; the report of the move to the new
- * layout while it is not Done (FR-099); the zone every day is counted in; light, dark or the
- * system's; the email and the password.
+ * Who is signed in, and Sign out; the report of the move to the new layout while it is not Done;
+ * the zone every day is counted in; light, dark or the system's; the email and the password.
  */
 export function Account() {
   const me = useMe().data
@@ -71,7 +70,7 @@ export function Account() {
           <h1 className="text-title text-ink">Account</h1>
           <span className="truncate text-ui text-muted">{me.email}</span>
         </div>
-        {/* Nothing is lost by it, so it asks nothing (DES-001). */}
+        {/* Nothing is lost by it, so it asks nothing. */}
         <button type="button" onClick={signOut} className={`${BUTTON.secondary} ml-auto`}>
           <SignOutIcon size={16} aria-hidden="true" />
           Sign out
@@ -118,7 +117,7 @@ function Row({
   action?: ReactNode
 }) {
   return (
-    // On a phone, its name over its value, the action on a line of its own (DES-001 "账号页").
+    // On a phone, its name over its value, the action on a line of its own.
     <div className="grid min-h-16 grid-cols-[16px_140px_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-3 max-lg:grid-cols-[16px_minmax(0,1fr)] max-lg:gap-y-1.5">
       <Icon size={16} aria-hidden="true" className="text-muted" />
       <span className="text-ui text-muted">{name}</span>
@@ -132,7 +131,7 @@ function Row({
   )
 }
 
-/** The prompt to look the report over, while it is not Done (FR-099). */
+/** The prompt to look the report over, while it is not Done. */
 function Moved({ pending }: { pending: number }) {
   const report = useQuery(migrationQuery())
   const ranAt = report.data?.ranAt
@@ -161,7 +160,7 @@ function Moved({ pending }: { pending: number }) {
   )
 }
 
-/** The account's zone: changed in place, saved on picking, Esc to keep it (DES-001). */
+/** The account's zone: changed in place, saved on picking, Esc to keep it. */
 function TimeZoneRow({ zone }: { zone: string }) {
   const qc = useQueryClient()
   const now = useNow()
@@ -228,7 +227,7 @@ function TimeZoneRow({ zone }: { zone: string }) {
   )
 }
 
-/** Light, dark or the system's; the top bar's switch is the same setting (DES-001). */
+/** Light, dark or the system's; the top bar's switch is the same setting. */
 function ThemeSwitch() {
   const theme = useSyncExternalStore(onSchemeChange, readTheme)
   return (
@@ -247,10 +246,7 @@ const OFF_ON = [
   { id: 'on', label: 'On' },
 ] as const
 
-/**
- * Vim's keys in every editor but the phone's (REQ-002 FR-112, artboard 36): two choices, so a
- * segmented switch as for the theme, what it does said beside it.
- */
+/** Vim's keys in every editor but the phone's. */
 function VimKeys() {
   const on = useVimKeys()
   const set = useSetVimKeys()
@@ -279,10 +275,7 @@ const FULL_READABLE = [
   { id: 'readable', label: 'Readable' },
 ] as const
 
-/**
- * How long a note's lines run on a whole page (REQ-002 FR-109, artboard 37): the width of the main
- * area, or a readable length, the text centred.
- */
+/** How long a note's lines run on a whole page: the main area's width, or a readable length. */
 function LineLength() {
   const [readable, setReadable] = useNoteChoice('readableLines')
   return (
@@ -305,7 +298,7 @@ function LineLength() {
   )
 }
 
-/** The email, shown only; the password, and changing it under its row (DES-001). */
+/** The email, shown only; the password, and changing it under its row. */
 function SigningIn({ email, changedAt }: { email: string; changedAt: string | null }) {
   const [changing, setChanging] = useState(false)
   return (
@@ -337,7 +330,7 @@ function SigningIn({ email, changedAt }: { email: string; changedAt: string | nu
 
 type Fields = { current: string; next: string; again: string }
 
-/** What is wrong with a field, said when it is left (README rule 5). */
+/** What is wrong with a field, said when it is left. */
 function problemsOf(f: Fields, left: Set<keyof Fields>) {
   return {
     next:

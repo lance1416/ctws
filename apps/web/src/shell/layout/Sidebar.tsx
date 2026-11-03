@@ -7,12 +7,8 @@ import { ProjectsSidebar } from '../projects/ProjectsSidebar'
 import type { Place } from './places'
 
 /**
- * THE MODULE SIDEBAR (FR-020): the module's list, always there, so opening a thing never loses
- * it. Its head names the module, says how many, and holds the module's New. About 250 wide;
- * `[` hides it and the choice is remembered.
- *
- * Each module's list arrives with that module's batch (FR-020 lists them); until then the head
- * stands alone. Projects, which the shell owns, is here already.
+ * The module's list, always there, so opening a thing never loses it. `[` hides it and the choice
+ * is remembered.
  */
 export function Sidebar({ place }: { place: Place }) {
   const registry = useRegistry()
@@ -62,7 +58,7 @@ export function Sidebar({ place }: { place: Place }) {
 }
 
 /**
- * The head every sidebar shares (artboards 5, 8): the name, then how many there are, a bare
+ * The head every sidebar shares: the name, then how many there are, a bare
  * number beside the module's New at the right end.
  */
 export function SidebarHead({

@@ -26,10 +26,10 @@ import { useRegistry } from '../registry'
 
 type Thing = { type: ObjectType; id: string }
 
-/** What the timeline's tabs narrow it to (FR-065): every kind, or one. */
 /** Months a full timeline shows at first, and adds a press at a time. */
 const MONTHS_AT_ONCE = 3
 
+/** What the timeline's tabs narrow it to: every kind, or one. */
 const FILTERS = [
   { id: 'all', label: 'All', kinds: undefined },
   { id: 'message', label: 'Messages', kinds: ['message'] },
@@ -67,17 +67,15 @@ const timelineQuery = (thing: Thing, filter: Filter) =>
       ).entries,
   })
 
-/** Starts what a thing's timeline reads first (All), before its page is drawn (baseline.md §8). */
+/** Starts what a thing's timeline reads first (All), before its page is drawn. */
 export function prefetchTimeline(qc: QueryClient, thing: Thing): void {
   void qc.prefetchQuery(timelineQuery(thing, FILTERS[0]))
 }
 
 /**
- * A THING'S TIMELINE (FR-045, artboards 8 and 14): what happened to it and what was said, held or
- * written about it, newest first: the day, a mark for what kind of line it is, and the line; a
- * message with whom and what it said, a meeting how long and with whom. A change is said by the
- * module that owns the thing; the rest the shell says alike for every kind. With `filters`, a
- * page's timeline is narrowed to one kind by its tabs (FR-065).
+ * A thing's timeline: what happened to it and what was said, held or written about it, newest
+ * first. A change is said by the module that owns the thing; the rest the shell says alike for
+ * every kind. With `filters`, a page's timeline is narrowed to one kind by its tabs.
  */
 export function Timeline({
   of,
@@ -88,9 +86,9 @@ export function Timeline({
 }: {
   of: Thing
   filters?: boolean
-  /** Its head's + logs a message with the thing (FR-061, FR-070), where a module can log one. */
+  /** Its head's + logs a message with the thing, where a module can log one. */
   logs?: boolean
-  /** Only the latest this many, as a narrow page shows it (artboard 33). */
+  /** Only the latest this many, as a narrow page shows it. */
   last?: number
   /** The line under them that opens the whole of it: "Everything with Mira". */
   everything?: { label: string; to: string }
@@ -102,7 +100,7 @@ export function Timeline({
   const entries = useQuery(timelineQuery(of, filter))
   const timeZone = useTimeZone()
   const describeChange = useRegistry().relationFor(of.type).describeChange
-  // The last three months first, by month; the rest a press away (FR-015 "时间线", U-17).
+  // The last three months first, by month; the rest a press away.
   const [months, setMonths] = useState(MONTHS_AT_ONCE)
   const all = last ? (entries.data ?? []).slice(0, last) : (entries.data ?? [])
   const monthOf = (entry: TimelineEntry) => ymd(new Date(entry.at), timeZone).slice(0, 7)
@@ -113,12 +111,12 @@ export function Timeline({
     entries: all.filter((e) => monthOf(e) === month),
   }))
   const hidden = all.length - sections.reduce((n, s) => n + s.entries.length, 0)
-  // Nothing at all to show: no head over an empty list (N-06). A tab with nothing keeps its head,
+  // Nothing at all to show: no head over an empty list. A tab with nothing keeps its head,
   // so the other tabs stay in reach.
   if (filter.id === 'all' && entries.isSuccess && entries.data.length === 0 && !logs) return null
   return (
     <section aria-labelledby="timeline-head" className="flex flex-col gap-2">
-      {/* A narrow page's block names it already (artboard 33). */}
+      {/* A narrow page's block names it already. */}
       <div
         className={`flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1 ${last ? 'sr-only' : ''}`}
       >
@@ -131,14 +129,14 @@ export function Timeline({
             onClick={() => openNew(log)}
             aria-label="Log a message"
             title="Log a message"
-            // On a phone it stays on the name's line, the tabs a line of their own under (P4-09).
+            // On a phone it stays on the name's line, the tabs a line of their own under.
             className={`${ICON_BUTTON} order-last ml-auto max-lg:order-none`}
           >
             <NewIcon size={16} aria-hidden="true" />
           </button>
         )}
         {filters && (
-          // Views of the entries below: tabs, one Tab stop, the arrows switching (DES-001 section 4).
+          // Views of the entries below: tabs, one Tab stop, the arrows switching.
           <div
             role="tablist"
             aria-label="Show"
@@ -163,7 +161,7 @@ export function Timeline({
           </div>
         )}
       </div>
-      {/* What the tabs show: Tab goes from the chosen tab to here (DES-001 section 4). */}
+      {/* What the tabs show: Tab goes from the chosen tab to here. */}
       <div
         id={shown}
         {...(filters
@@ -180,7 +178,7 @@ export function Timeline({
                 aria-label={section.title}
                 className="flex flex-col gap-3"
               >
-                {/* By month on a full page (FR-015 "时间线"); a narrow page's five need no head. */}
+                {/* By month on a full page; a narrow page's five need no head. */}
                 {!last && (
                   <h4 className="text-meta font-medium tracking-[0.06em] text-muted uppercase">
                     {section.title}
@@ -196,7 +194,7 @@ export function Timeline({
                         data-timeline-entry={entry.kind}
                         className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
                       >
-                        {/* The thread from one mark to the next (artboard 14); the last has none. */}
+                        {/* The thread from one mark to the next; the last has none. */}
                         <span
                           aria-hidden="true"
                           className="thread absolute top-7 -bottom-2.5 left-[calc(52px+0.625rem+11.5px)] w-px bg-line"
@@ -407,7 +405,7 @@ function lineOf(
       }
     }
     case 'note': {
-      // What was written, by its name, not its markdown (I-01): its title, or its first line.
+      // What was written, by its name, not its markdown: its title, or its first line.
       const Icon = KIND_ICON.note
       const name = entry.note.title ?? firstLine(entry.note.excerpt)
       return {
@@ -417,7 +415,7 @@ function lineOf(
       }
     }
     case 'mention': {
-      // Where it was written, by that kind's icon; the name said plainly, not as typed (M-06).
+      // Where it was written, by that kind's icon; the name said plainly, not as typed.
       const Icon = KIND_ICON[entry.from.type]
       const said = linkWords(entry.excerpt.replace(MENTION, '$1'))
       return { mark: <Icon size={16} />, text: `Mentioned in “${entry.from.title}”: ${said}` }

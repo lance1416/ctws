@@ -5,7 +5,7 @@ const at = (columns: number) =>
   Object.fromEntries(arrangement(columns).places.map((p) => [p.place, p.style]))
 
 describe('the workbench arrangement', () => {
-  it('puts each place where artboard 10 has it, on six columns', () => {
+  it('puts each place in its fixed cell on six columns', () => {
     const six = at(6)
     expect(six.now).toEqual({ gridColumn: '1 / span 2', gridRow: '1 / span 2' })
     expect(six.week).toEqual({ gridColumn: '1 / span 2', gridRow: '3 / span 1' })

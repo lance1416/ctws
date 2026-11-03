@@ -5,7 +5,7 @@ import { resourcesQuery } from '../resources/api'
 import { projectLinkKinds } from './ProjectLinked'
 
 /**
- * What a project's page reads, started as soon as the session is known (baseline.md §8): its rows,
+ * What a project's page reads, started as soon as the session is known: its rows,
  * its blocks' links and pins, and each module's own things in it, the queries the page makes.
  */
 export function prefetchProject({ qc, params, today, registry }: PrefetchAt): void {

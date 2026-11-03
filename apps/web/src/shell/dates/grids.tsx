@@ -76,7 +76,7 @@ const STEP: Record<string, (cols: number) => number> = {
 }
 
 /**
- * The cells, one Tab stop for all of them (BUG-108, as the calendar's grid, BUG-057): the stop is
+ * The cells, one Tab stop for all of them, as the calendar's grid: the stop is
  * the cell last in hand, else the chosen one, else today, else the first of the month; the arrows
  * go from cell to cell, Home and End to the first and the last. Tab leaves the grid in one press.
  */
@@ -160,7 +160,7 @@ function WeekdayRow() {
 }
 
 /**
- * A SOLAR MONTH (FR-034): the solar day big, its lunar name small, as on the calendar page. The
+ * A solar month: the solar day big, its lunar name small, as on the calendar page. The
  * month shown is the caller's state, so the field can open on the chosen day.
  */
 export function DayGrid({
@@ -182,7 +182,7 @@ export function DayGrid({
   const first = `${month}-01`
   const lead = weekdayOf(first)
   const start = addDays(first, -lead)
-  // Only the weeks that hold one of the month's days: four, five or six rows (artboard 11).
+  // Only the weeks that hold one of the month's days: four, five or six rows.
   const [y, m] = month.split('-').map(Number) as [number, number]
   const weeks = Math.ceil((lead + daysInMonth(y, m)) / 7)
   const cells = Array.from({ length: weeks * 7 }, (_, i) => addDays(start, i))
@@ -205,8 +205,7 @@ export function DayGrid({
           <Cell
             key={day}
             big={String(Number(day.slice(8)))}
-            // As the calendar names them: a month's first day by the month, a festival by its name
-            // (P4-06).
+            // As the calendar names them: a month's first day by the month, a festival by its name.
             small={lunarSquareName(lunar.data?.days[day], lunar.data?.festivals[day])?.text}
             selected={day === value}
             today={day === today}
@@ -251,7 +250,7 @@ export function lunarMonthAround(
 }
 
 /**
- * A LUNAR MONTH (FR-034): the lunar day big, the solar day small; paged by lunar month, a leap
+ * A lunar month: the lunar day big, the solar day small; paged by lunar month, a leap
  * month in its own place. Anchored on a solar day, since that is what the page knows.
  */
 export function LunarGrid({
@@ -269,7 +268,7 @@ export function LunarGrid({
   value: string | null
   /**
    * The chosen day by its lunar month and day, when there is no solar day for it yet (a birthday
-   * whose year is not known): every year's month of that name marks that day (U-14).
+   * whose year is not known): every year's month of that name marks that day.
    */
   chosen?: { month: number; day: number; leapMonth: boolean } | null
   today: string
@@ -339,7 +338,7 @@ export function LunarGrid({
   )
 }
 
-/** TWELVE MONTHS of a year (FR-034): for a role's start and end, known to the month. */
+/** Twelve months of a year: for a role's start and end, known to the month. */
 export function MonthGrid({
   year,
   setYear,

@@ -2,7 +2,7 @@ import { api } from '@ctws/contracts'
 import { queryOptions } from '@tanstack/react-query'
 import { call } from '../../platform/http/api'
 
-/** The report of the move to the new layout (FR-099); the account names it until it is Done. */
+/** The report of the move to the new layout; the account names it until it is Done. */
 export const migrationKeys = { report: ['migration'] as const }
 
 export const migrationQuery = () =>

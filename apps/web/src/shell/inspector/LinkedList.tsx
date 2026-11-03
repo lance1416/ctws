@@ -16,8 +16,8 @@ const isKind = (word: string | undefined): word is ObjectType =>
   (OBJECT_TYPES as readonly string[]).includes(word ?? '')
 
 /**
- * ONE KIND WITH A THING, ALL OF IT (FR-011 rule 3, FR-015): what a full page's block shows five
- * of, in the inspector beside that page; its module's own things first, then what is linked.
+ * All of one kind with a thing: what a full page's block shows five of, in the inspector beside
+ * that page; its module's own things first, then what is linked.
  */
 export function LinkedList({ arg }: { arg: string }) {
   const [kind, type, id = ''] = arg.split('.')

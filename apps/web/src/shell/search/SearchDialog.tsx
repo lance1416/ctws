@@ -61,7 +61,7 @@ type Row =
 /** Any modifier, or none: the box's keys mean the same with any held. */
 const ANY = { either: ['Ctrl', 'Meta', 'Alt', 'Shift'] } as const
 
-/** The box's keys (FR-024): the list is walked from the box, which keeps focus. */
+/** The box's keys: the list is walked from the box, which keeps focus. */
 export const SEARCH_KEYS: KeyTable<'next' | 'previous' | 'open' | 'beside' | 'tab' | 'back'> = {
   title: 'In search',
   rows: [
@@ -108,23 +108,17 @@ const placeRow = (p: (typeof PLACES)[number]): Row => ({
 })
 
 /**
- * SEARCH EVERYTHING (FR-024, artboard 9): one box, Ctrl K. Results sit under tabs by kind; All
- * shows five of each. `/` scopes the box to one kind. Before anything is typed: what was opened
- * lately, and every place with its key. Enter opens; Ctrl Enter opens in the inspector and keeps
- * the page. The combobox is written out rather than taken from a library so Escape reaches the
- * dialog and closes the whole thing.
- *
- * As LINK's picker (FR-027) it is the same box at 380 wide: the rows are drawn the same, and the
- * line of why is asked at its foot once a row is chosen.
+ * The search box as Link's picker: the same box, narrower, the rows drawn the same, and the line
+ * of why asked at its foot once a row is chosen.
  */
 export type Pick = {
   /** The thing being linked from: the answer leaves it out. Null for one not made yet. */
   of: Endpoint | null
-  /** Offered first among what the words find (the capture's Inbox, FR-084). */
+  /** Offered first among what the words find (the capture's Inbox). */
   first?: string | null
   /**
    * Offered last, under a line, when the words find it: a way back rather than a place to go
-   * into, so no "›" and its own mark (a task's Inbox, FR-059).
+   * into, so no "›" and its own mark (a task's Inbox).
    */
   last?: { id: string; mark: ReactNode } | null
   title: string
@@ -139,10 +133,10 @@ export type Pick = {
   asksWhy?: boolean
   /** Things not to offer, though they would match: where it already is. */
   leaveOut?: readonly string[]
-  /** The list's last row makes one under the words typed: "New person “priya”" (FR-055). */
+  /** The list's last row makes one under the words typed: "New person “priya”". */
   makes?: { label: string; run: (name: string) => void }
   /**
-   * Things it can go further into (FR-059): their row ends in "›", and it or → shows the next
+   * Things it can go further into: their row ends in "›", and it or → shows the next
    * step in the same box, which "‹" or ← leaves.
    */
   drill?: {
@@ -151,6 +145,11 @@ export type Pick = {
   }
 }
 
+/**
+ * Search everything: results sit under tabs by kind; `/` scopes the box to one kind. The combobox
+ * is written out rather than taken from a library so Escape reaches the dialog and closes the
+ * whole thing.
+ */
 export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pick }) {
   const composing = useComposing()
   const keys = useKeyTable(SEARCH_KEYS)
@@ -187,18 +186,18 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       mark: relation.Mark ? <relation.Mark thing={c} /> : null,
     }
   }
-  // Every kind from one question (FR-024, `GET /search`): All, and the counts on the tabs; a kind
+  // Every kind from one question (`GET /search`): All, and the counts on the tabs; a kind
   // looked at alone is read a page at a time as the list is scrolled.
   const kindView: ObjectType | null = pick ? null : (scope ?? (tab === 'all' ? null : tab))
   // Read once when the dialog opens: the list must not reshuffle under the reader. It also puts
-  // what was opened lately first among equally good matches (FR-024).
+  // what was opened lately first among equally good matches.
   const userId = useMe().data?.id
   const [recent] = useState(() => (userId ? recentList(userId) : []))
   const recentIds = recent.map((r) => r.id)
   const everything = useQuery({
     ...everythingQuery(debounced, recentIds),
     enabled: !pick && debounced.length > 0 && scope === null,
-    // While the words change, the last answer stays until the next is in (DES-001).
+    // While the words change, the last answer stays until the next is in.
     placeholderData: keepPreviousData,
   })
   const oneKind = useInfiniteQuery({
@@ -208,7 +207,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   })
   const kindItems = (oneKind.data?.pages ?? []).flatMap((p) => p.groups[0]?.items ?? [])
   const totals = new Map((everything.data?.groups ?? []).map((g) => [g.type, g.total]))
-  // A kind alone reads on as its end comes near, by scrolling or by the keyboard (DES-001).
+  // A kind alone reads on as its end comes near, by scrolling or by the keyboard.
   const readOn = () => {
     if (kindView && oneKind.hasNextPage && !oneKind.isFetchingNextPage) void oneKind.fetchNextPage()
   }
@@ -221,7 +220,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     isError: asked.isError,
     isSuccess: asked.isSuccess && !asked.isPlaceholderData,
   }
-  // As a picker (FR-027) the server's candidates are the hits: every kind, the likely few first.
+  // As a picker the server's candidates are the hits: every kind, the likely few first.
   const candidates = useQuery({
     ...candidatesQuery(pick?.of ?? null, debounced),
     enabled: pick !== undefined,
@@ -310,7 +309,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                     : KIND_WORDS[hit.type].one,
               }
             }),
-            // "All 23 people": the rest of a kind, its tab (DES-001 section 4).
+            // "All 23 people": the rest of a kind, its tab.
             ...(g.more > 0 && view === 'all'
               ? [
                   {
@@ -343,7 +342,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
   }, [chosen])
 
   const settled = typing === debounced
-  // How many match, said once the typing stops (DES-001, search's last rule): the server's totals.
+  // How many match, said once the typing stops: the server's totals.
   const matched = pick
     ? hits.length
     : kindView
@@ -356,7 +355,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     : nothing
       ? `No ${view === 'all' ? 'results' : KIND_WORDS[view].many.toLocaleLowerCase()} match “${debounced}”.`
       : `${matched} ${matched === 1 ? 'result' : 'results'}`
-  // What a New from an empty result makes: the scoped kind, else a task (FR-024 "Empty").
+  // What a New from an empty result makes: the scoped kind, else a task.
   const newKind: ObjectType = scope ?? 'task'
   const creator = registry.creates.find((c) => c.kind === newKind)
   const canNew = !pick && (newKind === 'task' ? inbox.target !== null : creator !== undefined)
@@ -366,7 +365,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       if (!inbox.target) return
       const made = await inbox.target.submit(typing, { projectId: null, date: null })
       onClose()
-      // Made from a search, which is no page's: it opens (FR-026), a task in the inspector.
+      // Made from a search, which is no page's: it opens, a task in the inspector.
       navigate(made)
     } else if (creator) {
       onClose()
@@ -374,7 +373,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
       openNew(creator, { opens: true })
     }
   }
-  // What a pointer picks here leaves the typing where it was: in the box (BUG-062).
+  // What a pointer picks here leaves the typing where it was: in the box.
   const scopeTo = (type: ObjectType) => {
     setScope(type)
     setTab('all')
@@ -425,7 +424,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
     wasInside.current = inside !== null
   }, [inside])
 
-  // The foot says only the keys that do something now (DES-001 section 4).
+  // The foot says only the keys that do something now.
   const current = rows[at]
   const legends: [string, string][] = []
   if (current) {
@@ -549,7 +548,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-muted max-lg:h-11 ${pick ? 'text-ui' : 'text-prose'}`}
           />
           {!pick && <kbd className={`${KEY} max-lg:hidden`}>Esc</kbd>}
-          {/* A phone has no Esc: the full screen closes here (FR-088). */}
+          {/* A phone has no Esc: the full screen closes here. */}
           <button
             type="button"
             onClick={onClose}
@@ -565,7 +564,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             className="flex gap-0.5 overflow-hidden border-b border-line px-2.5 py-1.5 max-lg:flex-wrap"
           >
             {tabs.map((t) => {
-              // Totals, from the server (FR-024); a big one is said as 999+.
+              // Totals, from the server; a big one is said as 999+.
               const n =
                 t === 'all' ? [...totals.values()].reduce((a, b) => a + b, 0) : (totals.get(t) ?? 0)
               return (
@@ -573,7 +572,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                   key={t}
                   type="button"
                   role="tab"
-                  // Read as "Tasks, 12" (DES-001): the name and its total, one phrase.
+                  // Read as "Tasks, 12": the name and its total, one phrase.
                   aria-label={`${t === 'all' ? 'All' : KIND_WORDS[t].many}, ${n > 999 ? '999+' : n}`}
                   aria-selected={view === t}
                   tabIndex={-1}
@@ -598,7 +597,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
           </div>
         )}
 
-        {/* Grey rows while the first answer for these words is out (FR-031). */}
+        {/* Grey rows while the first answer for these words is out. */}
         {debounced.length > 0 &&
           !scoping &&
           !results.isSuccess &&
@@ -619,7 +618,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               No {view === 'all' ? 'results' : KIND_WORDS[view].many.toLocaleLowerCase()} match “
               {debounced}”.
             </p>
-            {/* The two next steps (FR-024 "Empty", artboard 23): a line each, the key at the end. */}
+            {/* The two next steps: a line each, the key at the end. */}
             {scope !== null && !pick?.only && (
               <NextStep
                 icon={<PLACE_ICON.search size={16} />}
@@ -794,7 +793,7 @@ function ScopeIcon({ type, size = 12 }: { type: ObjectType; size?: 12 | 14 }) {
   return <Icon size={size} aria-hidden="true" className={KIND_TEXT[type]} />
 }
 
-/** A kind's icon on its tint, the mark of a row whose kind has none of its own (artboard 9). */
+/** A kind's icon on its tint, the mark of a row whose kind has none of its own. */
 function KindBadge({ type }: { type: ObjectType }) {
   return (
     <span className={`inline-grid size-6 place-items-center rounded-control ${KIND_TINT[type]}`}>
@@ -848,17 +847,17 @@ function SearchRow({
   id: string
   /** The picker's last row, under a line, with this mark in place of its own. */
   apart?: ReactNode
-  /** What was typed, marked where a title matches it (S-01). */
+  /** What was typed, marked where a title matches it. */
   words: string
   selected: boolean
-  /** The picker's 380: no word column, the fact at its own width. */
+  /** The narrower picker: no word column, the fact at its own width. */
   compact: boolean
   onChoose: () => void
   onHover: () => void
-  /** Its next step, where it has one: the "›" at the row's end (FR-059). */
+  /** Its next step, where it has one: the "›" at the row's end. */
   onInto?: () => void
 }) {
-  // Read as "name, fact, kind" (DES-001), from the columns as drawn: the fact is a module's own
+  // Read as "name, fact, kind", from the columns as drawn: the fact is a module's own
   // component, so its words are only known once it is on the page.
   const said = useRef<HTMLLIElement>(null)
   const [label, setLabel] = useState<string | undefined>(undefined)
@@ -868,7 +867,7 @@ function SearchRow({
       .filter((t) => t.length > 0)
     setLabel(parts.length > 0 ? parts.join(', ') : undefined)
   }, [row, words])
-  // On a phone every row is 44, with or without its "›" (P4-25).
+  // On a phone every row is 44, with or without its "›".
   const shared = `grid min-h-10 cursor-pointer items-center gap-x-3 px-4 text-ui text-ink max-lg:min-h-11 ${
     selected ? 'bg-select' : ''
   }`
@@ -898,7 +897,7 @@ function SearchRow({
       >
         <span className="inline-grid size-6 place-items-center text-muted">{row.icon}</span>
         <span className="truncate">{row.title}</span>
-        {/* No key hints on a phone (DES-001 "搜索"). */}
+        {/* No key hints on a phone. */}
         <kbd className={`${KEY} max-lg:hidden`}>{row.hint}</kbd>
       </li>
     )
@@ -968,7 +967,7 @@ function SearchRow({
           ? onInto
             ? 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)_24px] pr-2'
             : 'grid-cols-[24px_minmax(0,1fr)_minmax(0,max-content)]'
-          : // A phone's row is two lines: its name, then its fact and its kind (DES-001 "搜索").
+          : // A phone's row is two lines: its name, then its fact and its kind.
             'grid-cols-[24px_minmax(0,1fr)_180px_92px] max-lg:grid-cols-[24px_minmax(0,1fr)_auto] max-lg:py-1.5'
       }`}
     >
@@ -1018,7 +1017,7 @@ function SearchRow({
 }
 
 /**
- * A title with what was typed marked in it (S-01): each word typed, wherever it falls, in the
+ * A title with what was typed marked in it: each word typed, wherever it falls, in the
  * row's 500 weight; the rest as it is.
  */
 function Matched({ text, words }: { text: string; words: string }) {

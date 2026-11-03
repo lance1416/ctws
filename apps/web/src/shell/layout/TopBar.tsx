@@ -11,8 +11,7 @@ import { UserMenu } from './UserMenu'
 import { WriteFailure } from './WriteFailure'
 
 /**
- * THE TOP BAR (FR-018), 48 high on every page: the mark, where you are, search, capture, the keys,
- * the theme and the account. Not on the phone, whose frame is the tab bar (FR-082).
+ * The top bar on every page. Not on the phone, whose frame is the tab bar.
  */
 export function TopBar({
   email,
@@ -62,7 +61,7 @@ export function TopBar({
           <PLACE_ICON.keys size={16} aria-hidden="true" />
         </button>
         <ThemeSwitch />
-        {/* Next to the account (FR-033), so the middle of the bar never moves. */}
+        {/* Next to the account, so the middle of the bar never moves. */}
         <OfflinePill />
         <span className="relative">
           <UserMenu email={email} onLogout={onLogout} />
@@ -74,7 +73,7 @@ export function TopBar({
   )
 }
 
-/** Light or dark by hand; following the system is on the account page (FR-005, artboard 30). */
+/** Light or dark by hand; following the system is on the account page. */
 function ThemeSwitch() {
   const [scheme, setScheme] = useState<'light' | 'dark'>(() => shownScheme())
   useEffect(() => onSchemeChange(() => setScheme(shownScheme())), [])

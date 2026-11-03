@@ -20,8 +20,8 @@ export type PageHandle = {
    */
   useCrumbs?: () => Crumbs
   /**
-   * What the page will ask for, started as soon as the session is known, before anything is drawn
-   * (baseline.md §8): the same queries its parts make, so they find them in flight. The router
+   * What the page will ask for, started as soon as the session is known, before anything is drawn:
+   * the same queries its parts make, so they find them in flight. The router
    * gives each page that has one a loader (app/router.tsx).
    */
   prefetch?: (at: PrefetchAt) => void
@@ -52,7 +52,7 @@ export function usePage<K extends keyof PageHandle>(
 export const topPage = (label: string): PageHandle => ({ useCrumbs: () => [{ label }] })
 
 /**
- * A thing's own page under its kind (FR-018): "People", then "Mira Chen". The name is the one the
+ * A thing's own page under its kind: "People", then "Mira Chen". The name is the one the
  * page says it is about (`useSubjectOf`), so it reads the same as the page's head, and a page
  * still loading is its kind alone.
  */

@@ -21,10 +21,8 @@ function sourceOf(r: ResourceResponse): string {
 }
 
 /**
- * THE LAUNCHER (FR-076, artboards 10 and 22): what the projects still worked on pin in their heads,
- * each with its service, its name, its project and where it is from, and the digit that opens it;
- * then a cell to pin another link. Tall cells where rows share the screen, cells on their side in
- * rows of 236.
+ * The launcher: what the projects still worked on pin in their heads, each with the digit that
+ * opens it; then a cell to pin another link.
  */
 export function Launcher({ tall }: { tall: boolean }) {
   const pinned = useQuery(pinnedEverywhereQuery())

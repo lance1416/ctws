@@ -9,7 +9,7 @@ import type { ShownEntry } from '../contract'
 import { OpensBeside } from '../inspector'
 import { useRegistry } from '../registry'
 
-/** What the week shows of the calendar (FR-076): deadlines, follow-ups and meetings. */
+/** What the week shows of the calendar: deadlines, follow-ups and meetings. */
 const SHOWN_KINDS = ['occurrence', 'due', 'follow-up'] as const
 /** Chips a day holds before the rest are counted. */
 const PER_DAY = 3
@@ -20,9 +20,8 @@ const byDay = (a: ShownEntry, b: ShownEntry) =>
   rank(a) - rank(b) || (a.time ?? '').localeCompare(b.time ?? '') || a.title.localeCompare(b.title)
 
 /**
- * NEXT SEVEN DAYS (FR-076, artboards 10 and 22): today and the six after, a column each, with what
- * falls on it: a meeting by its time, a deadline by its flag and name (amber by tomorrow), a
- * follow-up. Today's column is shaded. Its head goes to the calendar.
+ * Next seven days: today and the six after, a column each, with what falls on it. Its head goes to
+ * the calendar.
  */
 export function NextSevenDays() {
   const today = useAccountToday()
@@ -32,7 +31,7 @@ export function NextSevenDays() {
   // The registry is fixed for the app's life: each provider's hook is called in the same order.
   const results = providers.map((p) => ({ ...p.useEntries(range), opens: p.opens }))
   const failed = results.find((r) => r.isError)
-  // What has a narrow page opens in the inspector, a meeting as that occurrence (FR-022); one that
+  // What has a narrow page opens in the inspector, a meeting as that occurrence; one that
   // opens over the calendar's grid opens there; the rest go where their module says.
   const entries = results.flatMap(({ entries, opens }) =>
     entries

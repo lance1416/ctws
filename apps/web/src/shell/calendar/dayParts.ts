@@ -4,7 +4,7 @@ import type { ShownEntry } from '../contract'
 export type Placed = ShownEntry & { moduleId: string }
 
 /**
- * What the calendar shows of a day (FR-080): meetings, deadlines, follow-ups and birthdays, each a
+ * What the calendar shows of a day: meetings, deadlines, follow-ups and birthdays, each a
  * line; the tasks planned for it only counted. Anything else a module dates is not the month's.
  */
 export type DayParts = {

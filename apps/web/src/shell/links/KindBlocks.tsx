@@ -24,7 +24,7 @@ const aOne = (kind: ObjectType) => {
   return `${/^[aeiou]/.test(one) ? 'an' : 'a'} ${one}`
 }
 
-/** A block shows this many rows; the rest wait behind a line that says how many (FR-011). */
+/** A block shows this many rows; the rest wait behind a line that says how many. */
 const SHOWN = 5
 
 /** One row: a module's own thing in the project, or a thing linked to it by hand. */
@@ -62,9 +62,9 @@ type KindBlockProps = {
   Linked?: ComponentType<{ thing: LinkCandidate }>
   /** The head's count in the module's words; the number of rows otherwise. */
   count?: ReactNode
-  /** An empty block's + says what it makes ("+ Meeting"), rather than an icon (FR-061). */
+  /** An empty block's + says what it makes ("+ Meeting"), rather than an icon. */
   addSays?: string
-  /** Its own things join the page's subject: each row takes one off it (FR-055). */
+  /** Its own things join the page's subject: each row takes one off it. */
   join?: Join
   /** What a row is taken off, in place of unlinking it: "project" (Remove from project). */
   removeFrom?: string
@@ -73,7 +73,7 @@ type KindBlockProps = {
 }
 
 /**
- * A thing's blocks, a kind each (FR-011, FR-055, FR-061): a module's own things with it first
+ * A thing's blocks, a kind each: a module's own things with it first
  * (a project's meetings, the reading a person recommended), then what is only linked to it by
  * hand. The full blocks come first, `full` of them; an empty one is its head, saying what `none`
  * says of its kind. A block is headed by its kind's plural unless `titles` names it otherwise. A
@@ -105,7 +105,7 @@ export function useKindBlocks({
     count?: (things: readonly LinkCandidate[]) => ReactNode
   }[]
   sayAdd?: boolean
-  /** How a kind that is only linked makes a new one from its + (FR-055). */
+  /** How a kind that is only linked makes a new one from its +. */
   makesFor?: (kind: ObjectType) => Makes | undefined
   /** The subject's name, for what its blocks offer on a thing's own page: "Remove from Job hunt". */
   ofName?: string
@@ -113,7 +113,7 @@ export function useKindBlocks({
   const registry = useRegistry()
   const openNew = useContext(NewContext)
   const { links, groups, unlink, setAdding, picker } = useLinked(of, kinds, makesFor)
-  // The kind whose + is finding one to join the subject (FR-055).
+  // The kind whose + is finding one to join the subject.
   const [joining, setJoining] = useState<ObjectType | null>(null)
   const removeFrom = KIND_WORDS[of.type].one.toLocaleLowerCase()
   const linkedOf = new Map(groups.map((g) => [g.type, g.items]))
@@ -160,7 +160,7 @@ export function useKindBlocks({
   const joinOf = joining ? blocks.find((b) => b.kind === joining) : undefined
   const size = (b: KindBlockProps) => b.things.length + b.linked.length
   // Being read is neither full nor empty: which blocks are full, and so their order and the
-  // columns they take, waits for every read, and the blocks come in at once (DES-001 "加载").
+  // columns they take, waits for every read, and the blocks come in at once.
   const ready = blocks.every((b) => !b.pending)
   const full = blocks.filter((b) => size(b) > 0)
   return {
@@ -226,7 +226,7 @@ function KindBlock({
   const rows: ReactNode[] = [
     ...things.map((t) => (
       <li key={t.id}>
-        {/* On a phone its ✕ is a swipe away, and the page it opens offers it too (DES-001). */}
+        {/* On a phone its ✕ is a swipe away, and the page it opens offers it too. */}
         <SwipeRow
           actions={
             join && (
@@ -238,9 +238,9 @@ function KindBlock({
             )
           }
         >
-          {/* The row's hover takes in its ✕, so the ✕ reads as the row's (N-08). */}
+          {/* The row's hover takes in its ✕, so the ✕ reads as the row's. */}
           <div className={`group flex min-w-0 items-center ${join ? 'pr-1.5 hover:bg-hover' : ''}`}>
-            {/* With its ✕, the row takes the hover whole; the link adds none of its own (N-08). */}
+            {/* With its ✕, the row takes the hover whole; the link adds none of its own. */}
             <ThingRow
               row={t}
               kind={kind}
@@ -354,8 +354,7 @@ function KindBlock({
       ) : pending && rows.length === 0 ? (
         <SkeletonRows rows={2} />
       ) : (
-        // Alone on a wide row, the rows go across in columns of 22rem, not one line the row's width
-        // (FR-011 rule 2, U-19); a narrow block is one column as before.
+        // Alone on a wide row, the rows go across in columns rather than one line the row's width.
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(22rem,100%),1fr))] py-1.5">
           {shown}
         </ul>
@@ -365,7 +364,7 @@ function KindBlock({
           {join.error}
         </p>
       )}
-      {/* The rest in the inspector, the page staying put (FR-011 rule 3). */}
+      {/* The rest in the inspector, the page staying put. */}
       {rows.length > SHOWN && (
         <AllInInspector
           list={linkedListOf(kind, of)}
@@ -444,7 +443,7 @@ function ThingRow({
           </span>
         )
       )}
-      {/* On a phone, a row's two steps (FR-082). */}
+      {/* On a phone, a row's two steps. */}
       <span className="flex min-w-0 flex-col py-1.5">
         <span className="truncate max-lg:text-row">{row.title}</span>
         {row.sub && (
@@ -456,7 +455,7 @@ function ThingRow({
   )
 }
 
-/** What a row's swipe uncovers on a phone: its ✕ in words (DES-001). */
+/** What a row's swipe uncovers on a phone: its ✕ in words. */
 function SwipeAction({
   label,
   word = 'Remove',
@@ -483,7 +482,7 @@ function SwipeAction({
 }
 
 /**
- * "Remove from Job hunt" at the foot of a thing opened from its project's block (DES-001): red,
+ * "Remove from Job hunt" at the foot of a thing opened from its project's block: red,
  * framed, and asked first, from the foot on a phone.
  */
 function RemoveFrom({

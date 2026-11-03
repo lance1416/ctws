@@ -1,6 +1,6 @@
 import { CloseIcon, PLACE_ICON } from '../../platform/ui/icons'
 
-/** A sidebar long enough to need it gets the box (FR-015 "多"): past this many rows. */
+/** A sidebar long enough to need it gets the box: past this many rows. */
 export const FILTER_FROM = 8
 
 /** Whether a name holds what was typed, as the sidebar filters: case and spaces aside. */
@@ -8,8 +8,8 @@ export const matches = (name: string, typed: string) =>
   name.toLocaleLowerCase().includes(typed.trim().toLocaleLowerCase())
 
 /**
- * THE BOX AT THE TOP OF A LONG SIDEBAR (FR-015, U-11, U-16): what is typed narrows the list to the
- * names that hold it; × or Esc empties it.
+ * The box at the top of a long sidebar: what is typed narrows the list to the names that hold it;
+ * × or Esc empties it.
  */
 export function SidebarFilter({
   what,
@@ -56,7 +56,7 @@ export function SidebarFilter({
   )
 }
 
-/** The list filtered to nothing: what was typed, and the way back (FR-030 "筛空"). */
+/** The list filtered to nothing: what was typed, and the way back. */
 export function FilteredEmpty({ typed, onClear }: { typed: string; onClear: () => void }) {
   return (
     <div className="flex flex-col items-start gap-1 px-3.5 py-2 text-ui">

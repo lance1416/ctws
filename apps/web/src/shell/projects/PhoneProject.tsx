@@ -11,9 +11,8 @@ import { ProjectLinked } from './ProjectLinked'
 import { ProjectSquare } from './ProjectSquare'
 
 /**
- * A PROJECT ON A PHONE (FR-088, DES-001 "项目页"): back to Projects and "…" above; its square and
- * name; its pinned resources, wrapping, without their digits; its tree, the one view; then what is
- * linked to it, a block a row.
+ * A project on a phone: its pinned resources without their digits; its tree, the one view; then
+ * what is linked to it, a block a row.
  */
 export function PhoneProject({ id }: { id: ProjectId }) {
   const registry = useRegistry()
@@ -33,7 +32,7 @@ export function PhoneProject({ id }: { id: ProjectId }) {
           <BackIcon size={20} aria-hidden="true" />
           Projects
         </Link>
-        {/* What can belong to it, made in it (FR-026). */}
+        {/* What can belong to it, made in it. */}
         <NewMenu projectName={project.name} className="shrink-0" compact />
         <MoreMenu
           id={id}

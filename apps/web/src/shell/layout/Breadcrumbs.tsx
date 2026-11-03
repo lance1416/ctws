@@ -5,7 +5,7 @@ import { placeOf, type Place } from './places'
 import { KIND_TEXT } from '../../platform/ui/kinds'
 
 /**
- * Where you are (FR-018): the module, with its icon and name, then the thing that is open. The
+ * Where you are: the module, with its icon and name, then the thing that is open. The
  * module comes from the address; the thing from what the page's route says of itself.
  */
 export function Breadcrumbs() {

@@ -3,7 +3,7 @@ import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { calendarDaysQuery } from './api'
 
 /**
- * A day's lunar name with its month (Today's head, FR-079): "九月十三". The server names a day by
+ * A day's lunar name with its month (Today's head): "九月十三". The server names a day by
  * itself except on its month's first ("九月初一"), so the month is the latest first day's.
  */
 export function lunarFullName(days: Record<string, string>, day: string): string | null {

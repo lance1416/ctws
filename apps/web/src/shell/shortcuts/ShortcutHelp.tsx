@@ -33,14 +33,14 @@ const switchOrder = (anywhere: KeyTable, tables: readonly KeyTable[]): KeyTable[
 
 type Group = { title: string; icon: IconComponent; tint: string; rows: KeyTable['rows'] }
 
-/** A note's own keys (REQ-002 FR-109, FR-116). */
+/** A note's own keys. */
 const NOTE_TITLE = 'On a note'
 
-/** Vim's keys in the editor, listed while they are on (REQ-002 FR-112, artboard 36). */
+/** Vim's keys in the editor, listed while they are on. */
 const VIM_TITLE = 'In the editor, with Vim keys on'
 
 /**
- * Where each group stands (artboard 24): three columns, a group in its column in this order. A
+ * Where each group stands: three columns, a group in its column in this order. A
  * module's table goes where its title says; one with a title not here goes last in the third.
  */
 const COLUMNS: readonly (readonly string[])[] = [
@@ -50,8 +50,7 @@ const COLUMNS: readonly (readonly string[])[] = [
 ]
 
 /**
- * EVERY KEY IN ONE PLACE (FR-029, artboard 24): opened with `?` or the top bar's keyboard button,
- * grouped by where the keys work, filtered from the top. A key that changed in the redesign says
+ * Every key in one place, grouped by where the keys work. A key that changed in the redesign says
  * what it was, for the first release after it. The switch that turns single keys off lives here,
  * so it cannot be reachable only by a key.
  */
@@ -98,7 +97,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
       rows: t.rows,
     })),
     { title: SEARCH_KEYS.title, icon: PLACE_ICON.search, tint: grey, rows: SEARCH_KEYS.rows },
-    // Said here, kept by the board and every form themselves: no single key among them (U-22).
+    // Said here, kept by the board and every form themselves: no single key among them.
     {
       title: 'On a board, with a card focused',
       icon: BoardIcon,
@@ -119,7 +118,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
         { keys: 'Esc', does: 'Close; what you typed is kept', presses: {} },
       ],
     },
-    // A note's whole page, and full screen (REQ-002 FR-109, FR-116, artboard 24).
+    // A note's whole page, and full screen.
     {
       title: NOTE_TITLE,
       icon: KIND_ICON.note,
@@ -177,7 +176,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal title="Keyboard shortcuts" onClose={onClose} initialFocus={box} palette wide>
-      {/* No taller than the window less 88 (artboard 24): the head and the two lines at the foot
+      {/* No taller than the window less 88: the head and the two lines at the foot
           stay, the columns between scroll in the layer, so the foot is always in sight. */}
       <div className="flex max-h-[calc(100dvh-88px)] flex-col">
         <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line pr-3 pl-5">
@@ -296,7 +295,7 @@ function Caps({ keys }: { keys: string }) {
   ))
 }
 
-/** The single keys as caps, a run of digits as one: "1–7", not a cap each (artboard 24). */
+/** The single keys as caps, a run of digits as one: "1–7", not a cap each. */
 function spans(keys: readonly string[]): string[] {
   const digits = keys.filter((k) => /^[0-9]$/.test(k)).sort()
   const rest = keys.filter((k) => !/^[0-9]$/.test(k))

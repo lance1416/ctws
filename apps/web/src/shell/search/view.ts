@@ -7,7 +7,7 @@ export type Typed = { type: ObjectType }
 export type Tab = 'all' | ObjectType
 
 /**
- * The kinds in search's one order (DES-001 section 4): the tabs, All's groups, the `/` list and
+ * The kinds in search's one order: the tabs, All's groups, the `/` list and
  * the places before anything is typed all follow it.
  */
 export const KIND_ORDER: readonly ObjectType[] = [
@@ -21,7 +21,7 @@ export const KIND_ORDER: readonly ObjectType[] = [
   'note',
 ]
 
-/** In the All tab a kind shows this many, the rest behind its own tab (FR-024). */
+/** In the All tab a kind shows this many, the rest behind its own tab. */
 const PER_KIND = 5
 
 /** The kinds that have hits, in the kinds' fixed order, with how many each. */

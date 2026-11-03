@@ -5,12 +5,12 @@ import { useInspector } from '../layout/inspectorAddress'
 import { useInspectorGo } from '../inspector/narrow'
 
 /**
- * A mention in a note, as the app reads it (FR-042, I-03): its kind's icon and the name on its
+ * A mention in a note, as the app reads it: its kind's icon and the name on its
  * kind's tint, as in Linked; a click opens the thing in the inspector, the page staying put.
  */
 export function MentionChip({ type, id, words }: Mention) {
   const { show } = useInspector()
-  // Inside the inspector it takes the inspector's place, ‹ back to what mentioned it (BUG-069).
+  // Inside the inspector it takes the inspector's place, ‹ back to what mentioned it.
   const go = useInspectorGo()
   const Icon = KIND_ICON[type]
   const name = words.replace(/^@/, '')

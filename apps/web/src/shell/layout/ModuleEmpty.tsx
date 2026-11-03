@@ -7,8 +7,8 @@ import { useRegistry } from '../registry'
 import { KIND_WORDS } from '../search/view'
 
 /**
- * A MODULE WITH NOTHING IN IT (FR-030, artboard 23): the kind's badge, one line, and the button
- * that fills it. No illustration, no tips.
+ * A module with nothing in it: the kind's badge, one line, and the button that fills it. No
+ * illustration, no tips.
  */
 export function ModuleEmpty({
   kind,
@@ -18,7 +18,7 @@ export function ModuleEmpty({
   kind: Kind
   /** What the button does where the module makes things in place rather than in a dialog. */
   onNew?: () => void
-  /** The button's words where the kind is added, not made: "Add reading" (FR-072). */
+  /** The button's words where the kind is added, not made: "Add reading". */
   says?: string
 }) {
   const Icon = KIND_ICON[kind]

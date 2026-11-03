@@ -24,10 +24,10 @@ const DRAFT = 'link:new'
 type Draft = { url: string; name: string; project: ProjectId | null }
 
 /**
- * N L, PIN A LINK (FR-029): the address, a name if wanted, and the service it was recognised as,
- * hung where you are. A task open in the inspector takes it in its Resources (Add); a project's
- * page, with nothing in the inspector, pins it in its head at the first free digit (Pin); anywhere
- * else it asks which project to pin it on. Esc closes and keeps what was typed.
+ * N L, pin a link, hung where you are. A task open in the inspector takes it in its Resources
+ * (Add); a project's page, with nothing in the inspector, pins it in its head at the first free
+ * digit (Pin); anywhere else it asks which project to pin it on. Esc closes and keeps what was
+ * typed.
  */
 export function PinLink({
   onClose,
@@ -119,7 +119,7 @@ export function PinLink({
             </>
           )}
         </p>
-        {/* The service it is recognised as, its icon at the head of the box (artboard 27). */}
+        {/* The service it is recognised as, its icon at the head of the box. */}
         <div className="relative">
           {recognised && (
             <span

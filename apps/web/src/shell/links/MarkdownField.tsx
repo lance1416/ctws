@@ -28,7 +28,7 @@ import { KIND_ORDER, KIND_WORDS } from '../search/view'
 import { MentionChip } from './MentionChip'
 import { MentionArea, useMentionText } from './MentionArea'
 
-/** The editor's code, fetched where writing starts and nowhere a note is only read (REQ-002 §5). */
+/** The editor's code, fetched where writing starts and nowhere a note is only read. */
 const MarkdownEditor = lazy(() => import('../../platform/editor/MarkdownEditor'))
 
 /** How many of each kind `@` offers, as the text box does. */
@@ -53,15 +53,15 @@ type Field = {
   onFind?: () => void
   /** Esc, where it puts the editor away. */
   onEscape?: () => void
-  /** The note as it is kept, nothing drawn (REQ-002 FR-116): a whole page's choice. */
+  /** The note as it is kept, nothing drawn: a whole page's choice. */
   source?: boolean
   /** The stand-in text box's own look, while the editor loads or where it could not. */
   fallback?: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange'>
 }
 
 /**
- * WHERE MARKDOWN IS WRITTEN (REQ-002 FR-106): the one editor, live preview and `@`, fetched on
- * first use. Until it has arrived, and if it never does (offline, a deploy between), the text box
+ * Where markdown is written: the one editor, fetched on first use. Until it has arrived, and if
+ * it never does (offline, a deploy between), the text box
  * the app had stands in: the same text, saved the same way, so nothing written is lost.
  */
 export function MarkdownField({ fallback, ...field }: Field) {

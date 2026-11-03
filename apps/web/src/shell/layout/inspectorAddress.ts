@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { ListAct } from '../inspector/narrow'
 
 /**
- * THE INSPECTOR'S ADDRESS (FR-022): `?inspect=<type>:<id>` on whatever page is open, so a reload
+ * The inspector's address: `?inspect=<type>:<id>` on whatever page is open, so a reload
  * brings it back and the page under it stays; `<type>:<id>@<when>` for one occurrence of a series
- * (a meeting's, FR-067); `list:<name>` for a block's full list (FR-011). Any other search
+ * (a meeting's); `list:<name>` for a block's full list. Any other search
  * parameter is left alone.
  */
 const INSPECT = 'inspect'
@@ -30,7 +30,7 @@ export const formatInspect = ({ type, id, at }: Inspected): string =>
 let opener: HTMLElement | null = null
 /**
  * The action of the list or block a thing was opened from, from a page (Remove from Job hunt):
- * the opened page offers it too, as one opened from a list in the inspector does (U-29).
+ * the opened page offers it too, as one opened from a list in the inspector does.
  */
 let openedWith: { key: string; act: ListAct } | null = null
 
@@ -41,7 +41,7 @@ export const openedAct = (thing: Inspected): ListAct | null =>
 export function useInspector(): {
   open: Inspected | null
   show: (thing: Inspected, act?: ListAct) => void
-  /** What it shows, changed from inside it: the address keeps only the one shown (FR-022). */
+  /** What it shows, changed from inside it: the address keeps only the one shown. */
   swap: (thing: Inspected) => void
   close: () => void
 } {

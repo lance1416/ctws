@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../../platform/ui/Button'
 
 /**
- * THE PAGE COULD NOT BE DRAWN (FR-032): what happened in plain words and two ways on, in the
+ * The page could not be drawn: what happened in plain words and two ways on, in the
  * main area only, so the icon bar and the sidebar still work. On its own when the frame itself
  * or sign-in threw.
  */

@@ -17,7 +17,7 @@ export function ProjectsStatus() {
   return n > 0 ? <span data-status>{n} archived</span> : null
 }
 
-/** What a phone's More says beside Projects (FR-085): the live ones, the inbox not among them. */
+/** What a phone's More says beside Projects: the live ones, the inbox not among them. */
 export function ProjectsMoreCount() {
   const projects = useProjects()
   if (!projects.data) return null

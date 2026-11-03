@@ -3,7 +3,7 @@ import { PickMany, PickOne, type Choice } from '../../platform/ui/inline'
 import { useEveryProject, useProjects } from './api'
 import { ProjectSquare } from './ProjectSquare'
 
-/** A project beside its name in a picker: its square, as everywhere a project is named (G-02). */
+/** A project beside its name in a picker: its square, as everywhere a project is named. */
 export function ProjectChip({ projectId }: { projectId: ProjectId }) {
   const project = useEveryProject().data?.find((p) => p.id === projectId)
   return project ? <ProjectSquare project={project} /> : null

@@ -3,7 +3,7 @@ import { InboxIcon } from '../../platform/ui/icons'
 import { squareClass } from './projectColor'
 
 /**
- * A project's square (FR-004): its colour, solid, with its initials in white; at least 20px. The
+ * A project's square: its colour, solid, with its initials in white; at least 20px. The
  * inbox is a grey square with the inbox icon instead. Always beside the project's name, or named
  * by `title` where the name is not in the row.
  */

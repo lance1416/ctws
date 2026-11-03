@@ -1,9 +1,9 @@
 import { KIND_ICON, PLACE_ICON, type IconComponent, type Kind } from '../../platform/ui/icons'
 
 /**
- * THE ICON BAR'S ELEVEN ENTRIES (FR-019), in its order: the pages that cut across every kind,
- * then one entry per kind. A kind's icon wears the kind's colour; a page's is grey. Adding a kind
- * is one more row here.
+ * The icon bar's entries, in its order: the pages that cut across every kind, then one entry per
+ * kind. A kind's icon wears the kind's colour; a page's is grey. Adding a kind is one more row
+ * here.
  */
 export type Place = {
   id: string
@@ -13,7 +13,7 @@ export type Place = {
   icon: IconComponent
   /** The kind this module holds, or null for a page across kinds. */
   kind: Kind | null
-  /** The key after `G` that comes here (FR-029). */
+  /** The key after `G` that comes here. */
   key: string
 }
 

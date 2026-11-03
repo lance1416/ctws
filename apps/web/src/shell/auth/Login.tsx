@@ -23,7 +23,7 @@ export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  // A field's own problem, said under it (FR-032); `error` is the answer's, under both.
+  // A field's own problem, said under it; `error` is the answer's, under both.
   const [wrong, setWrong] = useState<{ email?: string; password?: string }>({})
 
   const act = useMutation({
@@ -88,7 +88,7 @@ export function Login() {
         </div>
         <p className="mt-2 text-ui text-muted">Your personal workbench</p>
 
-        {/* `noValidate`: the page says what is wrong, under the box, in its own words (FR-032). */}
+        {/* `noValidate`: the page says what is wrong, under the box, in its own words. */}
         <form
           noValidate
           className="mt-10 flex flex-col gap-4"

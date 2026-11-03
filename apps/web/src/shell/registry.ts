@@ -158,19 +158,19 @@ export type Registry = {
   kinds: RegisteredKind[]
   chords: Chord[]
   chordFor: (key: string) => Chord | null
-  /** Every creator, modules' first, in FR-029's order of keys. */
+  /** Every creator, in a fixed order of keys. */
   creates: Creator[]
   creatorFor: (key: string) => Creator | null
   captures: { moduleId: string; capture: CaptureContribution }[]
   captureModuleId: string
   calendar: CalendarProvider[]
-  /** What fills each of the workbench's places, by the module that fills it (FR-076). */
+  /** What fills each of the workbench's places, by the module that fills it. */
   widgets: Partial<Record<WorkbenchPlace, RegisteredWidget>>
   /** Today's right column, every module's, in order. */
   todayBlocks: (TodayBlock & { moduleId: string })[]
   /** The sidebars of pages across kinds, by the page's address. */
   pageSidebars: Record<string, NonNullable<ModulePage['Sidebar']>>
-  /** What the review counts of a week, every module's, in order (FR-081). */
+  /** What the review counts of a week, every module's, in order. */
   weekCounts: WeekCount[]
   relations: RegisteredRelation[]
   relationFor: (type: ObjectType) => RegisteredRelation

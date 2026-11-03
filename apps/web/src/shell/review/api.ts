@@ -19,7 +19,7 @@ const weekCountsQuery = (range: Range) =>
   })
 
 /**
- * The review's "Also this week" (FR-081): what each module counted of the week, in the modules'
+ * The review's "Also this week": what each module counted of the week, in the modules'
  * order and words. A count the server did not give is left out.
  */
 export function useAlsoThisWeek(range: Range | null) {

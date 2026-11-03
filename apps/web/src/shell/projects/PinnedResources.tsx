@@ -14,7 +14,7 @@ import { useGoOut } from '../resources/away'
 import { ResourceIcon } from '../resources/ResourceIcon'
 
 /**
- * THE PINNED RESOURCES under a project's head (FR-053, artboard 8): each a chip with its service
+ * The pinned resources under a project's head: each a chip with its service
  * and the digit that opens it, then a "+" to pin another. With none pinned, only the "+".
  */
 export function PinnedResources({ projectId, name }: { projectId: ProjectId; name: string }) {
@@ -43,7 +43,7 @@ export function PinnedResources({ projectId, name }: { projectId: ProjectId; nam
         >
           <ResourceIcon url={r.url} />
           {resourceName(r)}
-          {/* A phone has no digit keys (DES-001 "项目页"). */}
+          {/* A phone has no digit keys. */}
           <span aria-hidden="true" className={`${KEY} max-lg:hidden`}>
             {r.pinnedRank}
           </span>

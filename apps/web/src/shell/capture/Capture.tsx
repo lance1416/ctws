@@ -32,7 +32,7 @@ import { ReadingImports } from './ReadingImports'
 
 type Kind = 'task' | 'reading'
 
-/** The event a page's own Add sends to open the box on one kind: "Add reading" (FR-072). */
+/** The event a page's own Add sends to open the box on one kind: "Add reading". */
 const OPEN = 'ctws:capture'
 
 /** Opens the capture box, with this kind chosen when a page's own button says which. */
@@ -41,11 +41,9 @@ export function openCapture(kind?: Kind): void {
 }
 
 /**
- * THE CAPTURE BOX (FR-025, artboard 27): on every page, under the top bar, opened with C or the
- * button. The kind is picked from the line (a link becomes reading, a sentence a task) until it
- * is switched by hand; the line lands in the inbox or the to-read list unless a project is
- * picked, on a day if one is. Enter adds and keeps the box open and empty for the next one; Esc
- * closes it and keeps what was typed.
+ * The kind is picked from the line (a link becomes reading, a sentence a task) until it is
+ * switched by hand. Enter adds and keeps the box open and empty for the next one; Esc closes it
+ * and keeps what was typed.
  */
 export function Capture() {
   const composing = useComposing()
@@ -53,7 +51,7 @@ export function Capture() {
   const [text, setText] = useState('')
   const [switched, setSwitched] = useState<Kind | null>(null)
   const [projectId, setProjectId] = useState<ProjectId | null>(null)
-  // A task in the project to put it under, picked on a phone's Lands in (FR-084).
+  // A task in the project to put it under, picked on a phone's Lands in.
   const [parent, setParent] = useState<{ id: TaskId; title: string } | null>(null)
   const phone = usePhone()
   const [date, setDate] = useState<string | null>(null)
@@ -126,7 +124,7 @@ export function Capture() {
       box.current?.focus()
     },
   })
-  // Offline, nothing can be saved, so Add waits with the line kept (FR-033).
+  // Offline, nothing can be saved, so Add waits with the line kept.
   const canAdd = line.length > 0 && target !== null && !add.isPending && online
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -143,7 +141,7 @@ export function Capture() {
   }
 
   const KindIcon = KIND_ICON[kind]
-  // A link guessed into reading says so with the link's own icon (artboard 27).
+  // A link guessed into reading says so with the link's own icon.
   const WhyIcon = kind === 'reading' && !switched ? LinkIcon : KindIcon
   const why =
     kind === 'reading'
@@ -310,7 +308,7 @@ export function Capture() {
             <DropdownMenu.Root>
               <DropdownMenu.Trigger
                 aria-label="Lands in"
-                // A task lands in a project, grey; only reading's shelf wears its kind (artboard 27).
+                // A task lands in a project, grey; only reading's shelf wears its kind.
                 className={`inline-flex h-6 max-w-36 min-w-0 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${
                   kind === 'reading' && !landing
                     ? 'bg-reading-bg text-reading-t'

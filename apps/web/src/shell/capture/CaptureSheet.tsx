@@ -16,10 +16,8 @@ type Kind = 'task' | 'reading'
 export type Landing = { projectId: ProjectId | null; parent: { id: TaskId; title: string } | null }
 
 /**
- * THE CAPTURE SHEET (FR-084, artboard 25): the capture box on a phone, from the tab bar's middle
- * button. The same rules as the desk's (FR-025); where it lands is Move to… full screen, Inbox
- * first, a project's parents a step in; the day is the shared picker, from the foot. Add keeps it
- * open and empty for the next line.
+ * The capture box on a phone, with the same rules as the desk's; where it lands is Move to… full
+ * screen. Add keeps it open and empty for the next line.
  */
 export function CaptureSheet({
   box,
@@ -95,7 +93,7 @@ export function CaptureSheet({
           >
             Reading
           </Segment>
-          {/* A placeholder (FR-089): it can be pressed, and says so. */}
+          {/* A placeholder: it can be pressed, and says so. */}
           <Segment on={false} soon onClick={() => setSoon(true)} icon={KIND_ICON.meeting}>
             Event
           </Segment>

@@ -5,9 +5,8 @@ import { useCloseInspector } from './close'
 import { useNarrowName } from './narrow'
 
 /**
- * A FULL LIST'S HEAD IN THE INSPECTOR (artboard 32): the block's own, its icon on its tint, its
- * name and how many, the block's action (Overdue's "Move all to…"), and close on the right. Its
- * name is the way back from a row opened in its place.
+ * A full list's head in the inspector, the block's own with close beside it. Its name is the way
+ * back from a row opened in its place.
  */
 export function ListHead({
   badge,

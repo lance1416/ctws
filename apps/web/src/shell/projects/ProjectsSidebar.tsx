@@ -11,9 +11,8 @@ import { ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import { CollapseIcon, NewIcon } from '../../platform/ui/icons'
 
 /**
- * The Projects sidebar (FR-020): the inbox, then every live project with how much waits in it,
- * then the archived ones behind their count, listed when it is opened (FR-051). Under the open
- * project, its outline (FR-021).
+ * The Projects sidebar: the inbox, then every live project with how much waits in it, then the
+ * archived ones behind their count, listed when it is opened. Under the open project, its outline.
  */
 export function ProjectsSidebar() {
   const projects = useProjects()
@@ -57,7 +56,7 @@ export function ProjectsSidebar() {
       {(all.length > FILTER_FROM || filtering) && (
         <SidebarFilter what="projects" value={typed} onChange={setTyped} />
       )}
-      {/* Every row keeps its height; past the bottom the list scrolls in here (U-06). */}
+      {/* Every row keeps its height; past the bottom the list scrolls in here. */}
       <nav
         aria-label="Projects"
         className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-2 *:shrink-0"

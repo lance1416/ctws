@@ -2,7 +2,7 @@ import type { LinkCandidate, ObjectType } from '@ctws/contracts'
 import { SearchDialog, type Pick } from './SearchDialog'
 
 /**
- * ONE THING PICKED FOR A JOB (FR-024): the link picker, the search box with its keys, offering one
+ * One thing picked for a job: the link picker, the search box with its keys, offering one
  * kind and leaving out what is no answer (the thing itself, where it already is). Picking is the
  * whole act: no line of why. Move to… and Waiting on's Add are this.
  */

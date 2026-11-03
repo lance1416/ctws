@@ -9,13 +9,13 @@ import { useRegistry } from '../registry'
 export type Inspectable = { type: ObjectType | 'list'; id: string; at?: string }
 
 /**
- * What a narrow page may ask of the inspector it is in: open a linked thing in its place (FR-022),
+ * What a narrow page may ask of the inspector it is in: open a linked thing in its place,
  * and say its own name, for the "‹" back to it. Null outside the inspector.
  */
 export const InspectorContext = createContext<{
   /**
    * Show it in the inspector's place; `among`, the list it was opened from, for ↑ ↓ and "3 of 7";
-   * `act`, that list's action for a row, which the opened page offers too (U-29).
+   * `act`, that list's action for a row, which the opened page offers too.
    */
   go: (thing: Inspectable, among?: readonly Inspectable[], act?: ListAct) => void
   /** The list's action for what is shown, when it was opened from one. */
@@ -31,7 +31,7 @@ export type ListAct = (thing: Inspectable, back: () => void) => ReactNode
 /** Opening a thing in the inspector's place, from inside it; null outside the inspector. */
 export const useInspectorGo = () => useContext(InspectorContext)?.go ?? null
 
-/** The action of the list this was opened from, to put under its facts (U-29). */
+/** The action of the list this was opened from, to put under its facts. */
 export const useListAct = () => useContext(InspectorContext)?.act ?? null
 
 /** A narrow page says what it is called, for the next one's way back to it. */
@@ -43,7 +43,7 @@ export function useNarrowName(title: string | undefined) {
 }
 
 /**
- * A linked thing: inside the inspector it opens there, in place of what is shown (FR-022);
+ * A linked thing: inside the inspector it opens there, in place of what is shown;
  * anywhere else it is a link to its page.
  */
 export function InspectLink({
@@ -74,7 +74,7 @@ export function InspectLink({
 }
 
 /**
- * A narrow page's head (artboard 33): its mark on the left, the name in 18/26 over two lines at
+ * A narrow page's head: its mark on the left, the name in 18/26 over two lines at
  * most, and under it the full page's tags (a title, an organisation, a date, a state).
  */
 export function NarrowHead({
@@ -133,17 +133,17 @@ export type NarrowBlockOf = {
   title: string
   /** How many, beside the name; none for a block that is not a count. */
   count?: ReactNode
-  /** Nothing in it: the block is one line, after the others (FR-011). */
+  /** Nothing in it: the block is one line, after the others. */
   empty?: string | null
   /** Its "All N", opening the full page at this block; when it holds more than it shows. */
   all?: { label: string; to: string } | null
-  /** Under every other block, the empty ones too: the timeline, as on the full page (I-02). */
+  /** Under every other block, the empty ones too: the timeline, as on the full page. */
   last?: boolean
   body: ReactNode
 }
 
 /**
- * A narrow page's blocks (artboard 33): no card borders, a rule between one and the next, a head
+ * A narrow page's blocks: no card borders, a rule between one and the next, a head
  * of its name and count; the empty ones after, a line each; the timeline under them all.
  */
 export function NarrowBlocks({ blocks }: { blocks: readonly (NarrowBlockOf | null | false)[] }) {
@@ -192,7 +192,7 @@ export function NarrowBlocks({ blocks }: { blocks: readonly (NarrowBlockOf | nul
   )
 }
 
-/** One row of a narrow block: a mark, the name, one fact (DES-001: three columns at most). */
+/** One row of a narrow block: a mark, the name, one fact; three columns at most. */
 export function NarrowRow({
   mark,
   thing,
@@ -222,7 +222,7 @@ export function NarrowRow({
 }
 
 /**
- * A linked thing on a full page (FR-022): a link to its page, which a plain click opens in the
+ * A linked thing on a full page: a link to its page, which a plain click opens in the
  * inspector instead, where its kind has a narrow page; the page you are on stays put.
  */
 export function OpensBeside({
@@ -279,7 +279,7 @@ export function atOf(to: string): string | undefined {
 }
 
 /**
- * A block's "All N" (FR-011 rule 3, FR-015): its full list, opened in the inspector beside the
+ * A block's "All N": its full list, opened in the inspector beside the
  * page, which stays put. `list` is its name in the address (`?inspect=list:<list>`).
  */
 export function AllInInspector({
@@ -299,7 +299,7 @@ export function AllInInspector({
   )
 }
 
-/** Opens a thing in the inspector from a page: a phone's sheet, the desk's column (FR-022, FR-088). */
+/** Opens a thing in the inspector from a page: a phone's sheet, the desk's column. */
 export function useShowInInspector(): (thing: Inspectable) => void {
   return useInspector().show
 }

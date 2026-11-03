@@ -67,7 +67,7 @@ export function LinkedSection({ of, types, className = '' }: Linked & { classNam
 }
 
 /**
- * Related things as chips, the inspector's Linked (FR-056, artboard 8): each its kind's icon and
+ * Related things as chips, the inspector's Linked: each its kind's icon and
  * name on its kind's tint, opening where it lives; one linked by hand has an × to undo it. Who is
  * linked is the point here, so the sentence that mentioned them stays in the timeline.
  */
@@ -128,7 +128,7 @@ function LinkedChip({ item, onUnlink }: { item: Item; onUnlink: (() => void) | u
       className={`group inline-flex h-5.5 max-w-full items-center rounded-control text-meta font-medium ${KIND_TINT[item.type]} ${KIND_ON_TINT[item.type]}`}
     >
       {/* In the inspector it takes the inspector's place, ‹ back to this; elsewhere it opens beside
-          the page where its kind has a narrow page (FR-022). */}
+          the page where its kind has a narrow page. */}
       <OpensBeside
         thing={{ type: item.type, id: item.id }}
         to={where.to(item.id)}

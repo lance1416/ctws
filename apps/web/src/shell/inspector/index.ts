@@ -1,4 +1,4 @@
-/** What modules use to draw their narrow pages in the inspector (FR-022, artboard 33). */
+/** What modules use to draw their narrow pages in the inspector. */
 export {
   AllInInspector,
   InspectLink,

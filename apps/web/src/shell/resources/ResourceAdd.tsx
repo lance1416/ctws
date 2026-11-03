@@ -9,8 +9,7 @@ import { resourceKeys, type ResourceOwner } from './api'
 import { ResourceIcon } from './ResourceIcon'
 
 /**
- * HANG AN ADDRESS ON A THING (DES-001 section 4): a "+" that opens a small float, as the capture
- * box is drawn, with the address, an optional name and the service it was recognised as. `verb`
+ * Hang an address on a thing: a "+" that opens a small float, as the capture box is drawn. `verb`
  * names its button: Pin in a project's head, Add in a thing's Resources.
  */
 export function ResourceAdd({
@@ -30,7 +29,7 @@ export function ResourceAdd({
   write: (resource: { url: string; name: string | null }) => Promise<unknown>
   /**
    * First in its row: the + gives its own inset back to the left, so what shows of it starts on
-   * the content's edge, not the button's (DES-001 对齐).
+   * the content's edge, not the button's.
    */
   first?: boolean
 }) {
@@ -63,7 +62,7 @@ export function ResourceAdd({
   }, [open])
   const typed = url.trim()
   const recognised = /^https?:\/\/\S+$/i.test(typed) ? resourceLook(typed) : null
-  // Said as soon as what is typed cannot become a web address, not when Pin is pressed (FR-032):
+  // Said as soon as what is typed cannot become a web address, not when Pin is pressed:
   // "javascript:", "ftp://", and "example.com" without its scheme are not followed.
   const refused =
     typed !== '' &&

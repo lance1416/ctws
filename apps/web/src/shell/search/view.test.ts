@@ -9,8 +9,8 @@ const hits = [
   hit('meeting', 'm2'),
 ]
 
-describe('the search view (FR-024)', () => {
-  it('lists the kinds that have hits, people first, in the fixed order (DES-001)', () => {
+describe('the search view', () => {
+  it('lists the kinds that have hits, people first, in the fixed order', () => {
     expect(kindsWithHits(hits)).toEqual([
       { type: 'person', n: 1 },
       { type: 'task', n: 7 },

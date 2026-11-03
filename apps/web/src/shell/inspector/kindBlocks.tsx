@@ -9,11 +9,11 @@ import { linksQuery } from '../links/api'
 import { useRegistry } from '../registry'
 import { atOf, NarrowRow, type NarrowBlockOf } from './narrow'
 
-/** A narrow block's rows before its "All N" (FR-011). */
+/** A narrow block's rows before its "All N". */
 const SHOWN = 5
 
 /**
- * A thing's blocks, a kind each, as its narrow page lists them (artboard 33): its module's own
+ * A thing's blocks, a kind each, as its narrow page lists them: its module's own
  * things with it first, then what is only linked; five rows, then "All N" to the full page. The
  * same sources as the full page's `useKindBlocks`, drawn three columns wide.
  */
@@ -65,7 +65,7 @@ export function useNarrowKindBlocks({
           title={t.title}
           fact={
             t.lead ? (
-              // A time, in figures that line up; one still to come in the kind's colour (I-06).
+              // A time, in figures that line up; one still to come in the kind's colour.
               <span
                 className={`font-mono tabular-nums ${t.upcoming ? KIND_TEXT[kind as Kind] : ''}`}
               >

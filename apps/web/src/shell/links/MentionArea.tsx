@@ -37,9 +37,9 @@ function askedAt(text: string, caret: number): Asked | null {
 }
 
 /**
- * A text box where `@` names something (FR-042, DES-001): typing `@Mi` opens search's list under
- * the caret, by kind; the one chosen is written as `@Mira Chen`, and `onMention` learns where those
- * words go. The words stay plain in the box (I-09); where the text is read, they are a chip.
+ * A text box where `@` names something: typing `@Mi` opens search's list under the caret, by
+ * kind; the one chosen is written as `@Mira Chen`, and `onMention` learns where those words go.
+ * The words stay plain in the box; where the text is read, they are a chip.
  */
 export function MentionArea({
   value,
@@ -67,7 +67,7 @@ export function MentionArea({
   const caretAfter = useRef<number | null>(null)
 
   const words = useDebouncedValue(asked?.words ?? '')
-  // What was opened lately comes first among equally good matches (FR-024).
+  // What was opened lately comes first among equally good matches.
   const userId = useMe().data?.id
   const [recent] = useState(() => (userId ? recentList(userId).map((r) => r.id) : []))
   const hits = useQuery({

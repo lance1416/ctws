@@ -3,10 +3,8 @@ import { Link } from 'react-router-dom'
 import { BackIcon } from '../../platform/ui/icons'
 
 /**
- * A PHONE PAGE'S TITLE BAR (FR-082, artboards 25, 26): the page's name in the Title size and its
- * one or two buttons; on a thing's page, the way back above it ("‹ People"). Under the bar, a line
- * of its own where the page has one (Today's date). Not drawn from 1024 up, where the top bar and
- * the page's own head say the same.
+ * A phone page's title bar. Not drawn from 1024 up, where the top bar and the page's own head say
+ * the same.
  */
 export function PhoneHead({
   title,

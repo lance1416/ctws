@@ -8,7 +8,7 @@ export const FixedPlaces = createContext(false)
 
 /**
  * How many rows of `rowPx` a widget's list shows, at most `most`: in a place of its own height, as
- * many as fit, since a widget never scrolls (FR-075) and the rest are a click away; in one column,
+ * many as fit, since a widget never scrolls and the rest are a click away; in one column,
  * `most`. Give the returned ref to an element whose height is its place's, not its rows'; it is
  * measured from when it is first drawn, which is after the widget's data has come.
  */

@@ -25,7 +25,7 @@ import { ProjectSquare } from './ProjectSquare'
 const ProjectIcon = KIND_ICON.project
 
 /**
- * What the form holds: the initials are the name's until they are typed over (FR-052), and a new
+ * What the form holds: the initials are the name's until they are typed over, and a new
  * project's colour is the one the server would choose until one is picked (`null`).
  */
 type Draft = { name: string; color: ProjectColor | null; initials: string; own: boolean }
@@ -37,7 +37,7 @@ export const useNewProjectCrumbs = (): Crumbs => [
   { label: 'New project' },
 ]
 
-/** A new project (FR-052): a colour nobody has yet, the initials from the name as it is typed. */
+/** A new project: a colour nobody has yet, the initials from the name as it is typed. */
 export function NewProject() {
   const navigate = useNavigate()
   const every = useEveryProject()
@@ -69,14 +69,14 @@ function useEditedProject(): { project: ProjectResponse | undefined; gone: boole
   return { project, gone: every.isSuccess && !project }
 }
 
-/** The thing open is the project being edited (FR-018). */
+/** The thing open is the project being edited. */
 export function useEditProjectCrumbs(): Crumbs {
   const { project } = useEditedProject()
   return project ? [{ label: 'Projects', to: '/projects' }, { label: project.name }] : []
 }
 
 /**
- * A project's name, colour and initials (FR-052), and delete at the foot. Changed here, they
+ * A project's name, colour and initials, and delete at the foot. Changed here, they
  * change everywhere; renaming leaves the initials as they are.
  */
 export function EditProject() {
@@ -109,9 +109,7 @@ export function EditProject() {
 }
 
 /**
- * The form both pages share, laid out as artboard 11 lays out a person's: the square as it will
- * look, the title, Cancel and the press that sends it (Ctrl Enter from any field), then the fields
- * in a block.
+ * The form both pages share, laid out as a person's form is.
  */
 function ProjectForm({
   title,
@@ -282,7 +280,7 @@ function ProjectForm({
   )
 }
 
-/** One of the eight colours (FR-004) as a radio, named in words so the swatch is not the only sign. */
+/** One of the eight colours as a radio, named in words so the swatch is not the only sign. */
 function Swatch({
   color,
   name,

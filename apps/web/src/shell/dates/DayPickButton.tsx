@@ -6,7 +6,7 @@ import { LAYER } from '../../platform/ui/layers'
 import { DayGrid, monthOf } from './grids'
 
 /**
- * A calendar button that opens the shared month grid and gives the day pointed at (FR-034): for a
+ * A calendar button that opens the shared month grid and gives the day pointed at: for a
  * row that offers a few named days and "another day" (Today's Overdue).
  */
 export function DayPickButton({
@@ -22,7 +22,7 @@ export function DayPickButton({
   text?: string
 }) {
   const [open, setOpen] = useState(false)
-  // Every day it gives is saved: offline it is greyed and says why (FR-033).
+  // Every day it gives is saved: offline it is greyed and says why.
   const save = useSaveGate()
   const [month, setMonth] = useState(monthOf(today))
   const box = useRef<HTMLDivElement>(null)

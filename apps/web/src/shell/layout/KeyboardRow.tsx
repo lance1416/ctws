@@ -62,7 +62,7 @@ function useRowEditor(): FocusedEditor | null {
 /**
  * One of the row's buttons. A touch acts as it lands and is kept from the page: on iOS that is the
  * one way the editor keeps the focus and the keyboard stays up, as React listens to touches
- * passively and could not stop them (BUG-101). A mouse's press is kept from the focus the same way
+ * passively and could not stop them. A mouse's press is kept from the focus the same way
  * and acts on its click.
  */
 function RowButton({
@@ -103,9 +103,8 @@ function RowButton({
 }
 
 /**
- * THE PHONE'S ROW OVER THE KEYBOARD (REQ-002 FR-113, artboard 35): what is hard to type there, a
- * heading, a list, a task, `@`, a link, and undo on the right; on top of Safari's own bar, which
- * keeps its Done to put the keyboard away. Drawn while an editor has the focus.
+ * The phone's row over the keyboard: what is hard to type there, on top of Safari's own bar,
+ * which keeps its Done to put the keyboard away. Drawn while an editor has the focus.
  */
 export function KeyboardRow() {
   const phone = usePhone()
@@ -132,7 +131,7 @@ export function KeyboardRow() {
       {/* Safari's own floating bar (the address) sits between what shows of the page and the
           keyboard, and no page can put anything under it. The row stops above it; its ground runs
           on down to the foot of the screen, so no text shows through the gap or through the
-          keyboard, which is itself see-through (BUG-100). */}
+          keyboard, which is itself see-through. */}
       {foot !== null && (
         <span aria-hidden="true" className="absolute inset-x-0 top-full h-screen bg-chrome" />
       )}

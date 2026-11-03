@@ -83,7 +83,7 @@ export function updateProject(
 }
 
 /**
- * A project's stages as a whole list (FR-040): the order given is the order, one without an id
+ * A project's stages as a whole list: the order given is the order, one without an id
  * is new, one left out is removed. Answers the list as it now is.
  */
 export function putStages(id: ProjectId, body: PutStagesBody): Promise<StagesResponse> {

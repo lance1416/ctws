@@ -11,7 +11,7 @@ export const resourceKeys = {
   pinned: ['resources', 'pinned'] as const,
 }
 
-/** A thing's resources, in the order they were put (FR-046). */
+/** A thing's resources, in the order they were put. */
 export const resourcesQuery = (owner: ResourceOwner) =>
   queryOptions({
     queryKey: resourceKeys.of(owner),
@@ -19,7 +19,7 @@ export const resourcesQuery = (owner: ResourceOwner) =>
       (await call(api.resources.of, { query: owner }, { signal })).resources,
   })
 
-/** What the projects still worked on pin in their heads: the launcher's links (FR-076). */
+/** What the projects still worked on pin in their heads: the launcher's links. */
 export const pinnedEverywhereQuery = () =>
   queryOptions({
     queryKey: resourceKeys.pinned,
@@ -37,7 +37,7 @@ export const followable = (url: string): string | undefined =>
 export const resourceName = (r: Pick<ResourceResponse, 'name' | 'url'>) =>
   r.name ?? resourceLook(r.url).label
 
-/** A project's pinned resources, by their digit (FR-053). */
+/** A project's pinned resources, by their digit. */
 export const pinnedOf = (all: readonly ResourceResponse[]): ResourceResponse[] =>
   all.filter((r) => r.pinnedRank !== null).sort((a, b) => (a.pinnedRank ?? 0) - (b.pinnedRank ?? 0))
 

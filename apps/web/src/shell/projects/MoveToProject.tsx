@@ -12,7 +12,7 @@ export type PickedParent = {
 }
 
 /**
- * MOVE TO… (FR-059): the link picker (FR-024, FR-027), offering projects only and never the one
+ * Move to…: the link picker, offering projects only and never the one
  * the thing is in. Picking one is the whole act: no line of why is asked. A project with parents
  * ends in "›" when `onPickParent` is given: its parents are the second step, in the same box. A
  * task out of the inbox can go back to it: the Inbox is the last row, under a line, no "›".
@@ -37,7 +37,7 @@ export function MoveToProject({
   from?: ProjectId | null
   /**
    * The project it is in now, offered still (another parent there); said so the Inbox, its way
-   * back, is not offered to what is in the inbox already (BUG-073).
+   * back, is not offered to what is in the inbox already.
    */
   at?: ProjectId | null
   /** A project offered first, before what the words find (the capture's Inbox). */

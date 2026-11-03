@@ -36,10 +36,10 @@ import { checkItem, finishReport, migrationKeys, migrationQuery } from './api'
 
 type Section = MigrationItem['section']
 
-/** The report's parts, in the sidebar's two groups (FR-099, artboard 28). */
+/** The report's parts, in the sidebar's two groups. */
 type ReportPart = { id: Section; label: string; icon: IconComponent; tone: string }
 
-/** Each part's icon in the colour of the kind of thing it is about (MR-01). */
+/** Each part's icon in the colour of the kind of thing it is about. */
 const NEED_A_LOOK: readonly ReportPart[] = [
   { id: 'names', label: 'Names', icon: KIND_ICON.person, tone: KIND_TEXT.person },
   {
@@ -100,9 +100,8 @@ const sectionId = (s: Section | 'else') => `report-${s}`
 const waiting = (i: MigrationItem) => i.attention && !i.checked
 
 /**
- * THE MIGRATION REPORT (FR-099, artboard 28): the places the move to the new layout made a guess
- * for you, a part each, to look at once: names put right in place, organisations merged or kept
- * apart, the rest marked as looking right or opened. Done ends it, and its prompts go.
+ * The places the move to the new layout made a guess for you, a part each, to look at once. Done
+ * ends it, and its prompts go.
  */
 export function MigrationReport() {
   const report = useQuery(migrationQuery())
@@ -122,7 +121,7 @@ export function MigrationReport() {
     return <p className="text-ui text-muted">There is no report of a move to show.</p>
   const data = report.data
   if (!data) return null
-  // Done is done: no way back to it, read only or otherwise (product, 2026-10-19; BUG-060).
+  // Done is done: no way back to it, read only or otherwise.
   if (data.doneAt) return <Navigate to="/account" replace />
   const of = (s: Section) => data.items.filter((i) => i.section === s)
 
@@ -139,7 +138,7 @@ export function MigrationReport() {
     ))
 
   return (
-    // The sidebar sits where the shell's do, the main area's left edge, top to bottom (MR-01).
+    // The sidebar sits where the shell's do, the main area's left edge, top to bottom.
     <div className="-m-5 flex min-h-[calc(100%+2.5rem)] max-lg:pb-20">
       <nav
         aria-label="Migration report"
@@ -360,7 +359,7 @@ function LooksRight({ item }: { item: MigrationItem }) {
 const NAME_GRID =
   'grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_15rem] items-center gap-x-2.5 px-3.5'
 
-/** Names: each person's old name and its three parts, put right in place (FR-095). */
+/** Names: each person's old name and its three parts, put right in place. */
 function Names({ items }: { items: MigrationItem[] }) {
   const [all, setAll] = useState(false)
   const toLook = items.filter((i) => i.attention)
@@ -370,7 +369,7 @@ function Names({ items }: { items: MigrationItem[] }) {
       id="names"
       icon={KIND_ICON.person}
       title="Names"
-      // One count throughout (MR-03): what still waits, the rest, and all of them.
+      // One count throughout: what still waits, the rest, and all of them.
       says={`${items.filter(waiting).length} to look at, ${items.filter((i) => !waiting(i)).length} look right`}
       action={
         items.length > toLook.length && (
@@ -466,10 +465,10 @@ function NameRow({ item }: { item: MigrationItem }) {
     <li
       data-report-name={item.key}
       // On a phone a card: what it was, the three fields one under another, then why and Looks
-      // right (DES-001).
+      // right.
       className={`${NAME_GRID} min-h-11 border-b border-line py-1.5 last:border-b-0 max-lg:flex max-lg:flex-col max-lg:items-stretch max-lg:gap-2 max-lg:py-3`}
     >
-      {/* To the person's page, to see them whole (BUG-059, MR-06). */}
+      {/* To the person's page, to see them whole. */}
       <Link
         to={`/people/${item.id}`}
         className="truncate font-mono text-meta text-muted hover:text-ink hover:underline max-lg:flex max-lg:min-h-11 max-lg:items-center"
@@ -623,7 +622,7 @@ function Plain({
               className="grid min-h-11 grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_18rem] items-center gap-x-3 border-b border-line px-3.5 py-1.5 last:border-b-0 max-lg:grid-cols-[auto_minmax(0,1fr)] max-lg:gap-y-2 max-lg:py-3"
             >
               {to ? (
-                // Put right on its own page (MR-06).
+                // Put right on its own page.
                 <Link
                   to={to}
                   className="truncate text-ui text-ink hover:underline max-lg:col-span-2 max-lg:flex max-lg:min-h-11 max-lg:items-center"
@@ -658,7 +657,7 @@ const OLD_COLOUR: Record<string, string> = {
 }
 
 /**
- * What a guess was or is, drawn as what it is (MR-04, MR-05): a status by its mark and name, the
+ * What a guess was or is, drawn as what it is: a status by its mark and name, the
  * second after an arrow; a project's colour as a swatch, and now its square; else the words.
  */
 function Value({ item, which }: { item: MigrationItem; which: 'was' | 'now' }) {

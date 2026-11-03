@@ -23,9 +23,9 @@ export const meQuery = () =>
         // A pinned server (acceptance, UAT) says what the present is; every date follows it.
         // Otherwise the browser's own clock is the present.
         if (me.clockPinned) setServerNow(me.now)
-        // Single keys on or off is the account's (FR-029); the keyboard reads this copy of it.
+        // Single keys on or off is the account's; the keyboard reads this copy of it.
         setShortcutsEnabled(me.singleKeyShortcuts)
-        // So are vim's keys in the editor (REQ-002 FR-112).
+        // So are vim's keys in the editor.
         setVimKeys(me.vimKeys)
         return me
       } catch (error) {
@@ -54,7 +54,7 @@ export function useAccountToday(): string {
   return ymd(useNow(), useTimeZone())
 }
 
-/** Single keys on or off, kept with the account (FR-029): at once here, then on the server. */
+/** Single keys on or off, kept with the account: at once here, then on the server. */
 export function useSetSingleKeys() {
   const qc = useQueryClient()
   const save = useMutation({
@@ -72,7 +72,7 @@ export function useSetSingleKeys() {
   }
 }
 
-/** Vim's keys in the editor on or off, kept with the account (FR-112): at once here, then saved. */
+/** Vim's keys in the editor on or off, kept with the account: at once here, then saved. */
 export function useSetVimKeys() {
   const qc = useQueryClient()
   const save = useMutation({
@@ -87,7 +87,7 @@ export function useSetVimKeys() {
   }
 }
 
-/** The account's choices for how a note is laid out (REQ-002 FR-109, FR-116). */
+/** The account's choices for how a note is laid out. */
 type NoteChoice = 'outlineShown' | 'readableLines' | 'sourceView'
 
 /** As the account was made: an outline beside, the full width, the note drawn. */
