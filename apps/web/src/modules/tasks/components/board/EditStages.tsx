@@ -239,9 +239,7 @@ function StageRow({
             className={`min-w-0 flex-1 ${boxed}`}
           />
         )}
-        <span className="shrink-0 text-meta text-muted tabular-nums">
-          {tasksWord(stage.count)}
-        </span>
+        <span className="shrink-0 text-meta text-muted tabular-nums">{tasksWord(stage.count)}</span>
         {/* Nothing at it, on the board or in the tree: it can go (FR-040). */}
         {stage.count === 0 && naming === null && (
           <button

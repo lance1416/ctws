@@ -48,14 +48,16 @@ export function Timeline({
       className="rounded-container border border-line bg-panel px-4 pt-3 pb-2.5"
     >
       <div ref={holder} className="relative h-16.5">
-        <div className="absolute inset-x-0 top-0 h-10 rounded-container bg-hover" />
-        {line.now !== null && (
-          <div
-            data-past
-            className="absolute top-0 left-0 h-10 rounded-l-container bg-[repeating-linear-gradient(135deg,var(--color-select)_0_4px,transparent_4px_8px)]"
-            style={{ width: pct(line.now) }}
-          />
-        )}
+        {/* The track rounds what lies flush on it; the hours gone are square inside it. */}
+        <div className="absolute inset-x-0 top-0 h-10 overflow-hidden rounded-container bg-hover">
+          {line.now !== null && (
+            <div
+              data-past
+              className="absolute inset-y-0 left-0 bg-[repeating-linear-gradient(135deg,var(--color-select)_0_4px,transparent_4px_8px)]"
+              style={{ width: pct(line.now) }}
+            />
+          )}
+        </div>
         {line.free && (
           <div
             data-free

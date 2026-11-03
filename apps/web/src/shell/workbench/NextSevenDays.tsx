@@ -126,7 +126,7 @@ function Chip({ entry: e, soon }: { entry: ShownEntry; soon: boolean }) {
       to={e.to}
       title={e.title}
       data-week-entry={e.kind}
-      className={`flex h-5.5 min-w-0 items-center gap-1.25 rounded-small px-1.5 text-meta font-medium whitespace-nowrap hover:brightness-95 max-lg:tap ${look.tone}`}
+      className={`flex h-5.5 min-w-0 items-center gap-1.25 rounded-small px-1.5 text-meta font-medium whitespace-nowrap max-lg:tap ${look.tone} hover:text-ink`}
     >
       {look.icon}
       <span className="truncate">{look.text}</span>
