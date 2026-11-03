@@ -11,13 +11,7 @@ import {
   WEB,
 } from './helpers'
 
-/**
- * THE CALENDAR -- the shell surface that is about every module at once, on the real clock: what
- * holds whatever day it is. The month of artboard 13 itself is `calendar.pinned.spec.ts`.
- *
- * The grid belongs to the SHELL and the contents to the modules: each puts its dated things on
- * it, and the shell draws them by what the date is to the thing.
- */
+// The calendar on the real clock; a fixed month is tested in `calendar.pinned.spec.ts`.
 
 const square = (page: Page, day: string) => page.locator(`[data-day="${day}"]`)
 
@@ -25,7 +19,7 @@ test('a task planned and due lands twice: counted on one day, named on the other
   page,
 }) => {
   // They are different facts about the same task, and a grid that showed one would silently drop
-  // the other. A day's planned tasks are only counted (FR-080).
+  // the other. A day's planned tasks are only counted.
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, 'CTWS')
   await makeTask(page, pid, '发版', {
@@ -86,18 +80,15 @@ test('a birthday sits on the day the server gives, and clicking it opens the per
   await page.goto('/calendar')
   await expect(square(page, dayOffset(0))).toContainText('周楠')
   await square(page, dayOffset(0)).locator('[data-entry]').filter({ hasText: '周楠' }).click()
-  // In the inspector, the calendar staying put (FR-022).
+  // In the inspector, the calendar staying put.
   await expect(
     page.getByRole('complementary', { name: 'Inspector' }).getByRole('heading', { name: '周楠' }),
   ).toBeVisible()
   await expect(page).toHaveURL(/\/calendar\?.*inspect=person/)
 })
 
-/**
- * THE GRID KEEPS TO THE SCALE. Every size in a square is one of the scale's steps, every colour a
- * whole token (no faded `/70`), and an entry is named with its project, whose square shows only
- * initials.
- */
+// Every colour in a square is a whole token, never faded; an entry's accessible name carries its
+// project, which the square shows only as initials.
 test('the calendar grid keeps to the type scale', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)

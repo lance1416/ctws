@@ -15,9 +15,8 @@ import {
 import { addDaysYmd, dayOffset, dueAgo, nextMondayYmd } from './days'
 
 /**
- * TODAY (FR-079, artboard 12, STORY-034): the timeline across the top; In progress, Planned for
- * today and Overdue on the left in one set of columns (DES-001 section 4); Ready to start, This
- * week and Birthdays on the right.
+ * Today: the timeline across the top; In progress, Planned for today and Overdue on the left in
+ * one set of columns; Ready to start, This week and Birthdays on the right.
  */
 
 const block = (page: Page, name: string) => page.getByRole('region', { name, exact: true })
@@ -31,20 +30,18 @@ async function clockAt(page: Page, hh: number, mm: number) {
   await page.clock.install({ time: new TZDate(y, m - 1, d, hh, mm, 0, 0, zone) })
 }
 
-test('a new account sees its day with nothing planned, not an error (FR-030)', async ({ page }) => {
+test('a new account sees its day with nothing planned, not an error', async ({ page }) => {
   await registerFreshUser(page)
   await expect(page.locator('#today-heading')).toBeVisible()
   await expect(block(page, 'Planned for today')).toContainText('Nothing yet')
-  // The left column's blocks stand in a fixed order and are not drawn empty (FR-079).
+  // The left column's blocks stand in a fixed order and are not drawn empty.
   await expect(block(page, 'In progress')).toHaveCount(0)
   await expect(block(page, 'Overdue')).toHaveCount(0)
   await expect(block(page, 'Birthdays')).toContainText('None to be told about today')
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
-test('with nothing planned, what could start is offered, each with Plan (FR-030)', async ({
-  page,
-}) => {
+test('with nothing planned, what could start is offered, each with Plan', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   await makeTask(page, pid, '量一下尺寸')
@@ -81,7 +78,7 @@ test('each task is in one block, and the blocks stand in the board’s order', a
     'In progress',
     'Planned for today',
     'Overdue',
-    // The right column in FR-079's order: what to answer first.
+    // The right column in order of what to answer first.
     'Follow up',
     'Ready to start',
     'This week',
@@ -98,8 +95,8 @@ test('each task is in one block, and the blocks stand in the board’s order', a
   }
 })
 
-test('the three lists share one set of columns (DES-001 section 4)', async ({ page }) => {
-  // Lance's screenshot of 2026-10-21 is the counter-example: each list had its own columns.
+test('the three lists share one set of columns', async ({ page }) => {
+  // The failure this guards against: each list with its own columns.
   await page.setViewportSize({ width: 1440, height: 900 })
   await registerFreshUser(page)
   const pid = await makeProject(page, '对齐')
@@ -126,7 +123,7 @@ test('the three lists share one set of columns (DES-001 section 4)', async ({ pa
   const marks = (await lefts('[data-row-mark]')).filter((x) => x !== null)
   expect(marks.length).toBe(2)
   expect(new Set(marks).size).toBe(1)
-  // No time label and no colour bar in front of the status (FR-004, DES-001 section 4).
+  // No time label and no colour bar in front of the status.
   await expect(page.locator('main [data-row-lead]')).toHaveCount(0)
 })
 
@@ -143,7 +140,7 @@ test('an overdue row becomes a plan with one press: Today, Tomorrow, Mon or a da
 
   await overdue.getByRole('button', { name: 'Plan “改到明天” for tomorrow' }).click()
   await expect(rowOf(overdue, '改到明天')).toHaveCount(0)
-  // A plan, not a new deadline (FR-079): the deadline stays, and tomorrow it is on Planned.
+  // A plan, not a new deadline: the deadline stays, and tomorrow it is on Planned.
   const tomorrow = await serverTask(page, pid, '改到明天')
   expect(tomorrow.scheduledOn).toBe(dayOffset(1))
   expect(Date.parse(tomorrow.dueAt!)).toBe(Date.parse(due))
@@ -175,7 +172,7 @@ test('past five overdue, the head moves them all, and All N shows the rest', asy
   await page.reload()
   const overdue = block(page, 'Overdue')
   await expect(overdue.locator('[data-today-row]')).toHaveCount(5)
-  // The rest beside the page, which stays put (FR-011 rule 3).
+  // The rest beside the page, which stays put.
   await overdue.getByRole('button', { name: 'All 7' }).click()
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   await expect(inspector.getByRole('heading', { name: 'Overdue' })).toBeVisible()
@@ -185,7 +182,7 @@ test('past five overdue, the head moves them all, and All N shows the rest', asy
   await overdue.getByRole('button', { name: /^Move all to/ }).click()
   await page.getByRole('menuitem', { name: 'Tomorrow' }).click()
   await expect(overdue).toHaveCount(0)
-  // Plans only: every deadline stays where it was (FR-079).
+  // Plans only: every deadline stays where it was.
   for (let i = 1; i <= 7; i++) {
     const moved = await serverTask(page, pid, `逾期${i}`)
     expect(moved.scheduledOn).toBe(dayOffset(1))
@@ -281,7 +278,7 @@ test('the timeline says so when the meetings cannot be read, instead of a free d
   const line = page.getByRole('region', { name: 'Timeline of the day' })
   await expect(line).toContainText('Couldn’t load the timeline.')
   await expect(line.locator('[data-free]')).toHaveCount(0)
-  // Only the timeline: the task blocks are there as ever (FR-032).
+  // Only the timeline: the task blocks are there as ever.
   await expect(block(page, 'Planned for today')).toBeVisible()
 
   await page.unroute(calendar)
@@ -302,7 +299,7 @@ test('the page takes its width in columns: half for the tasks, the rest beside t
     ])
     return tasks / all
   }
-  // DES-001 section 4: 1440 is 2 and 1, 1920 is 2 and 2, 2560 is 3 and 3 (artboards 12, 31).
+  // 1440 is 2 and 1, 1920 is 2 and 2, 2560 is 3 and 3.
   for (const [width, columns, side, tasks] of [
     [1440, 3, 1, 2 / 3],
     [1920, 4, 2, 1 / 2],
@@ -397,9 +394,7 @@ test('Ready to start offers what waits for nothing and is not on Today already',
   await expect(ready).not.toContainText('可以开始的')
 })
 
-test('a task finished and reopened is offered in Ready to start again, To do (BUG-095)', async ({
-  page,
-}) => {
+test('a task finished and reopened is offered in Ready to start again, To do', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '可开始')
   await makeTask(page, pid, '可以开始的')
@@ -455,7 +450,7 @@ test('an open Today asks the server again when the day turns', async ({ page }) 
   await again
 })
 
-test('on a phone a long row keeps its mark and cuts its title, the page no wider (FR-083)', async ({
+test('on a phone a long row keeps its mark and cuts its title, the page no wider', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -499,7 +494,7 @@ test('in progress and ready to start show five, and All N opens the rest beside 
   await expect(inspector.getByRole('listitem')).toHaveCount(7)
   // A row opens that task in its place, with the way back to the list.
   await inspector.getByRole('button', { name: '在做3', exact: true }).click()
-  // Where it is in the list, and the next one a key away (artboard 32).
+  // Where it is in the list, and the next one a key away.
   const back = inspector.getByRole('button', { name: /^In progress/ })
   await expect(back).toContainText(/\d of 7/)
   const at = Number((await back.textContent())!.match(/(\d) of 7/)![1])
@@ -516,7 +511,7 @@ test('in progress and ready to start show five, and All N opens the rest beside 
   await expect(inspector.getByRole('listitem')).toHaveCount(6)
 })
 
-test('offline, what would save on Today is greyed and says why (FR-033)', async ({ page }) => {
+test('offline, what would save on Today is greyed and says why', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '离线')
   await makeTask(page, pid, '晚了的', { dueAt: dueAgo(2) })
@@ -552,7 +547,7 @@ test('a row opened from the full list has the list’s action, and using it goes
   await block(page, 'Overdue').getByRole('button', { name: 'All 7' }).click()
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   await inspector.getByRole('button', { name: '晚3', exact: true }).click()
-  // The task's own page, with Overdue's plan buttons under its facts (U-29).
+  // The task's own page, with Overdue's plan buttons under its facts.
   const plan = inspector.getByRole('button', { name: 'Plan “晚3” for today' })
   await expect(plan).toBeVisible()
   await plan.click()

@@ -9,7 +9,7 @@ const PHONE = { width: 375, height: 667 }
 const rail = (page: Page) => page.getByRole('navigation', { name: 'Projects' })
 
 // The left rail is the only place that answers "how much is waiting over there" before you
-// click. The number is the SERVER's, so it is compared against the API rather than against a
+// click. The number is the server's, so it is compared against the API rather than against a
 // number this test computes for itself.
 test('the left rail shows each project the open-task count the server reports', async ({
   page,
@@ -19,7 +19,7 @@ test('the left rail shows each project the open-task count the server reports', 
   const quiet = await makeProject(page, '安静的')
   const busy = await makeProject(page, '很忙的')
   for (const t of ['一', '二', '三']) await makeTask(page, busy, t)
-  // Three kinds of task that must NOT be counted, so a rail showing "4" fails.
+  // Three kinds of task that must not be counted, so a rail showing "4" fails.
   await makeTask(page, busy, '做完了', { status: 'done' })
   await makeTask(page, busy, '取消了', { status: 'cancelled' })
   await makeTask(page, quiet, '也做完了', { status: 'done' })
@@ -54,7 +54,7 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
   const pid = await makeProject(page, '一个名字相当长的项目用来挤宽度')
   await makeTask(page, pid, '一条标题也很长的任务，用来看它会不会把这一行撑出屏幕之外去')
   await makeTask(page, pid, '逾期的那条', { dueAt: '2020-01-01T09:00:00.000Z' })
-  // LONG, and in progress: the banner sets its subject at the scale's top step (36/44), so a short
+  // Long, and in progress: the banner sets its subject at the scale's top step (36/44), so a short
   // title there fits 375 whatever the banner does with overflow.
   await makeTask(page, pid, '在做的那条，标题长到足以把三十六像素的横幅主语挤出一部手机的宽度去', {
     status: 'in_progress',
@@ -73,7 +73,7 @@ test('nothing scrolls sideways at 375px', async ({ page }) => {
     expect(await overflow(), name).toEqual({ doc: 0, body: 0 })
   }
 
-  // And with the task open, which on a phone is the sheet over the page (FR-088).
+  // With the task open, which on a phone is the sheet over the page.
   await page.goto(`/projects/${pid}`)
   await page
     .locator('[data-phone-tree-row]')

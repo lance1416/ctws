@@ -2,9 +2,8 @@ import { expect, test } from '@playwright/test'
 import { registerFreshUser } from './helpers'
 
 /**
- * A NOTE STARTED FROM ANYWHERE (FR-050, FR-074), on the server pinned at Thursday, October 22,
- * 2026, 00:30 UTC (pinned.ts): N then N opens one, its first words make it, and Notes lists it
- * with the day it was written.
+ * A note started from anywhere, on the server pinned at Thursday, October 22, 2026, 00:30 UTC
+ * (pinned.ts).
  */
 test.use({ timezoneId: 'Europe/London' })
 

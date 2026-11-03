@@ -2,10 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser, WEB } from './helpers'
 
 /**
- * FOLDERS AND PINS (REQ-002 FR-110, artboard 34, DES-001 "文件夹和置顶"): a note on its own goes
- * in one folder, by its "…" or by a drag, and may be pinned; folders are made, renamed and
- * deleted in the sidebar, a deleted folder's notes left in none. Where a note is kept is read on
- * the server, not only on screen.
+ * Folders and pins. Where a note is kept is read on the server, not only on screen.
  */
 
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Notes' })
@@ -155,7 +152,7 @@ test('a pinned note is listed first, under Pinned, and a note on a thing has no 
   await expect(page.getByRole('menuitem', { name: 'New folder…' })).toHaveCount(0)
 })
 
-// ------------------------------------------------------------------- folders in folders (FR-117)
+// ------------------------------------------------------------------- folders in folders
 
 type KeptFolder = { id: string; parentId: string | null; name: string; open: boolean }
 

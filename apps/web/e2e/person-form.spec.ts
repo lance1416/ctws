@@ -2,9 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser, WEB } from './helpers'
 
 /**
- * WRITING A PERSON DOWN (FR-062, FR-063, artboard 11): every field in one page, the name's preview
- * as it is typed, their place in the sidebar marked New, Ctrl Enter from any field; the same form
- * edits them, and a city chosen by hand moves their zone unless the zone was set by hand.
+ * Writing a person down: every field in one page, the name's preview as it is typed, their place
+ * in the sidebar marked New, Ctrl Enter from any field; the same form edits them, and a city chosen
+ * by hand moves their zone unless the zone was set by hand.
  */
 const box = (page: Page, name: string) => page.getByRole('textbox', { name, exact: true })
 
@@ -87,7 +87,7 @@ test('the zone follows Lives in, until it is set by hand', async ({ page }) => {
     timeZoneSource: 'city',
   })
 
-  // Set by hand, the zone stays when the city changes (FR-063).
+  // Set by hand, the zone stays when the city changes.
   await page.goto(`/people/${made.id}/edit`)
   await page.getByRole('button', { name: 'Change' }).click()
   await page.getByRole('combobox', { name: 'Time zone' }).fill('Tokyo')
@@ -104,9 +104,7 @@ test('the zone follows Lives in, until it is set by hand', async ({ page }) => {
 })
 
 for (const how of ['Done', 'Tab'] as const) {
-  test(`a zone typed by hand is kept when the box is left by ${how} (BUG-048)`, async ({
-    page,
-  }) => {
+  test(`a zone typed by hand is kept when the box is left by ${how}`, async ({ page }) => {
     await registerFreshUser(page)
     const made = await apiPost<{ id: string }>(page, '/people', { name: '王磊' })
     await page.goto(`/people/${made.id}/edit`)
@@ -154,9 +152,7 @@ test('Tab runs from the first field to Create person', async ({ page }) => {
   await expect(create).toBeFocused()
 })
 
-test('the birthday’s days are one Tab stop; the arrows go from day to day (BUG-108)', async ({
-  page,
-}) => {
+test('the birthday’s days are one Tab stop; the arrows go from day to day', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/people/new')
   const block = page.getByRole('region', { name: 'Birthday' })
@@ -189,9 +185,7 @@ test('the birthday’s days are one Tab stop; the arrows go from day to day (BUG
   await expect.poll(at).toBe(week)
 })
 
-test('the birthday is out from the start, with nothing chosen until a day is (N-01)', async ({
-  page,
-}) => {
+test('the birthday is out from the start, with nothing chosen until a day is', async ({ page }) => {
   await registerFreshUser(page, '/people')
   await page.goto('/people/new')
   const block = page.getByRole('region', { name: 'Birthday' })
@@ -207,9 +201,7 @@ test('the birthday is out from the start, with nothing chosen until a day is (N-
   expect((await made).request().postDataJSON()).not.toHaveProperty('birthday')
 })
 
-test('the organisation and city lists are chosen from with the keyboard (BUG-082)', async ({
-  page,
-}) => {
+test('the organisation and city lists are chosen from with the keyboard', async ({ page }) => {
   await registerFreshUser(page)
   await apiPost(page, '/organisations', { name: 'Stripe' })
   await apiPost(page, '/organisations', { name: 'Stride Health' })
@@ -267,7 +259,7 @@ test('the organisation and city lists are chosen from with the keyboard (BUG-082
   ).toEqual(['Stride Health', 'Stripe'])
 })
 
-test('a row added takes the typing, by key or by click (BUG-085)', async ({ page }) => {
+test('a row added takes the typing, by key or by click', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/people/new')
   await box(page, 'Given name').fill('Ada')

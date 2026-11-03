@@ -11,14 +11,10 @@ export const PASSWORD = 'correct horse battery'
 
 /**
  * Registers a brand-new user over the API, in the browser's own zone as the sign-up form does, and
- * opens the signed-in shell. Returns the email. The session cookie lands in the page's context, so
- * the page is signed in from its first load.
+ * goes on to `at`. Returns the email. `'/'` stays on the Workbench.
  *
- * Signing in opens the Workbench; it then goes on to `at`, Today by default because that is where
- * almost every test here does its work. `'/'` stays on the Workbench.
- *
- * It CLICKS the icon bar rather than calling `goto`: a fresh navigation leaves focus where the
- * document-level keys (the `g` chords, `/`, `f`) cannot see it.
+ * Today is reached by clicking the icon bar rather than by `goto`: a fresh navigation leaves focus
+ * where the document-level keys (the `g` chords, `/`, `f`) cannot see it.
  */
 export async function registerFreshUser(page: Page, at: string = '/today'): Promise<string> {
   const email = freshEmail()
@@ -73,9 +69,6 @@ export async function logOut(page: Page): Promise<void> {
   await out
 }
 
-// Submits one of the create inputs (capture, new project, new task) and waits for the POST to be
-// acknowledged. Without the wait the next locator's auto-wait is the only thing between the test
-// and a slow API, which is a race under load.
 /**
  * A place on the frame's navigation: the icon bar from 1024 up, the phone's tab bar below it. The
  * inbox is not a place; it heads the Projects sidebar.
@@ -89,7 +82,7 @@ export function navLink(page: Page, name: string): Locator {
     .getByRole('link', { name: wide ? name : new RegExp(`^${name}`) })
 }
 
-/** The capture box's text field (FR-025). It is there only while the box is open. */
+/** The capture box's text field. It is there only while the box is open. */
 export const captureBox = (page: Page): Locator => page.getByRole('textbox', { name: 'Capture' })
 
 /** Opens the capture box under the top bar, as its button does, unless it is open already. */
@@ -118,6 +111,11 @@ export async function captureLine(page: Page, text: string): Promise<void> {
   await expect(box).toHaveValue('')
 }
 
+/**
+ * Submits one of the create inputs (capture, new project, new task) and waits for the POST to be
+ * acknowledged. Without the wait the next locator's auto-wait is the only thing between the test
+ * and a slow API, which is a race under load.
+ */
 export async function submitCreate(page: Page, placeholder: string, text: string): Promise<void> {
   const created = page.waitForResponse(
     (r) =>
@@ -142,8 +140,6 @@ export async function submitCreate(page: Page, placeholder: string, text: string
 // stale in-flight request, and the new task never shows up.
 export async function openProject(page: Page, name: string): Promise<void> {
   const loaded = page.waitForResponse((r) => {
-    // The task module lists a project's tasks at `GET /api/v1/tasks?projectId=<id>`: the project
-    // is the shell's, so it is a filter rather than a path segment of the module's route.
     const url = new URL(r.url())
     return (
       r.request().method() === 'GET' &&
@@ -151,8 +147,8 @@ export async function openProject(page: Page, name: string): Promise<void> {
       url.searchParams.has('projectId')
     )
   })
-  // From the overview: other pages (Today) name projects too. Scoped to <main>: the sidebar also
-  // lists every project by name. By the card's link, as its square shows the initials as text.
+  // From the overview, since other pages name projects too; scoped to <main>, since the sidebar
+  // also lists every project by name.
   if (new URL(page.url()).pathname !== '/projects') await page.goto('/projects')
   await page.getByRole('heading', { level: 1, name: 'Projects' }).waitFor()
   await page.getByRole('main').getByRole('link', { name, exact: true }).click()
@@ -160,22 +156,14 @@ export async function openProject(page: Page, name: string): Promise<void> {
 }
 
 /**
- * Puts the OPEN detail pane into editing mode.
- *
- * The pane opens in READING mode: title, read-only status and dates and the notes as prose, with
- * not one control on screen that can change a value. Everything that can be typed into lives behind
- * Edit.
- *
- * `exact` is not optional here: accessible names share one flat namespace and Playwright matches
- * them by substring, and the unsaved-edit guard's "Keep editing" contains "Edit".
+ * Puts the open detail pane into editing mode. `exact` matters: Playwright matches accessible names
+ * by substring, and the unsaved-edit guard's "Keep editing" contains "Edit".
  */
 export async function editDetail(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  // The pane has handed focus to the title field, so the controls are really there before the
-  // caller's next locator runs.
   await page.getByRole('textbox', { name: 'Title' }).waitFor()
-  // And the notes' editor itself, not the box standing in for it while its code loads: a fill
-  // that lands as one replaces the other is a race of the test's, not a person's.
+  // The notes' editor itself, not the box standing in while its code loads: a fill that lands as
+  // one replaces the other would be lost.
   await page.locator('[data-markdown-editor] .cm-content').first().waitFor()
 }
 
@@ -184,7 +172,7 @@ export async function setDetailStatus(page: Page, label: string): Promise<void> 
   await page.getByRole('radio', { name: label, exact: true }).check()
 }
 
-/** Presses Save and returns the PATCH the press produced, so the BODY can be asserted. */
+/** Presses Save and returns the PATCH body the press produced. */
 export async function saveTaskBody(page: Page): Promise<Record<string, unknown>> {
   const done = taskPatched(page)
   await page.getByRole('button', { name: 'Save' }).click()
@@ -192,8 +180,7 @@ export async function saveTaskBody(page: Page): Promise<Record<string, unknown>>
   return res.request().postDataJSON() as Record<string, unknown>
 }
 
-/** The New in a project's head (FR-053): a menu of what can be made there. */
-/** A project page's New: the desk's "New N", a phone's "+" named New (P4-11). */
+/** A project page's New: "New N" on a desk, a "+" named New on a phone. */
 export const headNew = (page: Page): Locator => page.getByRole('button', { name: /^New( N)?$/ })
 
 /** Opens the new-task dialog from a project's page, through its head's New. */
@@ -202,10 +189,7 @@ export async function openNewTask(page: Page): Promise<void> {
   await page.getByRole('menuitem', { name: /^Task\b/ }).click()
 }
 
-/**
- * Opens a task's pane from its project. `edit` presses Edit, because the pane opens in READING
- * mode and the date and status controls exist only in editing mode.
- */
+/** Opens a task's pane from its project, in editing mode unless `edit` is false. */
 export async function openTaskPane(page: Page, projectId: string, title: string, edit = true) {
   await page.goto(`/projects/${projectId}`)
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
@@ -214,8 +198,8 @@ export async function openTaskPane(page: Page, projectId: string, title: string,
 }
 
 /**
- * Sets an open edit's deadline the way a person does (FR-034, I-01): the day typed into the shared
- * date field, read when it is left, then its time of day in the box after it.
+ * Sets an open edit's deadline the way a person does: the day typed into the shared date field,
+ * which reads it when it is left, then its time of day in the box after it.
  */
 export async function setDue(page: Page, day: string, time: string): Promise<void> {
   const box = page.getByLabel('Due', { exact: true })
@@ -248,12 +232,6 @@ function psql(statement: string): string {
 }
 
 /**
- * Sets a finished task's completion to a fixed instant. The API (rightly) offers no way to set
- * completed_at, and a view grouped by day cannot be tested without days of history, so this goes to
- * the database the stack is running on. A fixed instant, not one counted back from now: the day it
- * lands on is then the same whenever the suite runs (a pinned spec's, see pinned.ts).
- */
-/**
  * Puts a task at its stage since `at`, so "21d" can be tested without waiting three weeks. Like
  * `completedAt`, this goes to the database: the API stamps the stage's day itself, as it should.
  */
@@ -265,6 +243,11 @@ export function stageSince(taskId: string, at: string): void {
   if (!out.includes('UPDATE 1')) throw new Error(`stageSince: no row updated: ${out}`)
 }
 
+/**
+ * Sets a finished task's completion to a fixed instant, in the database: the API offers no way to
+ * set completed_at. A fixed instant, not one counted back from now, so the day it lands on is the
+ * same whenever the suite runs.
+ */
 export function completedAt(taskId: string, at: string): void {
   if (!/^[0-9a-f-]{36}$/.test(taskId) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(at)) {
     throw new Error('completedAt: refusing a malformed argument')
@@ -276,14 +259,12 @@ export function completedAt(taskId: string, at: string): void {
 }
 
 /**
- * Pushes a project's whole logged history back in time, so Movement's stagnation line can be
- * tested without waiting a week. Like `completedAt` this goes to the database the stack is
- * running on: the API (rightly) offers no way to write an event's timestamp, and a panel about
- * "how long has this been quiet" cannot be tested without history.
+ * Pushes a project's whole logged history back in time, in the database: the API offers no way to
+ * write an event's timestamp.
  *
- * It deliberately moves the EVENT LOG and not `updated_at`: the panel reads the log precisely so
- * that a reorder cannot make a dead project look alive, and a helper that moved the wrong column
- * would let a broken panel pass.
+ * It moves the event log and not `updated_at`: the panel reads the log so that a reorder cannot
+ * make a dead project look alive, and a helper that moved the wrong column would let a broken
+ * panel pass.
  *
  * Days are counted on the account's calendar, so the history lands at noon `days` days before
  * today in `timeZone`: a plain `now() - 9 days` lands on the next day there late in the evening
@@ -299,7 +280,7 @@ export function backdateProjectActivity(projectId: string, days: number, timeZon
   }
   const noon = `((now() at time zone '${timeZone}')::date - ${days} + time '12:00') at time zone '${timeZone}'`
   const out = psql(
-    // A task's history is in the shell's change log since the redesign (RFC-001).
+    // A task's history is in the shell's change log.
     `update events set occurred_at = ${noon} ` +
       `where object_type = 'task' and object_id in (select id from tasks where project_id = '${projectId}')`,
   )
@@ -341,12 +322,10 @@ export async function pickOne(
     .or(page.getByRole('menuitem', { name: choice }))
     .click()
   // The menu hands focus back to its trigger a moment after it closes. Under load that lands
-  // after the caller has moved on -- into a field it then types in, so the keystrokes go to the
-  // trigger and the field is left empty, which a field that speaks up when it is left reads as
-  // the person leaving it. Return only once the hand-back has happened -- or once there is no
-  // trigger to hand it back to, for a pick that takes its own control away.
-  // A trigger counted a moment ago may be gone by the time it is asked about; asking a gone one
-  // would wait for it to come back, so the question is short and the next poll counts again.
+  // after the caller has moved on into a field, so its keystrokes go to the trigger. Return only
+  // once the hand-back has happened, or once there is no trigger, for a pick that takes its own
+  // control away. A trigger counted a moment ago may be gone when asked about, so the question
+  // is short and the next poll counts again.
   await expect
     .poll(
       async () =>
@@ -366,10 +345,9 @@ export async function slowReads(page: Page, url: string, ms = 400): Promise<void
   })
 }
 
-/** A project made over the API, for tests whose subject is what comes next. */
 /**
- * Makes a project as a person does (FR-052): New project on the overview, a name, Enter. Ends on
- * the new project's page.
+ * Makes a project as a person does: New project on the overview, a name, Enter. Ends on the new
+ * project's page.
  */
 export async function newProject(page: Page, name: string): Promise<void> {
   if (new URL(page.url()).pathname !== '/projects') await page.goto('/projects')
@@ -385,6 +363,7 @@ export async function newProject(page: Page, name: string): Promise<void> {
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
 }
 
+/** A project made over the API, for tests whose subject is what comes next. */
 export async function makeProject(page: Page, name: string): Promise<string> {
   const res = await page.request.post('/api/v1/projects', { headers: WEB, data: { name } })
   expect(res.ok(), `makeProject: ${res.status()}`).toBe(true)
@@ -444,8 +423,8 @@ export async function routeMoves(
 }
 
 /**
- * Opens a project's page and waits for the task LIST, not for a row: a project whose only task is
- * finished renders no rows at all (the tree hides them), and waiting for one would hang.
+ * Opens a project's page and waits for the task list, not for a row: a project whose only task is
+ * finished renders no rows at all, and waiting for one would hang.
  */
 export async function openTree(page: Page, projectId: string): Promise<void> {
   const listed = page.waitForResponse((r) => {
@@ -460,7 +439,7 @@ export async function openTree(page: Page, projectId: string): Promise<void> {
   await listed
 }
 
-/** Makes a project THROUGH THE UI and lands on its page, for tests about that route in. */
+/** Makes a project through the UI and lands on its page. */
 export async function startProject(page: Page, name = 'P'): Promise<string> {
   await page
     .getByRole('navigation', { name: 'Modules' })
@@ -472,12 +451,11 @@ export async function startProject(page: Page, name = 'P'): Promise<string> {
 }
 
 /**
- * Builds a tree through the API, which is far faster than the UI. `spec` lists titles with the
- * title of their parent, in creation order; `where` takes a project id or a project page's url.
- * Returns the ids by title.
+ * Builds a tree through the API. `spec` lists titles with the title of their parent, in creation
+ * order; `where` takes a project id or a project page's url. Returns the ids by title.
  *
- * Given a URL it then SHOWS that page and waits for every row: the rows were written behind the
- * app's back, so a test that starts asserting before the reload is racing its own fixture.
+ * Given a URL it then loads that page and waits for every row: the rows were written behind the
+ * app's back, so asserting before the reload would race the fixture.
  */
 export async function seedTasks(
   page: Page,
@@ -569,8 +547,8 @@ export async function serverParents(
 }
 
 /**
- * Opens a tree row's detail the keyboard way. A CLICK on the handle deliberately does not open it
- * (it starts a drag), so Enter on the focused handle is the way in.
+ * Opens a tree row's detail the keyboard way. A click on the handle does not open it (it starts a
+ * drag), so Enter on the focused handle is the way in.
  */
 export async function openDetail(page: Page, title: string): Promise<void> {
   await page.getByRole('button', { name: `Task: ${title}`, exact: true }).focus()
@@ -590,9 +568,8 @@ export async function movementOf(page: Page): Promise<ProjectMovementResponse[]>
 export const WEB = { 'x-ctws-client': 'web' }
 
 /**
- * Makes one of anything over the API and hands back what the server said, for the tests whose
- * subject is what comes NEXT. It throws on a refusal: a fixture that failed quietly turns the
- * real assertion into a mystery about an empty page.
+ * Makes one of anything over the API and hands back what the server said. It throws on a refusal:
+ * a fixture that failed quietly turns the real assertion into a mystery about an empty page.
  */
 export async function apiPost<T = { id: string } & Record<string, string>>(
   page: Page,
@@ -607,9 +584,8 @@ export async function apiPost<T = { id: string } & Record<string, string>>(
 }
 
 /**
- * How far the page can be scrolled sideways, which must be 0 at every width this app claims to
- * work at. BOTH the document and the body: a layout can overflow one and not the other, and the
- * one that overflows is whichever element the offending rule happens to sit on.
+ * How far the page can be scrolled sideways. Both the document and the body: a layout can overflow
+ * one and not the other, depending on which element the offending rule sits on.
  */
 export async function sidewaysScroll(page: Page): Promise<{ doc: number; body: number }> {
   return page.evaluate(() => ({
@@ -628,8 +604,8 @@ export async function accountZone(page: Page): Promise<string> {
 export const dayInZone = (timeZone: string) => new Date().toLocaleDateString('en-CA', { timeZone })
 
 /**
- * A meeting at `hhmm` TODAY on the account's clock, agreed in `zone` -- which may be another one,
- * so the same instant is a different wall time where it was agreed.
+ * A meeting at `hhmm` today on the account's clock, agreed in `zone`, which may be another one, so
+ * the same instant is a different wall time where it was agreed.
  */
 export async function meetingToday(
   page: Page,
@@ -652,8 +628,8 @@ export async function meetingToday(
 }
 
 /**
- * Holds a list's FIRST read until the returned `release` is called. The read is sent at once, so
- * its answer is the list as it was BEFORE whatever the test then writes: the stale answer that a
+ * Holds a list's first read until the returned `release` is called. The read is sent at once, so
+ * its answer is the list as it was before whatever the test then writes: the stale answer that a
  * refetch after the write must not be handed (`refreshAfterWrites`).
  */
 export async function holdFirstRead(page: Page, url: string): Promise<() => void> {
@@ -749,8 +725,8 @@ export async function lunarYear(page: Page, year: string) {
 }
 
 /**
- * A key as the help names it in this browser: an Apple keyboard says ⌘ where others say Ctrl
- * (FR-029). Asked of the page, so the expectation follows the machine the suite runs on.
+ * A key as the help names it in this browser: an Apple keyboard says ⌘ where others say Ctrl.
+ * Asked of the page, so the expectation follows the machine the suite runs on.
  */
 export async function keyAsShown(page: Page, keys: string): Promise<string> {
   const mac = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform))
@@ -759,7 +735,7 @@ export async function keyAsShown(page: Page, keys: string): Promise<string> {
 
 /**
  * A meeting's start as a person gives it: the day in the shared date picker, then the time, each
- * box left with Tab, which is when the picker reads what was typed (FR-034).
+ * box left with Tab, which is when the picker reads what was typed.
  */
 export async function fillStart(scope: Page | Locator, day: string, time?: string): Promise<void> {
   const date = scope.getByLabel('Date', { exact: true })
@@ -772,7 +748,7 @@ export async function fillStart(scope: Page | Locator, day: string, time?: strin
 }
 
 /**
- * The text in a Markdown editor (REQ-002), line by line, as it shows: the placeholder is not text.
+ * The text in a Markdown editor, line by line, as it shows: the placeholder is not text.
  * Not `toHaveValue`: the editor is a CodeMirror view, not a text box. A mark the preview hides off
  * the cursor's line is not in it either; assert the stored text on the server where that matters.
  */

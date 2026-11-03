@@ -12,9 +12,8 @@ import {
 } from './helpers'
 
 /**
- * THE PROJECTS OVERVIEW (FR-051, artboard 18): a card a project, saying when it last moved, how far
- * it is ("1 of 3"), what is under way, what is late and the next deadline. The archived ones are a
- * count under the cards, and their list is in the sidebar.
+ * The projects overview: a card a project. The archived ones are a count under the cards, and
+ * their list is in the sidebar.
  */
 test('a project’s card says when it moved, how far it is, and what is under way, late and next', async ({
   page,
@@ -25,7 +24,7 @@ test('a project’s card says when it moved, how far it is, and what is under wa
   const job = await makeProject(page, '找工作')
   const old = await makeProject(page, 'Old thing')
   // A deadline on a fixed day years out -- so its words do not depend on today -- and one two
-  // days gone on the ACCOUNT's clock.
+  // days gone on the account's clock.
   const [y, m, d] = dayInZone(zone).split('-').map(Number) as [number, number, number]
   await makeTask(page, job, 'Mock interview', { dueAt: '2030-05-28T12:00:00Z' })
   await makeTask(page, job, 'Update the résumé', {
@@ -131,9 +130,8 @@ test('an archived project opens as itself, marked archived', async ({ page }) =>
 })
 
 /**
- * ARCHIVED FROM ITS OWN PAGE, AND BACK THE SAME WAY. Archive sets a line of work aside: it leaves
- * the rail and the live lists, and its page stays open, marked Archived, with the way back right
- * where the way out was.
+ * Archive sets a line of work aside: it leaves the live lists, and its page stays open, marked
+ * Archived, with the way back where the way out was.
  */
 test('a project is archived from its own page, and brought back the same way', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -151,7 +149,7 @@ test('a project is archived from its own page, and brought back the same way', a
         r.url().endsWith(`/api/v1/projects/${pid}`) &&
         r.request().postDataJSON()?.archived === archived,
     )
-  // In the head's More (FR-052).
+  // In the head's More.
   const more = page.getByRole('button', { name: 'More' })
   const archiving = patched(true)
   await more.click()
@@ -188,9 +186,8 @@ test('the inbox has no Archive', async ({ page }) => {
 })
 
 /**
- * NEW AND EDIT (FR-052): the initials follow the name until they are typed over, the colour is one
- * nobody has until one is picked, Ctrl Enter sends it from any field, and edits change the project
- * everywhere, renaming leaving the initials as they were.
+ * The initials follow the name until they are typed over, and the colour is one nobody has until
+ * one is picked.
  */
 test('a new project takes its initials from its name and a colour nobody has, both changeable', async ({
   page,
@@ -256,7 +253,7 @@ test('a project is edited from its More menu, and the change shows everywhere', 
   const name = page.getByRole('textbox', { name: 'Name', exact: true })
   const initials = page.getByRole('textbox', { name: 'Initials' })
   await expect(initials).toHaveValue('JH')
-  // A rename leaves the initials as they are (FR-052).
+  // A rename leaves the initials as they are.
   await name.fill('Job search')
   await expect(initials).toHaveValue('JH')
   await initials.fill('JS')

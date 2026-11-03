@@ -2,9 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser } from './helpers'
 
 /**
- * NOTES MANAGED FROM THE SIDEBAR (REQ-002 FR-114, FR-115, artboard 38): a note's row has the
- * page's "…" (Rename in place, Pin, Move to a folder…, Download, Delete…), on hover and on a right
- * press; a folder makes a note inside itself. What is kept is read on the server.
+ * Notes managed from the sidebar: a note's row has the page's "…" on hover and on a right press;
+ * a folder makes a note inside itself. What is kept is read on the server.
  */
 
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Notes' })

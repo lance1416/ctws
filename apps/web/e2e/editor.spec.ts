@@ -1,10 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { apiPost, editorText, makeProject, makeTask, navLink, registerFreshUser } from './helpers'
 
-/**
- * THE MARKDOWN EDITOR on a note's page (REQ-002 FR-106 to FR-108, artboard 34). What is written is
- * checked where it is kept, the note on the server; what shows, in the editor's own lines.
- */
+// What is written is checked where it is kept, the note on the server; what shows, in the
+// editor's own lines.
 
 const editor = (page: Page) => page.getByRole('textbox', { name: 'Note' })
 const lineOf = (page: Page, words: string) =>
@@ -26,7 +24,7 @@ async function openNote(page: Page, body: string): Promise<string> {
   return note.id
 }
 
-test('a heading reads as one off its line, and shows its ## on it (FR-106)', async ({ page }) => {
+test('a heading reads as one off its line, and shows its ## on it', async ({ page }) => {
   await registerFreshUser(page)
   await openNote(page, 'First words.\n\n## Plan\n\nLast words.')
   await lineOf(page, 'Last words').click()
@@ -36,9 +34,7 @@ test('a heading reads as one off its line, and shows its ## on it (FR-106)', asy
   await expect(lineOf(page, 'Plan')).toHaveText('## Plan')
 })
 
-test('left for its title, a note reads whole: no line shows its marks (artboard 34)', async ({
-  page,
-}) => {
+test('left for its title, a note reads whole: no line shows its marks', async ({ page }) => {
   await registerFreshUser(page)
   await openNote(page, '## Plan\n\nLast words.')
   await lineOf(page, 'Plan').click()
@@ -47,9 +43,7 @@ test('left for its title, a note reads whole: no line shows its marks (artboard 
   await expect(lineOf(page, 'Plan')).toHaveText('Plan')
 })
 
-test('what is typed is kept: lists go on, Ctrl B bolds, Ctrl Shift K links (FR-107)', async ({
-  page,
-}) => {
+test('what is typed is kept: lists go on, Ctrl B bolds, Ctrl Shift K links', async ({ page }) => {
   await registerFreshUser(page)
   const id = await openNote(page, '- one')
   await lineOf(page, 'one').click()
@@ -72,7 +66,7 @@ test('what is typed is kept: lists go on, Ctrl B bolds, Ctrl Shift K links (FR-1
   await expect.poll(() => stored(page, id)).toBe('- one\n- two\n\n**soon** and [docs]()')
 })
 
-test('Ctrl K is still search everywhere, the editor too (FR-029)', async ({ page }) => {
+test('Ctrl K is still search everywhere, the editor too', async ({ page }) => {
   await registerFreshUser(page)
   await openNote(page, 'Words.')
   await lineOf(page, 'Words').click()
@@ -80,7 +74,7 @@ test('Ctrl K is still search everywhere, the editor too (FR-029)', async ({ page
   await expect(page.getByRole('dialog', { name: 'Search' })).toBeVisible()
 })
 
-test('a task box ticks where it is, and the note keeps it (FR-107)', async ({ page }) => {
+test('a task box ticks where it is, and the note keeps it', async ({ page }) => {
   await registerFreshUser(page)
   const id = await openNote(page, '- [ ] Call\n\nEnd')
   await lineOf(page, 'End').click()
@@ -89,9 +83,7 @@ test('a task box ticks where it is, and the note keeps it (FR-107)', async ({ pa
   await expect(page.getByRole('checkbox', { name: 'Done' })).toBeChecked()
 })
 
-test('@ finds someone, keeps the link and draws its chip off the line (FR-108)', async ({
-  page,
-}) => {
+test('@ finds someone, keeps the link and draws its chip off the line', async ({ page }) => {
   await registerFreshUser(page)
   const mira = await apiPost<{ id: string }>(page, '/people', {
     givenName: 'Mira',
@@ -126,10 +118,7 @@ test('a formula and a table are drawn off their lines', async ({ page }) => {
   await expect(page.locator('[data-markdown-editor] table.cm-md-table td').first()).toHaveText('1')
 })
 
-test('an IME’s commit is the words only: no line is added (REQ-002 §6)', async ({
-  page,
-  browserName,
-}) => {
+test('an IME’s commit is the words only: no line is added', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'composition is typed through Chromium’s own protocol')
   await registerFreshUser(page)
   const id = await openNote(page, '- one')
@@ -146,7 +135,7 @@ test('an IME’s commit is the words only: no line is added (REQ-002 §6)', asyn
   await expect.poll(() => stored(page, id)).toBe('- one三')
 })
 
-test('a note emptied and left is kept empty (BUG-089, REQ-002 §6)', async ({ page }) => {
+test('a note emptied and left is kept empty', async ({ page }) => {
   await registerFreshUser(page)
   const id = await openNote(page, 'Gone soon')
   await lineOf(page, 'Gone soon').click()
@@ -174,9 +163,7 @@ test('the editor’s code is fetched where a note is written, not where one is r
   expect(asked.some((u) => u.includes('MarkdownEditor'))).toBe(true)
 })
 
-test('the outline lists a note’s headings; a press jumps to one and marks it (FR-109)', async ({
-  page,
-}) => {
+test('the outline lists a note’s headings; a press jumps to one and marks it', async ({ page }) => {
   await registerFreshUser(page)
   const sections = ['One', 'Two', 'Three', 'Four', 'Five']
   await openNote(page, sections.map((s) => `## ${s}\n\n${'words\n\n'.repeat(12)}`).join(''))
@@ -192,9 +179,7 @@ test('the outline lists a note’s headings; a press jumps to one and marks it (
   )
 })
 
-test('Ctrl F in the editor finds in this note; elsewhere it is the browser’s (FR-109)', async ({
-  page,
-}) => {
+test('Ctrl F in the editor finds in this note; elsewhere it is the browser’s', async ({ page }) => {
   await registerFreshUser(page)
   await openNote(page, 'A ledger question.\n\nThe ledger on paper.\n\nEnd')
   // Outside the editor the press is not ours.
@@ -225,7 +210,7 @@ test('Ctrl F in the editor finds in this note; elsewhere it is the browser’s (
   await expect(page.locator('[data-markdown-editor] .cm-selectionBackground').first()).toBeVisible()
 })
 
-test('a note downloads as a .md file, its text as written (FR-111)', async ({ page }) => {
+test('a note downloads as a .md file, its text as written', async ({ page }) => {
   await registerFreshUser(page)
   const text = '## Plan\n\n- [ ] Call\n\n$e^{i\\pi}$ 和中文'
   await openNote(page, text)
@@ -239,7 +224,7 @@ test('a note downloads as a .md file, its text as written (FR-111)', async ({ pa
   expect(Buffer.concat(chunks).toString('utf8')).toBe(text)
 })
 
-test('a table is entered from above with ↓, and a press on a cell edits it, Tab the next (BUG-096)', async ({
+test('a table is entered from above with ↓, and a press on a cell edits it, Tab the next', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -265,7 +250,7 @@ test('a table is entered from above with ↓, and a press on a cell edits it, Ta
   await expect(editor(page)).toBeFocused()
 })
 
-test('@ lists kinds in search’s order, people first, and Enter takes the first (BUG-097)', async ({
+test('@ lists kinds in search’s order, people first, and Enter takes the first', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -281,7 +266,7 @@ test('@ lists kinds in search’s order, people first, and Enter takes the first
   await page.keyboard.type('@Mi')
   const options = page.getByRole('listbox').getByRole('option')
   await expect(options.first()).toContainText('Mira Chen')
-  // In the app's type, as every menu, not CodeMirror's monospace (BUG-099).
+  // In the app's type, as every menu, not CodeMirror's monospace.
   expect(await options.first().evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Inter/)
   await expect(options.nth(1)).toContainText('Mira onsite questions')
   await page.waitForTimeout(100) // CodeMirror's interactionDelay, as above

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser, WEB } from './helpers'
 
 /**
- * WHAT A TODAY ROW SAYS ABOUT ITS DATES, on the server pinned at Thursday, October 22, 2026, 00:30
+ * What a Today row says about its dates, on the server pinned at Thursday, October 22, 2026, 00:30
  * UTC (01:30 in London): every expected word comes from that instant (pinned.ts), so none of it
  * depends on what time the suite happens to run.
  */
@@ -27,11 +27,11 @@ test('the marks say due today, tomorrow, how late, and where a plan was carried 
 }) => {
   await registerFreshUser(page)
   const project = await apiPost(page, '/projects', { name: '记号' })
-  // 18:00 on the 22nd in London: today, later on. In progress, so it stays In progress (FR-079).
+  // 18:00 on the 22nd in London: today, later on. In progress, so it stays In progress.
   await task(page, project.id, '今天截止', { status: 'in_progress', dueAt: '2026-10-22T17:00:00Z' })
   await task(page, project.id, '明天截止', { status: 'in_progress', dueAt: '2026-10-23T11:00:00Z' })
   await task(page, project.id, '七天前截止', { dueAt: '2026-10-15T11:00:00Z' })
-  // Sunday the 18th: within the week, so said by its weekday (artboard 12).
+  // Sunday the 18th: within the week, so said by its weekday.
   await task(page, project.id, '顺延的', { scheduledOn: '2026-10-18' })
   await page.goto('/today')
 
@@ -53,7 +53,7 @@ test('a late task given a day keeps its deadline, waits for that day, and is lat
 }) => {
   await registerFreshUser(page)
   const project = await apiPost(page, '/projects', { name: '申请' })
-  // FR-079's example: due Thursday the 15th, a week late on the 22nd.
+  // Due Thursday the 15th, a week late on the 22nd.
   const due = '2026-10-15T11:00:00Z'
   await task(page, project.id, '交申请', { dueAt: due })
   await task(page, project.id, '交材料', { dueAt: due })
@@ -115,7 +115,7 @@ test('a parent by its deadline: a row of today’s or overdue, with its progress
   await patch(page, sde.id, { status: 'done' })
   await page.goto('/today')
 
-  // Half done, so half full; one child done, so the parent is under way, and green (artboard 32).
+  // Half done, so half full; one child done, so the parent is under way, and green.
   const amazonRow = row(page, 'Planned for today', 'Amazon')
   const square = amazonRow.getByRole('img', { name: 'In progress, 1 of 2 done' })
   await expect(square).toHaveAttribute('data-progress-square', '50')

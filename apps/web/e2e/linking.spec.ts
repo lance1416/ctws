@@ -2,10 +2,6 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, makeProject, registerFreshUser } from './helpers'
 import { dayOffset } from './days'
 
-/**
- * SAYING THAT TWO THINGS ARE CONNECTED, from the interface (FR-027): one action on anything, the
- * search box as its picker, and one optional line of why.
- */
 const picker = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Link to' })
 
 async function world(page: Page) {
@@ -26,7 +22,7 @@ test('a book can be linked to the person who recommended it, with a line of why'
   const recommended = page.getByRole('region', { name: 'Recommended reading' })
   await expect(recommended).toContainText('None from Ying yet')
 
-  // L links anything to the thing whose page this is (FR-027).
+  // L links anything to the thing whose page this is.
   await page.getByRole('heading', { level: 1, name: 'Ying Chen' }).click()
   await page.keyboard.press('l')
   await picker(page).getByRole('combobox', { name: 'Search' }).fill('Everyday')
@@ -60,8 +56,7 @@ test('the edge reads from both ends, written once', async ({ page }) => {
     note: 'recommends',
   })
 
-  // Nothing was written on the BOOK, and the book's module has no page of its own -- so this is
-  // read on the person, and on the reading list the item simply exists. One row, two readings.
+  // The book's module has no page of its own, so the edge is read on the person.
   await page.goto(`/people/${person.id}`)
   const row = page.getByRole('region', { name: 'Recommended reading' })
   await expect(row).toContainText('The Design of Everyday Things')
@@ -70,9 +65,9 @@ test('the edge reads from both ends, written once', async ({ page }) => {
 })
 
 test('an edge is taken off from either end, whichever way it was written', async ({ page }) => {
-  // The stored row runs one way. On the person's page the recommendation runs OUT of them and
-  // the meeting they attend runs IN -- and unlinking has to name the ends the way the row has
-  // them, or it deletes nothing and the row comes back on the next read.
+  // The stored row runs one way. On the person's page the recommendation runs out of them and
+  // the meeting they attend runs in; unlinking has to name the ends the way the row has them, or
+  // it deletes nothing and the row comes back on the next read.
   const { person, book } = await world(page)
   await apiPost(page, '/relations', {
     from: { type: 'person', id: person.id },
@@ -91,11 +86,11 @@ test('an edge is taken off from either end, whichever way it was written', async
   })
 
   await page.goto(`/people/${person.id}`)
-  // INCOMING: this one was written from the meeting's end.
+  // Incoming: this one was written from the meeting's end.
   await page.getByRole('button', { name: 'Unlink Second interview' }).click()
   const meetings = page.getByRole('region', { name: 'Meetings' })
   await expect(meetings).toContainText('None with Ying yet')
-  // OUTGOING: the recommendation was written here.
+  // Outgoing: the recommendation was written here.
   await page.getByRole('button', { name: 'Unlink The Design of Everyday Things' }).click()
   const recommended = page.getByRole('region', { name: 'Recommended reading' })
   await expect(recommended).toContainText('None from Ying yet')
@@ -147,7 +142,7 @@ test('the picker offers every kind of thing, and never the object itself', async
   await page.getByRole('heading', { level: 1, name: 'Ying Chen' }).click()
   await page.keyboard.press('l')
   const list = picker(page).getByRole('option')
-  // One box, four kinds of thing, each saying which it is -- two titles can read the same.
+  // Each says which kind it is, since two titles can read the same.
   await expect(list.filter({ hasText: 'Second interview' })).toContainText('Meeting')
   await expect(list.filter({ hasText: 'Job hunt' })).toContainText('Project')
   await expect(list.filter({ hasText: 'The Design of Everyday Things' })).toContainText('Reading')
@@ -173,7 +168,7 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
   // No line of why: Enter skips it.
   await page.getByRole('textbox', { name: 'Why' }).press('Enter')
 
-  // A chip of the person's kind, by name (FR-056, artboard 8).
+  // A chip of the person's kind, by name.
   await expect(pane.getByRole('region', { name: 'Linked' }).getByRole('link')).toHaveText(
     'Ying Chen',
   )
@@ -183,9 +178,7 @@ test('a task can be linked to a person, and both ends show the link', async ({ p
   await expect(page.getByRole('region', { name: 'Tasks' })).toContainText('准备一面')
 })
 
-test('L with a task open beside the project links the task, not the project (BUG-080)', async ({
-  page,
-}) => {
+test('L with a task open beside the project links the task, not the project', async ({ page }) => {
   const { person } = await world(page)
   const project = await apiPost(page, '/projects', { name: '找工作' })
   await apiPost(page, '/tasks', { title: '准备一面', projectId: project.id })
@@ -235,19 +228,19 @@ test('a task whose notes mention someone shows them by name, never the mention�
   const linked = page
     .getByRole('dialog', { name: 'Task details' })
     .getByRole('region', { name: 'Linked' })
-  // BUG-036: the name, whole; the sentence and its address stay out of the chip.
+  // The name, whole; the sentence and its address stay out of the chip.
   await expect(linked.getByRole('link')).toHaveText('Ying Chen')
   await expect(linked).not.toContainText('ctws://')
   // A mention goes with its sentence: no × to unlink it here.
   await expect(linked.getByRole('button', { name: /^Unlink/ })).toHaveCount(0)
-  // In the notes, the mention is the person's chip, not a link (I-03); it opens them beside.
+  // In the notes, the mention is the person's chip, not a link; it opens them beside.
   const chip = page.getByRole('dialog', { name: 'Task details' }).locator('[data-mention="person"]')
   await expect(chip).toHaveText('Ying Chen')
   await chip.click()
   await expect(page).toHaveURL(new RegExp(`inspect=person(%3A|:)${person.id as string}`))
 
   // The person's side: the task in their Tasks, by itself; the sentence on their timeline, the
-  // name said plainly (M-01, M-06).
+  // name said plainly.
   await page.goto(`/people/${person.id as string}`)
   const tasks = page.getByRole('region', { name: 'Tasks' })
   await expect(tasks).toContainText('Prepare the system design round')
@@ -302,7 +295,7 @@ test('a task linked to a person opens beside them, and its full page is its proj
     .getByRole('link', { name: /准备一面/ })
     .click()
 
-  // In the inspector, the person's page staying put (FR-022).
+  // In the inspector, the person's page staying put.
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   await expect(inspector).toContainText('准备一面')
   await expect(page).toHaveURL(new RegExp(`/people/${person.id}\\?inspect=task`))
@@ -316,8 +309,8 @@ test('a task linked to a person opens beside them, and its full page is its proj
 })
 
 /**
- * A link to a task that cannot be followed says WHY: "not here any more" only when the server says
- * there is no such task, and that it could not be reached when it could not.
+ * "Not here any more" only when the server says there is no such task; otherwise, that it could
+ * not be reached.
  */
 test('a task link that fails for another reason does not say the task is gone', async ({
   page,
@@ -373,13 +366,13 @@ test('a project’s Organisations + writes a new one down on it, and Remove take
   await page.goto(`/projects/${pid}`)
   const block = page.getByRole('region', { name: 'Organisations' })
 
-  // FR-055: the list ends with a row that writes one down under the words typed, and links it.
+  // The list ends with a row that writes one down under the words typed, and links it.
   await block.getByRole('button', { name: 'Add an organisation' }).click()
   await picker(page).getByRole('combobox').fill('Stripe')
   await picker(page).getByRole('option', { name: 'New organisation “Stripe”' }).click()
   await expect(picker(page)).toHaveCount(0)
   // Written down on its own form, the name typed already there; made, it is linked and we are
-  // back on the project (FR-055, FR-026).
+  // back on the project.
   await expect(page).toHaveURL(new RegExp(`/organisations/new\\?project=${pid}$`))
   await expect(page.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Stripe')
   await page.getByRole('button', { name: /^Create organisation/ }).click()
@@ -390,7 +383,7 @@ test('a project’s Organisations + writes a new one down on it, and Remove take
   await expect(block).not.toContainText('Stripe')
 })
 
-test('choosing an organisation in the block puts it on the project, with no why (BUG-049)', async ({
+test('choosing an organisation in the block puts it on the project, with no why', async ({
   page,
 }) => {
   await registerFreshUser(page)

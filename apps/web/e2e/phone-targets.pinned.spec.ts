@@ -10,11 +10,10 @@ import {
 import { PHONE, undersized } from './targets'
 
 /**
- * EVERY TARGET ON A PHONE IS 44, ON A FULL ACCOUNT (DES-001, FR-082), on the server pinned at
- * Thursday, October 22, 2026 (pinned.ts). An empty account hides most of what a finger meets: the
- * workbench's rows, a message waiting with its follow-up, a meeting with no notes yet, a role with
- * its months, last week's finished work. BUG-071 was 85 of those passing a sweep that never drew
- * them, so this one makes each kind of thing first, and then sweeps every page and layer.
+ * Every target on a phone is at least 44, on a full account, on the server pinned at Thursday,
+ * October 22, 2026 (pinned.ts). An empty account hides most of what a finger meets, and a sweep
+ * of rows never drawn passes, so this makes each kind of thing first, then sweeps every page and
+ * layer.
  */
 test.use({ viewport: PHONE, hasTouch: true, timezoneId: 'Europe/London' })
 
@@ -132,7 +131,7 @@ async function aFullAccount(page: Page) {
     durationMinutes: 30,
     rrule: 'FREQ=WEEKLY;BYDAY=TH',
   })
-  // A meeting with more people than are listed, folded behind "All N", you counted too (BUG-071).
+  // A meeting with more people than are listed, folded behind "All N", you counted too.
   const crowd: string[] = []
   for (const n of ['Ada', 'Ben', 'Cal', 'Dee', 'Eli', 'Fay', 'Gus', 'Hal', 'Ivy'])
     crowd.push(
@@ -185,13 +184,13 @@ async function aFullAccount(page: Page) {
   }
 }
 
-test('on a phone nothing that is pressed is under 44, on every page of a full account (DES-001)', async ({
+test('on a phone nothing that is pressed is under 44, on every page of a full account', async ({
   page,
 }) => {
   test.setTimeout(240_000)
   await registerFreshUser(page)
   const a = await aFullAccount(page)
-  // What the sweep is for is there to sweep: a sweep of rows never drawn passes (BUG-071).
+  // What the sweep is for is there to sweep: a sweep of rows never drawn passes.
   await page.goto('/review')
   await expect(page.getByRole('main').getByText('Earlier work')).toBeVisible()
   await page.goto(`/organisations/${a.stripe}`)
@@ -250,7 +249,7 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
     await sweep(name)
   }
 
-  // The series' search goes under its name on a phone, never over it (BUG-074).
+  // The series' search goes under its name on a phone, never over it.
   await page.goto(`/meetings/${a.sync}?at=2026-10-22T10:00`)
   const earlier = page.getByRole('region', { name: 'Earlier in this series' })
   const heading = (await earlier
@@ -262,7 +261,7 @@ test('on a phone nothing that is pressed is under 44, on every page of a full ac
   // Soft: the sweep below still says all it finds when this fails.
   expect.soft(search.y).toBeGreaterThanOrEqual(heading.y + heading.height)
 
-  // And what opens over a page.
+  // What opens over a page.
   const sheet = page.getByRole('complementary', { name: 'Inspector' })
   const opened: [string, string, () => Promise<unknown>][] = [
     [

@@ -3,19 +3,14 @@ import { dayOffset, MONTHS } from './days'
 import { registerFreshUser, apiPost, fillStart } from './helpers'
 
 /**
- * MEETINGS -- the fourth module, through the browser.
- *
- * The API suite has the recurrence and zone arithmetic. What only a browser can show is the part
- * the feature exists for: a series agreed in Toronto showing on YOUR clock, saying so, and moving
- * by an hour on the week one of the two countries changes its clocks and the other has not.
+ * The API suite has the recurrence and zone arithmetic. This file has what only a browser shows: a
+ * series agreed in Toronto on your clock, saying so, and moving by an hour in the week one of the
+ * two countries has changed its clocks and the other has not.
  */
 
 /**
- * THE ACCOUNT IS IN LONDON for this whole file.
- *
- * An account's zone is taken from the browser when it registers, so this is how it is set -- and
- * it has to be set, or the clock on screen would be the runner's machine and the assertions below
- * would pass or fail by where the test happened to run.
+ * The account is in London. Its zone is taken from the browser when it registers; left unset, the
+ * clock on screen would be the runner's machine's.
  */
 test.use({ timezoneId: 'Europe/London' })
 
@@ -29,7 +24,7 @@ const inLondon = (page: Page) => registerFreshUser(page, '/')
 
 /**
  * The occurrence's pane over the grid, as the address names it (the workbench's week opens it so);
- * a click on the grid opens the inspector instead (FR-022).
+ * a click on the grid opens the inspector instead.
  */
 const openPane = (page: Page, m: { meetingId: string }, at: string) =>
   page.goto(`/calendar?${new URLSearchParams({ meeting: m.meetingId, at })}`)
@@ -60,12 +55,11 @@ test('a series agreed in Toronto shows on your clock, and says whose 09:00 it is
 })
 
 test('a square makes nothing; a meeting is made from the chosen day', async ({ page }) => {
-  // THE FRAMING, as a test. The calendar is a LENS over everything with a date and owns no kind
-  // of thing, so a square offers no way to make one: its buttons choose the day and open what is
-  // on it. The chosen day offers a meeting on it, made by the meetings module (FR-080).
+  // The calendar owns no kind of thing, so a square only chooses its day; the chosen day offers a
+  // meeting, made by the meetings module.
   await inLondon(page)
   await page.goto('/calendar')
-  // The RUNNER's day, which is the account's: the browser registers its user with its own zone. A
+  // The runner's day, which is the account's: the browser registers its user with its own zone. A
   // UTC day would, for the hours when the two differ, name a square that is not on the grid.
   const today = dayOffset(0)
 
@@ -83,7 +77,6 @@ test('a repeating meeting asks which occurrences a move touches', async ({ page 
   await openOctober(page)
   await expect(pane(page)).toBeVisible()
 
-  // Edited like a person or a task: Edit opens the form, and one Save writes it back.
   await pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
   await fillStart(pane(page), '2026-10-27', '15:00')
   await pane(page).getByRole('button', { name: 'Save' }).click()
@@ -91,8 +84,7 @@ test('a repeating meeting asks which occurrences a move touches', async ({ page 
   await expect(page.getByRole('alertdialog', { name: 'This meeting repeats' })).toBeVisible()
   await page.getByRole('button', { name: 'Just this one' }).click()
 
-  // THAT WEEK MOVED AND THE OTHERS DID NOT. 15:00 in Toronto on the 27th is 19:00 in London,
-  // which is already on GMT by then.
+  // Only that week moved. 15:00 in Toronto on the 27th is 19:00 in London, already on GMT by then.
   await expect(square(page, '2026-10-27')).toContainText('19:00')
   await expect(square(page, '2026-10-27')).not.toContainText('13:00')
   await expect(square(page, '2026-10-20')).toContainText('14:00')
@@ -152,14 +144,13 @@ test('the people in the room come out of the people module', async ({ page }) =>
   await pane(page).getByRole('button', { name: 'Add Attendees' }).click()
   await page.getByRole('menuitem', { name: '陈颖' }).click()
   await pane(page).getByRole('button', { name: 'Save' }).click()
-  // Saved and back in reading mode, the attendees are listed.
   await expect(pane(page).locator('[data-attendees]')).toContainText('陈颖')
 })
 
 /**
  * Steps the grid to October 2026, reading the month off the page each time.
  *
- * The direction is decided from what is SHOWN, not from today: a fixed direction computed once
+ * The direction is decided from what is shown, not from today: a fixed direction computed once
  * walks away from the target the moment the grid already starts on it.
  */
 async function openOctober(page: Page) {
@@ -171,9 +162,8 @@ async function openOctober(page: Page) {
     if (!year || !name) throw new Error(`no month on the page: ${shown}`)
     return Number(year) * 12 + MONTHS.indexOf(name.slice(0, 3) as (typeof MONTHS)[number])
   }
-  // THE BUDGET IS THE DISTANCE, not a constant: the target month is fixed (it is the one spanning
-  // the US clock change) while the grid opens on today, so a constant budget is a date that stops
-  // working. One step per month between here and there, plus one to read the arrival.
+  // The budget is the distance, not a constant: the target month is fixed while the grid opens on
+  // today. One step per month between them, plus one to read the arrival.
   const budget = Math.abs((await monthOn()) - want) + 1
   for (let i = 0; i <= budget; i++) {
     const at = await monthOn()
@@ -187,15 +177,9 @@ async function openOctober(page: Page) {
 }
 
 /**
- * THE ABBREVIATION IS THE MEETING'S, NOT TODAY'S.
- *
- * "09:00 EST" and "09:00 EDT" are an hour apart in reality, so the pane for a meeting in January
- * must say EST whatever month it is read in. A label read at `new Date()` would be an hour out for
- * half of every year, and an October case alone cannot catch it, because in October "now" agrees.
- *
- * TWO MEETINGS, SIX MONTHS APART, in one zone that changes its clocks: whenever this runs, one of
- * them disagrees with today, so a label read at "now" cannot pass both. Both dates are fixed, so
- * both expectations are true forever.
+ * A label read at `new Date()` would be an hour out for half of every year. Two meetings six months
+ * apart in one zone that changes its clocks: whenever this runs, one of them disagrees with today,
+ * so a label read at "now" cannot pass both.
  */
 test('a meeting says the zone abbreviation of its own date, not of today', async ({ page }) => {
   await inLondon(page)
@@ -212,7 +196,6 @@ test('a meeting says the zone abbreviation of its own date, not of today', async
     durationMinutes: 60,
   })
 
-  // Each opened in its pane over the Calendar, named in the address.
   const open = (m: { meetingId: string; recurrenceId: string }) =>
     page.goto(`/calendar?${new URLSearchParams({ meeting: m.meetingId, at: m.recurrenceId })}`)
   await open(winter)
@@ -249,7 +232,7 @@ test('a meeting clicked on the grid opens that occurrence in the inspector, and 
   await openOctober(page)
   await square(page, '2026-10-27').locator('[data-entry]').filter({ hasText: '周会' }).click()
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
-  // The 27th, not the series' next (FR-022, FR-067); the address names it.
+  // The 27th, not the series' next; the address names it.
   await expect(inspector).toContainText('Tue, Oct 27')
   await expect(page).toHaveURL(/inspect=meeting%3A[^&]+%402026-10-27T09%3A00/)
   await page.reload()

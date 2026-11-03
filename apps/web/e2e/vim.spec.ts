@@ -2,10 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, editorText, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
- * VIM'S KEYS IN THE EDITOR (REQ-002 FR-112, artboards 34 and 36): off unless the account turns
- * them on, in Account's Editing; then every editor on a desk takes them, its mode at the left of
- * the status bar while it has the focus. Esc goes back to NORMAL first; in NORMAL it closes what
- * is open (FR-029).
+ * Vim's keys in the editor: off unless the account turns them on; then every editor on a desk
+ * takes them, its mode at the left of the status bar while it has the focus. Esc goes back to
+ * NORMAL first; in NORMAL it closes what is open.
  */
 
 const mode = (page: Page) => page.locator('footer[aria-label="Status"] [data-vim-mode]')

@@ -53,7 +53,7 @@ async function seedProject(page: Page) {
 
 /** Drags one handle onto another with real pointer events. */
 async function dragOnto(page: Page, from: string, to: string) {
-  // Both ends have to be ON SCREEN before the boxes are read: the pointer cannot be moved to a
+  // Both ends have to be on screen before the boxes are read: the pointer cannot be moved to a
   // coordinate outside the viewport, and a dozen 44px rows do not fit under the header at the
   // default height.
   await handle(page, to).scrollIntoViewIfNeeded()
@@ -468,7 +468,7 @@ test('a too-deep drop shows a message and sends no move', async ({ page }) => {
 })
 
 /**
- * Holds the FIRST task-list GET of a project: the server's answer is captured immediately (so it
+ * Holds the first task-list GET of a project: the server's answer is captured immediately (so it
  * reflects the state before any create) but delivered to the page only when `release` is called.
  * Later GETs pass straight through. A fixed delay cannot do this: it would let the server see the
  * create, which makes the held response fresh and hides the bug.
@@ -491,8 +491,8 @@ async function holdFirstListFetch(page: Page, glob: RouteUrl = TASK_LIST) {
 }
 
 // A task created while the project's first list fetch is still in flight must still appear: the
-// refetch after the create has to start a NEW request rather than be absorbed by the stale one.
-// The tree has no "New task" until it has loaded (BUG-039), so the task is made with N T.
+// refetch after the create has to start a new request rather than be absorbed by the stale one.
+// The tree has no "New task" until it has loaded, so the task is made with N T.
 test('a task created while the project is still loading appears', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
@@ -506,8 +506,7 @@ test('a task created while the project is still loading appears', async ({ page 
   // The list is asked for before the page is drawn (its loader), so its being held says nothing
   // of the page: N T made before the page knows its project would make the task in the Inbox.
   // Exactly "P": a name is matched as a part by default, and the overview's "Projects" has a p in
-  // it, so N T would go while the overview was still drawn and rightly make the task in the Inbox
-  // (BUG-092).
+  // it, so N T would go while the overview was still drawn and rightly make the task in the Inbox.
   await expect(page.getByRole('heading', { level: 1, name: 'P', exact: true })).toBeVisible()
   await page.keyboard.press('n')
   await page.keyboard.press('t')
@@ -521,7 +520,7 @@ test('a task created while the project is still loading appears', async ({ page 
     (r) => r.request().method() === 'POST' && r.ok() && /\/api\/v1\/tasks$/.test(r.url()),
   )
   await dialog.getByRole('button', { name: 'Create', exact: true }).click()
-  // Made from the project's page, it is the project's (FR-026, BUG-092), not the Inbox's.
+  // Made from the project's page, it is the project's, not the Inbox's.
   expect((await created).request().postDataJSON(), `the dialog said ${openedOn}`).toMatchObject({
     projectId: pid,
   })
@@ -591,7 +590,7 @@ test('a refused move puts the fold it opened back', async ({ page }) => {
   // Nothing landed there, so nothing should have been opened: the tree is exactly as it was.
   await expect(rows).toHaveText([/aa/, /bb/])
   await unrouteMoves()
-  // And the fold is remembered that way, not just drawn that way.
+  // The fold is remembered that way, not just drawn that way.
   await page.reload()
   await expect(rows).toHaveText([/aa/, /bb/])
 })
@@ -642,7 +641,7 @@ test('two quick moves reach the server one after the other, in the order they we
   await held.shift()!()
   await unrouteMoves()
   await expect(page.getByRole('listitem')).toHaveText([/bb/, /cc/, /aa/])
-  // And the server holds the same order.
+  // The server holds the same order.
   await page.reload()
   await expect(page.getByRole('listitem')).toHaveText([/bb/, /cc/, /aa/])
 })

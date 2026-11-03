@@ -12,7 +12,7 @@ import {
 import { PINNED_AT } from './pinned'
 
 /**
- * THE WORKBENCH (FR-075 to FR-078, FR-028), on the server pinned at Thursday, October 22, 2026,
+ * The workbench, on the server pinned at Thursday, October 22, 2026,
  * 00:30 UTC (01:30 in London): what is in hand, the launcher, the next meetings, who owes a reply,
  * birthdays, reading and the week, in a fixed arrangement where nothing scrolls.
  */
@@ -100,7 +100,7 @@ test.describe('on a MacBook Air', () => {
     const week = (await page.getByRole('heading', { name: 'Next seven days' }).boundingBox())!
     expect(week.y + week.height).toBeLessThanOrEqual(900)
 
-    // No widget scrolls inside (FR-075).
+    // No widget scrolls inside.
     const scrolling = await page
       .locator('[data-place]')
       .evaluateAll((places) =>
@@ -155,7 +155,7 @@ test.describe('on a MacBook Air', () => {
 test.describe('on a 27-inch screen', () => {
   test.use({ viewport: { width: 2560, height: 1310 } })
 
-  test('six columns in artboard 10’s arrangement; the widgets not built yet are their heads', async ({
+  test('six columns in their fixed arrangement; the widgets not built yet are their heads', async ({
     page,
   }) => {
     await registerFreshUser(page)
@@ -184,7 +184,7 @@ test.describe('on a 27-inch screen', () => {
       await expect(later).toContainText('Coming later')
       await expect(later.locator('button, a, input, textarea')).toHaveCount(0)
     }
-    // No editing of the arrangement this round (FR-075).
+    // The arrangement cannot be edited.
     await expect(page.locator('main [draggable="true"]')).toHaveCount(0)
   })
 })
@@ -265,7 +265,7 @@ test('N L hangs a link where you are: the inspector’s task, this project, or o
   await expect(form.locator('[data-pin-where]')).toContainText('Pins on')
   await expect(form.locator('[data-pin-where]')).toContainText('Job hunt')
   await form.getByRole('textbox', { name: 'Address' }).fill('https://docs.google.com/d/cv')
-  // Esc keeps what was typed for the next N L (FR-029).
+  // Esc keeps what was typed for the next N L.
   await page.keyboard.press('Escape')
   await expect(form).toHaveCount(0)
   await page.keyboard.press('n')
@@ -289,7 +289,7 @@ test('N L hangs a link where you are: the inspector’s task, this project, or o
   await expect(form).toHaveCount(0)
 })
 
-test.describe('coming back from a resource (FR-028)', () => {
+test.describe('coming back from a resource', () => {
   /** Opens the task's resource from its pane, and comes back to the tab. */
   async function goAndComeBack(page: Page, name: string) {
     const opened = page.context().waitForEvent('page')

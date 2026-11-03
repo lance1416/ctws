@@ -12,7 +12,7 @@ import {
 import { dayOffset } from './days'
 
 /**
- * AN EDIT IS NOT THROWN AWAY BY A STRAY KEY. Escape, the scrim, the close button and leaving the
+ * An edit is not thrown away by a stray key. Escape, the scrim, the close button and leaving the
  * page all ask first when a person, a meeting or a reading item has unsaved changes, as a task's
  * pane always has.
  */
@@ -20,7 +20,7 @@ import { dayOffset } from './days'
 const asked = (pane: Locator) =>
   pane.getByRole('alert').filter({ hasText: /unsaved changes|Discard the changes\?/ })
 
-/** A person's edit page, open; a person is edited on a page, not in a pane (FR-063). */
+/** A person's edit page, open; a person is edited on a page, not in a pane. */
 async function person(page: Page, channels: object[] = []) {
   await registerFreshUser(page, '/people')
   const made = await apiPost(page, '/people', { name: 'Ying Chen', channels })
@@ -41,7 +41,7 @@ test('leaving an edited person asks, and Keep editing keeps the edit', async ({ 
   await expect(page).toHaveURL(new RegExp(`/people/${id}/edit$`))
   await expect(name).toHaveValue('Yan')
 
-  // And Discard is the way out when that is what was meant.
+  // Discard is the way out when that is what was meant.
   await page.getByRole('link', { name: 'Cancel' }).click()
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`))
@@ -64,7 +64,7 @@ test('a person whose phone is stored in an older spelling is left untouched with
 })
 
 test('leaving an edited meeting asks, and Keep editing keeps the edit', async ({ page }) => {
-  // A meeting is edited on a page (FR-068), guarded as a person's is.
+  // A meeting is edited on a page, guarded as a person's is.
   await registerFreshUser(page)
   const m = await apiPost<{ meetingId: string; recurrenceId: string }>(page, '/meetings', {
     title: 'Weekly',
@@ -84,14 +84,14 @@ test('leaving an edited meeting asks, and Keep editing keeps the edit', async ({
   await expect(page).toHaveURL(new RegExp(`/meetings/${m.meetingId}/edit`))
   await expect(title).toHaveValue('Weekly sync')
 
-  // And Discard is the way out when that is what was meant.
+  // Discard is the way out when that is what was meant.
   await main.getByRole('button', { name: 'Cancel', exact: true }).click()
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(main.getByRole('heading', { level: 1 })).toHaveText('Weekly')
 })
 
 test('leaving an edited reading item asks, and Keep editing keeps the edit', async ({ page }) => {
-  // A reading item is edited on a page (FR-073), guarded as a person's is.
+  // A reading item is edited on a page, guarded as a person's is.
   await registerFreshUser(page)
   const item = await apiPost(page, '/reading', { kind: 'book', title: 'The C book' })
   await page.goto(`/reading/${item.id}/edit`)
@@ -113,7 +113,7 @@ test('leaving an edited reading item asks, and Keep editing keeps the edit', asy
   await expect(asked(main)).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`/reading/${item.id}/edit$`))
 
-  // And Discard is the way out when that is what was meant.
+  // Discard is the way out when that is what was meant.
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(page).toHaveURL(/\/today$/)
   await page.goto(`/reading/${item.id}`)
@@ -176,9 +176,7 @@ const newDialogs: [string, string, (page: Page) => Promise<() => Promise<unknown
 ]
 
 for (const [name, field, setUp] of newDialogs) {
-  test(`Escape closes a typed-in ${name} dialog and keeps it; Cancel asks (FR-029)`, async ({
-    page,
-  }) => {
+  test(`Escape closes a typed-in ${name} dialog and keeps it; Cancel asks`, async ({ page }) => {
     await registerFreshUser(page)
     const open = await setUp(page)
     await open()

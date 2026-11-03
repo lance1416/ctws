@@ -2,9 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
- * REVIEW -- the page that answers "how did the week go" (FR-081). It reports what HAPPENED in the
- * week, read from the change log, not what is true now. The week of artboard 19 itself, on a
- * pinned clock, is `review.pinned.spec.ts`.
+ * The review answers "how did the week go": what happened in the week, read from the change log,
+ * not what is true now. The answers on a pinned clock are in `review.pinned.spec.ts`.
  */
 
 /** Review opens on last week; what the seeds did happened this week, so far. */
@@ -67,14 +66,13 @@ test('it shows work that was finished and then reopened', async ({ page }) => {
   const id = await makeTask(page, pid, '写迁移', { status: 'done' })
   await page.request.patch(`/api/v1/tasks/${id}`, { headers: WEB, data: { status: 'todo' } })
 
-  // THE CASE THE VIEW EXISTS FOR. Finishing something on Tuesday is work done even if it came
-  // back on Thursday.
+  // Finishing something on Tuesday is work done even if it came back on Thursday.
   await page.goto('/review')
   await thisWeek(page)
   await expect(cell(page, 'CTWS', 'finished')).toContainText('写迁移')
 })
 
-test('the Done view is gone: the weeks end with the weeks, and its address is the review (RV-01)', async ({
+test('the Done view is gone: the weeks end with the weeks, and its address is the review', async ({
   page,
 }) => {
   await registerFreshUser(page)

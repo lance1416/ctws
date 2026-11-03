@@ -2,9 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, editorText, registerFreshUser, WEB } from './helpers'
 
 /**
- * NOTES ON A PHONE (REQ-002 FR-106 to FR-113, artboard 35): the places as cards, a folder its own
- * list; a note in the one editor, 16/24 so Safari does not zoom, the row over the keyboard, and
- * the outline and the note's actions in one sheet from the top bar.
+ * Notes on a phone: the places as cards, a folder its own list; a note in the one editor, 16/24 so
+ * Safari does not zoom, the row over the keyboard, and the outline and the note's actions in one
+ * sheet from the top bar.
  */
 test.use({ viewport: { width: 393, height: 852 }, hasTouch: true })
 
@@ -140,9 +140,7 @@ test('the outline and the note’s actions are one sheet: a heading a tap away, 
   await expect(page.getByRole('main').getByRole('button', { name: 'Job hunt prep' })).toBeVisible()
 })
 
-test('a tap on the row writes and keeps the editor’s focus, the keyboard up (BUG-101)', async ({
-  page,
-}) => {
+test('a tap on the row writes and keeps the editor’s focus, the keyboard up', async ({ page }) => {
   await registerFreshUser(page)
   const note = await apiPost<{ id: string }>(page, '/notes', { title: 'Prep', body: 'Plan' })
   await page.goto(`/notes/${note.id}`)
@@ -156,9 +154,7 @@ test('a tap on the row writes and keeps the editor’s focus, the keyboard up (B
   await expect(row).toBeVisible()
 })
 
-test('a button pressed while an IME composes waits for the words, then acts (BUG-102)', async ({
-  page,
-}) => {
+test('a button pressed while an IME composes waits for the words, then acts', async ({ page }) => {
   await registerFreshUser(page)
   const note = await apiPost<{ id: string }>(page, '/notes', { title: 'Prep', body: '' })
   await page.goto(`/notes/${note.id}`)

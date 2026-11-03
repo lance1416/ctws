@@ -2,9 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser, WEB } from './helpers'
 
 /**
- * A NOTE'S WHOLE PAGE (REQ-002 FR-109, FR-116, artboards 37 and 39): the text across the main
- * area, the outline a panel on its right that folds away, where the cursor is in the status bar,
- * and the note's source a press away. What is chosen is kept with the account.
+ * A note's whole page: the text across the main area, the outline a panel on its right that folds
+ * away, the cursor's place in the status bar, and the source a press away. What is chosen is kept
+ * with the account.
  */
 
 const NOTE = ['Words first.', '', '## Before', '', 'Some **bold** words.', '', '## After', 'End.']

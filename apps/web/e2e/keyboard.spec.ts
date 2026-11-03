@@ -29,17 +29,14 @@ const tabStops = (page: Page) =>
       document.querySelectorAll('[data-task-tree] [data-handle-id]:not([tabindex="-1"])').length,
   )
 
-/** The first tab stop after the tree's rows: the new-task box, its last line (FR-054). */
+/** The first tab stop after the tree's rows: the new-task box, its last line. */
 const belowTree = (page: Page) => page.getByRole('textbox', { name: 'New task' })
 
 const flat = (n: number): [string, null][] =>
   Array.from({ length: n }, (_, i) => [`r${i}`, null] as [string, null])
 
-/**
- * ONE TAB STOP FOR THE WHOLE TREE, not one PER ROW. A two-row tree would pass with a stop per row
- * too, which is why it runs on twelve rows and asserts the press count, not merely that Tab
- * eventually gets out.
- */
+// A two-row tree would pass with a stop per row too, so this runs on twelve rows and counts the
+// presses, not merely that Tab eventually gets out.
 test('the whole tree is one tab stop, however many rows it has', async ({ page }) => {
   await registerFreshUser(page)
   const url = await startProject(page, 'Many')
@@ -153,8 +150,7 @@ test('plain left and right fold, unfold, and walk the hierarchy', async ({ page 
   expect(moves).toEqual([])
 })
 
-// The pre-existing keyboard model, re-pinned next to the new keys rather than only in the suites
-// that already own each one: the roving tabindex touches the very handler they all run through.
+// The roving tabindex runs through the same handler as these keys, so they are checked here too.
 test('Alt arrows still move and reparent rows, and Enter still opens the detail', async ({
   page,
 }) => {
@@ -211,8 +207,7 @@ test('the ? overlay lists the keys, closes on Escape and on a click outside', as
   await page.keyboard.press('?')
   const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
   await expect(dialog).toBeVisible()
-  // The keys it must actually name (FR-029), each as its own cap, not merely "a dialog appeared".
-  // Letters as capitals, as every other cap (artboard 24).
+  // Each key as its own cap, not merely "a dialog appeared"; letters as capitals.
   for (const key of [
     await keyAsShown(page, 'Ctrl+K'),
     'C',
@@ -247,7 +242,7 @@ test('the ? overlay lists the keys, closes on Escape and on a click outside', as
   await expect(box).toHaveValue('?')
 })
 
-test('G jumps to every place on the icon bar, and not while typing (FR-029)', async ({ page }) => {
+test('G jumps to every place on the icon bar, and not while typing', async ({ page }) => {
   await registerFreshUser(page)
 
   for (const [key, url] of [

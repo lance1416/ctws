@@ -1,16 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
 
-/**
- * THE CALENDAR (FR-080, artboard 13), on the server pinned at Thursday, October 22, 2026, 00:30
- * UTC: October's grid with its lunar names, what each day holds, and the chosen day beside the
- * grid on a wide screen or over it on a narrower one.
- */
+// On the server pinned at Thursday, October 22, 2026, 00:30 UTC.
 test.use({ timezoneId: 'Europe/London' })
 
 const square = (page: Page, day: string) => page.locator(`[data-day="${day}"]`)
 
-/** The month of the artboard: a meeting with a link, a deadline and three planned on the 22nd. */
+/** A meeting with a link, a deadline and three planned on the 22nd, and a late deadline. */
 async function october(page: Page) {
   const jh = await makeProject(page, 'Job hunt')
   const mf = await makeProject(page, 'Moving flat')
@@ -60,7 +56,6 @@ test.describe('on the 27-inch screen', () => {
       /14:00\s*Stripe: first screen/,
       /Prepare the system design round/,
     ])
-    // Past its day a deadline is late: red, not grey.
     await expect(square(page, '2026-10-20').locator('[data-entry="due"]')).toHaveClass(/bg-stop-bg/)
   })
 
@@ -109,7 +104,7 @@ test.describe('on the 27-inch screen', () => {
     await page.goto('/calendar?day=2026-10-27')
 
     await page.getByRole('button', { name: 'New meeting' }).click()
-    // The shared date picker says the day in words (FR-034).
+    // The shared date picker says the day in words.
     await expect(page.getByRole('dialog').getByLabel('Date', { exact: true })).toHaveValue(/Oct 27/)
   })
 
@@ -140,7 +135,7 @@ test.describe('from the keyboard', () => {
       '-1',
     )
 
-    // No line inside the grid takes a Tab of its own (BUG-057).
+    // No line inside the grid takes a Tab of its own.
     await expect(page.locator('[data-day] [data-entry]:not([tabindex="-1"])')).toHaveCount(0)
     await today.focus()
     await page.keyboard.press('ArrowRight')
@@ -171,7 +166,7 @@ test('on a MacBook Air the chosen day opens over the grid and closes with Esc', 
   await expect(pane).toHaveCount(0)
   await expect(page).not.toHaveURL(/day=/)
 
-  // Its × closes it too, and focus goes back to the square that opened it (CA-01).
+  // Focus goes back to the square that opened it.
   const thursday = page.getByRole('button', { name: 'Thursday, October 22' })
   await thursday.click()
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click()

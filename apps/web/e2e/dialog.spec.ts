@@ -14,20 +14,11 @@ import {
 } from './helpers'
 import { dayOffset, ymd } from './days'
 
-/**
- * THE NEW-TASK LAYER, and the overlays that sit on Radix.
- *
- * The point of the migration half is that NOTHING the user can observe changed, so the five
- * behaviours `ShortcutHelp` had before are asserted here item by item -- including the one nothing
- * pinned before (focus coming back), which is exactly the kind of thing a hand-rolled overlay gets
- * right and a careless library swap loses.
- */
-
 const POST_TASK = /\/api\/v1\/tasks$/
 const isCreate = (method: string, url: string) =>
   method === 'POST' && POST_TASK.test(new URL(url).pathname)
 
-/** Every request the page sends that could write a task, so a test can assert there was ONE. */
+/** Every request the page sends that could write a task, so a test can assert there was one. */
 function recordWrites(page: Page) {
   const writes: string[] = []
   page.on('request', (r) => {
@@ -38,9 +29,8 @@ function recordWrites(page: Page) {
 }
 
 /**
- * The body of the next task creation, resolved only once the SERVER has answered it. Waiting on
- * the request alone is a race with the test's own next read: a `GET` issued between the POST
- * leaving and the row existing reports a database that has not been written yet.
+ * The body of the next task creation, resolved only once the server has answered it. Waiting on
+ * the request alone races the test's own next read, which could see the database before the write.
  */
 const nextCreate = (page: Page) =>
   page
@@ -68,7 +58,6 @@ test('Create writes the title, project, parent, status, plan, deadline and notes
 
   await openNewTask(page)
   await expect(dialog(page)).toBeVisible()
-  // The title has focus the moment it opens: the dialog is a thing to type into.
   await expect(titleField(page)).toBeFocused()
 
   await titleField(page).fill('带细节的任务')
@@ -82,8 +71,7 @@ test('Create writes the title, project, parent, status, plan, deadline and notes
   await dialog(page).getByRole('button', { name: 'Create', exact: true }).click()
   const body = (await posted) as Record<string, unknown>
 
-  // The BODY, not the screen: what is being pinned is that one POST carries the whole task, so a
-  // half-made row never exists on the server.
+  // One POST carries the whole task, so a half-made row never exists on the server.
   expect(Object.keys(body).sort()).toEqual(
     ['dueAt', 'notes', 'parentId', 'projectId', 'scheduledOn', 'status', 'title'].sort(),
   )
@@ -120,15 +108,12 @@ test('⌘↵ creates and stays open, with the title cleared and focused', async 
   await page.keyboard.press('ControlOrMeta+Enter')
   expect(((await posted) as { title: string }).title).toBe('第一条')
 
-  // Still open, title empty and focused: adding several in a row costs no mouse and no reopen. A
-  // dialog merely on its way out would pass these; the second create below, from the same layer,
-  // is what proves it stayed.
+  // A dialog merely on its way out would pass these; the second create below proves it stayed.
   await expect(dialog(page)).toBeVisible()
   await expect(titleField(page)).toHaveValue('')
   await expect(titleField(page)).toBeFocused()
 
-  // The rest of the form was KEPT, which is the whole reason to stay: the second task gets the
-  // same project, status and plan without them being set again.
+  // The rest of the form was kept: the second task gets the same project, status and plan.
   await titleField(page).fill('第二条')
   posted = nextCreate(page)
   await page.keyboard.press('ControlOrMeta+Enter')
@@ -152,20 +137,18 @@ test('Escape closes the dialog and hands focus back to whatever opened it', asyn
 
   await openNewTask(page)
   await titleField(page).fill('不会被创建')
-  // Closed without asking: what was typed is kept for the next time it opens (FR-029).
+  // Closed without asking: what was typed is kept for the next time it opens.
   await page.keyboard.press('Escape')
   await expect(dialog(page)).toHaveCount(0)
   await expect(headNew(page)).toBeFocused()
   expect(writes).toEqual([])
 
-  // Opened from a task row by N T, focus goes back to THAT row rather than to the button or, worse,
-  // to <body> (WCAG 2.4.3).
+  // Opened from a task row by N T, focus goes back to that row, not to the button or <body>.
   const handle = page.getByRole('button', { name: 'Task: 放在我下面', exact: true })
   await handle.focus()
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   await expect(dialog(page)).toBeVisible()
-  // What Escape closed it on is back.
   await expect(titleField(page)).toHaveValue('不会被创建')
   await page.keyboard.press('Escape')
   await expect(dialog(page)).toHaveCount(0)
@@ -213,8 +196,8 @@ test('N T opens the dialog, obeys the off switch and is two letters while typing
   await expect(box).toHaveValue('nt')
   await box.press('Escape')
 
-  // Clicks land on the tree's column names rather than the page's <h1>: the project title is an
-  // editable control. The column names are the neutral spot this needs.
+  // Clicks land on the tree's column names rather than the page's <h1>, which is an editable
+  // control.
   await page.locator('[data-tree-head]').click()
   await page.keyboard.press('n')
   await page.keyboard.press('t')
@@ -229,7 +212,7 @@ test('N T opens the dialog, obeys the off switch and is two letters while typing
   await page.keyboard.press('n')
   await page.keyboard.press('t')
   await expect(dialog(page)).toHaveCount(0)
-  // And the button still is the way in, which is why a key being off is not a dead end.
+  // The button is still the way in.
   await openNewTask(page)
   await expect(dialog(page)).toBeVisible()
 })
@@ -239,9 +222,8 @@ test('the quick paths are untouched: the new-task box and capture behave as they
 }) => {
   const { pid } = await seed(page)
 
-  // Enter in the new-task box still files the line and keeps the box focused and empty -- and
-  // does NOT open the dialog. One line and Enter is a success criterion; the dialog is an
-  // addition to it.
+  // Enter in the new-task box files the line and keeps the box focused and empty, without the
+  // dialog.
   const created = page.waitForResponse((r) => isCreate(r.request().method(), r.url()) && r.ok())
   await page.getByPlaceholder('New task').fill('一行就走')
   await page.getByPlaceholder('New task').press('Enter')
@@ -282,8 +264,7 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
   expect(over).toEqual({ doc: 0, body: 0 })
 
   // The document alone is not enough: the scrim is its own scroll container, so a panel too wide
-  // for a phone scrolls INSIDE it while the page above stays clean. What has to be true is that
-  // the panel fits the viewport and the scrim has nothing to scroll.
+  // for a phone scrolls inside it while the page stays clean.
   const box = (await dialog(page).boundingBox())!
   expect(box.x).toBeGreaterThanOrEqual(0)
   expect(Math.ceil(box.x + box.width)).toBeLessThanOrEqual(375)
@@ -294,13 +275,9 @@ test('the dialog fits 375px with no horizontal scroll', async ({ page }) => {
 })
 
 /**
- * The layer's focus restoration must STAND DOWN when something else has already claimed the
- * keyboard. Radix puts focus back a macrotask after the close, so a restore that does not check
- * first will reach past the thing the person went on to open -- here, the search box they pressed
- * `f` for -- and pull focus back to the button that opened the list.
- *
- * The steal happens AFTER the search box has taken focus, so "focused" alone can be satisfied by
- * the state about to be destroyed; typing into it afterwards is the proof.
+ * Radix puts focus back a macrotask after the close, so a restore that does not check first pulls
+ * focus from the search box back to the button that opened the list. That happens after the search
+ * box has taken focus, so typing into it is the proof, not "focused" alone.
  */
 test('closing the ? list and pressing Ctrl K leaves focus in the search box', async ({ page }) => {
   await seed(page)
@@ -322,8 +299,8 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
 }) => {
   await seed(page)
 
-  // 1. `?` opens it. It is pressed from the head's New -- a focusable control that is not a text
-  // field -- so that "focus goes back to what opened it" below has something to go back to.
+  // 1. `?` opens it, pressed from a focusable control that is not a text field, so focus has
+  // something to go back to.
   await headNew(page).focus()
   await page.keyboard.press('?')
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
@@ -345,9 +322,8 @@ test('the ? overlay opens, lists the keys, closes two ways, restores focus and h
   // The document-level keys stand down under an open layer: Ctrl K here would otherwise stack
   // a search dialog on top of the list.
   await page.keyboard.press('Control+k')
-  // By attribute, NOT by role: a modal layer marks the rest of the page `aria-hidden`, so a
-  // search dialog stacked underneath is invisible to `getByRole` -- the role query passes
-  // precisely in the case this is here to catch.
+  // By attribute, not by role: a modal layer marks the rest of the page `aria-hidden`, so a search
+  // dialog stacked underneath is invisible to `getByRole`.
   await expect(page.locator('input[aria-label="Search"]')).toHaveCount(0)
   await expect(help).toBeVisible()
 
@@ -400,13 +376,13 @@ test('the ? list is the board’s three columns, and its switch names the keys i
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.getByRole('button', { name: 'Keys', exact: true }).click()
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })
-  // Last in the list, one line: the switch and the keys it stops, as caps (WCAG 2.1.4).
+  // Last in the list, one line: the switch and the keys it stops, as caps.
   const toggle = help.getByRole('switch', { name: /Single-key shortcuts/ })
   await expect(toggle).toBeVisible()
   const line = help.locator('label:has([role="switch"])')
   for (const cap of ['C', 'L', '?', '[', 'G', 'N', 'S', 'X', 'J', 'K'])
     await expect(line.getByText(cap, { exact: true })).toBeVisible()
-  // The groups and their order (artboard 24): Today's row keys are the tree's, said once.
+  // Today's row keys are the tree's, said once.
   const sections = await help.getByRole('heading', { level: 3 }).allTextContents()
   expect(sections).toEqual([
     'Anywhere',
@@ -432,7 +408,7 @@ test('the ? list is the board’s three columns, and its switch names the keys i
   await expect(foot).toBeVisible()
 })
 
-test('a layer opened by a click that left focus on the page gives focus back to that button (BUG-026)', async ({
+test('a layer opened by a click that left focus on the page gives focus back to that button', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -450,7 +426,7 @@ test('a layer opened by a click that left focus on the page gives focus back to 
   await expect(keys).toBeFocused()
 })
 
-test('Option+Tab wraps at the ends of a layer, as Tab does (BUG-026)', async ({ page }) => {
+test('Option+Tab wraps at the ends of a layer, as Tab does', async ({ page }) => {
   await registerFreshUser(page)
   await page.keyboard.press('?')
   const help = page.getByRole('dialog', { name: 'Keyboard shortcuts' })

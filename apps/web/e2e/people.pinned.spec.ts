@@ -2,9 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, pickLunarDay, registerFreshUser } from './helpers'
 
 /**
- * WHO YOU WERE IN TOUCH WITH (FR-060, artboard 18), on the server pinned at Thursday, October 22,
- * 2026, 00:30 UTC (pinned.ts): the last 30 days, the latest first, each with how it went and the
- * day; and those 90 days or more ago, with how long it has been.
+ * Who you were in touch with, on the server pinned at Thursday, October 22, 2026, 00:30 UTC
+ * (pinned.ts): the last 30 days, the latest first, each with how it went and the day; and those 90
+ * days or more ago, with how long it has been.
  */
 test.use({ timezoneId: 'Europe/London' })
 
@@ -55,7 +55,7 @@ test('the overview says who you were in touch with lately, and with whom it has 
   await expect(page).toHaveURL(new RegExp(`/people/${tom.id}$`))
 })
 
-test('their Meetings block has what is coming, then what was held, however long ago (BUG-046)', async ({
+test('their Meetings block has what is coming, then what was held, however long ago', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -80,11 +80,11 @@ test('their Meetings block has what is coming, then what was held, however long 
     /Thu 14:00\s*Stripe phone screen/,
     /Fri 10:30\s*rust-analyzer sync/,
     /Fri 10:30\s*rust-analyzer sync/,
-    // Past the week, the day alone: the column keeps one width (U-18).
+    // Past the week, the day alone: the column keeps one width.
     /Mar 3, 2022\s*Payments platform review/,
   ])
 
-  // Side by side, the full blocks are as tall as each other (FR-011 rule 1, BUG-047).
+  // Side by side, the full blocks are as tall as each other.
   const project = await apiPost(page, '/projects', { name: 'Job hunt' })
   const task = await apiPost(page, '/tasks', { projectId: project.id, title: 'Send the CV' })
   await apiPost(page, '/relations', {
@@ -103,7 +103,7 @@ test('their Meetings block has what is coming, then what was held, however long 
   expect(tasksBox!.height).toBe(meetingsBox!.height)
 })
 
-test('a birthday picked says this year’s day by its weekday, and when the reminder comes (BUG-050)', async ({
+test('a birthday picked says this year’s day by its weekday, and when the reminder comes', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -115,7 +115,7 @@ test('a birthday picked says this year’s day by its weekday, and when the remi
   await pickLunarDay(page, '九月', '廿六')
   const block = page.getByRole('region', { name: 'Birthday' })
   await expect(block).toContainText('Every year on九月廿六')
-  // Thursday the 22nd: this year's 九月廿六 is Wednesday, November 4 (FR-062).
+  // Thursday the 22nd: this year's 九月廿六 is Wednesday, November 4.
   await expect(page.getByTestId('birthday-preview')).toContainText('This yearWednesday, Nov 4')
   await expect(block.getByRole('button', { name: /^Tell me/ })).toBeVisible()
   await expect(block).toContainText('At 00:00 their time')
@@ -128,9 +128,7 @@ test('a birthday picked says this year’s day by its weekday, and when the remi
   ])
 })
 
-test('a birthday already past this year says next year’s day, as next year’s (BUG-078)', async ({
-  page,
-}) => {
+test('a birthday already past this year says next year’s day, as next year’s', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/people/new')
   await page

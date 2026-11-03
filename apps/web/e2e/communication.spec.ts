@@ -1,10 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { apiPost, makeProject, registerFreshUser, WEB } from './helpers'
 
-/**
- * LOGGING A MESSAGE (FR-048, FR-070): from an organisation's page with N X, beside the page;
- * whoever it was with brings their organisation once; it lands on every timeline it belongs on.
- */
 async function put(page: Page, path: string, data: object) {
   const res = await page.request.put(`/api/v1${path}`, { headers: WEB, data })
   expect(res.ok(), `${path}: ${res.status()}`).toBe(true)
@@ -37,7 +33,7 @@ test('N X on an organisation logs a message to it, and it is on every timeline i
 
   const form = pane(page)
   await expect(form).toBeVisible()
-  // Logged from the organisation, it is with the organisation already (FR-070).
+  // Logged from the organisation, it is with the organisation already.
   await expect(form.getByRole('button', { name: 'Remove Harbour & Lane LLP' })).toBeVisible()
   await form.getByRole('combobox', { name: 'To' }).fill('sarah')
   await form.getByRole('option', { name: 'Sarah Whitfield' }).click()
@@ -70,7 +66,7 @@ test('N X on an organisation logs a message to it, and it is on every timeline i
     'href',
     'https://harbour-lane.example/letter.pdf',
   )
-  // Closed, the way to log another is still on the head (FR-011 rule 7).
+  // Closed, the way to log another is still on the head.
   await expect(page.getByRole('button', { name: /^Log a message\s*N/ })).toBeVisible()
 
   await page.goto(`/people/${sarah.id as string}`)
@@ -108,7 +104,7 @@ test('a message needs someone it was with, and leaving a typed one asks first', 
   await expect(form).toHaveCount(0)
 })
 
-test('the + on a person’s timeline logs a message with them (FR-061)', async ({ page }) => {
+test('the + on a person’s timeline logs a message with them', async ({ page }) => {
   const { sarah } = await harbour(page)
   await page.goto(`/people/${sarah.id as string}`)
   await page

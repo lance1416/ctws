@@ -9,7 +9,7 @@ import {
 } from './helpers'
 
 /**
- * THE PANE'S NAMED DAYS, on the server pinned at Thursday, October 22, 2026, 00:30 UTC (01:30 in
+ * The pane's named days, on the server pinned at Thursday, October 22, 2026, 00:30 UTC (01:30 in
  * London, pinned.ts). Tomorrow is Friday the 23rd and next week is Monday the 26th whenever the
  * suite runs: no Sunday on which next Monday is tomorrow, no December on which tomorrow is in
  * another year.
@@ -28,7 +28,7 @@ test('the named plan decisions write the same scheduledOn the exact field writes
   expect(await saveTaskBody(page)).toEqual({ scheduledOn: '2026-10-23' })
   expect((await serverTask(page, pid, id)).scheduledOn).toBe('2026-10-23')
 
-  // The named decision and the exact field are two ways to the SAME field, not two fields.
+  // The named decision and the exact field are two ways to the same field, not two fields.
   await openTaskPane(page, pid, '改简历')
   await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('Oct 23')
   // Not next Monday itself: "next week" below would then write the value already stored, the form
@@ -58,7 +58,7 @@ test('the pane says the day back in the app’s own words, not the field’s for
 
   const dialog = page.getByRole('dialog', { name: 'Task details' })
   await page.getByRole('button', { name: 'Plan for tomorrow', exact: true }).click()
-  // A native date input prints its format in the BROWSER'S UI language, which no page can set;
+  // A native date input prints its format in the browser's UI language, which no page can set;
   // the echo is the app saying which day it understood, and it is right whatever the field prints.
   // The echo is the line under the field; the named days are buttons that say "Tomorrow" too.
   const echo = (said: string) => dialog.getByRole('paragraph').filter({ hasText: said })

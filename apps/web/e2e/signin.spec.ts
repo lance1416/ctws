@@ -4,7 +4,7 @@ import { holdFirstRead, logOut, makeProject, registerFreshUser } from './helpers
 /**
  * The sign-in screen: Enter signs in from either field.
  *
- * The fields live inside a <form>, and a form that submits is a page NAVIGATION unless it is
+ * The fields live inside a <form>, and a form that submits is a page navigation unless it is
  * prevented: a login screen that reloads loses the typing and the error message with it, which
  * looks like nothing in a screenshot.
  */
@@ -46,7 +46,7 @@ test('creating an account is a deliberate second press, not what Enter does', as
   await page.goto('/')
   await expect(page.getByLabel('Email')).toBeVisible()
 
-  // An email nobody has registered. Enter must try to LOG IN with it (and fail), not register it:
+  // An email nobody has registered. Enter must try to log in with it (and fail), not register it:
   // the quiet secondary action must not be what the primary key does.
   const email = `signin-${Date.now()}@example.com`
   await page.getByLabel('Email').fill(email)
@@ -117,7 +117,7 @@ test('an empty field or a short new password is said plainly, and nothing is sen
   await page.getByLabel('Email').fill('someone')
   await page.getByLabel('Password').fill('correct horse battery')
   await page.getByLabel('Password').press('Enter')
-  // Under its own box (FR-032).
+  // Under its own box.
   await expect(page.getByLabel('Email')).toHaveAccessibleDescription(
     'That doesn’t look like an email address.',
   )

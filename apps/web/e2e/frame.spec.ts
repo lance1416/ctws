@@ -1,8 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
 
-/** The frame of FR-017 to FR-023 (STORY-001): the regions, the icon bar, the retired addresses. */
-
 const PLACES = [
   'Workbench',
   'Today',
@@ -28,8 +26,8 @@ test('the icon bar holds the eleven places in order, the current one selected', 
   expect(names).toEqual(PLACES)
   await expect(bar.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
 
-  // A place's name and its key show beside it at once, on the pointer or the keyboard (FR-019),
-  // over the sidebar, not the browser's slow title.
+  // A place's name and its key show beside it, on the pointer or the keyboard, over the sidebar,
+  // not as the browser's slow title.
   const people = bar.getByRole('link', { name: 'People' })
   const tip = people.locator('[data-icon-tip]')
   await expect(tip).toBeHidden()
@@ -93,7 +91,7 @@ test('the top bar is 48 high and the icon bar 52 wide', async ({ page }) => {
   expect(bar?.width).toBe(52)
 })
 
-test('the old addresses go where their pages went (FR-023)', async ({ page }) => {
+test('the old addresses go where their pages went', async ({ page }) => {
   await registerFreshUser(page)
   await page.goto('/things')
   await expect(page).toHaveURL(/\/$/)
@@ -136,9 +134,7 @@ test('the icon bar expands to names and keys, and stays expanded after a reload'
   await expect(bar.getByText('Organisations', { exact: true })).toHaveCount(0)
 })
 
-test('expanding the icon bar leaves the sidebar, and the longest name fits (D2-01, D2-02)', async ({
-  page,
-}) => {
+test('expanding the icon bar leaves the sidebar, and the longest name fits', async ({ page }) => {
   await registerFreshUser(page, '/projects')
   await page.setViewportSize({ width: 1440, height: 900 })
   const bar = page.getByRole('navigation', { name: 'Modules' })
@@ -150,7 +146,7 @@ test('expanding the icon bar leaves the sidebar, and the longest name fits (D2-0
   expect(await longest.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
 })
 
-test('the N prefix swallows a key that makes nothing (BUG-018)', async ({ page }) => {
+test('the N prefix swallows a key that makes nothing', async ({ page }) => {
   await registerFreshUser(page)
   const before = page.url()
   // `Q` makes nothing after `N`, and must not reach anything else either.
@@ -164,7 +160,7 @@ test('the inspector has its own address, survives a reload and closes on Esc', a
   await registerFreshUser(page, '/people?inspect=meeting:01a15e5c-0000-7000-8000-000000000000')
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   await expect(inspector).toBeVisible()
-  // A meeting that is not there says so in the meeting's narrow page (FR-022).
+  // A meeting that is not there says so in the meeting's narrow page.
   await expect(inspector).toContainText('This meeting is not here any more.')
   await expect
     .poll(() => inspector.evaluate((el) => el.contains(document.activeElement)))
@@ -190,7 +186,7 @@ test('every place on the bar opens a page of its own, none of them a placeholder
     await link.click()
     await expect(page).toHaveURL(new URL(to, page.url()).href)
     await expect(link).toHaveAttribute('aria-current', 'page')
-    // Each names itself once, even empty (FR-030); none is waiting for a later batch.
+    // Each names itself once, even empty.
     await expect(page.getByRole('main').getByRole('heading', { level: 1 }), name).toHaveCount(1)
     await expect(page.getByText('Coming later.')).toHaveCount(0)
   }
@@ -250,7 +246,7 @@ test('the inspector and the task pane end above the status bar, which stays in s
     const box = (await panel.boundingBox())!
     return box.y + box.height
   }
-  // The inspector, beside the page (DES-001 "底部状态栏").
+  // The inspector, beside the page.
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   await expect(inspector).toBeVisible()
   expect(await bottom(inspector)).toBeLessThanOrEqual(status.y + 0.5)

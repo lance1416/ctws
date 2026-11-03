@@ -1,10 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser } from './helpers'
 
-/**
- * WAITING FOR A REPLY (FR-048, FR-071, FR-079), on the server pinned at Thursday, October 22,
- * 2026, 00:30 UTC (pinned.ts): every day below comes from that instant.
- */
+// On the server pinned at Thursday, October 22, 2026, 00:30 UTC: every day below comes from
+// that instant.
 test.use({ timezoneId: 'Europe/London' })
 
 const send = (page: Page, data: object) =>
@@ -23,7 +21,7 @@ test('a sent one waits five days by default, and the follow-up day says how near
   await expect(form.getByRole('button', { name: 'Remove Priya Nair' })).toBeVisible()
   await form.getByRole('textbox', { name: 'Subject' }).fill('Onsite dates')
   await form.getByRole('switch', { name: /Waiting for a reply/ }).check()
-  // Five days on from Thursday the 22nd (FR-048).
+  // Five days on from Thursday the 22nd.
   await expect(form.getByRole('textbox', { name: 'Follow up on' })).toHaveValue(/Oct 27/)
   await form.getByRole('button', { name: /^Log message/ }).click()
   await expect(form).toHaveCount(0)
@@ -81,7 +79,6 @@ test('on its day it is on Today; Follow up Mon moves it, and the reply closes it
   await onsite.getByRole('button', { name: 'Follow up on Onsite dates Monday' }).click()
   await expect(onsite).toHaveCount(0)
 
-  // The reply closes it (FR-048).
   const referral = block.locator('[data-follow-up]').filter({ hasText: 'Referral form' })
   await referral.getByRole('button', { name: 'Log the reply to Referral form' }).click()
   const reply = page.getByRole('dialog', { name: 'Log the reply' })
@@ -98,7 +95,7 @@ test('on its day it is on Today; Follow up Mon moves it, and the reply closes it
   )
 })
 
-test('a project lists who is waiting for a reply in it (FR-055)', async ({ page }) => {
+test('a project lists who is waiting for a reply in it', async ({ page }) => {
   await registerFreshUser(page)
   const priya = await apiPost(page, '/people', { givenName: 'Priya', familyName: 'Nair' })
   const jobs = await apiPost(page, '/projects', { name: 'Job hunt' })
@@ -118,8 +115,7 @@ test('a project lists who is waiting for a reply in it (FR-055)', async ({ page 
     followUpOn: '2026-10-21',
   })
   await page.goto(`/projects/${jobs.id as string}`)
-  // Awaiting reply, one line a message: its day, who (an avatar), what, and when to chase it; a
-  // day gone by is a nudge, said as one (artboard 8, U-12).
+  // A follow-up day gone by is said as a nudge.
   const block = page.getByRole('region', { name: 'Awaiting reply' })
   await expect(block).toContainText('Onsite dates')
   await expect(block).toContainText('PN')
@@ -147,7 +143,7 @@ test('each organisation in touch is one row, with what is next', async ({ page }
   await page.goto('/communication')
   const table = page.getByRole('region', { name: 'Organisations in touch' })
   const row = table.locator('[data-in-touch]').filter({ hasText: 'Morrow Legal' })
-  // However many times, one row (FR-071); twelve days since the first unanswered one.
+  // However many messages, one row; twelve days since the first unanswered one.
   await expect(row).toHaveCount(1)
   await expect(row).toContainText('Enquiry 2')
   await expect(row).toContainText('No reply, 12 days')
@@ -156,9 +152,7 @@ test('each organisation in touch is one row, with what is next', async ({ page }
   ).toContainText('Nothing')
 })
 
-test('a person’s timeline shows its last three months, the rest a press away (U-17)', async ({
-  page,
-}) => {
+test('a person’s timeline shows its last three months, the rest a press away', async ({ page }) => {
   await registerFreshUser(page)
   const lena = await apiPost(page, '/people', { givenName: 'Lena', familyName: 'Fischer' })
   const parties = [{ type: 'person', id: lena.id as string }]

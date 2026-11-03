@@ -15,14 +15,13 @@ import {
 import { dayOffset, nextMondayYmd, ymd } from './days'
 
 /**
- * THE DETAIL PANE, in the row system's own vocabulary: the five marker shapes, the plan and
- * deadline glyphs, and the same named decisions the row's triage control offers, with an exact
- * field for the days those do not cover. Not a stack of labelled native controls.
+ * The detail pane, in the row system's own vocabulary: the five marker shapes, the plan and
+ * deadline glyphs, and the named decisions the row's triage control offers, with an exact field
+ * for the days those do not cover.
  *
- * What these guards are for:
- * - A control that LOOKS right and writes nothing, or writes something else, passes any check on
- *   the screen. So every one of them is asserted on the REQUEST BODY, and then against a fresh
- *   read of the server.
+ * - A control that looks right and writes nothing, or writes something else, passes any check on
+ *   the screen. So every one is asserted on the request body, and then against a fresh read of
+ *   the server.
  * - "status is told by shape" and "a plan never looks like a deadline" are claims about drawn
  *   ink, so they are measured, not read off a class name.
  * - "a destructive action is not a peer of Save" is a claim about rank, so it is measured too.
@@ -47,7 +46,7 @@ test('the status markers write the contract’s own status value', async ({ page
   expect(await saveTaskBody(page)).toEqual({ status: 'in_progress' })
   expect((await serverTask(page, pid, id)).status).toBe('in_progress')
 
-  // And back the other way, so this cannot pass by writing one constant.
+  // Back the other way, so this cannot pass by writing one constant.
   await openTaskPane(page, pid, '写方案')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
   await page.getByRole('radio', { name: 'Cancelled', exact: true }).check()
@@ -61,19 +60,19 @@ test('the five statuses are one tab stop and the arrow keys move inside it', asy
   await makeTask(page, pid, '写方案')
   await openTaskPane(page, pid, '写方案')
 
-  // From the title, one Tab reaches the group -- at the CHECKED member, which is the native
+  // From the title, one Tab reaches the group -- at the checked member, which is the native
   // radiogroup contract and the reason this is not five buttons.
   await page.getByRole('textbox', { name: 'Title' }).focus()
   await page.keyboard.press('Tab')
   await expect(page.getByRole('radio', { name: 'To do', exact: true })).toBeFocused()
 
   // The group is in the status model's own order (backlog, todo, in_progress, done, cancelled),
-  // so one step right of To do is In progress; arrowing also CHECKS, which is the native contract.
+  // so one step right of To do is In progress; arrowing also checks, which is the native contract.
   await page.keyboard.press('ArrowRight')
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeFocused()
   await expect(page.getByRole('radio', { name: 'In progress', exact: true })).toBeChecked()
 
-  // One more Tab LEAVES the group entirely: five statuses cost one tab stop, not five.
+  // One more Tab leaves the group entirely: five statuses cost one tab stop, not five.
   await page.keyboard.press('Tab')
   await expect(page.getByRole('radio', { name: 'Done', exact: true })).not.toBeFocused()
   const inGroup = await page.evaluate(
@@ -96,14 +95,14 @@ test('the named deadline decisions write the day the row would show', async ({ p
   await page.getByRole('button', { name: 'Due tomorrow', exact: true }).click()
   const body = await saveTaskBody(page)
   expect(Object.keys(body)).toEqual(['dueAt'])
-  // A deadline is an instant; what it must get right is the local calendar DAY.
+  // A deadline is an instant; what it must get right is the local calendar day.
   expect(ymd(new Date(body.dueAt as string))).toBe(dayOffset(1))
   expect(ymd(new Date((await serverTask(page, pid, id)).dueAt!))).toBe(dayOffset(1))
 
   // "Next week" is the same Monday the row's triage control means.
   //
-  // Through TODAY first, and not straight from "tomorrow": on a Sunday next Monday IS tomorrow,
-  // the value would not change, and the app is RIGHT to send nothing.
+  // Through today first, not straight from "tomorrow": on a Sunday next Monday is tomorrow, the
+  // value would not change, and the app is right to send nothing.
   await openTaskPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Due today', exact: true }).click()
   await saveTaskBody(page)
@@ -112,7 +111,7 @@ test('the named deadline decisions write the day the row would show', async ({ p
   expect(ymd(new Date((await saveTaskBody(page)).dueAt as string))).toBe(nextMondayYmd())
 
   // Moving the day keeps the time of day, exactly as pushing a deadline does on the row. The time is set
-  // through the exact field first, and to something that is NOT the default a new deadline gets:
+  // through the exact field first, and to something that is not the default a new deadline gets:
   // with 23:59 on both sides this assertion would hold however the day was moved.
   await openTaskPane(page, pid, '交报告')
   await setDue(page, dayOffset(3), '09:15')
@@ -126,7 +125,7 @@ test('the named deadline decisions write the day the row would show', async ({ p
   expect(new Date(moved).getHours()).toBe(9)
   expect(new Date(moved).getMinutes()).toBe(15)
 
-  // And the way out sends null, not an empty string the contract would reject.
+  // The way out sends null, not an empty string the contract would reject.
   await openTaskPane(page, pid, '交报告')
   await page.getByRole('button', { name: 'Clear the deadline', exact: true }).click()
   expect(await saveTaskBody(page)).toEqual({ dueAt: null })
@@ -167,7 +166,7 @@ test('both dates change in one request, and nothing is saved until Save is press
 test('the edit is the reading, in place: the same rows, each its control', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
-  // Planned and due, or there would be no line for them to read (I-02).
+  // Planned and due, or there would be no line for them to read.
   await makeTask(page, pid, '原地编辑', {
     scheduledOn: '2019-03-14',
     dueAt: '2019-03-20T10:00:00Z',
@@ -179,7 +178,7 @@ test('the edit is the reading, in place: the same rows, each its control', async
   const read = await names()
   expect(read).toEqual(['Status', 'Planned', 'Due'])
 
-  // FR-056: Edit turns the rows into their controls where they stand, the title too.
+  // Edit turns the rows into their controls where they stand, the title too.
   await dialog.getByRole('button', { name: 'Edit', exact: true }).click()
   expect((await names()).slice(0, 3)).toEqual(read)
   await expect(dialog.getByRole('textbox', { name: 'Title' })).toHaveValue('原地编辑')
@@ -187,7 +186,7 @@ test('the edit is the reading, in place: the same rows, each its control', async
   // The date fields keep a name a screen reader says, though the row already shows it.
   await expect(dialog.locator('label[for="detail-due"]')).toHaveText('Due')
   await expect(dialog.locator('label[for="detail-go"]')).toHaveText('Plan')
-  // Waiting on is there to add to, behind the same lock as when it is read (P-07).
+  // Waiting on is there to add to, behind the same lock as when it is read.
   await expect(dialog.locator('dl > dt').filter({ hasText: 'Waiting on' })).toHaveCount(1)
   // Save is where Edit was.
   await expect(dialog.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0)
@@ -203,7 +202,7 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
   await openTaskPane(page, pid, '看焦点')
 
   // The radio itself is a transparent overlay, so the ring the app draws on every other control
-  // has to be drawn on the CHIP, or it is the one control a keyboard user cannot see.
+  // has to be drawn on the chip, or it is the one control a keyboard user cannot see.
   await page.getByRole('textbox', { name: 'Title' }).focus()
   await page.keyboard.press('Tab')
   const chip = page.getByRole('radio', { name: 'To do', exact: true }).locator('xpath=..')
@@ -211,7 +210,7 @@ test('the status chip wears the app’s focus ring when the keyboard reaches it'
     const s = getComputedStyle(el)
     return { width: s.outlineWidth, style: s.outlineStyle, color: s.outlineColor }
   })
-  // The ring is the task colour, as everywhere (handoff §4).
+  // The ring is the task colour, as everywhere.
   const ink = await page.evaluate(() => {
     const probe = document.createElement('span')
     probe.style.color = 'var(--color-task)'
@@ -234,12 +233,12 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
   await openTaskPane(page, pid, '这条任务的标题')
   const dialog = page.getByRole('dialog', { name: 'Task details' })
 
-  // The first thing in the pane is where the task lives and what it is called -- not a field
-  // label over an input. The project is NAMED (the chip beside it is never the only carrier).
+  // The first thing in the pane is where the task lives and what it is called, not a field label
+  // over an input.
   const title = dialog.getByRole('textbox', { name: 'Title' })
   await expect(title).toHaveValue('这条任务的标题')
-  // The project is NAMED on screen, not only coloured: the chip beside it is a second channel.
-  // The picker is a button that is both the label and the value, so the name is its accessible
+  // The project is named on screen, not only coloured. The picker is a button that is both the
+  // label and the value, so the name is its accessible
   // name and its text.
   const picker = dialog.getByRole('button', { name: /^Projects/ })
   await expect(picker).toHaveAccessibleName('Projects: Workbench')
@@ -250,7 +249,7 @@ test('the pane opens with the task, and Delete is not a peer of Save', async ({ 
     .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
   expect(titleSize, 'the title is the biggest text in the pane').toBeGreaterThan(notesSize)
 
-  // Delete is the edit's last thing, under its rule and apart from Save (FR-035).
+  // Delete is the edit's last thing, under its rule and apart from Save.
   const save = dialog.getByRole('button', { name: 'Save' })
   const del = dialog.getByRole('button', { name: 'Delete task' })
   await expect(del).toBeVisible()
@@ -290,15 +289,15 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
   await openTaskPane(page, pid, '读一下这条任务', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
 
-  // Not one FIELD on screen: no input of any kind, no select, no textarea, and nothing exposed as
+  // Not one field on screen: no input of any kind, no select, no textarea, and nothing exposed as
   // a textbox / radio / checkbox / combobox either.
   const controls = await dialog.locator('input, select, textarea, [contenteditable]').count()
   expect(controls, 'editable controls in reading mode').toBe(0)
   for (const role of ['textbox', 'radio', 'checkbox', 'combobox', 'spinbutton', 'slider'] as const)
     await expect(dialog.getByRole(role), role).toHaveCount(0)
-  // Reading offers no Delete: it is the edit's last thing (FR-035).
+  // Reading offers no Delete: it is the edit's last thing.
   await expect(dialog.getByRole('button', { name: 'Delete task' })).toHaveCount(0)
-  // And the information is all there, which is the other half: nothing is behind a second menu.
+  // The information is all there, which is the other half: nothing is behind a second menu.
   await expect(dialog.locator('[data-detail-title]')).toHaveText('读一下这条任务')
   await expect(dialog).toContainText('In progress')
   await expect(dialog).toContainText('只读')
@@ -316,7 +315,7 @@ test('the pane opens in reading mode with no field, and Edit reveals them', asyn
     .poll(() => editorText(dialog.getByRole('textbox', { name: 'Notes', exact: true })))
     .toBe('第一行\n第二行')
   await expect(dialog.getByRole('button', { name: 'Save' })).toBeVisible()
-  // And Delete, last, under its rule.
+  // Delete, last, under its rule.
   await expect(dialog.getByRole('button', { name: 'Delete task' })).toBeVisible()
 
   // Reading and then choosing to edit wrote nothing on its own: this is not autosave with a
@@ -341,11 +340,8 @@ test('Edit hands focus to the first field rather than dropping it on the body', 
 })
 
 /**
- * THE STATUS IS CHANGED WITHOUT ENTERING THE FORM.
- *
- * One value out of five is a decision, not a composition: there is nothing for a Save to mean,
- * and edit-change-save is a procedure imposed on one press. What is asserted here is the whole of
- * that claim -- it writes, it writes ONCE, the form never opens, and nothing is left unsaved.
+ * The status is changed without entering the form: one value out of five is a decision, with
+ * nothing for a Save to mean. It writes, once, the form never opens, and nothing is left unsaved.
  */
 test('the status is changed from reading mode, in one act and with no Save', async ({ page }) => {
   await registerFreshUser(page)
@@ -365,10 +361,10 @@ test('the status is changed from reading mode, in one act and with no Save', asy
   // The value is on the server, from one request.
   await expect.poll(async () => (await serverTask(page, pid, id)).status).toBe('in_progress')
   expect(writes).toHaveLength(1)
-  // The pane is still READING: no form opened behind the menu, and nothing to save.
+  // The pane is still reading: no form opened behind the menu, and nothing to save.
   await expect(dialog.getByRole('textbox', { name: 'Title' })).toHaveCount(0)
   await expect(dialog.getByRole('button', { name: 'Save' })).toHaveCount(0)
-  // And the control now says what the status is.
+  // The control now says what the status is.
   await expect(dialog.getByRole('button', { name: 'Status: In progress' })).toBeVisible()
 })
 
@@ -469,10 +465,10 @@ test('the task in the inspector: where it sits, its fields a line each, its reso
 
   await openTaskPane(page, pid, 'Prepare the system design round', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
-  // The project's square, then the path down to it (FR-056).
+  // The project's square, then the path down to it.
   await expect(dialog.locator('[data-detail-path]')).toHaveText('Job hunt / Amazon / SDE II')
   await expect(dialog.locator('[data-detail-title]')).toHaveText('Prepare the system design round')
-  // Only the fields it has a value for: no plan and no deadline, no lines for them (I-02).
+  // Only the fields it has a value for: no plan and no deadline, no lines for them.
   await expect(dialog.locator('dt')).toHaveText(['Status'])
   await expect(dialog.getByRole('button', { name: 'Status: To do' })).toBeVisible()
 
@@ -486,14 +482,14 @@ test('the task in the inspector: where it sits, its fields a line each, its reso
   await expect(resource).toHaveText('System design prepGoogle Doc')
   await expect(resource).toHaveAttribute('href', 'https://docs.google.com/document/d/prep/edit')
 
-  // Its timeline, newest first, in the module's words (FR-045).
+  // Its timeline, newest first, in the module's words.
   await dialog.getByRole('button', { name: 'Status: To do' }).click()
   await page.getByRole('menuitem', { name: 'In progress' }).click()
   const timeline = dialog.getByRole('region', { name: 'Timeline' })
   await expect(timeline.locator('[data-timeline-entry]').first()).toContainText('Started')
   await expect(timeline.locator('[data-timeline-entry]').last()).toContainText('Created')
 
-  // A parent: no plan of its own, and a status that is its children's (FR-038, FR-043).
+  // A parent: no plan of its own, and a status that is its children's.
   await openTaskPane(page, pid, 'SDE II', false)
   await expect(dialog.locator('dt')).toHaveText(['Status'])
   await expect(dialog.getByRole('button', { name: /^Status:/ })).toHaveCount(0)
@@ -517,7 +513,7 @@ test('away from its project, the inspector opens a task’s full page: its proje
   await expect(dialog.getByRole('link', { name: 'Open full page' })).toHaveCount(0)
 })
 
-test('Ctrl Enter saves the edit from any field (FR-029)', async ({ page }) => {
+test('Ctrl Enter saves the edit from any field', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Keys')
   await makeTask(page, pid, '按键保存')
@@ -532,9 +528,8 @@ test('Ctrl Enter saves the edit from any field (FR-029)', async ({ page }) => {
 })
 
 /**
- * A MENTION WHILE THE NOTES ARE EDITED (I-09, REQ-002 FR-108): never its address, which nobody
- * can read and a slip of the cursor breaks: a chip off the cursor's line, its words on it. Written
- * around, it stays the link it was.
+ * A mention while the notes are edited is never shown as its address, which nobody can read and a
+ * slip of the cursor breaks: a chip off the cursor's line, its words on it.
  */
 test('a mention in the notes is edited as its name, and saved as its link', async ({ page }) => {
   await registerFreshUser(page)
@@ -563,9 +558,8 @@ test('a mention in the notes is edited as its name, and saved as its link', asyn
 })
 
 /**
- * @ IN THE NOTES (FR-042, BUG-079): typing `@` and a few letters offers search's list under the
- * caret, by kind; the one chosen is the mention, and the person's page has the sentence until it
- * is taken out again.
+ * Typing `@` and a few letters in the notes offers search's list under the caret, by kind; the
+ * person's page has the sentence until it is taken out again.
  */
 test('@ in the notes offers things by kind; the one chosen is mentioned', async ({ page }) => {
   await registerFreshUser(page)
@@ -580,7 +574,7 @@ test('@ in the notes offers things by kind; the one chosen is mentioned', async 
   const notes = page.getByRole('textbox', { name: 'Notes' })
   await notes.click()
   await notes.pressSequentially('@Mir')
-  // The editor's list (REQ-002 FR-108): search's, by kind.
+  // The editor's list: search's, by kind.
   const list = page.getByRole('listbox')
   await expect(list.getByRole('option')).toHaveText([/Mira Chen$/, /Mirage Labs$/])
   await expect(list).toContainText('People')
@@ -629,7 +623,7 @@ test('@ works in a message too; Esc puts the list away, not the form', async ({ 
   const said = form.getByRole('textbox', { name: 'What was said' })
   await said.click()
   await said.pressSequentially('Ask @Mi')
-  // The editor's list (REQ-002 FR-108): search's, by kind.
+  // The editor's list: search's, by kind.
   const list = page.getByRole('listbox')
   await expect(list.getByRole('option')).toHaveText([/Mira Chen$/])
   await said.press('Escape')
@@ -651,9 +645,7 @@ test('@ works in a message too; Esc puts the list away, not the form', async ({ 
   )
 })
 
-test('@Mi puts Mira, whose name starts so, before Femi, who has it inside (BUG-087)', async ({
-  page,
-}) => {
+test('@Mi puts Mira, whose name starts so, before Femi, who has it inside', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Job hunt')
   for (const name of ['Femi Ford', 'Femi Gill', 'Femi Hale', 'Femi Ito', 'Mira Chen'])
@@ -665,7 +657,7 @@ test('@Mi puts Mira, whose name starts so, before Femi, who has it inside (BUG-0
   const notes = page.getByRole('textbox', { name: 'Notes' })
   await notes.click()
   await notes.pressSequentially('@Mi')
-  // The editor's list (REQ-002 FR-108): search's, by kind.
+  // The editor's list: search's, by kind.
   const list = page.getByRole('listbox')
   await expect(list.getByRole('option').first()).toHaveText(/Mira Chen$/)
 })

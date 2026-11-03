@@ -13,24 +13,22 @@ import {
 } from './helpers'
 
 /**
- * MARKDOWN NOTES: what renders, what is refused, and what is NOT downloaded.
+ * Markdown notes: what renders, what is refused, and what is not downloaded.
  *
- * These run against the real container, which is the only place two of the three claims can even be
- * made. The bundle split is a claim about REQUESTS -- `mermaid` and `katex` are fetched for a note
- * that uses them and not for one that does not -- and a request only has a content-hashed chunk name
- * to be recognised by once Vite has built it. The sanitiser is a claim about what a real browser's
- * parser does with the markup, which a string comparison in node cannot settle (the unit tests
- * beside the markdown renderer settle the schema; these settle the page).
+ * These run against the real container. The bundle split is a claim about requests, and a request
+ * only has a content-hashed chunk name to be recognised by once Vite has built it. The sanitiser is
+ * a claim about what a real browser's parser does with the markup; the unit tests beside the
+ * markdown renderer settle the schema, these settle the page.
  */
 
-/** Registers, makes a project with one noted task, and opens that task's detail in READING mode. */
+/** Registers, makes a project with one noted task, and opens that task's detail in reading mode. */
 async function seedNote(page: Page, notes: string, title = '读一下') {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, title, { notes })
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
-  // The pane beside the tree; on a phone, the sheet over the page (FR-088).
+  // The pane beside the tree; on a phone, the sheet over the page.
   await expect(
     page
       .getByRole('dialog', { name: 'Task details' })
@@ -93,9 +91,9 @@ test('a note renders maths through KaTeX', async ({ page }) => {
   await expect(notesBlock(page).locator('.katex').first()).toBeVisible()
   await expect(notesBlock(page).locator('.katex-display')).toBeVisible()
   /**
-   * AND THE VISIBLE MATHS IS NOT THE CHARACTERS THE AUTHOR TYPED. Asserted on `.katex-html`, the
-   * part KaTeX DRAWS, and not on the block's whole text: KaTeX also emits MathML with an
-   * `<annotation>` carrying the original TeX, which is what a screen reader and a copy get.
+   * The visible maths is not the characters the author typed. Asserted on `.katex-html`, the part
+   * KaTeX draws, not on the block's whole text: KaTeX also emits MathML with an `<annotation>`
+   * carrying the original TeX, which is what a screen reader and a copy get.
    */
   const drawn = await notesBlock(page).locator('.katex-html').first().innerText()
   expect(drawn).not.toContain('\\')
@@ -165,7 +163,7 @@ test('a note cannot smuggle a script, a handler, a javascript: link or an iframe
   await seedNote(page, INJECTIONS.join('\n\n'))
   const notes = notesBlock(page)
   await expect(notes).toBeVisible()
-  // AND WAIT FOR THE PIPELINE. Until the Markdown chunk arrives, `NoteBody`'s fallback is the
+  // Wait for the pipeline. Until the Markdown chunk arrives, `NoteBody`'s fallback is the
   // note's own characters as plain text -- which contains no script, no handler and no iframe
   // either, so every assertion below is already true on that frame, before anything has been
   // sanitised. This wrapper is `NoteMarkdown`'s own: it exists only once the pipeline has run.
@@ -181,13 +179,13 @@ test('a note cannot smuggle a script, a handler, a javascript: link or an iframe
   await expect(notes.locator('[onclick], [onerror], [onload]')).toHaveCount(0)
   await expect(notes.locator('a[href^="javascript:"]')).toHaveCount(0)
 
-  // The one rule that is about the PAGE and not the subtree: a `<style>` in a note that survived
+  // The one rule about the page and not the subtree: a `<style>` in a note that survived
   // would style everything, so the body must still be visible.
   await expect(page.locator('body')).toBeVisible()
   // Sanitising is not blanking: the `javascript:` link keeps its words and loses only its href.
   await expect(notes).toContainText('点我')
   // Raw HTML never reaches the sanitiser: with no `rehype-raw`, `mdast-util-to-hast` drops the
-  // `html` node. A div on its own line is a BLOCK, so its tags and the words between them are ONE
+  // `html` node. A div on its own line is a block, so its tags and the words between them are one
   // node and go together -- unlike inline `<b>x</b>`, whose text stays as prose. Both are pinned
   // in `markdown.test.tsx`; this is the same rule seen from the page.
   await expect(notes).not.toContainText('一段原始 HTML')
@@ -234,10 +232,9 @@ test('a mermaid diagram cannot break out of its own svg or its own stylesheet', 
   await seedNote(page, diagrams.join('\n\n'))
   const notes = notesBlock(page)
   /**
-   * EVERY FENCE SETTLED, one way or the other -- rendered or refused. This has to be WAITED for and
-   * not merely counted: `count()` does not retry, so it reads 0 while the
-   * Markdown chunk had not loaded yet -- which made every assertion below it pass on an empty
-   * subtree. An assertion about what is ABSENT is worthless until what should be PRESENT is there.
+   * Every fence settled, rendered or refused. Waited for, not counted: `count()` does not retry, so
+   * it reads 0 before the Markdown chunk has loaded, and every assertion below would pass on an
+   * empty subtree.
    */
   await expect(notes.locator('[data-note-diagram]')).toHaveCount(4, { timeout: 20000 })
   await expect(notes.locator('[data-note-diagram="drawing"]')).toHaveCount(0, { timeout: 20000 })
@@ -250,7 +247,7 @@ test('a mermaid diagram cannot break out of its own svg or its own stylesheet', 
   await expect(notes.locator('svg foreignObject')).toHaveCount(0)
   await expect(notes.locator('svg a')).toHaveCount(0)
   await expect(notes.locator('svg script')).toHaveCount(0)
-  // DOMPurify's svg profile allowlists no `style` ATTRIBUTE here, and the config forbids it.
+  // DOMPurify's svg profile allowlists no `style` attribute here, and the config forbids it.
   await expect(notes.locator('svg [style]')).toHaveCount(0)
   const handlers = await notes.evaluate((root) =>
     [...root.querySelectorAll('svg *')]
@@ -260,9 +257,9 @@ test('a mermaid diagram cannot break out of its own svg or its own stylesheet', 
   expect(handlers).toEqual([])
 
   /**
-   * EVERY RULE THAT SURVIVED IS ANCHORED TO ITS OWN DIAGRAM. An inline svg's `<style>` is not
-   * scoped, so this is the claim that a diagram cannot restyle the app around it. Read off the
-   * CSSOM, which is the same place `scopeDiagramStyles` deletes from.
+   * Every rule that survived is anchored to its own diagram: an inline svg's `<style>` is not
+   * scoped, so this is what keeps a diagram from restyling the app. Read off the CSSOM, the same
+   * place `scopeDiagramStyles` deletes from.
    */
   const selectors = await notes.evaluate((root) =>
     [...root.querySelectorAll('style')].flatMap((el) =>
@@ -285,7 +282,7 @@ test('a mermaid diagram cannot break out of its own svg or its own stylesheet', 
   expect(stray, 'no diagram CSS reached the network').toEqual([])
 })
 
-// --------------------------------------------------------------------- what is NOT downloaded
+// --------------------------------------------------------------------- what is not downloaded
 
 /** Every URL the page asked for, so the absence of one can be asserted. */
 function watchRequests(page: Page): string[] {
@@ -299,20 +296,14 @@ const KATEX = /katex/i
 const MERMAID = /mermaid/i
 
 /**
- * WHAT IS IN THE BYTES, not what is in the file names.
+ * What is in the bytes, not in the file names. The three tests below watch requests, which miss a
+ * renderer bundled into a chunk the page loads anyway: a static `import 'rehype-katex'` puts KaTeX
+ * inside the Markdown chunk and no URL ever says "katex". Mutating `NoteMarkdown` that way left all
+ * three green, so this reads every script and stylesheet the page loaded.
  *
- * The three tests below watch REQUESTS, which catches a renderer that is fetched as its own chunk.
- * It does not catch a renderer that was BUNDLED INTO a chunk the page loads anyway -- and that is
- * exactly what a static `import 'rehype-katex'` does: KaTeX lands inside the Markdown chunk, no URL
- * ever says "katex", and a name-based assertion passes while every opened note pays 260 KB.
- * Measured: mutating `NoteMarkdown` to import KaTeX statically, and to import the diagram component
- * eagerly, left all three of them green. So the claim is made on the content of every script and
- * stylesheet the page actually loaded.
- *
- * The two fingerprints are strings that exist in the vendors' bundles and in no source file of this
- * app (grepped): `katex-mathml` is a class KaTeX emits, `flowchart-v2` a diagram id mermaid
- * registers. Asserting on a string rather than on a byte count is what keeps this from being a
- * threshold somebody later raises until it is green again.
+ * The fingerprints exist in the vendors' bundles and in no source file of this app: `katex-mathml`
+ * is a class KaTeX emits, `flowchart-v2` a diagram id mermaid registers. A string, not a byte
+ * count, so it cannot become a threshold raised until it is green.
  */
 test('no chunk a plain note loads contains KaTeX or mermaid', async ({ page }) => {
   const urls = watchRequests(page)
@@ -363,7 +354,7 @@ test('a note with a diagram fetches mermaid and still not katex', async ({ page 
 
 test("KaTeX's stylesheet ships only woff2, like the app's own two faces", async ({ page }) => {
   /**
-   * KaTeX lists a `.woff` AND a `.ttf` after each `.woff2`, across twenty faces -- about 700 KB of
+   * KaTeX lists a `.woff` and a `.ttf` after each `.woff2`, across twenty faces -- about 700 KB of
    * files no browser that can run this app will ever ask for. The Vite plugin that strips
    * @fontsource's `.woff` strips KaTeX's too (apps/web/vite.config.ts); `font.spec.ts` covers the
    * app's own stylesheet, this the KaTeX one.
@@ -381,9 +372,9 @@ test("KaTeX's stylesheet ships only woff2, like the app's own two faces", async 
   expect(css.match(/url\([^)]*\.(?:woff|ttf)\)/g) ?? []).toEqual([])
 })
 
-// ------------------------------------------------------------------------- the writing mode (H)
+// ------------------------------------------------------------------------- the writing mode
 
-/** The full screen's editor (REQ-002 FR-106): the one editor, at the reading measure. */
+/** The full screen's editor: the one editor, at the reading measure. */
 const writingSource = (page: Page) => page.getByRole('textbox', { name: 'Writing' })
 
 test('the full-screen writing mode round-trips the source unchanged', async ({ page }) => {
@@ -413,7 +404,7 @@ test('the full-screen writing mode round-trips the source unchanged', async ({ p
   await page.getByRole('button', { name: 'Save' }).click()
   expect((await saved).status()).toBe(200)
 
-  // And the SOURCE is what the server kept -- never the rendered HTML.
+  // The source is what the server kept, never the rendered HTML.
   await page.goto(`/projects/${pid}`)
   const stored = (await (await page.request.get(`/api/v1/tasks?projectId=${pid}`)).json()) as {
     tasks: { notes: string | null }[]
@@ -426,12 +417,10 @@ test('the unsaved-edit guard fires from the writing mode, and the question is vi
 }) => {
   const pid = await seedNote(page, '原文')
   /**
-   * A SAME-DOCUMENT HISTORY ENTRY FIRST, by walking there with the app's own links.
-   *
-   * `seedNote` arrives with `page.goto`, and going BACK across a document boundary is a browser
-   * navigation React Router never sees -- only `beforeunload` could stop it, and this app
-   * deliberately has none (a native prompt would block the automation it is tested with). So the
-   * route in is the app's own links, which is what the guard can act on.
+   * A same-document history entry first, by the app's own links. `seedNote` arrives with
+   * `page.goto`, and going back across a document boundary is a navigation React Router never sees;
+   * only `beforeunload` could stop it, and this app deliberately has none (a native prompt would
+   * block the automation it is tested with).
    */
   await page.keyboard.press('Escape')
   await navLink(page, 'Projects').click()
@@ -494,7 +483,7 @@ test('full screen: the outline when there are headings, Ctrl F, and Esc leaves',
   await expect(bar).toHaveCount(0)
   await expect(layer).toBeVisible()
   await expect(writingSource(page)).toBeFocused()
-  // Esc on an open `@` list closes the list, not the layer (BUG-098).
+  // Esc on an open `@` list closes the list, not the layer.
   await apiPost(page, '/people', { name: 'Mira Chen' })
   await page.keyboard.type(' @Mi')
   const list = page.getByRole('listbox')

@@ -2,11 +2,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
 
 /**
- * A BOX ONLY FOR WHAT FLOATS.
- *
- * A page of identical boxes says nothing about which of them matter, so a section of a page is
- * just its heading and its rows; the only boxes are things above the page (the sheet, menus,
- * dialogs) and the Workbench's tiles, which sit on a desk of their own.
+ * A page of identical boxes says nothing about which of them matter, so only what floats above
+ * the page and the Workbench's widgets are boxed.
  */
 
 /** The computed colour of a token, as `getComputedStyle` reports a fill. */
@@ -48,7 +45,7 @@ test('the Workbench is the ground, and its widgets are blocks on it', async ({ p
   await registerFreshUser(page, '/')
   const widget = page.getByRole('region', { name: 'Now', exact: true })
   await expect(widget).toBeVisible()
-  // Every page lies on the ground (FR-005); its widgets are blocks, panels with a hairline.
+  // Every page lies on the ground; its widgets are panels with a hairline.
   expect(await style(page.getByRole('main'))).toMatchObject({ fill: await token(page, 'ground') })
   expect(await style(widget)).toEqual({
     fill: await token(page, 'panel'),
@@ -61,24 +58,21 @@ test('the Workbench is the ground, and its widgets are blocks on it', async ({ p
 test('beside the page, the inspector is its right edge from under the header to the floor', async ({
   page,
 }) => {
-  // Artboard 8 (I-08): a column, not a card floating 12px in with rounded corners.
+  // A column, not a card floating 12px in with rounded corners.
   const pane = await openTask(page, 'light')
   const box = (await pane.boundingBox())!
   const header = (await page.getByRole('banner').boundingBox())!
   expect(Math.round(1440 - (box.x + box.width))).toBe(0)
   expect(Math.round(box.y - (header.y + header.height))).toBe(0)
-  // Down to the status bar, which stays in sight under it (DES-001 "底部状态栏").
+  // Down to the status bar, which stays in sight under it.
   expect(Math.round(900 - 24 - (box.y + box.height))).toBe(0)
   const s = await style(pane)
   expect(s.radius).toBe('0px')
   expect(s.border).toBe('0px')
 })
 
-test('a float is lifted by a ring and a soft fall, in both schemes (tokens.md)', async ({
-  page,
-}) => {
+test('a float is lifted by a ring and a soft fall, in both schemes', async ({ page }) => {
   const light = await openTask(page, 'light')
-  // The hairline ring, and the soft fall under it.
   expect((await style(light)).shadow).toMatch(/0px 0px 0px 1px.*0px 8px 28px 0px/)
 
   await page.emulateMedia({ colorScheme: 'dark' })

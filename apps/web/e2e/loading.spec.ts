@@ -2,10 +2,9 @@ import { expect, test } from '@playwright/test'
 import { apiPost, registerFreshUser } from './helpers'
 
 /**
- * LOADING LOOKS AS LOADED WILL (DES-001 "加载", L-01): what is still being read is neither full
- * nor empty; a region whose layout the data decides waits for all of it and comes in at once,
- * showing one neutral bar if it takes a while; what is under it waits too. Empty blocks take the
- * same columns as full ones.
+ * What is still being read is neither full nor empty: a region whose layout the data decides waits
+ * for all of it and comes in at once, showing one plain bar if it takes a while. Empty blocks take
+ * the same columns as full ones.
  */
 
 const blocks = ['Meetings', 'Tasks', 'Recommended reading']

@@ -2,18 +2,14 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, registerFreshUser, captureBox, openCapture } from './helpers'
 
 /**
- * ENTER WHILE AN IME IS COMPOSING IS NOT A SUBMIT.
+ * Typing English inside a Chinese IME, the Enter commits the letters out of the candidate buffer;
+ * it must not also submit.
  *
- * Typing English inside a Chinese IME and pressing Enter is how a lot of people type English: the
- * Enter commits the letters out of the candidate buffer. It must not also file the task or add the
- * person.
+ * The composition is driven the way Safari dispatches it, `compositionend` before the `keydown`
+ * that caused it, because that ordering defeats `KeyboardEvent.isComposing` on its own.
  *
- * The composition is driven here the way SAFARI dispatches it -- `compositionend` BEFORE the
- * `keydown` that caused it -- because that ordering is what defeats `KeyboardEvent.isComposing`
- * on its own.
- *
- * Each test records the writes the page sends, and then presses a real Enter: the one write that
- * follows proves the IME Enter was handled and dropped, not merely still in flight.
+ * Each test then presses a real Enter: the one write that follows proves the IME Enter was handled
+ * and dropped, not merely still in flight.
  */
 
 /**
@@ -38,7 +34,7 @@ async function commitWithIme(page: Page, selector: string, text: string) {
   await page.evaluate(
     ([sel, value]) => {
       const el = document.querySelector(sel as string) as HTMLInputElement | HTMLTextAreaElement
-      // Safari's order: the composition ends, and only THEN does the Enter arrive.
+      // Safari's order: the composition ends, and only then does the Enter arrive.
       el.dispatchEvent(
         new CompositionEvent('compositionend', { bubbles: true, data: value as string }),
       )

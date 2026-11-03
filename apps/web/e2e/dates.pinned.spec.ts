@@ -2,9 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, openTree, registerFreshUser } from './helpers'
 
 /**
- * WHAT A DATE SAYS WHERE IT DEPENDS ON TODAY, on the server pinned at Thursday, October 22, 2026,
- * 00:30 UTC (01:30 in London): every expected word comes from that instant (pinned.ts), never
- * from the clock the suite happens to run under.
+ * On the server pinned at Thursday, October 22, 2026, 00:30 UTC (01:30 in London): every expected
+ * word comes from that instant (pinned.ts), never from the clock the suite runs under.
  */
 test.use({ timezoneId: 'Europe/London' })
 
@@ -44,7 +43,6 @@ test('an empty Today says Nothing yet, and stops saying it when something is pla
   const planned = page.getByRole('region', { name: 'Planned for today' })
   await expect(planned).toContainText('Nothing yet')
 
-  // The other half: with something planned for the pinned day, the words go.
   await makeTask(page, pid, '今天要做的', { scheduledOn: '2026-10-22' })
   await page.goto('/today')
   await expect(planned.getByText('今天要做的')).toBeVisible()

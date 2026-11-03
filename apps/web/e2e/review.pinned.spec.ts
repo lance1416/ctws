@@ -2,9 +2,7 @@ import { expect, test } from '@playwright/test'
 import { apiPost, makeProject, makeTask, registerFreshUser, WEB } from './helpers'
 
 /**
- * THE REVIEW'S PANEL AND WEEKS (FR-081, artboard 19), on the server pinned at Thursday, October 22,
- * 2026, 00:30 UTC: the stages that moved, what else the week held, counted by every module, and
- * the weeks in the sidebar on one scale.
+ * The review's panel and weeks, on the server pinned at Thursday, October 22, 2026, 00:30 UTC.
  */
 test.use({ timezoneId: 'Europe/London', viewport: { width: 1440, height: 900 } })
 

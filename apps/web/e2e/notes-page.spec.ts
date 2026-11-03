@@ -3,9 +3,8 @@ import { apiPost, editorText, registerFreshUser, WEB } from './helpers'
 import { dayOffset } from './days'
 
 /**
- * NOTES, A KIND OF ITS OWN (FR-050, FR-074): the overview's Recent, a note's page and what it
- * hangs on. What a note's day says is in notes.pinned.spec.ts; what its Markdown renders is in
- * notes.spec.ts.
+ * The overview's Recent, a note's page and what it hangs on. What a note's day says is in
+ * notes.pinned.spec.ts; what its Markdown renders is in notes.spec.ts.
  */
 
 const recent = (page: Page) => page.getByRole('main').getByRole('region', { name: 'Recent' })
@@ -28,7 +27,7 @@ test('a note hung on a meeting says it is on the meeting, and is that meeting’
   })
   await page.goto('/notes')
 
-  // Its row: a meeting note with no title is that meeting's on that day (FR-050, v2.8).
+  // Its row: a meeting note with no title is that meeting's on that day.
   const hung = row(page, note.id)
   await expect(hung).toContainText(/Weekly sync, [A-Z][a-z]{2} \d+/)
   await expect(hung).toContainText('Weekly sync')
@@ -55,7 +54,7 @@ test('a note deleted from its page is gone from Recent, and the rest stay', asyn
   await expect(rows(page)).toHaveCount(2)
 
   await row(page, doomed.id).click()
-  // The button says what it deletes (FR-035, R-06).
+  // The button says what it deletes.
   await page.getByRole('button', { name: 'Delete Delete me' }).click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this note' })
   await expect(ask).toContainText('Delete Delete me? The note goes. What it hangs on stays.')
@@ -108,9 +107,7 @@ test('an empty Notes is the module empty state, whose button starts a note', asy
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
 })
 
-test('an untitled note’s Title box says what it is called, its first line (R-05)', async ({
-  page,
-}) => {
+test('an untitled note’s Title box says what it is called, its first line', async ({ page }) => {
   await registerFreshUser(page)
   const note = await apiPost(page, '/notes', { body: '## Updates\n- Billing in staging.' })
   await page.goto(`/notes/${note.id}`)

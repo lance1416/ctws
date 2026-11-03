@@ -28,7 +28,7 @@ async function panes(page: Page) {
   return { pid, person, book, meeting }
 }
 
-/** A meeting's pane over the Calendar; on the Meetings page it is a page of its own (FR-067). */
+/** A meeting's pane over the Calendar; on the Meetings page it is a page of its own. */
 const overCalendar = (m: { meetingId: string; recurrenceId: string }) =>
   `/calendar?${new URLSearchParams({ meeting: m.meetingId, at: m.recurrenceId })}`
 
@@ -118,15 +118,14 @@ test('every edit has Cancel left, Save right, both at the top', async ({ page })
     )
     await cancel.click()
   }
-  // A person is edited on a page, with the same order at its head (FR-063).
+  // A person is edited on a page, with the same order at its head.
   await page.goto(`/people/${w.person.id}/edit`)
   const save = page.getByRole('button', { name: /^Save/ })
   await leftOf(page.getByRole('link', { name: 'Cancel' }), save)
   expect((await save.boundingBox())!.y, 'People: Save above the fields').toBeLessThan(
     (await page.getByLabel('Given name', { exact: true }).boundingBox())!.y,
   )
-  // A meeting (FR-068) and a reading item (FR-073) end with them, Save with its keys, as the
-  // forms of artboard 11 do (DES-001 section 7, E-03).
+  // A meeting's and a reading item's form end with them instead.
   const main = page.getByRole('main')
   for (const [name, path, first] of [
     [
@@ -192,7 +191,7 @@ test('the delete question: Cancel on the left, the confirm on the right', async 
   const pane = page.getByRole('dialog', { name: 'Task details' })
   await pane.getByRole('button', { name: 'Edit', exact: true }).click()
   await pane.getByRole('button', { name: 'Delete task' }).click()
-  // The question is a small dialog of its own, over the pane (FR-035, handoff §7).
+  // The question is a small dialog of its own, over the pane.
   const ask = page.getByRole('alertdialog')
   const confirm = ask.getByRole('button', { name: /^Delete/ })
   await expect(confirm).toBeEnabled()
@@ -211,7 +210,7 @@ const token = (page: Page, name: string) =>
   }, name)
 
 const fill = (l: Locator) => l.evaluate((el) => getComputedStyle(el).backgroundColor)
-/** A destroying answer is framed in red, not filled (artboard 3). */
+/** A destroying answer is framed in red, not filled. */
 const edge = (l: Locator) => l.evaluate((el) => getComputedStyle(el).borderTopColor)
 
 /** A meeting a week or so out; `at` opens it on its page, `over` in the pane over the Calendar. */
@@ -394,6 +393,6 @@ test('Today: one gap between the blocks, however tall the right column is', asyn
   await expect(overdue.locator('[data-today-row]')).toHaveCount(5)
   const a = (await doing.boundingBox())!
   const b = (await today.boundingBox())!
-  // However long the blocks below get, the one under In progress keeps the page's 12 (artboard 12).
+  // However long the blocks below get, the one under In progress keeps the page's 12px gap.
   expect(Math.round(b.y - (a.y + a.height))).toBe(12)
 })

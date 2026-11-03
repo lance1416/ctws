@@ -1,10 +1,9 @@
 import type { Page } from '@playwright/test'
 
 /**
- * WHAT A FINGER PRESSES, MEASURED (DES-001 "44 和看起来的大小", FR-082): every target that shows
- * on the page, scrolled out of view or not, by what takes the press: the element, the label round
- * an input, the card a link is stretched over, or the unseen square `tap` puts under it,
- * whichever is largest. QA's sweep measures the same way (BUG-071).
+ * What a finger presses, measured: every target that shows on the page, scrolled out of view or
+ * not, by what takes the press: the element, the label round an input, the card a link is
+ * stretched over, or the unseen square `tap` puts under it, whichever is largest.
  */
 export const PHONE = { width: 390, height: 844 }
 

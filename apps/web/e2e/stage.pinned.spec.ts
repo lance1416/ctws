@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, makeProject, registerFreshUser, WEB } from './helpers'
 
 /**
- * WHAT COMES NEXT ON A CARD ON THE BOARD BY STAGE (FR-058, artboard 20), on the server pinned at
- * Thursday, October 22, 2026, 00:30 UTC (pinned.ts): the next meeting with the company's people,
+ * What comes next on a card on the board by stage, on the server pinned at Thursday, October 22,
+ * 2026, 00:30 UTC (pinned.ts): the next meeting with the company's people,
  * the day a reply is awaited by, and the column sorted by the nearest of those and the deadline.
  */
 test.use({ timezoneId: 'Europe/London' })
@@ -44,7 +44,7 @@ test('a card names its next meeting and its follow-up, and sorts by the nearest 
     timeZone: 'Europe/London',
     durationMinutes: 45,
     attendeeIds: [mira.id],
-    // Through a person, only what is filed under this project counts (FR-058).
+    // Through a person, only what is filed under this project counts.
     projectId,
   })
   await apiPost(page, '/communication', {

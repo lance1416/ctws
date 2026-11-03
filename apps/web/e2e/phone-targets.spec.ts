@@ -5,14 +5,14 @@ import { registerFreshUser, sidewaysScroll } from './helpers'
 import { PHONE, undersized } from './targets'
 
 /**
- * EVERY TARGET ON A PHONE IS 44 (DES-001): the migration report, which no account the sweep makes
- * has. The pages and layers are swept on the full set of things in phone-targets.pinned.spec.ts.
+ * Every target on a phone is at least 44: the migration report, which no account the sweep makes
+ * has. The pages and layers are swept in phone-targets.pinned.spec.ts.
  */
 test.use({ viewport: PHONE, hasTouch: true })
 
 // The report is made once, by the move itself, so a new account has none: this one is the report
 // the pre-redesign fixture's move wrote (apps/api/tests/fixtures/pre-redesign.sql), served as is.
-test('the migration report on a phone: one column of parts, each row a card, all of it 44 (DES-001, BUG-072)', async ({
+test('the migration report on a phone: one column of parts, each row a card, all of it 44', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -24,7 +24,7 @@ test('the migration report on a phone: one column of parts, each row a card, all
   )
   await page.goto('/migration')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your data in the new layout')
-  // No sidebar and no tags: the parts one under another, each head with how many (FR-088).
+  // No sidebar and no tags: the parts one under another, each head with how many.
   await expect(page.getByRole('navigation', { name: 'Migration report' })).toBeHidden()
   const parents = page.getByRole('region', { name: 'Parents whose status changed' })
   await expect(parents).toContainText(/\d+ to look at/)

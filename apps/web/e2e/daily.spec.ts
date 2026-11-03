@@ -12,10 +12,8 @@ import {
 } from './helpers'
 import { DAY, dayOffset, dueAgo, MONTHS, ymd } from './days'
 
-// The daily loop: finishing, starting and deferring work from the list itself, the dates a tree
-// row shows, and the panel / delete guards. Every assertion that a status or date changed reads
-// the SERVER (a fresh GET), not the screen: an optimistic update that never reached the API
-// would pass any check that only looks at the UI.
+// Every assertion that a status or date changed reads the server (a fresh GET), not the screen:
+// an optimistic update that never reached the API would pass any check that only looks at the UI.
 
 const treeRow = (page: Page, title: string) =>
   page
@@ -45,12 +43,10 @@ test('the status mark in a tree row finishes the task in one click, and it is sa
   // One action: the detail panel never opened.
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  // It stayed on screen: a row finished HERE is not swept up by the hiding, so the mark can
-  // show it worked and a mis-press can be undone from the same row.
+  // A row finished here is not hidden at once, so a mis-press can be undone from the same row.
   await expect(treeRow(page, '写方案').getByRole('img', { name: 'Done' })).toBeVisible()
 
-  // The server has it. A fresh load is where the hiding applies: the tree is what is left to do,
-  // and this is now part of the finished pile, reachable behind its own count.
+  // A fresh load hides it behind the count of finished tasks.
   expect((await serverTask(page, pid, '写方案')).status).toBe('done')
   await page.reload()
   await expect(treeRow(page, '写方案')).toHaveCount(0)
@@ -74,7 +70,7 @@ test('a finished task reopens to where it was before: In progress, or To do', as
   await expect(treeRow(page, '写方案')).toHaveCount(0)
   await page.getByRole('button', { name: '2 done' }).click()
 
-  // Its change log says it was under way when it was finished: it goes back to In progress.
+  // Its change log says it was under way when it was finished.
   let restored = taskPatched(page)
   await page.getByRole('button', { name: 'Reopen “改稿”' }).click()
   expect((await restored).request().postDataJSON()).toEqual({ status: 'in_progress' })
@@ -109,7 +105,7 @@ test('starting a task from its row puts it under In progress, and S on Today pau
   await makeTask(page, pid, '写方案')
   await openTree(page, pid)
 
-  // A dateless, not-started task is not on Today's lists, and an empty block is not drawn (FR-079).
+  // A dateless, not-started task is not on Today's lists, and an empty block is not drawn.
   await page.getByRole('link', { name: 'Today' }).click()
   await expect(page.locator('#today-heading')).toBeVisible()
   await expect(page.locator('[data-today-row]').filter({ hasText: '写方案' })).toHaveCount(0)
@@ -152,7 +148,7 @@ test('x, then s, on a focused tree row change its status, each saved', async ({ 
 
   res = taskPatched(page)
   await page.keyboard.press('x')
-  // Reopened, it is what it was before; never started, that is To do (BUG-095).
+  // Reopened, it is what it was before; never started, that is To do, not the backlog.
   expect((await res).request().postDataJSON()).toEqual({ status: 'todo' })
 
   res = taskPatched(page)
@@ -195,7 +191,6 @@ test('a Today row is finished by its mark, by x, and focus moves to the next row
   await expect(page.locator('[data-today-row]').filter({ hasText: secondTitle })).toBeFocused()
   expect((await serverTask(page, pid, firstTitle)).status).toBe('done')
 
-  // Keyboard route on the focused row.
   const second = taskPatched(page)
   await page.keyboard.press('x')
   expect((await second).request().postDataJSON()).toEqual({ status: 'done' })
@@ -225,8 +220,7 @@ test('a late task given a day leaves Overdue, its deadline kept; moving the dead
   }
   expect(await segmentOf()).toBe('overdue')
 
-  // Given tomorrow, it waits for tomorrow (FR-079, Lance 2026-10-22): off Today, the deadline as
-  // it was. The day-by-day of it is the pinned spec's ("交申请").
+  // Given tomorrow, it waits for tomorrow: off Today, the deadline as it was.
   const due = (await serverTask(page, pid, '过期了')).dueAt
   const p = await page.request.patch(`/api/v1/tasks/${id}`, {
     headers: WEB,
@@ -273,8 +267,6 @@ test('an overdue row is finished with its mark, and only overdue rows have the d
   expect((await serverTask(page, pid, '逾期的')).status).toBe('done')
 })
 
-// ---------------------------------------------------------------------------------- dates in tree
-
 // ----------------------------------------------------------------------------- destructive guards
 
 test('deleting a project asks first, names what is lost, and cancel deletes nothing', async ({
@@ -283,7 +275,7 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   await registerFreshUser(page)
   const pid = await makeProject(page, '待删项目')
   for (const t of ['一', '二', '三']) await makeTask(page, pid, t)
-  // At the foot of the project's edit page, the only place it is offered from (FR-052).
+  // At the foot of the project's edit page, the only place it is offered from.
   await page.goto(`/projects/${pid}/edit`)
   const deletes: string[] = []
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
@@ -291,7 +283,7 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   const del = page.getByRole('button', { name: /^Delete / })
   await del.click()
   const ask = page.getByRole('alertdialog', { name: 'Delete 待删项目' })
-  // What goes, then what stays (FR-035).
+  // What goes, then what stays.
   await expect(ask).toContainText('Delete 待删项目? Its 3 tasks go.')
   await expect(ask).toContainText('stay, outside any project')
   // The first click only asks.
@@ -324,9 +316,8 @@ test('deleting a project asks first, names what is lost, and cancel deletes noth
   expect(after.projects.map((p: { name: string }) => p.name)).not.toContain('待删项目')
 })
 
-// The detail panel is an OVERLAY only below 1280px; at or above that width it is a coexisting
-// third column, where a scrim, a click-outside and a focus trap would all be wrong. These tests are
-// about the overlay, so they run at a width where it is one. The column's own contract is pinned in
+// The detail panel is an overlay only below 1280px; at or above that width it is a third column,
+// where a scrim, a click-outside and a focus trap would all be wrong. The column is tested in
 // project-page.spec.ts.
 const OVERLAY_VIEWPORT = { width: 1024, height: 800 }
 
@@ -345,7 +336,7 @@ test.describe('the panel as an overlay', () => {
     const dialog = page.getByRole('dialog')
     await page.getByLabel('Title').fill('写方案 v2')
 
-    // Cancel is the one way out that lets it go, so it asks (FR-029).
+    // Cancel is the one way out that lets it go, so it asks.
     await page.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).toContainText('Discard the changes?')
     await page.keyboard.press('Escape') // Escape on the question means keep editing
@@ -380,8 +371,8 @@ test.describe('the panel as an overlay', () => {
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
     await editDetail(page)
     await expect(page.getByLabel('Title')).toHaveValue('写方案')
-    // ESCAPE UNWINDS ONE LEVEL AT A TIME: out of editing into reading, and only then out of the
-    // pane. With nothing typed neither step asks.
+    // Escape unwinds one level at a time: out of editing into reading, then out of the pane.
+    // With nothing typed neither step asks.
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(1)
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
@@ -389,13 +380,8 @@ test.describe('the panel as an overlay', () => {
     await expect(dialog).toHaveCount(0)
   })
 
-  /**
-   * A NAMED DAY PRESSED IS AN UNSAVED EDIT. The date decisions (today, tomorrow, next week, and
-   * the two ways out) do not type into a field, so the form has to be told they changed
-   * something. Without that the form reads as clean and the person walks away from a press that
-   * did nothing, with no prompt -- which is why this is its own case rather than a line in the
-   * cases that only watch for a missing request.
-   */
+  // The named-day buttons do not type into a field, so the form has to be told they changed
+  // something; otherwise it reads as clean and leaving drops the press without asking.
   test('a named date decision counts as an unsaved edit, with nothing typed', async ({ page }) => {
     await registerFreshUser(page)
     const pid = await makeProject(page, 'P')
@@ -405,15 +391,13 @@ test.describe('the panel as an overlay', () => {
     await editDetail(page)
     const dialog = page.getByRole('dialog')
 
-    // Not a keystroke in the panel: one press on the named day, which writes the deadline field.
     await page.getByRole('button', { name: 'Due tomorrow' }).click()
     await expect(page.getByLabel('Due', { exact: true })).not.toHaveValue('')
     await page.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).toContainText('Discard the changes?')
     await page.getByRole('button', { name: 'Keep editing' }).click()
 
-    // The plan half of the same control, and the ways OUT of a date are edits too: clearing the plan on a
-    // task that has a plan removes it, so leaving would lose that.
+    // The ways out of a date are edits too.
     await page.getByRole('button', { name: 'Plan for today' }).click()
     await page.getByRole('button', { name: 'Clear the plan' }).click()
     // Back to what it was (no plan), so there is nothing to lose and nothing to ask about -- the
@@ -434,9 +418,8 @@ test.describe('the panel as an overlay', () => {
     await openTree(page, pid)
     await page.getByRole('listitem').filter({ hasText: '写方案' }).click()
     await editDetail(page)
-    // Focus is inside the panel to start with. (That it lands on the PANEL when the pane first
-    // opens is pinned in detail.spec.ts; Edit hands it to the first field instead, which is
-    // pinned in pane.spec.ts. What this test is about is that it never gets out.)
+    // Where focus lands is tested in detail.spec.ts and pane.spec.ts; this is about it never
+    // getting out.
     await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused()
 
     const inside = () =>
@@ -473,9 +456,7 @@ test.describe('the panel as an overlay', () => {
     const dialog = page.getByRole('dialog')
 
     await page.getByRole('textbox', { name: 'Notes', exact: true }).click()
-    // A click on a non-interactive part of the panel. The panel prints no label over the title
-    // (it opens with the task itself), so this presses the Notes label instead --
-    // still a dead area of the panel, which is the whole point of the assertion.
+    // The Notes label: a non-interactive part of the panel.
     await dialog.getByText('Notes').click()
     await expect(dialog).toBeVisible()
 
@@ -522,8 +503,7 @@ test('saving returns the panel to reading, says so on the row, and is on the ser
   const done = taskPatched(page)
   await page.getByRole('button', { name: 'Save' }).click()
   await done
-  // THE PANE STAYS OPEN, in reading mode: what was just written is on screen to be read back,
-  // which is what a person does immediately after writing it.
+  // The pane stays open, in reading mode, so what was just written can be read back.
   await expect(page.getByRole('dialog')).toHaveCount(1)
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(page.getByRole('textbox', { name: 'Title' })).toHaveCount(0)
@@ -560,8 +540,8 @@ const rowOf = (page: Page, title: string) =>
     .filter({ hasText: title })
 
 /*
-  A carried plan is for TODAY: it is under Planned for today, and the day it was first meant for is
-  said in the row's last column (artboard 12).
+  A carried plan is for today: it is under Planned for today, and the day it was first meant for is
+  said in the row's last column.
 */
 test('a plan carried over from days ago says where from; a plan for today does not', async ({
   page,
@@ -576,7 +556,7 @@ test('a plan carried over from days ago says where from; a plan for today does n
   const section = page.getByRole('region', { name: 'Planned for today' })
   await expect(section.getByText('今天的计划')).toBeVisible()
 
-  // Within the week the weekday, before it the date (artboard 12: "Carried from Sun").
+  // Within the week the weekday, before it the date.
   const weekday = (ymd: string) =>
     ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(`${ymd}T12:00:00Z`).getUTCDay()]
   const date = (ymd: string) => {
@@ -597,11 +577,8 @@ test('a plan carried over from days ago says where from; a plan for today does n
   await expect(section).not.toContainText('late')
 })
 
-/**
- * ONE DISCARD ANSWERS ONE QUESTION. Discarding lets the way out it was asked about go through
- * unasked -- and only that one: the next edit in the same sheet is protected again, and its own
- * question is not already open when Edit is pressed.
- */
+// A Discard lets only the way out it was asked about go through: the next edit in the same sheet
+// is protected again, and its question is not already open when Edit is pressed.
 test('after one Discard, the next unsaved edit in the same sheet is still asked about', async ({
   page,
 }) => {

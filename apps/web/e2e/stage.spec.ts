@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, makeProject, registerFreshUser, stageSince, taskPatched, WEB } from './helpers'
 
 /**
- * STAGES (FR-040) AND THE BOARD BY STAGE (FR-058, artboard 20): a node's stage set in the
- * inspector, the project's stages offered again, and a column per stage of the nodes at it.
+ * Stages and the board by stage: a node's stage set in the inspector, the project's stages offered
+ * again, and a column per stage of the nodes at it.
  */
 
 type Stage = { id: string; name: string }
@@ -64,7 +64,7 @@ test('a stage is set in the inspector, offered again, and logged', async ({ page
   await expect(
     page.getByRole('listitem').filter({ hasText: 'Stripe' }).locator('[data-stage-label]'),
   ).toHaveText(/Phone screen/)
-  // And logged on its timeline (FR-040).
+  // Logged on its timeline.
   await expect(pane.getByRole('region', { name: 'Timeline' })).toContainText(
     'Stage set to Phone screen',
   )
@@ -190,7 +190,7 @@ test('a card moved with Alt and an arrow keeps the focus, or its folded stage ha
   await page.keyboard.press('Alt+ArrowRight')
   expect((await patched).request().postDataJSON()).toEqual({ stageId: onsite!.id })
   await expect(column(page, onsite!).locator('[data-stage-title]')).toHaveText(['Stripe'])
-  // Still on the card, in its new column: Enter opens it (BUG-044).
+  // Still on the card, in its new column: Enter opens it.
   await expect(card(page, 'Stripe')).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog', { name: 'Task details' })).toBeVisible()

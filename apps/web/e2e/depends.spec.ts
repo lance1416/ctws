@@ -1,14 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { makeProject, makeTask, openTree, registerFreshUser, WEB } from './helpers'
 
-/**
- * WHAT HAS TO HAPPEN FIRST, through the browser.
- *
- * The API suite already pins the edges -- loops refused, tenants separated, both directions
- * readable. What only a browser can show is the part the feature was built for: a list stops
- * answering what is DUE and starts answering what can be WORKED ON, with the thing in the way
- * named on the row instead of hidden behind a click.
- */
+// The API suite covers the edges themselves (loops refused, tenants separated, both directions
+// readable); these cover what the list and the pane show of them.
 
 const row = (page: Page, title: string) =>
   page
@@ -18,7 +12,7 @@ const row = (page: Page, title: string) =>
 const pane = (page: Page) => page.getByRole('dialog', { name: 'Task details' })
 
 const openPane = async (page: Page, title: string) => {
-  // The ROW opens the pane; the `Task: X` button inside it is the status marker.
+  // The row opens the pane; the `Task: X` button inside it is the status marker.
   await page.getByRole('listitem').filter({ hasText: title }).first().click()
   await expect(pane(page).locator('[data-detail-title]')).toHaveText(title)
 }
@@ -26,9 +20,9 @@ const openPane = async (page: Page, title: string) => {
 /** The pane's dependency lists, which are the only place an edge can be removed. */
 const waitingFor = (page: Page) => pane(page).locator('[data-blocked-by] li')
 const inTheWayOf = (page: Page) => pane(page).locator('[data-blocks] li')
-/** The picker Waiting on's Add opens: the search box with its keys (FR-024, BUG-042). */
+/** The picker Waiting on's Add opens. */
 const waitsOn = (page: Page) => page.getByRole('dialog').filter({ hasText: 'waits on' })
-/** Dependencies are added and taken away in the edit (P-07); read, they are only rows. */
+/** Dependencies are added and taken away in the edit; read, they are only rows. */
 const edit = (page: Page) => pane(page).getByRole('button', { name: 'Edit', exact: true }).click()
 
 test('a blocked row names what is in the way, and finishing that frees it', async ({ page }) => {
@@ -40,15 +34,14 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   expect(dep.status()).toBe(204)
   await openTree(page, pid)
 
-  // NAMED, not merely marked: the point of the phrase is that nobody has to click to find out.
+  // Named, not merely marked, so nobody has to click to find out.
   await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
     'title',
     'Blocked by “跑通 CI”',
   )
-  // PRESENT, and its Due column says it is waiting -- a list that drops tasks cannot be trusted.
+  // Still listed, and its Due column says it is waiting: a list that drops tasks cannot be trusted.
   await expect(row(page, '发 v0.8.0')).toBeVisible()
   await expect(row(page, '发 v0.8.0').locator('[data-row-due]')).toHaveText('Waiting')
-  // And its mark wears the lock on its corner (FR-041).
   await expect(row(page, '发 v0.8.0').locator('[data-waiting-badge]')).toBeVisible()
 
   // Finishing the blocker is the only write. Nothing touches the waiting task.
@@ -74,12 +67,12 @@ test('a dependency is added by searching, and it reaches into another project', 
   await openTree(page, mine)
 
   await openPane(page, '发 v0.8.0')
-  // Read with none, there is no line for them at all, not a "None" (P-07).
+  // Read with none, there is no line for them at all, not a "None".
   await expect(pane(page).getByText('Waiting on', { exact: true })).toHaveCount(0)
   await expect(pane(page).getByText('None', { exact: true })).toHaveCount(0)
   await edit(page)
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
-  // From the keyboard alone: type, and Enter takes the first (BUG-042).
+  // From the keyboard alone: type, and Enter takes the first.
   const search = waitsOn(page).getByRole('combobox', { name: 'Search' })
   // The answer for these words, not the likely few shown before any were typed.
   const answered = page.waitForResponse(
@@ -94,7 +87,6 @@ test('a dependency is added by searching, and it reaches into another project', 
   // The pane says which project the other end is in: a dependency that crosses projects is the
   // usual case here, and a bare title would not say where to go looking.
   await expect(waitingFor(page)).toContainText(['跑通 rrgen 的 CI'])
-  // FR-056's word for this side (BUG-037).
   await expect(pane(page).getByText('Waiting on', { exact: true })).toBeVisible()
   await expect(waitingFor(page).first()).toContainText('rrgen')
   await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
@@ -115,10 +107,7 @@ test('the search never offers the task itself', async ({ page }) => {
   await pane(page).getByRole('button', { name: 'Add', exact: true }).click()
   await waitsOn(page).getByRole('combobox', { name: 'Search' }).fill('配色重做')
 
-  // The sibling is offered; itself is not. A task waiting for itself is the one edge the server refuses
-  // outright, and an interface that proposes it is proposing something it knows cannot happen.
-  // Both titles match the query, so the count is the assertion: one candidate, and it is the
-  // sibling.
+  // Both titles match the query, so the count is the assertion: one candidate, the sibling.
   const candidates = waitsOn(page).getByRole('option')
   await expect(candidates).toHaveCount(1)
   await expect(candidates).toContainText('配色重做')
@@ -135,10 +124,8 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
 
   await openPane(page, '发 v0.8.0')
   await expect(waitingFor(page)).toHaveCount(1)
-  // The project is named only when it is a DIFFERENT one: repeating the name of the project you
-  // are already looking at is noise, which is why the tree's rows leave it out too.
+  // The project is named only when it is a different one.
   await expect(waitingFor(page).first()).not.toContainText('改版')
-  // Read, it is a row of the fields; taken away in the edit.
   await expect(pane(page).getByRole('button', { name: /Remove dependency/ })).toHaveCount(0)
   await edit(page)
   await pane(page).getByRole('button', { name: 'Remove dependency “跑通 CI”' }).click()
@@ -176,8 +163,8 @@ test('the other end shows the edge too, and offers no way to undo it from there'
 
   await openPane(page, '跑通 CI')
   await expect(inTheWayOf(page)).toContainText(['发 v0.8.0'])
-  // The edge belongs to the WAITING task's list. Removing it from here would be editing a task
-  // that is not open, so not even the edit offers it.
+  // The edge belongs to the waiting task. Removing it from here would be editing a task that is
+  // not open, so not even the edit offers it.
   await edit(page)
   await expect(inTheWayOf(page)).toContainText(['发 v0.8.0'])
   await expect(pane(page).getByRole('button', { name: /Remove dependency/ })).toHaveCount(0)

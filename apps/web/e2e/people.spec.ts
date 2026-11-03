@@ -11,9 +11,9 @@ import {
 } from './helpers'
 
 /**
- * PEOPLE: a person's page reads them (FR-061); their edit page writes them (FR-063). Each way to
- * reach them is a link, phones are grouped as their country writes them and stored as E.164, and
- * a city is picked from the server's list.
+ * A person's page reads them; their edit page writes them. Each way to reach them is a link,
+ * phones are grouped as their country writes them and stored as E.164, and a city is picked from
+ * the server's list.
  */
 const add = (page: Page, data: Record<string, unknown>) => apiPost(page, '/people', data)
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'People' })
@@ -119,7 +119,7 @@ test('the sidebar lists everyone under the letter they are filed under, in pinyi
   await expect(li).toHaveAttribute('aria-current', 'page')
 })
 
-test('a project page carries its people, in its People block (FR-055)', async ({ page }) => {
+test('a project page carries its people, in its People block', async ({ page }) => {
   await registerFreshUser(page, '/')
   const pid = await makeProject(page, '找工作')
   await add(page, {
@@ -133,7 +133,7 @@ test('a project page carries its people, in its People block (FR-055)', async ({
   const people = page.getByRole('region', { name: 'People' })
   await expect(people).toContainText('某招聘')
   await expect(people).not.toContainText('不相干的人')
-  // A person in a list is their avatar and their name (FR-049).
+  // A person in a list is their avatar and their name.
   await expect(people.locator('[data-linked]').first()).toContainText('某')
 })
 
@@ -144,7 +144,7 @@ test('a project’s People + puts someone on it, and Remove takes them off', asy
   await page.goto(`/projects/${pid}`)
   const people = page.getByRole('region', { name: 'People' })
 
-  // FR-055: the + finds someone already written down, and choosing them is the whole act.
+  // The + finds someone already written down, and choosing them is the whole act.
   await people.getByRole('button', { name: 'Add a person' }).click()
   const picker = page.getByRole('dialog', { name: 'Add a person' })
   await picker.getByRole('combobox').fill('priya')
@@ -186,7 +186,7 @@ test('the picker’s last row writes someone new down, on the project', async ({
   )
   await page.getByRole('button', { name: /^Create person/ }).click()
   expect((await made).request().postDataJSON()).toMatchObject({ projectIds: [pid] })
-  // Made from the project, it goes back there (FR-026).
+  // Made from the project, it goes back there.
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}$`))
   await expect(page.getByRole('region', { name: 'People' })).toContainText('李雯')
 })
@@ -363,7 +363,7 @@ test('a very long link is cut, and the profile does not widen at all', async ({ 
   expect(cut.right).toBeLessThanOrEqual(cut.edge)
 
   // In a narrow window, a horizontal scrollbar is the first sign of a break. On a phone the link is
-  // under "More about" (FR-087).
+  // under "More about".
   await page.setViewportSize({ width: 420, height: 900 })
   await expect(page.getByRole('main').locator('[data-channel="url"]')).toBeVisible()
   await expect.poll(overflow).toBeLessThanOrEqual(0)
@@ -549,7 +549,7 @@ test('a city box suggests after a few letters, and saves the standard name', asy
   const oxford = page.getByRole('option', { name: 'Oxford, England, United Kingdom' })
   await expect(oxford).toBeVisible()
   await oxford.click()
-  // Picked, it reads as the city and the country (M-05); the whole name is what is saved.
+  // Picked, it reads as the city and the country; the whole name is what is saved.
   await expect(box).toHaveValue('Oxford, United Kingdom')
 
   const written = patchAnswered(page, 'people/')
@@ -557,7 +557,7 @@ test('a city box suggests after a few letters, and saves the standard name', asy
   expect((await written).request().postDataJSON()).toMatchObject({
     city: 'Oxford, England, United Kingdom',
   })
-  // Their page says the city and the country (M-05).
+  // Their page says the city and the country.
   await expect(page.getByRole('region', { name: 'Places' })).toContainText('Oxford, United Kingdom')
 })
 
@@ -678,7 +678,7 @@ test('circles are edited beside the people: renamed, added, and deleted with a q
   )
   await pane.getByRole('button', { name: 'Delete Climbing', exact: true }).last().click()
   await expect(list.getByRole('listitem')).toHaveCount(2)
-  // Nobody in it: the question alone (FR-049).
+  // Nobody in it: the question alone.
   await list.getByRole('button', { name: 'Delete University' }).click()
   await expect(pane.getByRole('alert')).toContainText('Delete University?')
   await expect(pane.getByRole('alert')).not.toContainText('stay')
@@ -708,7 +708,7 @@ test('a long people list has a filter at its top, which says when it finds nobod
   await expect(list.locator('[data-person-row]')).toHaveCount(14)
 })
 
-test('a person in nine projects shows five squares and “+4”, which lists all nine (FR-061)', async ({
+test('a person in nine projects shows five squares and “+4”, which lists all nine', async ({
   page,
 }) => {
   await registerFreshUser(page)

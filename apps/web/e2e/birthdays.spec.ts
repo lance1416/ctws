@@ -2,15 +2,6 @@ import { expect, test, type Page } from '@playwright/test'
 import { dayOffset } from './days'
 import { lunarYear, pickLunarDay, registerFreshUser, WEB, apiPost } from './helpers'
 
-/**
- * Birthdays: the lens over the people who have one.
- *
- * What is tested here is the page's own claims: who is in which segment, that a lunar birthday
- * lands on its own day rather than the solar date somebody was born on, that the month index is
- * the date search, and that nobody appears twice.
- */
-
-/** Writes a person down, birthday and all. Returns their id. */
 async function person(page: Page, name: string, birthday?: unknown, circle?: string) {
   const res = await apiPost(page, '/people', {
     name,
@@ -26,16 +17,7 @@ function monthDay(offset: number): { month: number; day: number } {
   return { month: m, day: d }
 }
 
-/**
- * A birthday's row is a person's row: the day in the margin with the cake, the thread, then who,
- * how old, and how far off at the far end. The heading above hangs where the threads do.
- */
-
-/**
- * A BIRTHDAY ON A PERSON'S PAGE (FR-061, artboard 5): the day on a tile, how far off, the lunar
- * date when it is lunar, and the age it turns or that the year is not known. What else a day means
- * (the zodiac, the sign, the hour) is in the form's preview, where the day is chosen.
- */
+// What else a day means (the zodiac, the sign, the hour) is shown only in the form's preview.
 test('a lunar birthday reads as its day, its lunar date and the age it turns', async ({ page }) => {
   await registerFreshUser(page)
   const id = await person(page, '周楠', {
@@ -49,7 +31,6 @@ test('a lunar birthday reads as its day, its lunar date and the age it turns', a
   const day = page.getByRole('region', { name: 'Birthday' })
   await expect(day).toContainText('九月初三')
   await expect(day).toContainText(/Turns \d+/)
-  // The rest of what the day means is the form's, one level down from reading.
   await expect(day).not.toContainText('羊')
 
   await page.goto(`/people/${id}/edit`)
@@ -72,13 +53,12 @@ test('a lunar birthday shows its conversion and fallback as it is written', asyn
   await registerFreshUser(page)
   const id = await person(page, '外婆')
   await page.goto(`/people/${id}/edit`)
-  // Folded until asked for.
   // The year moves the lunar grid to that year's months, through the server's conversion.
   await lunarYear(page, '1944')
   await pickLunarDay(page, '十二月', '三十')
   // The server computes the preview, so this waits on a response, not a local string.
   const preview = page.getByTestId('birthday-preview')
-  // The solar day in the app's own words, never the wire format.
+  // The solar day as the app writes dates, not the wire format.
   await expect(preview).toContainText('Feb 12, 1945')
   await expect(preview).toContainText('猴')
   await expect(preview).toContainText('has 29 days')
@@ -147,7 +127,6 @@ test('the overview lists the next 30 days of birthdays, and All N the rest in th
   await expect(page).toHaveURL(/\/people\?list=birthdays$/)
   const list = page.getByRole('navigation', { name: 'Birthdays' })
   await expect(list.locator('[data-birthday-row]')).toHaveText([/三天后/, /二十天后/, /两个月后/])
-  // Back to everyone.
   await list.getByRole('link', { name: 'Show everyone' }).click()
   await expect(
     page.getByRole('navigation', { name: 'People' }).locator('[data-person-row]'),

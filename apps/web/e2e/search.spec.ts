@@ -19,7 +19,7 @@ async function query(page: Page, text: string) {
 }
 
 /**
- * A result row, BY ITS ROLE: `role="option"` inside a `role="listbox"` (ARIA 1.2 combobox), so a
+ * A result row, by its role: `role="option"` inside a `role="listbox"` (ARIA 1.2 combobox), so a
  * screen reader is told which one the keyboard has selected.
  */
 const result = (page: Page, title: string) =>
@@ -27,7 +27,7 @@ const result = (page: Page, title: string) =>
 
 // The case the browser's own Ctrl+F cannot do: a collapsed row is not in the DOM at all, so there
 // is nothing on the page for the browser to find. If this test ever passes with the subtree left
-// expanded it proves nothing, so the collapse is asserted (the child row is GONE) before searching.
+// expanded it proves nothing, so the collapse is asserted (the child row is gone) before searching.
 test('search finds a task inside a collapsed subtree and leaves it visible and focused', async ({
   page,
 }) => {
@@ -45,7 +45,7 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
   await row(page, '外层').getByRole('button', { name: 'Collapse' }).click()
   await expect(page.getByRole('listitem')).toHaveCount(1)
   await expect(handle(page, '藏起来的针')).toHaveCount(0)
-  // And the browser could not find it either: the text is not on the page.
+  // The browser could not find it either: the text is not on the page.
   expect(await page.locator('body').innerText()).not.toContain('藏起来的针')
 
   // Leave the project entirely, so nothing about this is "already on the right page".
@@ -57,7 +57,7 @@ test('search finds a task inside a collapsed subtree and leaves it visible and f
   await expect(result(page, '藏起来的针')).toBeVisible()
   await page.keyboard.press('Enter')
 
-  // Routed to the project AND the row is on screen, not hidden behind a folded parent.
+  // Routed to the project and the row is on screen, not hidden behind a folded parent.
   await expect(page).toHaveURL(new RegExp(`/projects/${url.split('/').pop()!}`))
   const target = handle(page, '藏起来的针')
   await expect(target).toBeVisible()
@@ -120,7 +120,7 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
   await page.keyboard.press('Control+k')
   await query(page, 'hint')
 
-  // `project › parent`, exactly as the Today and Done lists write it.
+  // `project › parent`, as the Today list writes it.
   await expect(result(page, 'hint 的子任务')).toContainText('迁移计划')
   // A finished task is findable on purpose -- and says so, so it is not mistaken for live work.
   await expect(result(page, 'hint 已完成')).toContainText('Done')
@@ -129,10 +129,10 @@ test('search shows the parent breadcrumb and the status, and skips deleted tasks
 })
 
 /**
- * WHAT A SCREEN READER HEARS: a highlight that assistive technology cannot report is no selection
- * at all -- no list, no item count, no "2 of 3", and no title read out.
+ * A highlight that assistive technology cannot report is no selection at all -- no list, no item
+ * count, no "2 of 3", and no title read out.
  *
- * This asserts the RELATIONSHIP and not the highlight class: that the box is a combobox pointing at
+ * This asserts the relationship and not the highlight class: that the box is a combobox pointing at
  * a listbox, that `aria-activedescendant` names a real element, that the element it names is the
  * `option` the keyboard selected, and that moving the selection moves the pointer with it. A class
  * swap would satisfy none of these.
@@ -184,14 +184,14 @@ test('the search selection is announceable: combobox, listbox, activedescendant'
   const first = await pointed()
   await expect(list.locator('[aria-selected="true"]')).toHaveCount(1)
 
-  // ArrowDown moves the POINTER, not the focus: the box still has the keyboard, which is what lets
+  // ArrowDown moves the pointer, not the focus: the box still has the keyboard, which is what lets
   // typing continue while the highlight walks.
   await page.keyboard.press('ArrowDown')
   const second = await pointed()
   expect(second).not.toBe(first)
   await expect(box).toBeFocused()
 
-  // And the non-standard pair moves it the same way, so the two routes cannot drift apart.
+  // The non-standard pair moves it the same way, so the two routes cannot drift apart.
   await page.keyboard.press('Control+p')
   expect(await pointed()).toBe(first)
   await page.keyboard.press('Control+n')
@@ -234,8 +234,8 @@ test('Escape closes search, and Ctrl K opens it even from a text field', async (
 })
 
 /**
- * THE PROMISE `aria-modal` MAKES, kept: assistive technology is told the rest of the page is
- * unreachable, so the keyboard must not walk out of the panel onto a row nobody can see.
+ * `aria-modal` tells assistive technology the rest of the page is unreachable, so the keyboard
+ * must not walk out of the panel onto a row nobody can see.
  *
  * Forty presses, not one: a trap that holds for a few and then gives way is the failure shape, and
  * the count is more than twice the panel's own tabbable controls either way round.
@@ -444,9 +444,7 @@ test('results landing do not pull the highlight back to the first row', async ({
   await expect(box).toHaveAttribute('aria-activedescendant', second!)
 })
 
-test('search finds every kind, the ones no module searches included (BUG-015)', async ({
-  page,
-}) => {
+test('search finds every kind, the ones no module searches included', async ({ page }) => {
   await registerFreshUser(page, '/')
   await apiPost(page, '/meetings', {
     title: 'Ledgr standup',
@@ -500,7 +498,7 @@ test('search counts every match, shows five a kind, and reads a kind on as it is
   await expect(dialog.getByRole('option')).toHaveCount(40)
 })
 
-test('a kind picked with the pointer keeps the typing in the box (BUG-062)', async ({ page }) => {
+test('a kind picked with the pointer keeps the typing in the box', async ({ page }) => {
   await registerFreshUser(page, '/')
   await apiPost(page, '/projects', { name: 'Ledgr' })
   await page.keyboard.press('Control+k')
@@ -535,7 +533,7 @@ test('what a screen reader hears: the list named by its tab, rows by their colum
   await expect(dialog.getByRole('tab', { name: 'Tasks, 7' })).toBeVisible()
   await expect(dialog.getByRole('option', { name: 'All 7 tasks, switch to Tasks' })).toBeVisible()
   await expect(dialog.getByRole('option', { name: 'Ledgr task 7, Ledgr, Task' })).toBeVisible()
-  // What matched, marked in the title (S-01).
+  // What matched, marked in the title.
   await expect(dialog.getByRole('option', { name: /^Ledgr task 7,/ }).locator('mark')).toHaveText(
     'Ledgr',
   )

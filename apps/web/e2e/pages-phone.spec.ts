@@ -11,14 +11,14 @@ import {
 import { dayOffset } from './days'
 
 /**
- * THE LIST PAGES, ON A PHONE. At 320 and 375:
+ * The list pages on a phone, at 320 and 375:
  * - nothing scrolls sideways;
  * - no button's words wrap inside it (a 36px button holding two lines of text);
  * - every word in a row's margin stays clear of the screen's edge. The margin is a right-aligned
  *   column, so its widest words may run into the page's 16px gutter -- never more than half of it.
  *
  * The margin's words are measured by their own boxes, not by the margin's scroll width: a
- * right-aligned box that overflows does so to the LEFT, and scrollWidth does not count that.
+ * right-aligned box that overflows does so to the left, and scrollWidth does not count that.
  */
 
 async function seed(page: Page) {
@@ -39,13 +39,13 @@ async function seed(page: Page) {
     { kind: 'book', title: 'Cracking the Coding Interview' },
     { projectId: pid, planOn: dayOffset(1) },
   )
-  // Being read: a card, with its project and since when (FR-072).
+  // Being read: a card, with its project and since when.
   await makeReading(
     page,
     { kind: 'book', title: 'Designing Data-Intensive Applications' },
     { author: 'Martin Kleppmann', projectId: pid, status: 'reading' },
   )
-  // A note hung on the project: its row names what it hangs on (FR-074).
+  // A note hung on the project: its row names what it hangs on.
   await apiPost(page, '/notes', {
     title: 'Questions to ask the interviewer',
     body: '- What does a first week look like?',
@@ -91,11 +91,11 @@ for (const width of [320, 375]) {
     for (const [path, shown] of [
       ['/projects', '找工作'],
       ['/meetings', 'Second interview'],
-      // The overviews: a card for what is being read, a row for what is waiting (FR-072, FR-074).
+      // The overviews: a card for what is being read, a row for what is waiting.
       ['/reading', 'Designing Data-Intensive Applications'],
       ['/reading', 'Cracking the Coding Interview'],
       ['/notes', 'Questions to ask the interviewer'],
-      // The overview: its blocks are what must fit (FR-060).
+      // The overview: its blocks are what must fit.
       ['/people', 'Recently in touch'],
     ] as const) {
       await page.goto(path)

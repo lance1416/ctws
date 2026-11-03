@@ -2,10 +2,6 @@ import { expect, test } from '@playwright/test'
 import { dayOffset } from './days'
 import { apiPost, makeProject, registerFreshUser } from './helpers'
 
-/**
- * THE INSPECTOR'S NARROW PAGES (FR-022, artboard 33). A thing linked from a page opens beside it,
- * and the page stays put; a thing clicked in the inspector takes its place, with a way back.
- */
 test.use({ timezoneId: 'Europe/London', viewport: { width: 1440, height: 900 } })
 
 test("Mira's meeting opens beside her page; an attendee takes its place; back, reload, full page", async ({
@@ -93,14 +89,14 @@ test('the workbench opens a meeting beside it, as the occurrence; its notes are 
   const inspector = page.getByRole('complementary', { name: 'Inspector' })
   const at = new RegExp(`\\?inspect=meeting(:|%3A)${m.meetingId}(@|%40)`)
 
-  // Next meetings: the page stays the workbench (FR-022).
+  // Next meetings: the page stays the workbench.
   await page
     .locator('[data-next-meeting-card]')
     .getByRole('link', { name: 'Stripe: first screen' })
     .click()
   await expect(inspector.getByRole('heading', { name: 'Stripe: first screen' })).toBeVisible()
   await expect(page).toHaveURL(at)
-  // A note in the timeline by its name, not its markdown (I-01).
+  // A note in the timeline by its name, not its markdown.
   const timeline = inspector.getByRole('region', { name: 'Timeline' }).first()
   await expect(timeline).toContainText('Wrote notes')
   await expect(timeline).toContainText('Updates')

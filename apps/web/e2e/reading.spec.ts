@@ -14,22 +14,19 @@ import {
 } from './helpers'
 
 /**
- * THE READING LIST -- THE SECOND MODULE, through the browser.
- *
- * What is under test here is mostly not the list: it is the SEAM. A second module contributed a
- * rail row, a chord, a search provider, a project block and a capture rule, and the shell was not
- * edited to make room for any of them. The capture rule is the one that could not exist before --
- * with one module there was nothing to route to.
+ * The reading list, the second module. What is under test is mostly the seam: a second module
+ * contributed a chord, a search provider, a project block and a capture rule, and the shell was
+ * not edited to make room for any of them.
  */
 
 const capture = (page: Page) => captureBox(page)
-/** The overview's To read block (FR-072). */
+/** The overview's To read block. */
 const toRead = (page: Page) => page.getByRole('main').getByRole('region', { name: 'To read' })
 /** One part of the Reading sidebar's list: Reading, To read, Finished or Dropped. */
 const sidebarPart = (page: Page, name: string) =>
   page.getByRole('navigation', { name: 'Reading' }).getByRole('region', { name })
 /**
- * Picks a status on an item's page, which saves it there and then (FR-073), and waits for the
+ * Picks a status on an item's page, which saves it there and then, and waits for the
  * server's answer and the picker saying the new one.
  */
 async function setStatus(page: Page, label: string) {
@@ -52,8 +49,6 @@ async function captureLine(page: Page, line: string) {
 }
 
 test('a pasted link goes to Reading; a sentence still goes to the inbox', async ({ page }) => {
-  // THE WHOLE POINT OF THE SECOND MODULE'S CAPTURE RULE, and the one thing that could not be
-  // tested while only one module could take a line.
   await registerFreshUser(page)
 
   const toReading = await captureLine(page, 'https://linear.invalid/now/redesign')
@@ -97,7 +92,7 @@ test('an untitled link is named by its path beside its site, and by host and pat
   await page.goto('/reading')
 
   // In a row its site is said once, on the right; its name is the path, which says which page
-  // (R-02). The host alone ("x.com", "github.com") would not say which tweet or which repo.
+  // The host alone ("x.com", "github.com") would not say which tweet or which repo.
   const row = page.locator(`[data-to-read="${item.id}"]`)
   await expect(row.locator('span').nth(0)).toHaveText('now/how-we-redesigned-issues')
   await expect(row.locator('span').nth(1)).toHaveText('linear.invalid')
@@ -111,7 +106,7 @@ test('an untitled link is named by its path beside its site, and by host and pat
     'href',
     'https://www.linear.invalid/now/how-we-redesigned-issues',
   )
-  // And it opens away from the workspace, so a half-read list is not lost.
+  // It opens away from the workspace, so a half-read list is not lost.
   await expect(open).toHaveAttribute('target', '_blank')
 })
 
@@ -175,14 +170,14 @@ test('a project page carries both modules, each with its own block and numbers',
   )
   await page.goto(`/projects/${projectId}`)
 
-  // The task module's tree and the reading module's block, on one shell project (FR-055).
+  // The task module's tree and the reading module's block, on one shell project.
   await expect(page.getByRole('main').getByText('配色重做')).toBeVisible()
   await expect(page.getByText('一篇相关的文章')).toBeVisible()
-  // And the reading module's number is its block's count, beside the tasks.
+  // The reading module's number is its block's count, beside the tasks.
   await expect(page.getByRole('region', { name: 'Reading' }).locator('[data-count]')).toHaveText(
     '1',
   )
-  // The row does NOT repeat the name of the project you are standing in -- the same rule the
+  // The row does not repeat the name of the project you are standing in -- the same rule the
   // dependency pane keeps, and the same reason the task tree shows no breadcrumb.
   await expect(page.getByRole('listitem').filter({ hasText: '一篇相关的文章' })).not.toContainText(
     'CTWS',
@@ -294,7 +289,7 @@ test('the add box is empty for the next title once the server has the last', asy
   await marked
   await box.pressSequentially('A second', { delay: 20 })
   await expect(box).toHaveValue('A second')
-  // And what was added is theirs.
+  // What was added is theirs.
   await expect(page.locator('[data-to-read]').filter({ hasText: 'A first book' })).toContainText(
     'A first book',
   )
@@ -305,7 +300,7 @@ test('the add box is empty for the next title once the server has the last', asy
   expect(first?.recommendedBy?.name).toBe('Ying Chen')
 })
 
-// ------------------------------------------------------------------ the overview (FR-072)
+// ------------------------------------------------------------------ the overview
 
 test('the overview has a card for each item being read: who recommended it or its project', async ({
   page,
@@ -334,7 +329,7 @@ test('the overview has a card for each item being read: who recommended it or it
   await expect(ying).toContainText('Reading')
   await expect(ying).toContainText('Recommended by Ying Chen')
   const ctws = page.locator(`[data-reading-card="${forCtws}"]`)
-  // Its path for a name, its site under it once (R-02).
+  // Its path for a name, its site under it once.
   await expect(ctws).toContainText('now/how-we-redesigned-issues')
   await expect(ctws).toContainText('linear.invalid')
   await expect(ctws).toContainText('In CTWS')
@@ -370,14 +365,14 @@ test('N finished opens the sidebar on what is finished, with what was dropped ap
   await page.goto('/reading')
   await expect(sidebarPart(page, 'To read')).toContainText('Waiting book')
 
-  // What was dropped is not finished (BUG-055).
+  // What was dropped is not finished.
   await page.getByRole('main').getByRole('link', { name: '1 finished' }).click()
   await expect(page).toHaveURL(/\/reading\?list=finished$/)
   await expect(sidebarPart(page, 'Finished')).toContainText('Finished book')
   await expect(sidebarPart(page, 'Finished')).not.toContainText('Dropped book')
   await expect(sidebarPart(page, 'Dropped')).toContainText('Dropped book')
   await expect(sidebarPart(page, 'To read')).toHaveCount(0)
-  // And the way back to what is being read.
+  // The way back to what is being read.
   await page.getByRole('link', { name: 'Back to what is being read' }).click()
   await expect(page).toHaveURL(/\/reading$/)
   await expect(sidebarPart(page, 'To read')).toContainText('Waiting book')
@@ -399,7 +394,7 @@ test('Add reading opens the capture box on Reading', async ({ page }) => {
 })
 
 test('a book title typed in the capture box on Reading is a book to read', async ({ page }) => {
-  // "Add reading" is the overview's only way to add (FR-072), and a book has no link to paste.
+  // "Add reading" is the overview's only way to add, and a book has no link to paste.
   await registerFreshUser(page)
   await makeReading(page, { kind: 'book', title: 'Something already there' })
   await page.goto('/reading')
@@ -427,7 +422,7 @@ test('an empty Reading is the module empty state, whose button opens the capture
   await expect(page.getByRole('radio', { name: 'Reading' })).toHaveAttribute('aria-checked', 'true')
 })
 
-// ------------------------------------------------------------------ an item's page (FR-073)
+// ------------------------------------------------------------------ an item's page
 
 test('a reading item’s page says its status, who recommended it and its project; Open link is for a link', async ({
   page,
@@ -508,7 +503,7 @@ test('who recommended it is picked on the edit page, shown with their face, and 
   const id = await makeReading(page, { kind: 'book', title: 'Thinking in Systems' })
   await page.goto(`/reading/${id}/edit`)
 
-  // People only, one of them (FR-073).
+  // People only, one of them.
   await page.getByRole('button', { name: 'Recommended by: Nobody' }).click()
   const picker = page.getByRole('dialog')
   await picker.getByRole('combobox').fill('Mira')
@@ -517,7 +512,7 @@ test('who recommended it is picked on the edit page, shown with their face, and 
   await page.getByRole('button', { name: /^Save/ }).click()
   await expect(page).toHaveURL(new RegExp(`/reading/${id}$`))
 
-  // On its page: an avatar and a name, the way to the person (R-03); the timeline says so.
+  // On its page: an avatar and a name, the way to the person; the timeline says so.
   const by = page.locator(`[data-recommended-by="${mira.id}"]`)
   await expect(by).toHaveText('MCMira Chen')
   await expect(page.locator('[data-timeline-entry="change"]').first()).toContainText(
@@ -538,7 +533,7 @@ for (const [where, viewport] of [
   ['the desk', { width: 1440, height: 900 }],
   ['a phone', { width: 390, height: 844 }],
 ] as const)
-  test(`Add reading shows the imports to come, each saying Coming later, on ${where} (FR-102)`, async ({
+  test(`Add reading shows the imports to come, each saying Coming later, on ${where}`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport)

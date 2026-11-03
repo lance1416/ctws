@@ -1,28 +1,21 @@
 import { expect, test } from '@playwright/test'
 import { makeProject, makeTask, registerFreshUser } from './helpers'
 
-/**
- * The empty states: Today with nothing on it, a project with no tasks, Done with no history, a
- * search with no match.
- *
- * The trap these guards are written against: an empty-state test that passes with data present
- * proves nothing at all. So every one of them asserts the state in its OWN emptiness condition
- * AND asserts it is gone the moment the screen has something on it -- the second half is what
- * makes the first half mean anything.
- */
+// An empty-state test that would also pass with data present proves nothing, so each one also
+// checks the screen once it has something on it.
 
 test('an empty project is its column names and New task, one way to add', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '新开的项目')
   await page.goto(`/projects/${pid}`)
 
-  // P-06: the empty table says it; no sentence and no second button over it.
+  // The empty table says it; no sentence and no second button over it.
   await expect(page.locator('[data-tree-head]')).toBeVisible()
   await expect(page.getByText('No tasks in this project yet')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Add the first task' })).toHaveCount(0)
   await page.getByRole('textbox', { name: 'New task' }).click()
 
-  // Typing one task really does take the state away -- not a reload, the live list.
+  // The live list, not a reload.
   const created = page.waitForResponse(
     (r) => r.request().method() === 'POST' && r.ok() && /\/api\/v1\/tasks$/.test(r.url()),
   )
@@ -32,7 +25,7 @@ test('an empty project is its column names and New task, one way to add', async 
   await expect(page.getByRole('listitem').filter({ hasText: '第一条' })).toBeVisible()
 })
 
-test('a search with no match says so, and offers to make it a task (FR-024)', async ({ page }) => {
+test('a search with no match says so, and offers to make it a task', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   await makeTask(page, pid, '找得到的任务')
@@ -54,7 +47,7 @@ test('a search with no match says so, and offers to make it a task (FR-024)', as
   await expect(page.locator('[aria-live="polite"]')).toHaveText('No results match “绝不存在的词”.')
   await expect(page.locator('[data-search-result]')).toHaveCount(0)
 
-  // The next move: Enter makes it a task, in the inbox, and opens it there (FR-026).
+  // Enter makes it a task, in the inbox, and opens it there.
   const made = page.waitForResponse(
     (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/tasks',
   )

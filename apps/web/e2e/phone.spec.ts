@@ -13,8 +13,7 @@ import {
 import { addDays } from '@ctws/core/day'
 
 /**
- * THE PHONE (FR-082 to FR-085, artboard 25): the tab bar's capture sheet, Today in sections with
- * its swipes, and More. At 390, the artboards' width.
+ * The phone: the tab bar's capture sheet, Today in sections with its swipes, and More. At 390.
  */
 const PHONE = { width: 390, height: 844 }
 test.use({ viewport: PHONE, hasTouch: true })
@@ -36,7 +35,7 @@ const serverTasks = async (page: Page, projectId: string) =>
     }
   ).tasks
 
-test('the capture sheet: a link turns it to Reading, Add keeps it open and empty (FR-084)', async ({
+test('the capture sheet: a link turns it to Reading, Add keeps it open and empty', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -44,7 +43,7 @@ test('the capture sheet: a link turns it to Reading, Add keeps it open and empty
   const sheet = page.getByRole('dialog', { name: 'Capture' })
   const box = sheet.getByRole('textbox', { name: 'Capture' })
   await expect(box).toBeFocused()
-  // Every control is at least 44 to touch (FR-082, BUG-066).
+  // Every control is at least 44 to touch.
   for (const control of await sheet.getByRole('button').all()) {
     const size = (await control.boundingBox())!
     const name = (await control.getAttribute('aria-label')) ?? (await control.innerText())
@@ -70,9 +69,7 @@ test('the capture sheet: a link turns it to Reading, Add keeps it open and empty
   await expect(sheet).toBeVisible()
 })
 
-test('Lands in is Move to…, Inbox first, and a project’s parents a step in (FR-084)', async ({
-  page,
-}) => {
+test('Lands in is Move to…, Inbox first, and a project’s parents a step in', async ({ page }) => {
   await registerFreshUser(page)
   const jh = await makeProject(page, 'Job hunt')
   const amazon = await makeTask(page, jh, 'Amazon')
@@ -103,7 +100,7 @@ test('Lands in is Move to…, Inbox first, and a project’s parents a step in (
   expect([made.parentId, made.scheduledOn]).toEqual([amazon, today])
 })
 
-test('Today on a phone: sections, the circle finishes, the swipes move and finish (FR-083)', async ({
+test('Today on a phone: sections, the circle finishes, the swipes move and finish', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -162,7 +159,7 @@ test('Today on a phone: sections, the circle finishes, the swipes move and finis
   )
 })
 
-test('More: search on top, the pages, every other kind, the projects, the account (FR-085)', async ({
+test('More: search on top, the pages, every other kind, the projects, the account', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -203,9 +200,7 @@ test('More: search on top, the pages, every other kind, the projects, the accoun
   await expect(page).toHaveURL(/\/account$/)
 })
 
-test('the phone calendar: lunar names, a dot a kind, the chosen day listed (FR-086)', async ({
-  page,
-}) => {
+test('the phone calendar: lunar names, a dot a kind, the chosen day listed', async ({ page }) => {
   await registerFreshUser(page)
   await apiPost(page, '/meetings', {
     title: 'Stripe: first screen',
@@ -231,7 +226,7 @@ test('the phone calendar: lunar names, a dot a kind, the chosen day listed (FR-0
   ])
   await day.getByRole('link', { name: /Stripe: first screen/ }).click()
   await expect(page.getByRole('link', { name: /Join/ }).first()).toBeVisible()
-  // A thing's page has its way back to its kind's list (FR-082).
+  // A thing's page has its way back to its kind's list.
   await page.getByRole('main').getByRole('link', { name: 'Meetings', exact: true }).click()
   await expect(page).toHaveURL(/\/meetings$/)
 
@@ -247,7 +242,7 @@ test.describe('with your clock in London', () => {
   // the suite happens to run.
   test.use({ timezoneId: 'Europe/London' })
 
-  test('a person on a phone: a tap to reach them, their clock, the rest under More about (FR-087)', async ({
+  test('a person on a phone: a tap to reach them, their clock, the rest under More about', async ({
     page,
   }) => {
     // Their clock against yours on a day of their summer time and ours.
@@ -291,7 +286,7 @@ test.describe('with your clock in London', () => {
   })
 })
 
-test('on a phone the inspector is a sheet over the whole screen: ×, ‹ once deeper, Edit (FR-088)', async ({
+test('on a phone the inspector is a sheet over the whole screen: ×, ‹ once deeper, Edit', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -333,7 +328,7 @@ test('on a phone the inspector is a sheet over the whole screen: ×, ‹ once de
   await expect(sheet).toHaveCount(0)
 })
 
-test('on a phone a delete asks from the foot, its answers across it, Delete first (DES-001)', async ({
+test('on a phone a delete asks from the foot, its answers across it, Delete first', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -355,7 +350,7 @@ test('on a phone a delete asks from the foot, its answers across it, Delete firs
   await expect(ask).toHaveCount(0)
 })
 
-test('the swipe is only a shortcut: a row’s actions are reached as they are, and in its sheet (FR-083)', async ({
+test('the swipe is only a shortcut: a row’s actions are reached as they are, and in its sheet', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -388,7 +383,7 @@ test('the swipe is only a shortcut: a row’s actions are reached as they are, a
   ).toBeVisible()
 })
 
-test('a project on a phone: its tree alone, a row 44 and over, tags under its name (FR-088)', async ({
+test('a project on a phone: its tree alone, a row 44 and over, tags under its name', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -406,13 +401,13 @@ test('a project on a phone: its tree alone, a row 44 and over, tags under its na
   await expect(rows).toHaveCount(3)
   for (const row of await rows.all())
     expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(44)
-  // What opens it, not only the row it sits in (BUG-070).
+  // What opens it, not only the row it sits in.
   for (const name of await page.locator('[data-phone-tree-row] button:not([aria-label])').all())
     expect((await name.boundingBox())!.height).toBeGreaterThanOrEqual(44)
   await expect(rows.filter({ hasText: 'Amazon' })).toContainText('0/2')
   await expect(rows.filter({ hasText: 'Phone screen' })).toContainText(/\w{3} \d+/)
 
-  // The circle finishes a leaf, and it stays to be undone, as on a desk (BUG-095); undone, it is
+  // The circle finishes a leaf, and it stays to be undone, as on a desk; undone, it is
   // what it was. Finished again, Hide done folds it with the rest.
   await page.getByRole('button', { name: 'Done “Onsite”' }).click()
   await expect(page.getByRole('button', { name: 'Not done “Onsite”' })).toBeVisible()
@@ -441,7 +436,7 @@ test('a project on a phone: its tree alone, a row 44 and over, tags under its na
   await expect(page.getByRole('dialog', { name: /Stages in Job hunt/ })).toBeVisible()
 })
 
-test('a person on a project: Remove is a swipe away, and in their sheet, asked first (DES-001)', async ({
+test('a person on a project: Remove is a swipe away, and in their sheet, asked first', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -455,16 +450,13 @@ test('a person on a project: Remove is a swipe away, and in their sheet, asked f
   const people = page.getByRole('region', { name: 'People' })
   await expect(people.locator('[data-linked]')).toHaveCount(2)
   for (const row of await people.locator('[data-linked]').all())
-    expect((await row.boundingBox())!.height, 'a linked row (BUG-070)').toBeGreaterThanOrEqual(44)
+    expect((await row.boundingBox())!.height, 'a linked row').toBeGreaterThanOrEqual(44)
 
   // Reached as it is, without the swipe: reaching it opens the row.
   const remove = people.getByRole('button', { name: 'Remove Mira Chen from project' })
   await remove.focus()
   await expect(remove).toBeInViewport()
-  expect(
-    (await remove.boundingBox())!.height,
-    'the swiped Remove (BUG-070)',
-  ).toBeGreaterThanOrEqual(44)
+  expect((await remove.boundingBox())!.height, 'the swiped Remove').toBeGreaterThanOrEqual(44)
   await remove.press('Enter')
   await expect(people.locator('[data-linked]')).toHaveCount(1)
 
@@ -478,7 +470,7 @@ test('a person on a project: Remove is a swipe away, and in their sheet, asked f
   await expect(people.locator('[data-linked]')).toHaveCount(0)
 })
 
-test('a mention clicked in the sheet takes its place, ‹ back to what mentioned it (BUG-069)', async ({
+test('a mention clicked in the sheet takes its place, ‹ back to what mentioned it', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -502,7 +494,7 @@ test('a mention clicked in the sheet takes its place, ‹ back to what mentioned
   await expect(page).toHaveURL(/inspect=task/)
 })
 
-test('a repeating meeting asks "Change which?" from the foot, Edit over Cancel (DES-001)', async ({
+test('a repeating meeting asks "Change which?" from the foot, Edit over Cancel', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -529,9 +521,7 @@ test('a repeating meeting asks "Change which?" from the foot, Edit over Cancel (
   await expect(page).toHaveURL(/\/edit/)
 })
 
-test('offline, a tap on the greyed Save says why from the foot (FR-033, DES-001)', async ({
-  page,
-}) => {
+test('offline, a tap on the greyed Save says why from the foot', async ({ page }) => {
   await registerFreshUser(page)
   const id = await makeReading(page, { kind: 'book', title: 'Dune' })
   await page.goto(`/reading/${id}/edit`)
@@ -552,7 +542,7 @@ test('offline, a tap on the greyed Save says why from the foot (FR-033, DES-001)
   await page.context().setOffline(false)
 })
 
-test('a role on a phone is two lines: where and as what with its ×, then from and to (DES-001)', async ({
+test('a role on a phone is two lines: where and as what with its ×, then from and to', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -580,7 +570,7 @@ test('a role on a phone is two lines: where and as what with its ×, then from a
   expect(f.y).toBeGreaterThan(r.y + r.height)
 })
 
-test('in the edit, Move to… takes a project, then a parent, saved with the rest (FR-088)', async ({
+test('in the edit, Move to… takes a project, then a parent, saved with the rest', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -609,7 +599,7 @@ test('in the edit, Move to… takes a project, then a parent, saved with the res
     .toBe(amazon)
 })
 
-test('Move to… ends with the Inbox, under a line: picked, saved, said at the foot (FR-059)', async ({
+test('Move to… ends with the Inbox, under a line: picked, saved, said at the foot', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -636,7 +626,7 @@ test('Move to… ends with the Inbox, under a line: picked, saved, said at the f
   await expect.poll(async () => (await serverTasks(page, inbox)).map((t) => t.id)).toContain(stray)
 })
 
-test('the review on a phone: ‹ Weeks to the list of weeks, a week back to it; More is the tab (DES-001)', async ({
+test('the review on a phone: ‹ Weeks to the list of weeks, a week back to it; More is the tab', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -651,7 +641,7 @@ test('the review on a phone: ‹ Weeks to the list of weeks, a week back to it; 
   await expect(page.getByRole('heading', { level: 1, name: /^Week of / })).toBeVisible()
 })
 
-test('a task in the inbox is not offered the Inbox to move back to (BUG-073)', async ({ page }) => {
+test('a task in the inbox is not offered the Inbox to move back to', async ({ page }) => {
   await registerFreshUser(page)
   await makeProject(page, 'Job hunt')
   const projects = (await (
@@ -670,9 +660,7 @@ test('a task in the inbox is not offered the Inbox to move back to (BUG-073)', a
   await expect(picker.getByRole('option').filter({ hasText: 'Inbox' })).toHaveCount(0)
 })
 
-test('Today keeps each block to five on a phone, the rest behind All N (FR-015, BUG-091)', async ({
-  page,
-}) => {
+test('Today keeps each block to five on a phone, the rest behind All N', async ({ page }) => {
   await registerFreshUser(page)
   const p = await makeProject(page, 'Job hunt')
   for (let i = 1; i <= 8; i++) await makeTask(page, p, `Under way ${i}`, { status: 'in_progress' })

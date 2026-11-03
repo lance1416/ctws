@@ -17,7 +17,6 @@ test('capture from any page lands in the inbox', async ({ page }) => {
   await submitCreate(page, 'Capture…', '问问房东空调')
   // The box cleared for the next line before it closed (`submitCreate` waits for that).
 
-  // Asserted through the API, not the project page: the task tree does not exist until Task 8.
   // `page.request` shares the page's cookies, so this is the logged-in user's own inbox.
   const projects = await (await page.request.get('/api/v1/projects')).json()
   const inbox = projects.projects.find((p: { isInbox: boolean }) => p.isInbox)
@@ -34,14 +33,13 @@ test('the inbox is the overview’s last card, and the one project with no delet
   const aaa = await makeProject(page, 'aaa')
   await page.goto('/projects')
 
-  // A card of its own after the projects (FR-051); the sidebar still lists it first.
+  // A card of its own after the projects; the sidebar still lists it first.
   const cards = page.getByRole('list', { name: 'Projects' }).getByRole('listitem')
   await expect(cards).toHaveCount(2)
   await expect(cards.last()).toHaveText(/Inbox is empty/)
   await expect(
     page.getByRole('navigation', { name: 'Projects' }).getByRole('link').first(),
   ).toHaveText(/Inbox/)
-  // No card carries it: the overview is a place you aim at names.
   await expect(cards.getByRole('button', { name: /^Delete/ })).toHaveCount(0)
 
   // It is at the foot of an ordinary project's edit page. The inbox has none, because capture has
@@ -55,7 +53,6 @@ test('the inbox is the overview’s last card, and the one project with no delet
 
 test('capture still finds the inbox after it is renamed', async ({ page }) => {
   await registerFreshUser(page)
-  // Rename through the API.
   const projects = await page.evaluate(() =>
     fetch('/api/v1/projects', { headers: { 'x-ctws-client': 'web' } }).then((r) => r.json()),
   )
@@ -76,7 +73,6 @@ test('capture still finds the inbox after it is renamed', async ({ page }) => {
   expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('Inbox')
   await page.reload()
   await submitCreate(page, 'Capture…', '改名后仍然能捕获')
-  // Again through the API: the tree lands in Task 8.
   const tasks = await serverTasks(page, inbox.id)
   expect(tasks.map((t: { title: string }) => t.title)).toContain('改名后仍然能捕获')
 })

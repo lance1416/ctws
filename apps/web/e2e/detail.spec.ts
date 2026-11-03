@@ -31,9 +31,8 @@ async function save(page: Page, url: RegExp = PATCH_URL) {
   await page.getByRole('button', { name: 'Save' }).click()
   const res = await done
   expect(res.ok()).toBe(true)
-  // A save lands the pane back in READING mode -- or takes the task off this page entirely, which
-  // unmounts the pane. Until then the form is still dirty, so anything that tries to leave meets
-  // the discard prompt instead.
+  // Until the pane is back in reading (or gone, when the task left this page) the form is still
+  // dirty, and anything that tries to leave meets the discard prompt.
   await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0)
   return res
 }
@@ -41,11 +40,9 @@ async function save(page: Page, url: RegExp = PATCH_URL) {
 const row = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title })
 
 /**
- * Leaves the detail pane if one is open.
- *
- * It PRESSES THE ✕ rather than Escape: Escape is handled on the panel element, so it only works
- * while focus is inside, and right after a save focus is still on its way back there. A click is
- * what a person does and does not race the focus.
+ * Leaves the detail pane if one is open. It presses the ✕ rather than Escape: Escape is handled on
+ * the panel element, so it only works while focus is inside, and right after a save focus is still
+ * on its way back there.
  */
 async function closeAnyPane(page: Page) {
   const pane = page.getByRole('dialog')
@@ -56,14 +53,9 @@ async function closeAnyPane(page: Page) {
   await expect(pane).toHaveCount(0)
 }
 
-/**
- * Opens a row's detail. The pane opens in reading mode, so a test that is about an EDIT asks for
- * editing mode as well; the tests about opening, closing and focus deliberately do not, because
- * what they pin is what happens on open.
- */
+/** Opens a row's detail, in editing mode unless `edit` is false. */
 async function reopen(page: Page, title: string, edit = true) {
-  // Saving returns the pane to reading rather than closing it, so a reopen starts by stepping
-  // out of whatever is open -- otherwise the row click lands on a pane that is already showing.
+  // Saving returns the pane to reading rather than closing it, so step out of it first.
   await closeAnyPane(page)
   await row(page, title).click()
   await expect(page.getByRole('dialog')).toBeVisible()
@@ -120,10 +112,8 @@ test('moves a task to another project', async ({ page }) => {
   await pickOne(page, 'Projects', 'Inbox')
   await save(page)
 
-  // It leaves the project it was in...
   await expect(row(page, '写方案')).toHaveCount(0)
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  // ...and arrives in the other one.
   await navLink(page, 'Projects').click()
   await openProject(page, 'Inbox')
   await expect(row(page, '写方案')).toBeVisible()
@@ -148,19 +138,13 @@ test('clearing a date removes it rather than sending an empty string', async ({ 
   await expect(page.getByLabel('Plan', { exact: true })).toHaveValue('')
 })
 
-/**
- * THE PATCH BODY IS THE DIFF. What is pinned is the BODY -- which fields the request names:
- *
- * - a field typed into is named;
- * - a field never touched is ABSENT, even when the form plainly holds a value for it (an untouched
- *   deadline must not be rewritten at minute precision, which is what sending it would do);
- * - a field typed into and then typed BACK to what it was is absent too, because nothing changed.
- */
+// A field never touched is absent from the body even when the form holds a value for it: an
+// untouched deadline must not be rewritten at minute precision.
 test('the PATCH names the fields that changed, and only those', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)
 
-  // Give the task a deadline and a plan first, so there is something the save COULD wrongly resend.
+  // A deadline and a plan first, so there is something the save could wrongly resend.
   await setDue(page, DUE, '09:15')
   await page.getByLabel('Plan', { exact: true }).fill(PLAN)
   expect((await save(page)).request().postDataJSON()).toEqual({
@@ -168,15 +152,13 @@ test('the PATCH names the fields that changed, and only those', async ({ page })
     scheduledOn: PLAN,
   })
 
-  // One field edited: one field in the body. Not the title, not the notes, and -- the point --
-  // not the deadline, which the form is still holding. (`reopen` leaves the pane first: saving
-  // returns it to reading rather than closing it.)
+  // One field edited: one field in the body, not the deadline the form is still holding.
   await reopen(page, '写方案')
   await setDetailStatus(page, 'In progress')
   expect((await save(page)).request().postDataJSON()).toEqual({ status: 'in_progress' })
 
-  // Edited and put back: nothing changed, so the body does not mention it. The title goes along for
-  // the ride so that a request is sent at all and the assertion is about what is MISSING from it.
+  // Edited and put back: nothing changed, so the body does not mention it. The title changes so
+  // that a request is sent at all.
   await reopen(page, '写方案')
   await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('先问清需求')
   await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('')
@@ -310,7 +292,7 @@ test('a rejected move is reported and nothing changes', async ({ page }) => {
 })
 
 // A task that leaves the list while its panel is open unmounts the panel without onClose; focus
-// must land on a remaining row, not fall to <body> (WCAG 2.4.3).
+// must land on a remaining row, not fall to <body>.
 test('moving a task away returns focus to a remaining row', async ({ page }) => {
   await registerFreshUser(page)
   await seedOneTask(page)

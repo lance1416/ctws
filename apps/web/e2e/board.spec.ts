@@ -9,15 +9,9 @@ import {
   taskPatched,
 } from './helpers'
 
-/**
- * THE BOARD BY STATUS (FR-057, artboard 21): a second view of the project's tasks, on the same
- * page and address. Only leaves are cards; each column groups them under their top-level parent,
- * the project's own first; Backlog and Cancelled wait as strips at the sides.
- */
-
 const column = (page: Page, status: string) => page.locator(`[data-board-column="${status}"]`)
 const strip = (page: Page, status: string) => page.locator(`[data-board-strip="${status}"]`)
-/** A card by its name, not by the path under it ("Batch 3" is a parent's name there too). */
+/** By its name, not the path under it: "Batch 3" is a parent's name there too. */
 const card = (page: Page, title: string) =>
   page
     .locator('[data-board-card]')
@@ -49,13 +43,10 @@ test('the board is a view of the task block, not a page of its own', async ({ pa
   await makeTask(page, pid, '配色重做', { status: 'in_progress' })
   await openBoard(page, pid)
 
-  // Same page, same block, same project banner above it. Only the rows are drawn differently.
   await expect(page).toHaveURL(new RegExp(`/projects/${pid}\\?view=board$`))
   await expect(page.getByRole('heading', { level: 1, name: '改版' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Tasks' })).toBeVisible()
-  // Adding is the same action either way; on the board it heads To do.
   await expect(column(page, 'todo').getByRole('textbox', { name: 'New task' })).toBeVisible()
-  // And the tree is gone -- it is the other view, not a thing hidden under this one.
   await expect(page.locator('[data-task-tree]')).toHaveCount(0)
 })
 
@@ -69,7 +60,6 @@ test('the chosen view survives a reload, because it is in the URL', async ({ pag
   await expect(column(page, 'todo')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true')
 
-  // Back to the list, and the parameter goes with it.
   await page.getByRole('tab', { name: 'Tree' }).click()
   await expect(page.locator('[data-task-tree]')).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Tree' })).toHaveAttribute('aria-selected', 'true')
@@ -91,13 +81,12 @@ test('only leaves are cards, grouped under their top-level parent, the project�
   await expect(card(page, '接入 KaTeX')).toHaveCount(0)
   await expect(card(page, 'Batch 3')).toHaveCount(0)
   await expect(cardsIn(page, 'in_progress')).toHaveText([/写变更日志/, /公式换行/, /装依赖/])
-  // Its group's head names it and counts its cards in this column.
   await expect(head(page, 'in_progress', /接入 KaTeX/)).toContainText('2')
   // The steps between the head and a deeper card are said under the card's name.
   await expect(card(page, '公式换行').locator('[data-board-path]')).toHaveText('Batch 3')
   await expect(card(page, '装依赖').locator('[data-board-path]')).toHaveCount(0)
 
-  // A group folds to its head, stays folded for this project (DES-001 section 4), and opens again.
+  // A folded group stays folded for this project across a reload.
   await head(page, 'in_progress', /接入 KaTeX/).click()
   await expect(cardsIn(page, 'in_progress')).toHaveText([/写变更日志/])
   await page.reload()
@@ -153,8 +142,7 @@ test('dragging a card to another column writes that status', async ({ page }) =>
   const patched = taskPatched(page)
   await drag(page, card(page, '配色重做'), column(page, 'in_progress'))
 
-  // It is the SAME mutation the row markers use, so a card and a marker cannot disagree about
-  // what a status change means.
+  // The same mutation the row markers use, so a card and a marker cannot disagree.
   expect((await patched).request().postDataJSON()).toEqual({ status: 'in_progress' })
   await expect(cardsIn(page, 'in_progress')).toHaveCount(1)
   await expect(cardsIn(page, 'todo')).toHaveCount(0)
@@ -255,7 +243,7 @@ test('arrows move between cards, and Alt with an arrow moves a card a column', a
   await makeTask(page, pid, 'Started', { status: 'in_progress' })
   await openBoard(page, pid)
 
-  // The board is one tab stop: the first card.
+  // The board is one Tab stop.
   await expect(page.locator('[data-board-card][tabindex="0"]')).toHaveCount(1)
   await card(page, 'First').focus()
   await page.keyboard.press('ArrowDown')
@@ -269,7 +257,6 @@ test('arrows move between cards, and Alt with an arrow moves a card a column', a
   await page.keyboard.press('Alt+ArrowRight')
   expect((await patched).request().postDataJSON()).toEqual({ status: 'in_progress' })
   await expect(cardsIn(page, 'in_progress')).toHaveCount(2)
-  // The card keeps focus in its new column.
   await expect(card(page, 'First')).toBeFocused()
 })
 
@@ -290,7 +277,7 @@ test('a card made at the top of To do shows, though five are there before it', a
   await page.goto(`/projects/${pid}?view=board`)
   await expect(cardsIn(page, 'todo')).toHaveCount(5)
 
-  // BUG-040: at the top of the column, where it was typed, not behind "N more".
+  // At the top of the column, where it was typed, not hidden behind "N more".
   const box = column(page, 'todo').getByRole('textbox', { name: 'New task' })
   await box.fill('Made just now')
   await box.press('Enter')
@@ -298,7 +285,7 @@ test('a card made at the top of To do shows, though five are there before it', a
   await expect(cardsIn(page, 'todo')).toHaveCount(5)
 })
 
-test('a card with a GitHub pull request says its number (FR-057, BUG-077)', async ({ page }) => {
+test('a card with a GitHub pull request says its number', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const reviewed = await makeTask(page, pid, 'Review the search pull request')

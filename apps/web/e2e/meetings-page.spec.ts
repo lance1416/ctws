@@ -13,11 +13,9 @@ import {
 } from './helpers'
 
 /**
- * MEETINGS (FR-066, FR-067, FR-068) -- the module's own destination: an overview, a page for each
- * occurrence, and an edit page that reaches as far as was chosen when Edit was pressed.
- *
- * A meeting is MADE here, in one form, rather than by clicking a square on a lens. The answers
- * that turn on what day it is are in meetings.pinned.spec.ts.
+ * The meetings module: an overview, a page for each occurrence, and an edit page that reaches as
+ * far as was chosen when Edit was pressed. A meeting is made here, in one form, not from a square
+ * on the calendar. The answers that turn on what day it is are in meetings.pinned.spec.ts.
  */
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'New meeting' })
@@ -63,7 +61,6 @@ async function editFromPage(page: Page, which?: string) {
 }
 
 test('the icon bar reaches meetings, and the page says when there are none', async ({ page }) => {
-  // Every kind has its place on the icon bar (FR-019); an empty one says so (FR-030).
   await registerFreshUser(page)
   await navLink(page, 'Meetings').click()
   await expect(page).toHaveURL(/\/meetings$/)
@@ -96,7 +93,7 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   await dialog(page).getByRole('button', { name: 'Create' }).click()
   const body = (await made).request().postDataJSON() as Record<string, unknown>
 
-  // ONE REQUEST carries the whole meeting, rather than an empty one filled in afterwards.
+  // One request carries the whole meeting, rather than an empty one filled in afterwards.
   expect(body).toMatchObject({
     title: 'Second interview',
     startsLocal: `${dayOffset(1)}T21:00`,
@@ -107,7 +104,7 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
   })
   expect((body.attendeeIds as string[]).length).toBe(1)
 
-  // And it opens on the page of the thing just made, where its notes are written.
+  // It opens on the page of the thing just made, where its notes are written.
   await expect(dialog(page)).toHaveCount(0)
   await expect(page).toHaveURL(/\/meetings\/[0-9a-f-]{36}\?at=/)
   await expect(title(page)).toHaveText('Second interview')
@@ -117,8 +114,8 @@ test('a meeting is filled in once: title, time, zone, repeat and the people', as
 test('a repeating meeting is one row in the sidebar, and its page says how it repeats', async ({
   page,
 }) => {
-  // A daily standup has twenty-three occurrences in a month. A sidebar that listed them all would
-  // BE the standup: it answers which meetings there are, the calendar answers which day.
+  // A sidebar that listed every occurrence would be all standup: it answers which meetings there
+  // are, the calendar answers which day.
   await registerFreshUser(page)
   await meeting(page, {
     title: 'Standup',
@@ -157,11 +154,11 @@ test('a repeat can be given an end date, and the series really stops there', asy
   await form.getByRole('button', { name: 'Create' }).click()
   const body = (await made).request().postDataJSON() as { rrule: string; location: string }
 
-  // The end is written in the SAME naive space as the start, at the end of the chosen day.
+  // The end is written in the same naive space as the start, at the end of the chosen day.
   expect(body.rrule).toBe(`FREQ=WEEKLY;BYDAY=TU;UNTIL=${last.replaceAll('-', '')}T235959Z`)
   expect(body.location).toBe('https://meet.example.test/abc')
 
-  // And the server agrees: three Tuesdays, not a fourth.
+  // The server agrees: three Tuesdays, not a fourth.
   const got = await page.request.get(`/api/v1/meetings?from=${first}&to=${addDaysYmd(last, 14)}`, {
     headers: WEB,
   })
@@ -220,10 +217,7 @@ test("a meeting opens on a page of its own, at the occurrence's own address", as
   ).toBeLessThanOrEqual((await value.boundingBox())!.y + 1)
 })
 
-/**
- * THE NEXT SEVEN DAYS ARE ON YOUR CLOCK: the weekday, the time here, the title, and the project
- * the meeting is in -- named on the meeting's own page, so its colour is never alone.
- */
+/** The project is named, so its colour is never alone. */
 test('the overview lists what is coming on your clock, and a meeting names its project', async ({
   page,
 }) => {
@@ -271,7 +265,7 @@ test('backing out of "Change which?" or the edit page saves nothing', async ({ p
   await page.getByLabel('Title', { exact: true }).fill('Renamed sync')
   await fillStart(page, day, '10:00')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  // What was typed is asked about first (FR-063's guard), then let go.
+  // What was typed is asked about first, then let go.
   await page.getByRole('button', { name: 'Discard changes' }).click()
   await expect(title(page)).toHaveText('Weekly sync')
 
@@ -500,12 +494,11 @@ test('this one and every one after is one write, and leaves the earlier ones as 
     { headers: WEB },
   )
   expect(((await first.json()) as { title: string }).title).toBe('Weekly')
-  // And the page is on the new series' first.
+  // The page is on the new series' first.
   await expect(title(page)).toHaveText('Weekly, later')
 })
 
 test('a task made from a meeting is under Tasks from these meetings', async ({ page }) => {
-  // FR-067: what came of the meetings, beside their notes.
   await registerFreshUser(page)
   const project = await apiPost(page, '/projects', { name: 'Launch' })
   const made = await meeting(page, { title: 'Planning', startsLocal: `${dayOffset(1)}T09:00` })
@@ -559,9 +552,7 @@ test('the repeat chosen follows a new start day, and the menu says which is chos
   expect(body.rrule).toBe('FREQ=WEEKLY;INTERVAL=2;BYDAY=TH')
 })
 
-test('notes emptied and Done at once are saved empty, not brought back (BUG-089)', async ({
-  page,
-}) => {
+test('notes emptied and Done at once are saved empty, not brought back', async ({ page }) => {
   await registerFreshUser(page)
   const made = await apiPost<{ meetingId: string }>(page, '/meetings', {
     title: 'rust-analyzer sync',
@@ -594,6 +585,6 @@ test('notes emptied and Done at once are saved empty, not brought back (BUG-089)
   await saved
   const read = await page.request.get(`/api/v1/notes/${note.id}`, { headers: WEB })
   expect(((await read.json()) as { body: string }).body).toBe('')
-  // Its mention went with its words (FR-042).
+  // Its mention went with its words.
   expect(await relationsOfMira()).not.toContain(note.id)
 })

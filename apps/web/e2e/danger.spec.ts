@@ -87,7 +87,7 @@ test('in a long edit, Delete follows the last field instead of floating over it'
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').filter({ hasText: 'Read the C book' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Task details' })
-  // Delete is the edit's last thing (FR-035), after the notes being edited.
+  // Delete is the edit's last thing, after the notes being edited.
   await dialog.getByRole('button', { name: 'Edit', exact: true }).click()
   // The editor's code arrived, and with it the notes' own height.
   await expect(dialog.locator('[data-markdown-editor] .cm-content')).toBeVisible()

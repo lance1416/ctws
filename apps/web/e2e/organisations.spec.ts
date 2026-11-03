@@ -1,11 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { apiPost, makeProject, makeTask, registerFreshUser } from './helpers'
 
-/**
- * ORGANISATIONS (FR-064, FR-065): the overview answers who you are in touch with and where each
- * stands; an organisation's page says what it is, who is there and which projects it is in; one is
- * written down on a page of its own.
- */
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Organisations' })
 
 async function put(page: Page, path: string, data: object) {
@@ -69,7 +64,7 @@ test('the overview counts each type, and a type narrows the table and the list',
   await expect(types.getByRole('link', { name: 'Companies 1' })).toBeVisible()
   await expect(types.getByRole('link', { name: 'Other 1' })).toBeVisible()
 
-  // Sarah works there now: the message to her is an exchange with the firm (FR-071).
+  // Sarah works there now: the message to her is an exchange with the firm.
   const inTouch = page.getByRole('region', { name: 'In touch, last 30 days' })
   const row = inTouch.locator('[data-in-touch]').filter({ hasText: 'Harbour & Lane LLP' })
   await expect(row).toContainText('Find a lawyer')
@@ -118,7 +113,7 @@ test('an organisation’s page says what it is, who is there and where it stands
   )
   await expect(projects).toContainText('Shortlisted')
 
-  // What was said with Sarah while she works there, and where its node moved (FR-065).
+  // What was said with Sarah while she works there, and where its node moved.
   const timeline = page.getByRole('region', { name: 'Timeline' })
   const message = timeline.locator('[data-timeline-entry="message"]')
   await expect(message).toContainText('Enquiry: review of our employment contracts')
@@ -136,7 +131,7 @@ test('an organisation’s page says what it is, who is there and where it stands
   await expect(message).toHaveCount(1)
   await expect(timeline).not.toContainText('Added')
 
-  // The filters are tabs over the entries (BUG-061): one Tab stop, the arrows switching.
+  // The filters are tabs over the entries: one Tab stop, the arrows switching.
   const tabs = timeline.getByRole('tablist', { name: 'Show' }).getByRole('tab')
   await expect(tabs.and(page.locator('[tabindex="0"]'))).toHaveCount(1)
   const shown = await tabs.first().getAttribute('aria-controls')

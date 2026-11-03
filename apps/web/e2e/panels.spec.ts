@@ -10,9 +10,9 @@ import {
 } from './helpers'
 
 /**
- * TODAY'S "THIS WEEK" (FR-079, artboard 12): closed per project, and which project has gone quiet.
+ * Today's "This week": closed per project, and which project has gone quiet.
  *
- * - The numbers are compared against the SERVER's own answer, so a block that quietly counted
+ * - The numbers are compared against the server's own answer, so a block that quietly counted
  *   client-side would have to agree with the query that produced it.
  * - "Quiet" needs both halves: a chip always drawn passes a test that only looks for it, and one
  *   never drawn passes a test that only looks for its absence.
@@ -78,7 +78,7 @@ test('a project is said to be quiet only while it really is', async ({ page }) =
   await expect(chip).toHaveAttribute('data-stagnant', stale)
   await expect(chip).toHaveText(`Quiet for ${quiet.quietDays} days`)
 
-  // Touch it: it stops being quiet. (Without this half, a chip that is ALWAYS drawn would pass.)
+  // Touch it: it stops being quiet. Without this half, a chip that is always drawn would pass.
   await makeTask(page, stale, '又动了一下')
   await page.reload()
   await expect(week.getByText('没人管的')).toBeVisible()

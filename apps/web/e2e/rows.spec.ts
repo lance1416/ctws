@@ -3,16 +3,9 @@ import { makeProject, makeTask, registerFreshUser, sidewaysScroll } from './help
 import { dayOffset, dueAgo } from './days'
 
 /**
- * THE ROW ANATOMY of the lists that are not the tree: a MARGIN that says when, a THREAD in the
- * project's colour, then the body -- marker, title, a second line that says where. The tree has
- * columns of its own (FR-054), measured here too.
- *
- * What these guards are for, in order of how easy it would be to fake:
- * - "the margin is a column" is NOT provable by asserting a date is present. It is provable only by
- *   measuring where the words END on rows whose words differ, and finding one x.
- * - "the title is not truncated" is provable only by measuring `scrollWidth` against `clientWidth`
- *   on a REAL long title at the narrowest panel width.
- * - "the thread joins the rows" is provable only from its box: one x, the row's height, no radius.
+ * The rows of the lists, measured rather than read. "The title is not truncated" is provable only
+ * by measuring `scrollWidth` against `clientWidth` on a real long title at the narrowest panel
+ * width.
  */
 
 /** Every x of a set of cells, rounded to the pixel: sub-pixel layout noise is not a column break. */
@@ -24,10 +17,10 @@ async function xs(page: Page, selector: string): Promise<number[]> {
   return boxes
 }
 
-// ------------------------------------------------------------------ the margin and the thread
+// ------------------------------------------------------------------ the tree's columns
 
 /**
- * In the tree only the NAME is indented (FR-054): the stage, progress and due columns stay at one
+ * In the tree only the name is indented: the stage, progress and due columns stay at one
  * x at every depth, so they read as columns down a deep tree, while the titles step in by one
  * indent per level.
  */
@@ -55,8 +48,8 @@ test('in the tree, depth indents the name and leaves the other columns alone', a
 })
 
 /**
- * EVERY ROW IS ONE LINE, 36px (artboard 8), dated or not and at any depth: the date is in its own
- * column, not on a second line. And the title sits on the mark's own centre line, which the height
+ * Every row is one line, dated or not and at any depth: the date is in its own column, not on a
+ * second line. The title sits on the mark's own centre line, which the height
  * alone does not say.
  */
 test('a dated row, a bare row and a nested row are all one line, 36px', async ({ page }) => {
@@ -97,7 +90,7 @@ test('a dated row, a bare row and a nested row are all one line, 36px', async ({
 })
 
 /**
- * A task with BOTH a deadline and a plan shows the DEADLINE in the Due column -- the one that
+ * A task with both a deadline and a plan shows the deadline in the Due column -- the one that
  * bites -- flagged on red once missed. The plan is the detail's to say.
  */
 test('a row with a plan and a deadline shows the deadline', async ({ page }) => {
@@ -113,7 +106,7 @@ test('a row with a plan and a deadline shows the deadline', async ({ page }) => 
 })
 
 /**
- * A REAL, LONG title: 575px of text at 15px. A placeholder string would prove nothing, because the
+ * A real, long title: 575px of text at 15px. A placeholder string would prove nothing, because the
  * bug is truncation and a short title fits every layout.
  */
 const LONG_TITLE = '把邮件服务的 Connection timeout 查清楚，顺手给 SMTP 那边加上指数退避重试和告警'
@@ -146,7 +139,7 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * A REAL LONG TITLE KEEPS THE LINE, at 1440, with the detail closed (Linked beside the tree) and
+ * A real long title keeps the line at 1440, with the detail closed (Linked beside the tree) and
  * open (the detail the third column, Linked under the tree): the title has most of the row either
  * way, and the other columns never take more than their own width.
  *
@@ -171,7 +164,7 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
     `title cell ${closed.cell}px of ${closed.list}px`,
   ).toBeGreaterThan(0.45)
 
-  // Open the pane from ANOTHER row, so the row being measured is not the one that is selected.
+  // Open the pane from another row, so the row being measured is not the one that is selected.
   await page.locator('[data-task-tree] li[data-depth]').nth(1).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   const open = await firstRow(page)
@@ -181,14 +174,14 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
   // due columns do not grow or shrink with it. (Opening the detail moves Linked under the tree, so
   // the list is about as wide either way.)
   expect(closed.cell - open.cell, 'the title moves with the list').toBe(closed.list - open.list)
-  // The stage, progress and due columns and the row's own controls (I-06) are a fixed 412px with
+  // The stage, progress and due columns and the row's own controls are a fixed 412px with
   // their gaps: the title has all the rest, the larger share with the inspector closed, and still
   // more than a third beside the 400px inspector.
   expect(open.cell / open.list, `title cell ${open.cell}px of ${open.list}px`).toBeGreaterThan(0.35)
 })
 
 /**
- * The TREE's second line carries no breadcrumb (the project is known and the hierarchy is in the
+ * The tree's second line carries no breadcrumb (the project is known and the hierarchy is in the
  * indentation), while Today's carries one.
  */
 test('the tree has no breadcrumb; Today says where in its path column', async ({ page }) => {
@@ -207,11 +200,7 @@ test('the tree has no breadcrumb; Today says where in its path column', async ({
   await expect(path).toHaveText(/父任务$/)
 })
 
-// ------------------------------------------------------------- the mark on a row with something to read
-
-// --------------------------------------------------------------------------- the action control
-
-// ------------------------------------------------------------------------------- the project rail
+// ---------------------------------------------------------------------------- the project square
 
 test('a finished task’s search result wears its project', async ({ page }) => {
   await registerFreshUser(page)
@@ -224,7 +213,7 @@ test('a finished task’s search result wears its project', async ({ page }) => 
   await page.keyboard.press('Control+k')
   await page.getByRole('combobox', { name: 'Search' }).fill('做完的事')
   await expect(page.locator('[data-search-result]')).toHaveCount(2)
-  // A result wears its project's square beside where it sits (artboard 9), not a rail.
+  // A result wears its project's square beside where it sits, not a rail.
   const squares = page.locator('[data-search-result] [data-project-square]')
   await expect(squares).toHaveCount(2)
   await expect(squares.first()).toHaveAttribute('data-project-square', pid)
@@ -243,11 +232,11 @@ test('the status marker is the row’s heaviest mark, and only in progress has a
   await page.goto('/today')
 
   const mark = (name: string) => page.getByRole('img', { name })
-  // 16 in Today's first column, which is 16 wide (DES-001 section 4); 20 elsewhere, below.
+  // 16 in Today's first column, which is 16 wide; 20 elsewhere, below.
   for (const name of ['In progress', 'To do', 'Backlog'])
     expect(await mark(name).evaluate((el) => el.getBoundingClientRect().width)).toBe(16)
 
-  // Artboard 1: what is being worked on is green, the rest muted. The shapes carry the meaning:
+  // What is being worked on is green, the rest muted. The shapes carry the meaning:
   // the colour is said twice, never alone.
   const colourOf = (l: ReturnType<typeof mark>) => l.evaluate((el) => getComputedStyle(el).color)
   const token = (name: string) =>
@@ -264,7 +253,7 @@ test('the status marker is the row’s heaviest mark, and only in progress has a
   expect(await colourOf(mark('Backlog'))).toBe(muted)
   expect(await colourOf(mark('In progress'))).toBe(await token('go'))
 
-  // A finished one is muted, as the backlog, and told by its filled shape. (On the board.)
+  // A finished one is muted, as the backlog, and told by its filled shape, on the board.
   await makeTask(page, pid, '收工', { status: 'done' })
   await page.goto(`/projects/${pid}`)
   await page.getByRole('listitem').first().waitFor()
@@ -314,7 +303,7 @@ test('the Due column says how near: amber this week, red once missed, grey furth
 // ------------------------------------------------------------------- the phone, deep in a tree
 
 /**
- * THE DUE COLUMN MUST NOT TAKE THE TITLE'S WIDTH. At 375 the tree is the name and the due day; a
+ * The due column must not take the title's width. At 375 the tree is the name and the due day; a
  * deep row has what is left after the indent, the fold and the mark. The claim is that at the same
  * depth a dated row's title is exactly as wide as a bare one's -- the date costs the title nothing
  * -- and that this width is most of the row, not a sliver.
@@ -339,7 +328,7 @@ test.describe('the tree on a phone', () => {
     await makeTask(page, pid, '第三层上的一条很长的别的标题', {}, b)
 
     await page.goto(`/projects/${pid}`)
-    // A phone's tree (FR-088): a row a task, its tags on a second line.
+    // A phone's tree: a row a task, its tags on a second line.
     const row = (title: string) => page.locator('[data-phone-tree-row]').filter({ hasText: title })
     await expect(row('第三层上的一条很长的任务标题')).toBeVisible()
     const titleWidth = (title: string) =>

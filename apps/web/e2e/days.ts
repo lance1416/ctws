@@ -1,8 +1,7 @@
 /**
- * THE SUITE'S DATE ARITHMETIC, in the runner's local days. The browser registers its user with its
- * own zone, so the account's days and the runner's are the same. A spec whose answer turns on the
- * day itself (a weekday, a year, an hour) is not built from these: it is a `*.pinned.spec.ts`, and
- * takes its days from `pinned.ts`.
+ * Date arithmetic in the runner's local days. The browser registers its user with its own zone, so
+ * the account's days and the runner's are the same. A spec whose answer turns on the day itself (a
+ * weekday, a year, an hour) is a `*.pinned.spec.ts` instead, and takes its days from `pinned.ts`.
  */
 
 /** The month names the app prints, so a spec can build the string the page will show. */
@@ -21,7 +20,6 @@ export const MONTHS = [
   'Dec',
 ]
 
-/** One day in milliseconds. */
 export const DAY = 86_400_000
 
 /** A deadline `days` ago, as an instant. */

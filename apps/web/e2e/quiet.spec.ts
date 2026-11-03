@@ -16,12 +16,8 @@ import {
 import { dayOffset } from './days'
 
 /**
- * WHAT KEEPS THE APP USABLE AS IT FILLS UP.
- *
- * The tree shows what is left to do and counts the rest; an inbox row says how long it has been
- * sitting there; a refused creation reports itself at the row it failed on; and a save with
- * nothing to save still leaves editing. Each one is about a screen that has been lived in, not
- * a screen with three rows on it.
+ * What keeps the app usable as it fills up: each test is about a screen that has been lived in,
+ * not a screen with three rows on it.
  */
 
 const row = (page: Page, title: string) =>
@@ -69,7 +65,7 @@ test('a row just finished stays to be undone, and Hide done folds it with the re
   await openTree(page, pid)
   await expect(page.getByRole('button', { name: '1 done' })).toBeVisible()
 
-  // Finished here: it stays where it was, greyed, a press from being undone (04-projects.md).
+  // Finished here: it stays where it was, greyed, a press from being undone.
   await page.getByRole('button', { name: 'Complete “配色重做”' }).click()
   await expect
     .poll(async () => (await serverTasks(page, pid)).map((t) => t.status).sort())
@@ -87,7 +83,7 @@ test('a row just finished stays to be undone, and Hide done folds it with the re
   )
 })
 
-test('each parent folds its own finished rows, and says how many (FR-054)', async ({ page }) => {
+test('each parent folds its own finished rows, and says how many', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const parent = await makeTask(page, pid, '接入 KaTeX')
@@ -130,7 +126,7 @@ test('when the last parent’s block and the list end together, its own done com
   for (const t of ['子做完一', '子做完二']) await makeTask(page, pid, t, { status: 'done' }, last)
   await openTree(page, pid)
 
-  // BUG-034: the parent's "2 done" closes its block, and only then the project's "3 done".
+  // The parent's "2 done" closes its block, and only then the project's "3 done".
   await expect(page.locator('[data-done-group]')).toHaveText([/2 done/, /3 done/])
   await expect(page.locator('[data-done-group]').last()).toHaveAttribute('data-done-group', 'top')
 })
@@ -144,11 +140,11 @@ test('a finished parent with unfinished children is kept, not hidden with them',
   await makeTask(page, pid, '公式换行', {}, parent)
   await openTree(page, pid)
 
-  // THE TREE'S OLDEST RULE: a list that loses tasks cannot be trusted. Hiding the parent would
+  // A list that loses tasks cannot be trusted. Hiding the parent would
   // take the child with it, so the parent stays and only the child is work.
   await expect(row(page, '接入 KaTeX')).toBeVisible()
   await expect(row(page, '公式换行')).toBeVisible()
-  // And it is not counted as hidden, because it is not hidden.
+  // It is not counted as hidden, because it is not hidden.
   await expect(page.getByRole('button', { name: /已完成/ })).toHaveCount(0)
 })
 
@@ -163,7 +159,7 @@ test('a row finished right here stays put, so a mis-press can be undone from it'
   const patched = () => taskPatched(page)
   const handle = page.getByRole('button', { name: 'Task: 配色重做', exact: true })
   await handle.focus()
-  // Each press is awaited: `x` computes the NEXT status from the current one, so firing the
+  // Each press is awaited: `x` computes the next status from the current one, so firing the
   // second before the first has landed would read a stale status and repeat it.
   let done = patched()
   await page.keyboard.press('x')
@@ -238,7 +234,7 @@ test('a refused creation is reported at the input, which keeps what was typed', 
   await makeTask(page, pid, '配色重做')
   await openTree(page, pid)
 
-  // Over the contract's 500-character ceiling, so the SERVER refuses it -- a real failure path,
+  // Over the contract's 500-character ceiling, so the server refuses it -- a real failure path,
   // not a stubbed one.
   const tooLong = '很'.repeat(600)
   const box = page.getByRole('textbox', { name: 'New task' })
@@ -279,7 +275,7 @@ test('saving an untouched task sends nothing and still leaves editing', async ({
   await page.getByRole('button', { name: 'Save' }).click()
 
   // Save on an untouched task means "I am done here": no request, and the pane returns to
-  // reading. The press has to DO something visible, or the person cannot tell it worked. Edit
+  // reading. The press has to do something visible, or the person cannot tell it worked. Edit
   // coming back is that: while editing it is not there, so its absence proves nothing.
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
   await expect(page.getByRole('textbox', { name: 'Title' })).toHaveCount(0)
@@ -333,7 +329,7 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
 
   const pane = page.getByRole('dialog')
   await expect(pane).toBeVisible()
-  // There is no Close BUTTON in the control row: it is a ✕ in the corner, carrying the
+  // There is no Close button in the control row: it is a ✕ in the corner, carrying the
   // word as its accessible name for anyone who cannot see it.
   const close = pane.locator('[data-detail-close]')
   await expect(close).toHaveAccessibleName('Close')
@@ -341,7 +337,7 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
   await close.click()
   await expect(pane).toHaveCount(0)
 
-  // And Escape out of editing lands in reading, not out of the pane.
+  // Escape out of editing lands in reading, not out of the pane.
   await row(page, '配色重做').click()
   await editDetail(page)
   await page.keyboard.press('Escape')
@@ -351,7 +347,7 @@ test('the detail pane closes from the corner, and Escape unwinds one level at a 
   await expect(pane).toHaveCount(0)
 })
 
-test('a parent row says how far its leaves are, in its own column (FR-054)', async ({ page }) => {
+test('a parent row says how far its leaves are, in its own column', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
   const live = await makeTask(page, pid, '接入 KaTeX')
@@ -387,7 +383,7 @@ test('a project is renamed on its edit page, the inbox included', async ({ page 
   await page.getByRole('button', { name: /^Save/ }).click()
 
   await expect(page.getByRole('heading', { level: 1, name: '收件箱' })).toBeVisible()
-  // And the rail says so too, from the same cache entry.
+  // The sidebar says so too, from the same cache entry.
   await expect(page.locator('nav').getByRole('link', { name: '收件箱' })).toBeVisible()
   const after = await (await page.request.get('/api/v1/projects')).json()
   expect(after.projects.find((p: { id: string }) => p.id === inbox.id).name).toBe('收件箱')
@@ -420,7 +416,7 @@ test('a finished task opens from the review, to be read', async ({ page }) => {
     data: { status: 'done', notes: '先问清需求' },
   })
 
-  // Since the Done view went (RV-01), the week it was finished in is where it is read.
+  // With no Done view, the week it was finished in is where it is read.
   await page.goto('/review')
   await page.getByRole('button', { name: 'Next week' }).click()
   await page.getByRole('main').getByText('写迁移', { exact: true }).click()
@@ -507,10 +503,8 @@ test('the project title gets the width it needs, not the width it can shrink to'
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/projects/${pid}`)
 
-  // MEASURED, not read. Making the title an editable control collapsed its flex item and the
-  // banner truncated the title to a few characters at 1440px -- and every assertion that
-  // matched it BY NAME still
-  // passed, because truncation is CSS and the accessible name is whole.
+  // Measured, not read: a title truncated to a few characters still passes every assertion that
+  // matches it by name, because truncation is CSS and the accessible name is whole.
   const heading = page.getByRole('heading', { level: 1, name: '改版' })
   const cut = await heading.evaluate((el) => {
     const inner = el.querySelector('button') ?? el
@@ -530,7 +524,7 @@ test('a half-failed bulk action leaves exactly what still needs doing', async ({
   await row(page, '补测试').click({ modifiers: ['Shift'] })
   await expect(page.locator('[data-selection-bar]')).toContainText('2 selected')
 
-  // One of the two is refused. The other really happens -- that is what makes this about PARTIAL
+  // One of the two is refused. The other really happens -- that is what makes this about partial
   // failure rather than about failure.
   await page.route(`**/api/v1/tasks/${b}`, (r) =>
     r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
@@ -548,7 +542,7 @@ test('a half-failed bulk action leaves exactly what still needs doing', async ({
   )
   expect(byTitle).toMatchObject({ 写迁移: 'done', 补测试: 'todo' })
 
-  // And the retry goes through once the refusal stops.
+  // The retry goes through once the refusal stops.
   await page.unroute(`**/api/v1/tasks/${b}`)
   await page.getByRole('button', { name: 'Mark done' }).click()
   await expect(page.locator('[data-selection-bar]')).toHaveCount(0)

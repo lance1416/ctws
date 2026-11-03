@@ -1,11 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { registerFreshUser, WEB } from './helpers'
 
-/**
- * THE ACCOUNT (artboard 30), on the server pinned at Thursday, October 22, 2026, 00:30 UTC: the
- * zone every day is counted in, changed in place; light, dark or the system's, one setting with
- * the top bar's switch; the password, changed under its row; and Sign out.
- */
+// The account page, on the server pinned at Thursday, October 22, 2026, 00:30 UTC.
 test.use({ timezoneId: 'Europe/London', viewport: { width: 1440, height: 900 } })
 
 const PASSWORD = 'correct horse battery'
@@ -51,7 +47,7 @@ test('the theme here and the top bar switch are one setting', async ({ page }) =
   )
   await theme.getByRole('radio', { name: 'Dark' }).click()
   await expect(page.getByRole('button', { name: 'Switch to light' })).toBeVisible()
-  // One Tab stop; the arrows pick as they move (DES-001 section 4).
+  // One Tab stop; the arrows pick as they move.
   await expect(theme.getByRole('radio', { name: 'Light' })).toHaveAttribute('tabindex', '-1')
   await theme.getByRole('radio', { name: 'Dark' }).press('ArrowRight')
   await expect(theme.getByRole('radio', { name: 'System' })).toBeFocused()

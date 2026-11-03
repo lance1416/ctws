@@ -2,11 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { apiPost, registerFreshUser, WEB, fillStart } from './helpers'
 
 /**
- * MEETINGS NOT TODAY (FR-066 to FR-069), on the server pinned at Thursday, October 22, 2026, 00:30
- * UTC (01:30 in London, pinned.ts): what the overview owes, which occurrence a page opens on, what
- * a page says about when and who, how far an edit reaches, and how a big meeting and a long series
- * are folded. Every day below is fixed against that instant, so the answers hold whenever the
- * suite runs.
+ * Meetings on the server pinned at Thursday, October 22, 2026, 00:30 UTC (01:30 in London,
+ * pinned.ts). Every day below is fixed against that instant, so the answers hold whenever the suite
+ * runs.
  */
 test.use({ timezoneId: 'Europe/London' })
 
@@ -22,7 +20,7 @@ const meet = (page: Page, data: Record<string, unknown>) =>
     ...data,
   })
 
-/** Notes hung on one occurrence, as the page writes them (FR-067). */
+/** Notes hung on one occurrence, as the page writes them. */
 const note = (page: Page, meetingId: string, occurrenceId: string, body: string) =>
   apiPost(page, '/notes', { body, anchor: { type: 'meeting', id: meetingId, occurrenceId } })
 
@@ -59,7 +57,7 @@ test('a project’s meetings say a day in the week by its name, and one further 
   await expect(block.locator('[data-linked]').filter({ hasText: 'Phone screen' })).toContainText(
     'Sat 10:00',
   )
-  // BUG-038: not "Fri 10:00", which would read as this week's Friday.
+  // Not "Fri 10:00", which would read as this week's Friday.
   await expect(block.locator('[data-linked]').filter({ hasText: 'Onsite' })).toContainText(
     'Nov 20 10:00',
   )
@@ -137,7 +135,6 @@ test('a link to a meeting more than a year off still opens it', async ({ page })
   await opens(series.meetingId, 'Starts later', 'Thu, Mar 16, 2028', '09:00 to 09:30')
 })
 
-/** FR-066. */
 test('the overview says what is coming and which notes are still to write, a press from each', async ({
   page,
 }) => {
@@ -186,7 +183,6 @@ test('the overview says what is coming and which notes are still to write, a pre
   await expect(page.locator('[data-to-write]')).toHaveCount(0)
 })
 
-/** FR-067. */
 test('a meeting’s page says when on your clock and theirs, and what was said before', async ({
   page,
 }) => {
@@ -235,7 +231,6 @@ test('a meeting’s page says when on your clock and theirs, and what was said b
   await expect(earlier.locator('[data-earlier]').nth(2)).toContainText('First meeting, no notes')
 })
 
-/** FR-068. */
 test('Edit on a repeating meeting asks which; from this one on leaves the earlier ones', async ({
   page,
 }) => {
@@ -273,7 +268,6 @@ test('Edit on a repeating meeting asks which; from this one on leaves the earlie
   await expect(title(page)).toHaveText('Weekly sync')
 })
 
-/** FR-068. */
 test('one occurrence cancelled from More can be taken back', async ({ page }) => {
   await registerFreshUser(page)
   const m = await meet(page, {
@@ -290,7 +284,7 @@ test('one occurrence cancelled from More can be taken back', async ({ page }) =>
   // Only that one: the week after is still on.
   expect(await heldOn(page, '2026-11-05')).toEqual([['Weekly sync', '2026-11-05T10:00']])
 
-  // Left and opened again by its own address, it is still cancelled, not gone (BUG-051).
+  // Left and opened again by its own address, it is still cancelled, not gone.
   const own = new URL(page.url())
   own.searchParams.delete('cancelled')
   await page.goto('/meetings')
@@ -304,7 +298,6 @@ test('one occurrence cancelled from More can be taken back', async ({ page }) =>
   expect(await heldOn(page, '2026-10-29')).toEqual([['Weekly sync', '2026-10-29T10:00']])
 })
 
-/** FR-068, FR-035. */
 test('Delete this meeting, at the edit page’s foot, removes the whole series', async ({ page }) => {
   await registerFreshUser(page)
   const m = await meet(page, {
@@ -322,7 +315,7 @@ test('Delete this meeting, at the edit page’s foot, removes the whole series',
   const zone = page.locator('main [data-stop-zone]')
   await zone.getByRole('button', { name: 'Delete this meeting' }).click()
   const ask = page.getByRole('alertdialog')
-  // Three Thursdays held before the pinned day, 10-22 (FR-035).
+  // Three Thursdays held before the pinned day, 10-22.
   await expect(ask).toContainText(
     'Delete Weekly sync? The series goes, with the 3 meetings already held. Their notes stay, as notes on their own.',
   )
@@ -334,7 +327,6 @@ test('Delete this meeting, at the edit page’s foot, removes the whole series',
   expect(await heldOn(page, '2026-11-05')).toEqual([])
 })
 
-/** FR-069. */
 test('a big meeting is a row of faces counted by organisation, and All opens everyone', async ({
   page,
 }) => {
@@ -395,7 +387,6 @@ test('a big meeting is a row of faces counted by organisation, and All opens eve
   await expect(panel.getByRole('region', { name: 'Acme' })).toContainText('Engineer')
 })
 
-/** FR-069. */
 test('a long note folds to its first screen, and Read all unfolds it', async ({ page }) => {
   await registerFreshUser(page)
   const m = await meet(page, { title: 'Planning', startsLocal: '2026-10-20T10:00' })
@@ -414,7 +405,7 @@ test('a long note folds to its first screen, and Read all unfolds it', async ({ 
   const body = notes.locator('[data-note-body]')
   await expect(body).toContainText('launch plan')
   // Its headings are a little contents at the block's head; a narrower block keeps them in a
-  // menu, so the head stays one line (K-04).
+  // menu, so the head stays one line.
   await expect(notes.getByRole('button', { name: 'Decisions' })).toBeVisible()
   await page.setViewportSize({ width: 1280, height: 900 })
   await expect(notes.getByRole('button', { name: 'Decisions' })).toBeHidden()
@@ -427,7 +418,6 @@ test('a long note folds to its first screen, and Read all unfolds it', async ({ 
   expect((await body.boundingBox())!.height).toBeGreaterThan(301)
 })
 
-/** FR-069. */
 test('a long series shows its three latest, and the rest in the sidebar by month', async ({
   page,
 }) => {
@@ -470,7 +460,7 @@ test('the workbench says a meeting past this week by its date, not a weekday', a
   await meet(page, { title: 'Climbing', startsLocal: '2026-10-24T10:00' })
   await meet(page, { title: 'Quarterly', startsLocal: '2026-10-30T10:00' })
   await page.reload()
-  // Tomorrow by name (FR-076, v2.8).
+  // Tomorrow by name.
   await expect(page.locator('[data-next-meeting-card]')).toContainText('Tomorrow')
   const rows = page.locator('[data-next-meeting]')
   await expect(rows.filter({ hasText: 'Climbing' })).toContainText('Sat')

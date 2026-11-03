@@ -61,7 +61,7 @@ async function seed(page: Page): Promise<string> {
   return projectId
 }
 
-/** The element right after a2's row must be the open input: it sits where the task will land. */
+/** The element right after the row must be the open input: it sits where the task will land. */
 const inputFollows = (page: Page, title: string) =>
   expect(row(page, title).locator('xpath=following-sibling::li[1]')).toHaveAttribute(
     'data-new-task',

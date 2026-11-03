@@ -3,7 +3,7 @@ import { apiPost, logOut, makeProject, registerFreshUser } from './helpers'
 import { dayOffset } from './days'
 
 /**
- * A WRITE THE SERVER REFUSES SAYS SO. The button comes back either way; without a word beside it,
+ * A write the server refuses says so. The button comes back either way; without a word beside it,
  * the person cannot tell a refusal from a write that never went out.
  */
 
@@ -70,7 +70,7 @@ test('a meeting delete the server refuses says so, and the edit page stays', asy
   )
   await refuse(page, `**/api/v1/meetings/${m.meetingId}`, 'DELETE')
   await page.getByRole('button', { name: 'Delete this meeting' }).click()
-  // The question is its own small dialog (FR-035).
+  // The question is its own small dialog.
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete this meeting' }).click()
   await expect(said(page)).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`/meetings/${m.meetingId}/edit`))
@@ -81,7 +81,7 @@ test('a reading status change the server refuses says so', async ({ page }) => {
   const item = await apiPost(page, '/reading', { kind: 'book', title: '设计心理学' })
   await page.goto(`/reading/${item.id}`)
   await refuse(page, `**/api/v1/reading/${item.id}`, 'PATCH')
-  // The status is changed on the item's page, there and then (FR-073).
+  // The status is changed on the item's page, there and then.
   await page
     .getByRole('main')
     .getByRole('button', { name: /^Status: / })
@@ -142,7 +142,7 @@ test('an unlink the server refuses says so, and the link stays', async ({ page }
 test('a project rename or recolour the server refuses says so', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '改版')
-  // Renamed and recoloured on its edit page (DES-001 v1.23).
+  // Renamed and recoloured on its edit page.
   await page.goto(`/projects/${pid}/edit`)
   await refuse(page, `**/api/v1/projects/${pid}`, 'PATCH')
   await page.getByRole('textbox', { name: 'Name', exact: true }).fill('改版二期')

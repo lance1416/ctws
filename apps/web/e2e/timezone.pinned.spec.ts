@@ -3,12 +3,11 @@ import { apiPost, registerFreshUser, WEB } from './helpers'
 import { PINNED_AT } from './pinned'
 
 /**
- * THE ONE PLACE THE ACCOUNT'S DAY IS NOT THE SERVER'S.
- *
- * The server runs in UTC. At the pinned instant (2026-10-22 00:30 UTC) an account in Niue
- * (UTC-11, no DST) is still on Wednesday, October 21: a server or a page that worked the day out
- * in UTC instead of the account's zone puts things on the wrong day, and these tests see it. Every
- * expected day comes from the pinned instant, so they say the same thing whenever they run.
+ * Where the account's day is not the server's. The server runs in UTC. At the pinned instant
+ * (2026-10-22 00:30 UTC) an account in Niue (UTC-11, no DST) is still on Wednesday, October 21:
+ * a server or a page that worked the day out in UTC instead of the account's zone puts things on
+ * the wrong day. Every expected day comes from the pinned instant, so the tests say the same
+ * thing whenever they run.
  *
  * The other direction (an account already on the next day) is pinned on the server side by
  * `listToday`'s fixed-clock cases in apps/api/tests/modules/tasks/today.test.ts.
@@ -59,7 +58,7 @@ test('today is the account’s day, for the list and the heading alike', async (
   // The server compared the plan with the account's day, not its own UTC one.
   await expect(listed(page, '账户的今天')).toBeVisible()
   await expect(listed(page, '账户的今天').locator('[data-date-hint]')).toHaveCount(0)
-  // And the page's heading agrees: the day comes from the account's zone.
+  // The page's heading agrees: the day comes from the account's zone.
   await expect(page.locator('#today-heading')).toHaveText('Wednesday, October 21')
 })
 

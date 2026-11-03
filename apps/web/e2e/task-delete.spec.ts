@@ -12,9 +12,8 @@ import {
 } from './helpers'
 
 // Deleting a task, and the panel's guard against losing edits on navigation. Every claim about
-// what changed is checked against the SERVER (a fresh GET) or a reload, so an implementation that
-// only updates the screen cannot pass. (Kept from the Done view's tests when that view went,
-// RV-01: none of these were about it.)
+// what changed is checked against the server (a fresh GET) or a reload, so an implementation that
+// only updates the screen cannot pass.
 
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Modules' })
 
@@ -43,7 +42,7 @@ test('deleting a parent states how many descendants go, cancel deletes nothing, 
   page.on('request', (r) => r.method() === 'DELETE' && deletes.push(r.url()))
 
   await openPanel(page, '大块')
-  // Delete is the edit's last thing (FR-035).
+  // Delete is the edit's last thing.
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByRole('button', { name: 'Delete task' }).click()
   const ask = page.getByRole('alertdialog', { name: 'Confirm deleting this task' })
@@ -234,7 +233,7 @@ test('pressing Save and then a nav link at once is not mistaken for losing edits
   expect((await serverTasks(page, pid))[0]!.title).toBe('写方案 v2')
 })
 
-/** Delete is the edit's last thing, under its rule (FR-035, DES-001 section 4); reading has none. */
+/** Delete is the edit's last thing, under its rule; reading has none. */
 test('Delete is the last thing in the edit, and not in reading', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
@@ -251,7 +250,7 @@ test('Delete is the last thing in the edit, and not in reading', async ({ page }
   await expect(remove).toBeVisible()
   await expect(pane.getByRole('button', { name: 'Save' })).toBeVisible()
 
-  // And it is last: no other control below it to hit by accident.
+  // It is last: no other control below it to hit by accident.
   const [box, notes] = await Promise.all([
     remove.boundingBox(),
     pane.getByText('Notes', { exact: true }).first().boundingBox(),
@@ -259,7 +258,7 @@ test('Delete is the last thing in the edit, and not in reading', async ({ page }
   expect(box!.y).toBeGreaterThan(notes!.y)
 })
 
-test('a task deleted in the inspector takes the inspector with it (BUG-090)', async ({ page }) => {
+test('a task deleted in the inspector takes the inspector with it', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'P')
   const id = await makeTask(page, pid, '写方案')
@@ -279,7 +278,7 @@ test('a task deleted in the inspector takes the inspector with it (BUG-090)', as
 
 /**
  * Every read of the task or its dependencies from now on, as "status path": once Delete is
- * pressed there should be none, since what they read is gone (BUG-094).
+ * pressed there should be none, since what they read is gone.
  */
 function readsOf(page: Page, id: string): string[] {
   const asked: string[] = []
@@ -291,7 +290,7 @@ function readsOf(page: Page, id: string): string[] {
   return asked
 }
 
-test('deleted from its pane, a tree’s task hands focus to the row above, asked for no more (BUG-094)', async ({
+test('deleted from its pane, a tree’s task hands focus to the row above, asked for no more', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -318,7 +317,7 @@ test('deleted from its pane, a tree’s task hands focus to the row above, asked
   expect(asked).toEqual([])
 })
 
-test('deleted in the inspector beside its tree, a task hands focus to the row above (BUG-094)', async ({
+test('deleted in the inspector beside its tree, a task hands focus to the row above', async ({
   page,
 }) => {
   await registerFreshUser(page)
@@ -346,7 +345,7 @@ test('deleted in the inspector beside its tree, a task hands focus to the row ab
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 393, height: 852 }, hasTouch: true })
 
-  test('deleted from its sheet, a task hands focus to the row above, asked for no more (BUG-094)', async ({
+  test('deleted from its sheet, a task hands focus to the row above, asked for no more', async ({
     page,
   }) => {
     await registerFreshUser(page)

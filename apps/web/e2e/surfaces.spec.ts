@@ -9,9 +9,8 @@ import {
 } from './helpers'
 
 /**
- * WHAT SITS ON A PLANE IS DRAWN ONE STEP FROM IT, IN BOTH SCHEMES.
- *
- * In dark the highlighted search result is lighter than the dialog it sits in, a menu opened over
+ * What sits on a plane is drawn one step from it, in both schemes. In dark the highlighted search
+ * result is lighter than the dialog it sits in, a menu opened over
  * the overlay pane is not darker than the pane, and in both schemes a board card is lighter than
  * its column.
  */
@@ -86,7 +85,7 @@ for (const scheme of ['light', 'dark'] as const) {
 }
 
 /**
- * A SELECTION IS A STATE THAT STAYS, so text on it is held to 4.5:1 like any other text. The
+ * A selection is a state that stays, so text on it is held to 4.5:1 like any other text. The
  * tertiary ink clears that on every plane but not on the `select` layer over it, so what sits on a
  * selected surface reads one step up. Light and dark, on each kind of selected surface.
  */

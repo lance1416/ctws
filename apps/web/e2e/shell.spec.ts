@@ -92,9 +92,8 @@ test('a failed project list shows an error, not an empty list', async ({ page })
 })
 
 /**
- * A SERVER THAT IS DOWN IS NOT A SIGNED-OUT VISITOR.
- *
- * Only a 401 answers "nobody is signed in". Swallowing every failure into that sends the reader
+ * A server that is down is not a signed-out visitor. Only a 401 answers "nobody is signed in".
+ * Swallowing every failure into that sends the reader
  * to a login page that cannot reach the server either, which reads as a password that stopped
  * working; everything that is not a 401 is the shell's to say.
  */
@@ -108,7 +107,7 @@ test('a server that cannot be reached says so instead of showing the login page'
   await page.goto('/today')
 
   await expect(page.getByRole('alert')).toContainText("Can't reach the server")
-  // NOT the login page: the session is still good, and saying otherwise is the defect.
+  // Not the login page: the session is still good, and saying otherwise is the defect.
   expect(new URL(page.url()).pathname).not.toBe('/login')
   await expect(page.getByRole('button', { name: 'Create an account' })).toHaveCount(0)
 })
@@ -141,8 +140,8 @@ test('the theme is picked on the account page and survives a reload', async ({ p
 })
 
 /**
- * THE TOP BAR SAYS WHERE YOU ARE (FR-018): the module, with its icon, linking to it; then the thing
- * open in it, named and not linked to itself.
+ * The top bar says where you are: the module, with its icon, linking to it; then the thing open in
+ * it, named and not linked to itself.
  */
 test('the header names where you are', async ({ page }) => {
   await registerFreshUser(page, '/people')
@@ -160,7 +159,7 @@ test('the header names where you are', async ({ page }) => {
   await expect(where.getByRole('link')).toHaveText(['Projects'])
   await expect(where.locator('[aria-current="page"]')).toHaveText('Inbox')
 
-  // Every thing's own page the same: its kind, then its name (BUG-022).
+  // Every thing's own page the same: its kind, then its name.
   const mira = await apiPost(page, '/people', { givenName: 'Mira', familyName: 'Chen' })
   const stripe = await apiPost(page, '/organisations', { name: 'Stripe' })
   const book = await apiPost(page, '/reading', { kind: 'book', title: 'Dune' })
@@ -218,7 +217,7 @@ test('the header reads in order from the keyboard', async ({ page }) => {
 // -------------------------------------------------------------------------------------- phone
 const PHONE = { width: 375, height: 812 }
 
-test('on a phone, five tabs replace the rail (FR-082)', async ({ page }) => {
+test('on a phone, five tabs replace the rail', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await registerFreshUser(page, '/')
   // Exactly one navigation of that name is visible at any width: the rail and the bar are never
@@ -246,7 +245,7 @@ test('nothing scrolls sideways on a phone, whatever the page', async ({ page }) 
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     expect(await sidewaysScroll(page), `${path} scrolls sideways`).toEqual({ doc: 0, body: 0 })
   }
-  // A phone has no top bar (FR-082): the tab bar is its frame.
+  // A phone has no top bar: the tab bar is its frame.
   await expect(page.getByRole('banner')).toBeHidden()
 })
 

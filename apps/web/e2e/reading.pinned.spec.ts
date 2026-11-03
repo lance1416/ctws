@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { makeReading, registerFreshUser } from './helpers'
 
 /**
- * SINCE WHEN (FR-072, FR-073), on the server pinned at Thursday, October 22, 2026, 00:30 UTC
+ * Since when, on the server pinned at Thursday, October 22, 2026, 00:30 UTC
  * (pinned.ts): a book started today says so on its card, and its page has the day it was started.
  */
 test.use({ timezoneId: 'Europe/London' })

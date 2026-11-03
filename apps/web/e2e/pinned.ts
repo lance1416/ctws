@@ -1,5 +1,5 @@
 /**
- * THE PINNED INSTANT, the one `api-pinned` starts its clock at (docker-compose.yml). A spec that
+ * The pinned instant, the one `api-pinned` starts its clock at (docker-compose.yml). A spec that
  * runs against it (`*.pinned.spec.ts`) takes every expected day and time from here, never from
  * the wall clock, so it says the same thing whenever it runs.
  *
