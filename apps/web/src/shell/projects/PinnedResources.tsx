@@ -53,6 +53,7 @@ export function PinnedResources({ projectId, name }: { projectId: ProjectId; nam
           owner={owner}
           verb="Pin"
           label="Pin a resource"
+          first={pinned.length === 0}
           unavailable={freeDigit(all.data) === null ? 'Nine are pinned, one for each digit' : null}
           write={(resource) => pinResource(owner, resource, freeDigit(all.data) ?? 9)}
         />

@@ -19,6 +19,7 @@ export function ResourceAdd({
   label,
   unavailable = null,
   write,
+  first = false,
 }: {
   owner: ResourceOwner
   verb: 'Pin' | 'Add'
@@ -27,6 +28,11 @@ export function ResourceAdd({
   /** Why it cannot take another now, said on the + it greys out; null when it can. */
   unavailable?: string | null
   write: (resource: { url: string; name: string | null }) => Promise<unknown>
+  /**
+   * First in its row: the + gives its own inset back to the left, so what shows of it starts on
+   * the content's edge, not the button's (DES-001 对齐).
+   */
+  first?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [url, setUrl] = useState('')
@@ -71,7 +77,7 @@ export function ResourceAdd({
   return (
     <div
       ref={box}
-      className="relative"
+      className={`relative ${first ? '-ml-2' : ''}`}
       onKeyDown={(e) => {
         if (e.key !== 'Escape' || !open) return
         e.preventDefault()
