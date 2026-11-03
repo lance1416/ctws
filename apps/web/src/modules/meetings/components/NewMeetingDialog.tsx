@@ -56,7 +56,7 @@ export function NewMeetingDialog({
   const titleField = useRef<HTMLInputElement>(null)
   const composing = useComposing()
 
-  // What was typed before Esc closed it, opened from the same place (FR-029).
+  // What was typed before Esc closed it, opened from the same place.
   const draft = `meeting:new:${projectId ?? ''}:${heldOn ?? ''}:${attendeeIds.join(',')}`
   const { form, values, ready } = useMeetingForm(
     keptDraft<MeetingFormValues>(draft) ?? {
@@ -131,7 +131,7 @@ export function NewMeetingDialog({
         <div>
           <span className={label}>Starts</span>
           <div className="mt-1.5 flex flex-wrap gap-2">
-            {/* The shared date picker, as every date in the app (FR-034, U-21). */}
+            {/* The shared date picker, as every date in the app. */}
             <DayField
               label="Date"
               value={day || null}

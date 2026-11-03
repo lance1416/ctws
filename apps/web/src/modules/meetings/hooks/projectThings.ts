@@ -14,15 +14,14 @@ import { nextOfEach } from '../logic/nextOfEach'
 const AHEAD_DAYS = 31
 
 /**
- * A project's meetings coming up (FR-055): each series once, at its next occurrence, said by its
- * day and time on the account's clock: the weekday within the week ("Thu 14:00"), the date after
- * it ("Nov 21 10:00"), so a Saturday a month off is not read as this one (BUG-038).
+ * A project's meetings coming up, each series once at its next occurrence. Past this week it says
+ * the date ("Nov 21 10:00"), not the weekday, so a Saturday a month off is not read as this one.
  */
 /** The meetings the block reads: from today, AHEAD_DAYS on. */
 const comingQuery = (today: string) =>
   meetingsQuery({ from: today, to: addDays(today, AHEAD_DAYS) })
 
-/** Starts what the block will read, when its page is opened (baseline.md §8). */
+/** Starts what the block will read, when its page is opened. */
 export function prefetchProjectMeetings(qc: QueryClient, today: string): void {
   void qc.prefetchQuery(comingQuery(today))
 }

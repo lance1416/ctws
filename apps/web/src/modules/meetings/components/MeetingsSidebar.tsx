@@ -21,9 +21,9 @@ const ROW =
   'mx-1.5 grid min-h-11 grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-x-2.5 rounded-control px-2 py-1.5 hover:bg-hover'
 
 /**
- * The Meetings sidebar's list (FR-067, artboards 16 and 17): what is coming, each series at its
- * next, and what was held lately, each at its latest. On a meeting's page, `?list=series` turns it
- * into that series, every occurrence by month (FR-069).
+ * The Meetings sidebar's list: what is coming, each series at its next, and what was held lately,
+ * each at its latest. On a meeting's page, `?list=series` turns it into that series, every
+ * occurrence by month.
  */
 export function MeetingsSidebar() {
   const [params] = useSearchParams()
@@ -101,7 +101,7 @@ function Everything() {
   )
 }
 
-/** One series in full (FR-069): its next one, then every one held, by month, each with its note. */
+/** One series in full: its next one, then every one held, by month, each with its note. */
 function Series({ id }: { id: string }) {
   const today = useAccountToday()
   const series = idFrom(meetingId, id)

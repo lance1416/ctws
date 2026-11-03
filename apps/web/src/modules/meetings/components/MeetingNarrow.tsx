@@ -24,22 +24,17 @@ import { earlierQuery, occurrenceQuery, seriesNotesQuery, seriesQuery } from '..
 import { MEETINGS_ID } from '../logic/id'
 import { lengthLabel } from './MeetingControls'
 
-/** A block's rows before its "All N" (FR-011). */
+/** A block's rows before its "All N". */
 const SHOWN = 5
 
 const pageOf = (m: MeetingOccurrence) =>
   `/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`
 
-/**
- * A MEETING IN THE INSPECTOR (FR-022, artboard 33): the occurrence clicked, or else the series'
- * next, or its latest; the date
- * and project under the name; when and where, with Join; who is in it, its notes, the meetings
- * before it in the series, and the latest of its timeline.
- */
+/** A meeting in the inspector. */
 export function MeetingNarrow({ id, at }: { id: string; at?: string | undefined }) {
   const today = useAccountToday()
   const zone = useTimeZone()
-  // The occurrence clicked, when one was (FR-067); else the series' next, or its latest.
+  // The occurrence clicked, when one was; else the series' next, or its latest.
   const one = useQuery({ ...occurrenceQuery(idFrom(meetingId, id), at ?? ''), enabled: !!at })
   const next = useQuery({ ...seriesQuery(idFrom(meetingId, id), today), enabled: !at })
   const found = at ? one : next

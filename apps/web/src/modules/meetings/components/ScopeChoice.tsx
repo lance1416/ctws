@@ -9,9 +9,8 @@ import { useAccountToday } from '../../../shell/auth'
 import type { EditScope } from '../api'
 
 /**
- * "This meeting repeats. Change which?" (FR-068, artboard 16): asked when Edit is pressed on a
- * repeating meeting, before anything is changed. This one, by its date; this one and every one
- * after, the earlier ones left as they were; or the whole series, since it began.
+ * Asked when Edit is pressed on a repeating meeting, before anything is changed: this one, this
+ * one and every one after, or the whole series.
  */
 export function ScopeChoice({
   meeting: m,
@@ -71,7 +70,7 @@ export function ScopeChoice({
       ))}
     </div>
   )
-  // On a phone, a sheet from the foot, its two buttons one over the other (DES-001).
+  // On a phone, a sheet from the foot, its two buttons one over the other.
   if (phone)
     return (
       <BottomSheet title="This meeting repeats. Change which?" onClose={onCancel} close={false}>

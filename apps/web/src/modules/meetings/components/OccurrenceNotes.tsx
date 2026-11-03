@@ -23,10 +23,8 @@ const SAVE_AFTER_MS = 800
 const words = (n: number) => `${n.toLocaleString('en-US')} ${n === 1 ? 'word' : 'words'}`
 
 /**
- * THIS OCCURRENCE'S NOTES (FR-067, FR-069, artboards 16 and 17): read in place, a long one folded
- * to its first screen with Read all, its headings as a little contents; written in the Markdown
- * box the app has today, saved as it is typed. `writing` opens the box with the cursor in it, as
- * "Write" from Notes to write asks.
+ * This occurrence's notes, read in place and saved as they are typed. `writing` opens the box
+ * with the cursor in it, as "Write" from Notes to write asks.
  */
 export function OccurrenceNotes({
   meeting: m,
@@ -47,7 +45,7 @@ export function OccurrenceNotes({
       .find((el) => el.textContent?.trim() === h)
       ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   return (
-    // Its own width decides how its head's contents show, not the window's (K-04).
+    // Its own width decides how its head's contents show, not the window's.
     <div className="@container min-w-0">
       <Block
         kind="note"
@@ -63,7 +61,7 @@ export function OccurrenceNotes({
         actions={
           // The contents give way first when the page is narrow: Edit stays in reach.
           <span className="flex min-w-0 items-center gap-1">
-            {/* Wide enough, the headings as chips; narrower, the same in a "…" menu (K-04). */}
+            {/* Wide enough, the headings as chips; narrower, the same in a "…" menu. */}
             {!writing && heads.length > 0 && (
               <>
                 <span className="hidden min-w-0 items-center gap-1 @[46rem]:flex">
@@ -121,7 +119,7 @@ export function OccurrenceNotes({
   )
 }
 
-/** A note read in place: past its first screen it fades, and Read all unfolds it (FR-069). */
+/** A note read in place: past its first screen it fades, and Read all unfolds it. */
 function Folded({
   note,
   body,
@@ -177,7 +175,7 @@ function Folded({
 
 /**
  * The Markdown box, saved as it rests: the first words make the note, hung on this occurrence;
- * the rest rewrite it (FR-050, FR-067).
+ * the rest rewrite it.
  */
 function Writer({
   meeting: m,
@@ -215,7 +213,7 @@ function Writer({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a save per pause in the typing.
   }, [text])
   const finish = () => {
-    // Emptied, a note that was written is saved empty too, mentions and all gone (BUG-089); one
+    // Emptied, a note that was written is saved empty too, mentions and all gone; one
     // never written is not made for nothing.
     const changed = typed.current !== (made.current?.body ?? '')
     if (changed && (made.current || typed.current.trim() !== '')) save.mutate(typed.current)
@@ -224,7 +222,7 @@ function Writer({
   }
   return (
     <div className="flex flex-col gap-2 px-4 py-3">
-      {/* In a block (artboard 34): no box of its own, as tall as what is written. */}
+      {/* In a block: no box of its own, as tall as what is written. */}
       <MarkdownField
         value={text}
         onChange={setText}

@@ -19,7 +19,7 @@ const AHEAD_DAYS = 60
 const HELD = 12
 
 /**
- * The meetings a person is in (FR-061): those still to come first, each series once at its next
+ * The meetings a person is in: those still to come first, each series once at its next
  * occurrence, then those held, each series once at its latest, the latest first. Said by day and
  * time on the account's clock, a weekday within a week of today and a date beyond.
  */
@@ -27,7 +27,7 @@ const HELD = 12
 const comingQuery = (today: string) =>
   meetingsQuery({ from: today, to: addDays(today, AHEAD_DAYS) })
 
-/** Starts what the block will read, when its page is opened (baseline.md §8). */
+/** Starts what the block will read, when its page is opened. */
 export function prefetchMeetingsWith(qc: QueryClient, personId: PersonId, today: string): void {
   void qc.prefetchQuery(comingQuery(today))
   // The held ones' occurrences the moment it is known which they are, not once the block is drawn.
@@ -51,7 +51,7 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
     theirs.filter((m) => !over(m)),
     now,
   )
-  // Those held, however long ago (BUG-046): a series that meets again is here twice, at its next
+  // Those held, however long ago: a series that meets again is here twice, at its next
   // and at its last, since "when did we last meet" is the question the block answers too.
   const heldWith = useQuery(heldWithQuery(personId))
   const occurrences = useQueries({
@@ -70,7 +70,7 @@ export function useMeetingsWith(personId: PersonId): OwnThings {
     const day = ymd(at, timeZone)
     const near = day >= addDays(today, -6) && day <= addDays(today, 6)
     // Within a week its weekday and time; further, the day alone (its year when another year's),
-    // so the column keeps one width and the names line up (U-18).
+    // so the column keeps one width and the names line up.
     return near ? `${weekdayOf(day, true)} ${clockTime(at, timeZone)}` : shortDay(day, today)
   }
   return {

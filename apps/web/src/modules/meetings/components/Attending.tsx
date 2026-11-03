@@ -12,7 +12,7 @@ import { OrganisationMark } from '../../organisations'
 import { Waiting } from '../../../platform/ui/Waiting'
 import { usePeople } from '../../people'
 
-/** Past this many, the list is a row of faces, counted by organisation (FR-069). */
+/** Past this many, the list is a row of faces, counted by organisation. */
 const LISTED = 7
 
 /** The full list shows this many of an organisation before "N more at …". */
@@ -36,9 +36,8 @@ function byWorkplace(people: readonly Attendee[]) {
 }
 
 /**
- * WHO IS IN IT (FR-067, FR-069, artboards 16 and 17): you first, then each attendee. A big meeting
- * is a row of seven faces and "+N", counted by organisation, with All N opening the whole list
- * beside the page, searchable, grouped by organisation.
+ * Who is in it: you first, then each attendee. A big meeting is a row of faces and "+N", with
+ * All N opening the whole list beside the page.
  */
 export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
   const people = usePeople()
@@ -82,7 +81,7 @@ export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
         <div className="flex flex-col gap-2 pl-6">
           <span className="flex items-center" aria-label={`${count} people`}>
             {attendees.slice(0, LISTED).map((a) => (
-              // Each covers only a sliver of the one before, so every face's letters show (K-03).
+              // Each covers only a sliver of the one before, so every face's letters show.
               <span key={a.id} className="-ml-0.5 first:ml-0 rounded-full ring-2 ring-panel">
                 <Avatar initials={initials(a)} />
               </span>
@@ -119,7 +118,7 @@ export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
   )
 }
 
-/** Everyone in it, beside the page: found by name, grouped by where they work (FR-069). */
+/** Everyone in it, beside the page: found by name, grouped by where they work. */
 function EveryAttendee({
   attendees,
   initials,
@@ -164,7 +163,7 @@ function EveryAttendee({
           return (
             <section key={key} aria-label={g.name || 'Others'} className="flex flex-col gap-1.5">
               <h3 className="flex items-center gap-2 text-ui font-medium text-ink">
-                {/* The organisation's mark before its name (K-05); "Others" has none. */}
+                {/* The organisation's mark before its name; "Others" has none. */}
                 {g.name ? (
                   <OrganisationMark name={g.name} />
                 ) : (

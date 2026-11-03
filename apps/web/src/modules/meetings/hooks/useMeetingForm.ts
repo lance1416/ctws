@@ -33,7 +33,7 @@ export type MeetingForm = z.infer<typeof meetingForm>
 
 /**
  * A new meeting's form: on `day` at the default hour, in the account's zone; in a project when made
- * from one (FR-026, FR-055).
+ * from one.
  */
 export const newMeeting = (
   day: string,

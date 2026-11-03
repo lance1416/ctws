@@ -18,7 +18,7 @@ import { useRegistry } from '../../../shell/registry'
 import { meetingsQuery, seriesNotesQuery } from '../api'
 import { occurrenceTo } from '../components/EarlierInSeries'
 
-/** Each block shows this many before "All N" (FR-011). */
+/** Each block shows this many before "All N". */
 const SHOWN = 5
 
 /**
@@ -27,19 +27,16 @@ const SHOWN = 5
  */
 const ANY_DAYS = 180
 
-/** How far back a meeting held without notes is still one to write (FR-066). */
+/** How far back a meeting held without notes is still one to write. */
 const WRITE_BACK_DAYS = 14
 
-/**
- * THE MEETINGS OVERVIEW (FR-066, artboard 18): what is coming this week, and which meetings held
- * still have no notes, each a press away from writing them.
- */
+/** What is coming this week, and which meetings held still have no notes. */
 export function MeetingsOverview() {
   const openNew = useContext(NewContext)
   const creator = useRegistry().creates.find((c) => c.kind === 'meeting')
   const zone = useTimeZone()
   const today = ymd(useNow(), zone)
-  // Half a year either way with nothing in it: no meetings, as far as anyone looks (FR-030).
+  // Half a year either way with nothing in it: no meetings, as far as anyone looks.
   const any = useQuery(
     meetingsQuery({ from: addDays(today, -ANY_DAYS), to: addDays(today, ANY_DAYS) }),
   )
@@ -132,7 +129,7 @@ function NextSeven() {
   )
 }
 
-/** Meetings held in the last two weeks with nothing written for them yet (FR-066). */
+/** Meetings held in the last two weeks with nothing written for them yet. */
 function NotesToWrite() {
   const zone = useTimeZone()
   const now = useNow()

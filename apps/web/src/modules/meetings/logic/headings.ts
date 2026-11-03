@@ -1,4 +1,4 @@
-/** The headings of a note, for the little contents in its block's head (FR-069). */
+/** The headings of a note, for the little contents in its block's head. */
 export function headingsOf(body: string): string[] {
   return body
     .split('\n')

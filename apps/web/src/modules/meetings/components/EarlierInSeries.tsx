@@ -10,7 +10,7 @@ import { ForwardIcon, KIND_ICON, RepeatIcon } from '../../../platform/ui/icons'
 import { earlierQuery, seriesNotesQuery } from '../api'
 import { MEETINGS_ID } from '../logic/id'
 
-/** The block shows this many before "All N earlier meetings" (FR-069). */
+/** The block shows this many before "All N earlier meetings". */
 const SHOWN = 3
 
 /** Where one occurrence opens. */
@@ -18,10 +18,8 @@ export const occurrenceTo = (m: Pick<MeetingOccurrence, 'meetingId' | 'recurrenc
   `/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId })}`
 
 /**
- * EARLIER IN THIS SERIES (FR-067, FR-069, artboards 16 and 17): the occurrences before this one,
- * the latest first, each with its notes read in place, two lines of them; the first one without
- * any says so. The three latest show; the rest are the sidebar's, listed by month. Its search looks
- * through every note of the series.
+ * The occurrences before this one, latest first, each with two lines of its notes. Only the latest
+ * few show; the rest are the sidebar's. Its search looks through every note of the series.
  */
 export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) {
   const earlier = useQuery(earlierQuery(m.meetingId, m.startsLocal.slice(0, 10)))
@@ -49,7 +47,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
             placeholder="Search these notes"
             value={asked}
             onChange={(e) => setAsked(e.target.value)}
-            // On a phone a line of its own under the name, the width of the block (BUG-074).
+            // On a phone a line of its own under the name, the width of the block.
             className={`${boxed} h-7 w-56 max-lg:mr-1.5 max-lg:w-full`}
           />
         )
@@ -63,7 +61,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
             const note = noteOf(o)
             return (
               <li key={o.recurrenceId} className="relative">
-                {/* The thread from one to the next (artboard 16, K-06); the last has none. */}
+                {/* The thread from one to the next; the last has none. */}
                 <span
                   aria-hidden="true"
                   className="thread absolute top-9 -bottom-2 left-[calc(1rem+52px+0.625rem+11.5px)] w-px bg-line"
@@ -87,7 +85,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
                   <span className="line-clamp-2 min-w-0 text-ink">
                     {note
                       ? linkWords(
-                          // What was said, not its headings (U-20): a heading's line goes.
+                          // What was said, not its headings: a heading's line goes.
                           note.body.replace(/^#+\s.*$/gm, '').replace(/^\s*[-*>]\s+/gm, ''),
                         )
                       : o === first
@@ -106,7 +104,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
       {!words && rows.length > SHOWN && (
         <Link
           to={`/${MEETINGS_ID}/${m.meetingId}?${new URLSearchParams({ at: m.recurrenceId, list: 'series' })}`}
-          // Its words start where the dates above do (the rows' 16 in).
+          // Its words start where the dates above do.
           className="flex h-9 max-lg:h-11 items-center justify-between border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink"
         >
           All {rows.length} earlier meetings

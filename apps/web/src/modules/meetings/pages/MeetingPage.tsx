@@ -38,18 +38,13 @@ const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-control px-2 text-meta
 const editTo = (m: MeetingOccurrence, scope: string) =>
   `/${MEETINGS_ID}/${m.meetingId}/edit?${new URLSearchParams({ at: m.recurrenceId, scope })}`
 
-/**
- * A MEETING'S PAGE (FR-067, artboards 16 and 17): one occurrence, named and dated at the head with
- * how it repeats and its project, Join and Edit; down the left when it is on your clock and theirs,
- * where, and who is in it; in the middle this occurrence's notes, then the series' earlier ones;
- * on the right the tasks made from these meetings.
- */
+/** One occurrence's page. */
 export function MeetingPage({
   meeting: m,
   writing,
 }: {
   meeting: MeetingOccurrence
-  /** Opened from "Write": straight into this occurrence's notes (FR-066). */
+  /** Opened from "Write": straight into this occurrence's notes. */
   writing: boolean
 }) {
   const registry = useRegistry()
@@ -71,8 +66,8 @@ export function MeetingPage({
   return (
     <div className="flex flex-col gap-4">
       <MeetingHead meeting={m} />
-      {/* Two columns at any width: the tasks go under the notes, the column's full width (U-05),
-          one block after another however tall the left column is. */}
+      {/* The tasks go under the notes, one block after another however tall the left column
+          is. */}
       <div className="grid items-start gap-4 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         <Profile meeting={m} />
         <div className="flex min-w-0 flex-col gap-4">
@@ -112,8 +107,7 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
       >
         <KIND_ICON.meeting size={24} />
       </span>
-      {/* On a phone the name takes the rest of its line and wraps; the buttons go under, on the
-          left (P4-10). */}
+      {/* On a phone the name wraps; the buttons go under it, on the left. */}
       <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
         <h1
           tabIndex={-1}
@@ -180,7 +174,7 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
 }
 
 /**
- * What else can be done to one occurrence (FR-068): cancel it. It can be taken back: the page it
+ * What else can be done to one occurrence: cancel it. It can be taken back: the page it
  * leaves says so, with the way to. Deleting the whole series is on its edit page.
  */
 function More({ meeting: m }: { meeting: MeetingOccurrence }) {
@@ -213,14 +207,14 @@ function More({ meeting: m }: { meeting: MeetingOccurrence }) {
   )
 }
 
-/** When (on your clock, then on each other clock in the room), where, and who (FR-067). */
+/** When (on your clock, then on each other clock in the room), where, and who. */
 function Profile({ meeting: m }: { meeting: MeetingOccurrence }) {
   const zone = useTimeZone()
   const people = usePeople()
   const start = new Date(m.startsAt)
   const end = new Date(m.endsAt)
   const span = (z: string) => `${clockTime(start, z)} to ${clockTime(end, z)}`
-  // Each other zone someone in it keeps time in, and whose it is (FR-067).
+  // Each other zone someone in it keeps time in, and whose it is.
   const elsewhere = new Map<string, string[]>()
   for (const a of m.attendees) {
     const p = people.data?.find((x) => x.id === a.id)

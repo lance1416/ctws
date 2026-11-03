@@ -1,7 +1,6 @@
 /**
- * WHAT DELETING A MEETING ASKS (FR-035): what goes, and what stays. A series counts the meetings
- * it has already held, which go with it; their notes stay, on their own. One that has held none
- * says only that it goes. A one-off says its notes stay only when it has some.
+ * What deleting a meeting asks. A series counts the meetings it has already held, which go with
+ * it; their notes stay. A one-off says its notes stay only when it has some.
  */
 export function deleteQuestion({
   title,

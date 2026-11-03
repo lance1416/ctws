@@ -44,7 +44,7 @@ function useAddressed() {
   const next = useQuery({ ...seriesQuery(series, today), enabled: isId && at === null })
   const read = at === null ? next : one
   const gone = read.isSuccess && !read.data
-  // Not there: cancelled from its More menu, it can be taken back (FR-068), by its own address too.
+  // Not there: cancelled from its More menu, it can be taken back, by its own address too.
   const cancelled = useQuery({ ...cancelledQuery(series, at ?? ''), enabled: gone && at !== null })
   return {
     id,
@@ -60,7 +60,7 @@ function useAddressed() {
   }
 }
 
-/** `/meetings/:id`: one occurrence's page (FR-067), or what happened to it. */
+/** `/meetings/:id`: one occurrence's page, or what happened to it. */
 export function Meeting() {
   const { id, isId, at, meeting: m, gone, cancelled, settled, reading, params } = useAddressed()
   useForgetWhenGone('meeting', id, gone && at === null)
@@ -77,7 +77,7 @@ export function Meeting() {
       : null,
   )
   if (!isId) return <Navigate to={`/${MEETINGS_ID}`} replace />
-  // Cancelled from its More menu, it can be taken back from here (FR-068).
+  // Cancelled from its More menu, it can be taken back from here.
   if (!settled) return null
   if (cancelled && at) return <Cancelled id={id} at={at} />
   if (gone) return <DeletedNotice type="meeting" id={id} />
@@ -132,8 +132,8 @@ function Cancelled({ id, at }: { id: string; at: string }) {
 const SCOPES: readonly EditScope[] = ['one', 'following', 'all']
 
 /**
- * `/meetings/:id/edit`: the form, reaching as far as was chosen when Edit was pressed (FR-068);
- * deleting the whole series at its foot (FR-035).
+ * `/meetings/:id/edit`: the form, reaching as far as was chosen when Edit was pressed;
+ * deleting the whole series at its foot.
  */
 export function MeetingEdit() {
   const { id, isId, meeting: m, gone, params } = useAddressed()
@@ -162,8 +162,8 @@ function EditForm({
   navigate: ReturnType<typeof useNavigate>
 }) {
   const back = () => navigate(occurrenceTo(m))
-  // Where a save that moved it now is: the page it opens on, not the address it left (moved is
-  // told before saved).
+  // Where a save that moved it now is: the page it opens on, not the address it left. Moved is
+  // told before saved.
   const movedTo = useRef<MeetingOccurrence | null>(null)
   const [unsaved, setUnsaved] = useState(false)
   const [done, setDone] = useState(false)
@@ -180,7 +180,7 @@ function EditForm({
     },
   })
   return (
-    // As tall as the page, so Delete sits at its foot under the last field (FR-035).
+    // As tall as the page, so Delete sits at its foot under the last field.
     <div className="flex min-h-full max-w-3xl shrink-0 flex-col gap-4">
       <div data-form-head className="flex flex-col gap-1">
         <h1 tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
@@ -194,7 +194,7 @@ function EditForm({
           {edit.failed}
         </p>
       )}
-      {/* A phone's form page is the page itself, no card inside it (P4-16). */}
+      {/* A phone's form page is the page itself, no card inside it. */}
       <div className="rounded-container border border-line bg-panel p-4 max-lg:border-0 max-lg:bg-transparent max-lg:p-0">
         <MeetingForm
           meeting={m}

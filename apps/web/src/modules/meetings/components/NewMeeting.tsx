@@ -5,7 +5,7 @@ import { NewMeetingDialog } from './NewMeetingDialog'
 
 /**
  * `N M`, a block's `+`, the sidebar's: made from Meetings itself, its page opens once made; from
- * anywhere else that page stays (FR-026).
+ * anywhere else that page stays.
  */
 export function NewMeeting({
   projectId,
@@ -24,7 +24,7 @@ export function NewMeeting({
   return (
     <NewMeetingDialog
       projectId={projectId}
-      // Made from a person's page, they are in it (FR-061).
+      // Made from a person's page, they are in it.
       attendeeIds={about?.type === 'person' ? [idFrom(personId, about.id)] : []}
       day={day}
       onClose={onClose}

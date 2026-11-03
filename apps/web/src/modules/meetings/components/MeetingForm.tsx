@@ -34,7 +34,7 @@ export function MeetingForm({
   onSave: (patch: UpdateSeriesBody) => void
   /** Whether anything differs from what the form opened on, for the pane's leave guard. */
   onUnsaved?: (unsaved: boolean) => void
-  /** Where what Esc closed it on is kept, in a pane (FR-029); its owner forgets it. */
+  /** Where what Esc closed it on is kept, in a pane; its owner forgets it. */
   draft?: string
 }) {
   const today = ymd(useNow(), useTimeZone())
@@ -86,7 +86,7 @@ export function MeetingForm({
           <div className="col-span-full">
             <Field label="Start">
               <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                {/* The shared date picker and a time, as the new meeting has (FR-034, U-21). */}
+                {/* The shared date picker and a time, as the new meeting has. */}
                 <DayField
                   label="Date"
                   value={startDay || null}
@@ -196,7 +196,7 @@ export function MeetingForm({
 /** What a meeting's form in a pane keeps when Esc closes it. */
 export const meetingDraft = (meeting: MeetingOccurrence) => `meeting:edit:${meeting.meetingId}`
 
-/** A dropdown framed as a field, as the reading form's are (E-01, P4-21). */
+/** A dropdown framed as a field, as the reading form's are. */
 const Boxed = ({ children }: { children: ReactNode }) => (
   <div className={`${boxed} flex min-w-0 items-center px-2`}>{children}</div>
 )

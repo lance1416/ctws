@@ -22,7 +22,7 @@ export function NextMeetingLine() {
   )
 }
 
-/** What a phone's More says beside Meetings (FR-085): how many are still to come this week. */
+/** What a phone's More says beside Meetings: how many are still to come this week. */
 export function MeetingsMoreCount() {
   const zone = useTimeZone()
   const now = useNow()

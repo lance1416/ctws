@@ -58,7 +58,7 @@ export function useScopedEdit(
 
   return {
     submit,
-    /** A save whose reach was chosen before the form opened (FR-068): no question at Save. */
+    /** A save whose reach was chosen before the form opened: no question at Save. */
     submitAs: (patch: UpdateSeriesBody, scope: EditScope) => void write(patch, scope),
     asking: asking !== null,
     pick: (scope: EditScope) => {

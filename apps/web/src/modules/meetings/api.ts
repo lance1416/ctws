@@ -50,8 +50,7 @@ export const meetingKeys = {
 }
 
 /**
- * A series' occurrences before a day, the latest first: "Earlier in this series" (FR-067), all of
- * them, however far back the series goes.
+ * A series' occurrences before a day, the latest first, however far back the series goes.
  */
 export const earlierQuery = (meetingId: MeetingId, day: string) =>
   queryOptions({
@@ -70,7 +69,7 @@ export const earlierQuery = (meetingId: MeetingId, day: string) =>
     },
   })
 
-/** The notes hung on a series, each on its occurrence (FR-050, FR-067). */
+/** The notes hung on a series, each on its occurrence. */
 export const seriesNotesQuery = (meetingId: MeetingId) =>
   queryOptions({
     queryKey: meetingKeys.notes(meetingId),
@@ -84,7 +83,7 @@ export const seriesNotesQuery = (meetingId: MeetingId) =>
     },
   })
 
-/** An occurrence's notes, written for the first time: hung on it (FR-067). */
+/** An occurrence's notes, written for the first time: hung on it. */
 export function writeOccurrenceNote(
   meetingId: MeetingId,
   occurrenceId: string,
@@ -100,7 +99,7 @@ export function rewriteNote(id: NoteId, body: string): Promise<NoteResponse> {
   return call(api.notes.update, { params: { id }, body: { body } })
 }
 
-/** Takes back one occurrence cancelled from its More menu (FR-068). */
+/** Takes back one occurrence cancelled from its More menu. */
 export function restoreOccurrence(
   meetingId: MeetingId,
   recurrenceId: string,
@@ -110,7 +109,7 @@ export function restoreOccurrence(
 
 /**
  * The meetings a person was in, newest first, each series once at the last time it was held: from
- * their timeline, which the server reads back as far as it goes (FR-061, BUG-046).
+ * their timeline, which the server reads back as far as it goes.
  */
 export const heldWithQuery = (personId: PersonId) =>
   queryOptions({
@@ -154,8 +153,8 @@ export const occurrenceQuery = (meetingId: MeetingId | null, recurrenceId: strin
   })
 
 /**
- * Whether the occurrence was cancelled from its More menu (FR-068), so it can still be taken back;
- * false when it is there, or gone for good.
+ * Whether the occurrence was cancelled from its More menu, so it can still be taken back; false
+ * when it is there, or gone for good.
  */
 export const cancelledQuery = (meetingId: MeetingId | null, recurrenceId: string) =>
   queryOptions({

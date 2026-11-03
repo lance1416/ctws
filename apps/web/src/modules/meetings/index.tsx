@@ -20,12 +20,10 @@ const MeetingsOverview = lazyPage(() =>
 )
 
 /**
- * Meetings: a page of its own, timed calendar entries, and the workbench's next meetings. No search
- * provider: a meeting is found by its date, and a weekly title repeats many times over.
- * No project-page block: meetings reach a project as edges, which the shell draws for every kind.
+ * No search provider: a meeting is found by its date, and a weekly title repeats many times over.
  */
 const PAGE = topPage('Meetings')
-/** One of them, under its kind in the breadcrumbs (FR-018). */
+/** One of them, under its kind in the breadcrumbs. */
 const THING = thingPage('Meetings', '/meetings')
 
 export const meetingModule: WorkspaceModule = {
@@ -42,7 +40,7 @@ export const meetingModule: WorkspaceModule = {
   },
   routes: [
     { index: true, element: <MeetingsOverview />, handle: PAGE },
-    // One occurrence's page, `?at=` naming which; the series' next one without it (FR-067).
+    // One occurrence's page, `?at=` naming which; the series' next one without it.
     { path: ':id', element: <Meeting />, handle: THING },
     { path: ':id/edit', element: <MeetingEdit />, handle: PAGE },
   ],
@@ -61,7 +59,7 @@ export const meetingModule: WorkspaceModule = {
     useEntries: useMeetingEntries,
     prefetch: (qc, range) => void qc.prefetchQuery(meetingCalendarQuery(range)),
     // A meeting agreed elsewhere says where, and its time on that clock.
-    // Its page is the occurrence's; clicked, it opens there in the inspector (FR-022).
+    // Its page is the occurrence's; clicked, it opens there in the inspector.
     show: (e) => ({
       to: `/${MEETINGS_ID}/${e.id}${e.recurrenceId ? `?${new URLSearchParams({ at: e.recurrenceId })}` : ''}`,
       label: e.zone ? `meeting · ${e.zone} ${e.zoneTime}` : 'Meetings',
@@ -74,7 +72,6 @@ export const meetingModule: WorkspaceModule = {
   },
   weekCounts: [{ key: 'meetingsHeld', label: 'Meetings held', icon: KIND_ICON.meeting, order: 10 }],
   widgets: [{ place: 'meetings', Component: NextMeetings }],
-  // A project's page lists the meetings coming up in it (FR-055).
   project: {
     Things: {
       kind: 'meeting',

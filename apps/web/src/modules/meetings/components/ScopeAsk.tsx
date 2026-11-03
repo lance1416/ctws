@@ -45,8 +45,7 @@ function Question({
 }: Ask & { back: string; answer: 'secondary' | 'destructive'; first: 'back' | 'answer' }) {
   const phone = usePhone()
   const firstFocus = useRef<HTMLButtonElement>(null)
-  // On a phone, a sheet from the foot: the question, then its answers full width, one over the
-  // other, the way out last (DES-001).
+  // On a phone, a sheet from the foot, the way out last.
   if (phone)
     return (
       <BottomSheet

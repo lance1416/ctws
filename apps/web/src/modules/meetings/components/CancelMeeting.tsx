@@ -17,14 +17,14 @@ export function CancelMeeting({
   onCancelled,
 }: {
   meeting: MeetingOccurrence
-  /** The whole series and nothing less, as the edit page's foot deletes it (FR-068, FR-035). */
+  /** The whole series and nothing less, as the edit page's foot deletes it. */
   whole?: boolean
   onCancelled: () => void
 }) {
   const forget = useForgetRecent()
   const today = useAccountToday()
   const now = useNow()
-  // What the whole series' deletion takes with it, for its question (FR-035).
+  // What the whole series' deletion takes with it, for its question.
   const upToToday = useQuery({
     ...earlierQuery(meeting.meetingId, addDays(today, 1)),
     enabled: whole && meeting.rrule !== null,

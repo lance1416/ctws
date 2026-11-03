@@ -22,9 +22,8 @@ const ROW_PX = 30
 const MOST = 4
 
 /**
- * NEXT MEETINGS ON THE WORKBENCH (FR-076, artboards 10 and 22): the next one on a meeting-tinted
- * card, with its day and time, where, and Join and Notes; the ones after it a line each, as many as
- * the place holds. One under way is still next until it ends.
+ * The workbench's next meetings: the next one on a card, the ones after it a line each. One under
+ * way is still next until it ends.
  */
 export function NextMeetings() {
   const today = useAccountToday()
@@ -36,7 +35,7 @@ export function NextMeetings() {
   const [next, ...after] = coming
   const when = (m: MeetingOccurrence) => {
     const day = ymd(new Date(m.startsAt), zone)
-    // Today and Tomorrow by name, a weekday within the week, past it a date (FR-076, v2.8).
+    // Today and Tomorrow by name, a weekday within the week, past it a date.
     return {
       day:
         day === today

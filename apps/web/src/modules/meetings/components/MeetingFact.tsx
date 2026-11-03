@@ -3,7 +3,7 @@ import { useNow } from '../../../platform/time/useNow'
 import { useTimeZone } from '../../../shell/auth'
 import { meetingWhen } from '../../../platform/time/meetingWhen'
 
-/** A meeting listed among things of every kind: when it starts, in figures (DES-001 section 4). */
+/** A meeting listed among things of every kind: when it starts, in figures. */
 export function MeetingFact({ thing }: { thing: LinkCandidate }) {
   const timeZone = useTimeZone()
   const now = useNow()
