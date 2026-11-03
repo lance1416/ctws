@@ -20,7 +20,7 @@ const ReadingOverview = lazyPage(() =>
 )
 
 const PAGE = topPage('Reading')
-/** One of them, under its kind in the breadcrumbs (FR-018). */
+/** One of them, under its kind in the breadcrumbs. */
 const THING = thingPage('Reading', '/reading')
 
 export const readingModule: WorkspaceModule = {
@@ -37,7 +37,7 @@ export const readingModule: WorkspaceModule = {
   },
   routes: [
     { index: true, element: <ReadingOverview />, handle: PAGE },
-    // One item's page (FR-073), and its form.
+    // One item's page, and its form.
     { path: ':id', element: <ReadingItem />, handle: THING },
     { path: ':id/edit', element: <ReadingEdit />, handle: PAGE },
   ],
@@ -47,7 +47,7 @@ export const readingModule: WorkspaceModule = {
       kind: 'reading',
       key: 'r',
       label: 'Reading',
-      // Made from a person's page, it is what they recommended (FR-061).
+      // Made from a person's page, it is what they recommended.
       to: (about) =>
         about?.type === 'person'
           ? `/${READING_ID}?${new URLSearchParams({ recommendedBy: about.id, by: about.title })}`
@@ -74,7 +74,7 @@ export const readingModule: WorkspaceModule = {
     { key: 'readingFinished', label: 'Reading finished', icon: KIND_ICON.reading, order: 50 },
   ],
   widgets: [{ place: 'reading', Component: ReadingNow }],
-  // A project's page lists its reading (FR-055).
+  // A project's page lists its reading.
   project: {
     Things: {
       kind: 'reading',

@@ -13,7 +13,7 @@ import { textbox } from '../../../platform/ui/formStyles'
 export function AddReading({
   recommendedBy = null,
 }: {
-  /** Added from a person's page: what they recommended (FR-061). */
+  /** Added from a person's page: what they recommended. */
   recommendedBy?: { id: PersonId; name: string } | null
 }) {
   const line = useLineEntry()

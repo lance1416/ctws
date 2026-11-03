@@ -111,7 +111,7 @@ export function ReadingForm({
       <div className="@container">
         <div className="grid items-start gap-x-6 gap-y-4 @xl:grid-cols-2 @2xl:grid-cols-3">
           <Field label="Status">
-            {/* Framed as a field (E-01), so it reads as one to open. */}
+            {/* Framed as a field, so it reads as one to open. */}
             <Boxed>
               <PickOne
                 label="Status"
@@ -166,7 +166,7 @@ const Boxed = ({ children }: { children: ReactNode }) => (
 type Recommender = ReadingForm['recommendedBy']
 
 /**
- * Who recommended it (FR-073): one person, picked from people only, or nobody. The name is the
+ * Who recommended it: one person, picked from people only, or nobody. The name is the
  * picker's trigger; the × beside it clears it.
  */
 function RecommendedBy({
@@ -187,7 +187,7 @@ function RecommendedBy({
         aria-label={`Recommended by: ${value?.name ?? 'Nobody'}`}
         className="-mx-1.5 flex h-8 min-w-0 items-center rounded-control px-1.5 text-ui text-ink hover:bg-hover max-lg:min-h-11"
       >
-        {/* The person as a tag, their avatar and name, as on the item's page (E-02). */}
+        {/* The person as a tag, their avatar and name, as on the item's page. */}
         {value && <Avatar initials={initialsOf(value.name)} />}
         <span className={`ml-1.5 truncate ${value ? '' : 'text-muted'}`}>
           {value?.name ?? 'Nobody'}
@@ -242,7 +242,7 @@ export function DeleteReading({
       <DangerAction
         label={`Delete ${readingLabel(item)}`}
         confirmLabel="Confirm deleting this item"
-        // What goes, then what stays (FR-035).
+        // What goes, then what stays.
         message={`Delete ${readingLabel(item)}? It goes from your reading. Notes about it, and the people, tasks and projects it is linked to, stay.`}
         busy={drop.isPending}
         onConfirm={() => drop.mutate()}

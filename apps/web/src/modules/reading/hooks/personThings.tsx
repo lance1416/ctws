@@ -6,7 +6,7 @@ import { READING_STATUS_LABEL, readingLabel } from '../logic/item'
 import { KIND_ICON, LinkIcon } from '../../../platform/ui/icons'
 import { byline } from '../components/ReadingCard'
 
-/** What a person recommended (FR-061), each with where it stands: "Reading", "To read". */
+/** What a person recommended, each with where it stands: "Reading", "To read". */
 export function useRecommendedBy(personId: PersonId): OwnThings {
   const reading = useQuery(readingQuery())
   return {

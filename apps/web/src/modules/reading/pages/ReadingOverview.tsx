@@ -15,11 +15,11 @@ import { AddReading } from '../components/AddReading'
 import { byline, ReadingCard } from '../components/ReadingCard'
 import { nameBesideSite } from '../logic/item'
 
-/** The To read block shows this many before "All N" (FR-072). */
+/** The To read block shows this many before "All N". */
 const SHOWN = 5
 
 /**
- * THE READING OVERVIEW (FR-072, artboard 18): what you are in the middle of, a card each; what is
+ * The reading overview: what you are in the middle of, a card each; what is
  * waiting, the latest added first; and how many are finished, a way into the sidebar's list of
  * them. Added from a person's page, the line to add with says it is what they recommended.
  */
@@ -34,7 +34,7 @@ export function ReadingOverview() {
   if (items.isSuccess && rows.length === 0 && !by)
     return <ModuleEmpty kind="reading" onNew={() => openCapture('reading')} says="Add reading" />
   const reading = rows.filter((i) => i.status === 'reading')
-  // Read to the end, not given up on: what was dropped is apart in the sidebar (BUG-055).
+  // Read to the end, not given up on: what was dropped is apart in the sidebar.
   const finished = rows.filter((i) => i.status === 'done').length
   const dropped = rows.filter((i) => i.status === 'dropped').length
   return (
@@ -76,7 +76,7 @@ export function ReadingOverview() {
                   {finished} finished
                 </span>
               )}
-              {/* Given up on is not read: counted apart (R-01). */}
+              {/* Given up on is not read: counted apart. */}
               {dropped > 0 && <span>{dropped} dropped</span>}
             </Link>
           )}

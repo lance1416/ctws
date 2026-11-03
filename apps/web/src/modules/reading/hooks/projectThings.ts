@@ -4,7 +4,7 @@ import type { OwnThings } from '../../../shell/contract'
 import { readingQuery } from '../api'
 import { readingLabel } from '../logic/item'
 
-/** A project's reading (FR-055), by the name each goes by. */
+/** A project's reading, by the name each goes by. */
 export function useProjectReading(projectId: ProjectId): OwnThings {
   const reading = useQuery(readingQuery())
   return {

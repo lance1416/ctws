@@ -24,7 +24,7 @@ describe('readingLabel', () => {
 })
 
 describe('nameBesideSite', () => {
-  it('names an untitled link by its path, its site being beside it (R-02)', () => {
+  it('names an untitled link by its path, its site being beside it', () => {
     expect(nameBesideSite({ title: null, url: 'https://stripe.com/blog/idempotency' })).toBe(
       'blog/idempotency',
     )

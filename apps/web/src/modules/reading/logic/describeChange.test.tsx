@@ -4,7 +4,7 @@ import { describeReadingChange } from './describeChange'
 const said = (type: string, payload: unknown) => describeReadingChange({ type, payload })?.text
 
 describe('describeReadingChange', () => {
-  it('says what happened to the item (FR-073)', () => {
+  it('says what happened to the item', () => {
     expect(said('created', { to: {} })).toBe('Added')
     expect(said('field_changed', { field: 'status', from: 'todo', to: 'reading' })).toBe(
       'Started reading',

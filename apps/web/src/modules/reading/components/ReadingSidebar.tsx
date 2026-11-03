@@ -12,7 +12,7 @@ const ROW = ({ isActive }: { isActive: boolean }) =>
   }`
 
 /**
- * The Reading sidebar's list (FR-072): what you are reading, then what is waiting; from "N
+ * The Reading sidebar's list: what you are reading, then what is waiting; from "N
  * finished" (`?list=finished`), what is finished, and what was dropped in a part of its own.
  */
 export function ReadingSidebar() {
@@ -72,7 +72,7 @@ export function ReadingSidebar() {
   )
 }
 
-/** What a phone's More says beside Reading (FR-085): what is being read and what waits to be. */
+/** What a phone's More says beside Reading: what is being read and what waits to be. */
 export function ReadingMoreCount() {
   const reading = useQuery(readingQuery())
   if (!reading.data) return null

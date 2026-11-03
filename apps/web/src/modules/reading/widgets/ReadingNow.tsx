@@ -15,7 +15,7 @@ const shortAddress = (url: string | null) =>
   url?.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '') ?? ''
 
 /**
- * READING ON THE WORKBENCH (FR-076, artboards 10 and 22): what is being read now, each with its
+ * Reading on the workbench: what is being read now, each with its
  * kind, its title, and its author or address. As many as the place holds; the rest are in Reading.
  */
 export function ReadingNow() {

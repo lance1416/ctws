@@ -11,7 +11,7 @@ export const byline = (item: ReadingItemResponse) =>
   item.kind === 'book' ? item.author : item.url ? linkLabel(item.url).split('/')[0]! : null
 
 /**
- * One thing being read, as the overview's card (FR-072, artboard 18): its title and who wrote it
+ * One thing being read, as the overview's card: its title and who wrote it
  * or where it lives, its status, who recommended it or which project it is in, and since when.
  */
 export function ReadingCard({ item }: { item: ReadingItemResponse }) {

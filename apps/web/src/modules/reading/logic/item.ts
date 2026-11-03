@@ -17,7 +17,7 @@ export function readingLabel(
 
 /**
  * Its name in a row that says its site beside it: an untitled link by its path alone
- * ("blog/idempotency"), so the site is said once (R-02); a bare site by its host.
+ * ("blog/idempotency"), so the site is said once; a bare site by its host.
  */
 export function nameBesideSite(
   item: Pick<ReadingItemResponse, 'title' | 'url'> & { fetchedTitle?: string | null },

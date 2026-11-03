@@ -13,7 +13,7 @@ export function useReadingCapture(): CaptureTargetState {
       name: 'To read',
       to: `/${READING_ID}`,
       submit: async (line: string, { projectId, date }) => {
-        // A link is a link; anything else typed with Reading chosen is a book's title (FR-072).
+        // A link is a link; anything else typed with Reading chosen is a book's title.
         const text = line.trim()
         const made = await createReadingItem(
           isReadingUrl(text) ? { kind: 'link', url: text } : { kind: 'book', title: text },

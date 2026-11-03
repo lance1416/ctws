@@ -16,7 +16,7 @@ const BECAME: Record<ReadingStatus, string> = {
 }
 
 /**
- * A reading item's changes on its timeline (FR-073): "Added", "Started reading", "Finished",
+ * A reading item's changes on its timeline: "Added", "Started reading", "Finished",
  * "Renamed from …", "Finish by Oct 3", "Recommended by Mira Chen". Which project it moved to says nothing here: its head says.
  */
 export function describeReadingChange(event: {

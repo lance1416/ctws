@@ -46,7 +46,7 @@ function useAddressed() {
   return { id, item, gone: items.isSuccess && !item, reading: items.isPending }
 }
 
-/** Where a link may go: http(s) only; anything else stays words (FR-073). */
+/** Where a link may go: http(s) only; anything else stays words. */
 const safeLink = (url: string | null) => (url && /^https?:\/\//i.test(url) ? url : null)
 
 /** What a status's day is called on the page: started, finished, dropped. */
@@ -57,7 +57,7 @@ export const SINCE_WORDS: Record<ReadingStatus, string> = {
   dropped: 'Dropped',
 }
 
-/** `/reading/:id`: one item's page (FR-073), or what happened to it. */
+/** `/reading/:id`: one item's page, or what happened to it. */
 export function ReadingItem() {
   const { id, item, gone, reading } = useAddressed()
   useForgetWhenGone('reading', id, gone)
@@ -69,7 +69,7 @@ export function ReadingItem() {
 }
 
 /**
- * ONE ITEM'S PAGE (FR-073, the shared page of FR-021): its title, who wrote it or where it lives
+ * One item's page: its title, who wrote it or where it lives
  * and its status at the head, with Open link and Edit; down the left what it is, its days, who
  * recommended it and its project; beside it its timeline and what it is linked to.
  */
@@ -88,10 +88,10 @@ function ReadingPage({ item }: { item: ReadingItemResponse }) {
       <div className="grid items-start gap-4 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
         <Profile item={item} />
         <div className="flex min-w-0 flex-col gap-4">
-          {/* What it is linked to, then what happened to it: as a person's page has them (R-04).
-              On a phone the timeline comes first, as on every thing's page (FR-088, P4-15). */}
+          {/* What it is linked to, then what happened to it: as a person's page has them.
+              On a phone the timeline comes first, as on every thing's page. */}
           <div className="grid items-start gap-3 max-lg:order-last xl:grid-cols-2">{blocks}</div>
-          {/* On the page's ground, as a person's is (artboards 5 and 14): a timeline is no block.
+          {/* On the page's ground, as a person's is: a timeline is no block.
               Under the blocks, it waits for them: drawn first, it would be pushed down. */}
           {ready && (
             <div>
@@ -121,7 +121,7 @@ function ReadingHead({ item }: { item: ReadingItemResponse }) {
         <Icon size={24} />
       </span>
       {/* On a phone the name takes the rest of its line and wraps; the buttons go under, on the
-          left (P4-10). */}
+          left. */}
       <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
         <h1
           tabIndex={-1}
@@ -131,7 +131,7 @@ function ReadingHead({ item }: { item: ReadingItemResponse }) {
         </h1>
         <div className="flex flex-wrap items-center gap-3 text-ui text-muted">
           {byline(item) && <span className="truncate">{byline(item)}</span>}
-          {/* The status changed here and now: To read to Reading is the commonest edit (FR-073). */}
+          {/* The status changed here and now: To read to Reading is the commonest edit. */}
           <span className="inline-flex h-7 items-center rounded-control bg-reading-bg px-1.5 text-reading-t">
             <PickOne
               label="Status"
@@ -263,7 +263,7 @@ function Fact({ name, children }: { name: string; children: ReactNode }) {
   )
 }
 
-/** `/reading/:id/edit`: the form, and delete at its foot (FR-073, FR-035). */
+/** `/reading/:id/edit`: the form, and delete at its foot. */
 export function ReadingEdit() {
   const { id, item, gone } = useAddressed()
   if (gone) return <DeletedNotice type="reading" id={id} />

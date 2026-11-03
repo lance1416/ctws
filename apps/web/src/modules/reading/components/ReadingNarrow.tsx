@@ -21,11 +21,7 @@ import { READING_ID } from '../logic/id'
 import { SINCE_WORDS } from '../pages/ReadingItem'
 import { byline } from './ReadingCard'
 
-/**
- * A READING ITEM IN THE INSPECTOR (FR-022, artboard 33): its title, who wrote it or where it
- * lives and its status; since when, and who recommended it; what it is linked to; and the latest
- * of its timeline.
- */
+/** A reading item in the inspector. */
 export function ReadingNarrow({ id }: { id: string }) {
   const items = useQuery(readingQuery())
   const registry = useRegistry()
