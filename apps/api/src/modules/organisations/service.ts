@@ -82,7 +82,7 @@ export async function updateOrganisation(
   })
 }
 
-/** Deletes an organisation for good (FR-035): a tombstone; the roles at it go with it. */
+/** Deletes an organisation for good: a tombstone; the roles at it go with it. */
 export async function deleteOrganisation(db: Db, ctx: Actor, id: OrganisationId): Promise<void> {
   await db.transaction(async (tx) => {
     const row = await lockOrganisation(tx, ctx.workspaceId, id)
@@ -90,7 +90,7 @@ export async function deleteOrganisation(db: Db, ctx: Actor, id: OrganisationId)
     await tx.execute(
       sql`delete from communication_parties where party_type = 'organisation' and party_id = ${id}`,
     )
-    // A message whose last party just went waits for nobody any more (FR-048).
+    // A message whose last party just went waits for nobody any more.
     await tx.execute(sql`
       update communications set awaiting_reply = false, updated_at = ${ctx.now}
       where workspace_id = ${ctx.workspaceId} and awaiting_reply
@@ -100,9 +100,9 @@ export async function deleteOrganisation(db: Db, ctx: Actor, id: OrganisationId)
 }
 
 /**
- * Folds one organisation into another (FR-099): its roles, relations, resources and the exchanges
- * it was party to move across, and it is deleted. A role that would then repeat one at the target is kept too: two roles at the
- * same company are two roles.
+ * Folds one organisation into another: its roles, relations, resources and the exchanges it was
+ * party to move across, and it is deleted. A role that would then repeat one at the target is
+ * kept too: two roles at the same company are two roles.
  */
 export async function mergeOrganisation(
   db: Db,
@@ -128,7 +128,7 @@ export async function mergeOrganisation(
       update resources set owner_id = ${kept.id}
       where owner_type = 'organisation' and owner_id = ${gone.id}`)
     // The exchanges it was party to are the kept one's now; one that already named both keeps
-    // the one row (BUG-005).
+    // the one row.
     await tx.execute(sql`
       delete from communication_parties p
       where p.party_type = 'organisation' and p.party_id = ${gone.id}
@@ -167,7 +167,7 @@ export async function putRoles(
     ctx.workspaceId,
     roles.map((r) => r.organisationId),
   )
-  // What changed, by organisation, before the set is replaced (FR-044).
+  // What changed, by organisation, before the set is replaced.
   const before = (await rolesOf(tx, ctx.workspaceId, [personId])).get(personId) ?? []
   const log = eventLog(tx, ctx)
   const person = { type: 'person' as const, id: personId }

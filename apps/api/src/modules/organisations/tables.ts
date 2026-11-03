@@ -14,7 +14,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { workspaceKeys } from '../../shell/auth'
 
-/** A company, a law firm, a school (FR-047). Deleted outright: its tombstone is what remains. */
+/** A company, a law firm, a school. Deleted outright: its tombstone is what remains. */
 export const organisations = pgTable(
   'organisations',
   {
@@ -43,7 +43,7 @@ export const organisations = pgTable(
 export type Organisation = typeof organisations.$inferSelect
 
 /**
- * A role a person holds or held at an organisation (FR-047): a title and a span of months, any of
+ * A role a person holds or held at an organisation: a title and a span of months, any of
  * which may be unknown. No end means the role is current; a person may hold several at once.
  *
  * No foreign key to the person: that table is another module's. The people module removes a
