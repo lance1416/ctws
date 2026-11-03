@@ -145,3 +145,29 @@ test('a person still being read: past 400ms, where their head goes, and nothing 
   await expect(page.getByRole('heading', { level: 1, name: 'Mira Chen' })).toBeVisible()
   await expect(head).toHaveCount(0)
 })
+
+test('a reading item still being read: the two lines of its head, the badge where it will be', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await registerFreshUser(page)
+  const book = await apiPost<{ id: string }>(page, '/reading', {
+    kind: 'book',
+    title: 'The C book',
+  })
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/api\/v1\/reading(\?|$)/, async (route) => {
+    await held
+    await route.continue()
+  })
+  await page.goto(`/reading/${book.id}`)
+  const badge = page.locator('main [aria-busy="true"] > span').first()
+  await expect(badge).toBeVisible()
+  const waitingAt = (await badge.boundingBox())!.y
+  release()
+  const title = page.getByRole('heading', { level: 1, name: 'The C book' })
+  await expect(title).toBeVisible()
+  const real = title.locator('xpath=ancestor::div[contains(@class, "gap-x-4")][1]/*[1]')
+  expect(Math.abs((await real.boundingBox())!.y - waitingAt)).toBeLessThanOrEqual(1)
+})

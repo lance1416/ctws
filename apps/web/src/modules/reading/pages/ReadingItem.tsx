@@ -64,7 +64,7 @@ export function ReadingItem() {
   useSubjectOf(item ? { type: 'reading', id: item.id, title: readingLabel(item) } : null)
   useRecordRecent(item ? recentEntry(item) : null)
   if (gone) return <DeletedNotice type="reading" id={id} />
-  if (!item) return reading ? <PageHeadWaiting /> : null
+  if (!item) return reading ? <PageHeadWaiting line={28} /> : null
   return <ReadingPage key={item.id} item={item} />
 }
 
