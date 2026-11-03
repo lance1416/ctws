@@ -14,10 +14,10 @@ import type { NextAt } from '../../shell/links'
 import { communications } from './tables'
 
 /**
- * The soonest follow-up about each thing (FR-058): of the sent messages still awaiting a reply, the
+ * The soonest follow-up about each thing: of the sent messages still awaiting a reply, the
  * earliest follow-up day among those related to it or, for an organisation, sent to it, wherever
  * they are filed; or those filed under the project asked from and sent to someone who holds a role
- * there now, as "Organisations in touch" counts them (FR-071). One whose day has passed is still
+ * there now, as "Organisations in touch" counts them. One whose day has passed is still
  * the soonest.
  */
 export async function nextFollowUpAbout(
@@ -62,7 +62,7 @@ export async function nextFollowUpAbout(
 }
 
 /**
- * The last message with each of these people (FR-060): the latest, sent or received by `now`, that
+ * The last message with each of these people: the latest, sent or received by `now`, that
  * names them as a party or is related to them outright.
  */
 export async function lastMessageWith(

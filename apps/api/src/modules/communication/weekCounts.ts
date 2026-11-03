@@ -7,7 +7,7 @@ import { communications } from './tables'
 
 const counted = z.object({ sent: z.coerce.number().int(), received: z.coerce.number().int() })
 
-/** The review's "Messages sent" and "Messages received" (FR-081), by when each happened. */
+/** The review's "Messages sent" and "Messages received", by when each happened. */
 export const communicationWeekCounts: WeekCounts = async (q, workspaceId, window) => {
   const result = await q.execute(sql`
     select

@@ -25,7 +25,7 @@ import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
 import { projectKeys } from '../../shell/projects'
 
-/** One exchange logged by hand (FR-048). Deleted outright: its tombstone is what remains. */
+/** One exchange logged by hand. Deleted outright: its tombstone is what remains. */
 export const communications = pgTable(
   'communications',
   {
@@ -42,7 +42,7 @@ export const communications = pgTable(
     projectId: uuid('project_id').$type<ProjectId>(),
     /** Links attached, as given. */
     attachments: jsonb('attachments').$type<string[]>().notNull().default([]),
-    /** A sent one may wait for a reply by a day (FR-048); logging the reply points `replied_by` at it. */
+    /** A sent one may wait for a reply by a day; logging the reply points `replied_by` at it. */
     awaitingReply: boolean('awaiting_reply').notNull().default(false),
     followUpOn: date('follow_up_on'),
     repliedBy: uuid('replied_by').$type<CommunicationId>(),

@@ -139,10 +139,10 @@ const inTouchRow = z.object({
 export type InTouchRow = z.output<typeof inTouchRow>
 
 /**
- * Organisations with an exchange in the last 30 days (FR-071), latest first: the last exchange
+ * Organisations with an exchange in the last 30 days, latest first: the last exchange
  * with each (through the organisation itself or a person who holds a role there), how many of
  * its people were involved, and what is pending with it. One row per organisation however many
- * exchanges there were (FR-015).
+ * exchanges there were.
  */
 export async function organisationsInTouch(
   q: Queryable,
@@ -199,7 +199,7 @@ export async function organisationsInTouch(
 /**
  * The communications naming a person or organisation, newest first, for a timeline. An
  * organisation's are those naming it, and those naming someone who held a role there that month,
- * as its meetings count (FR-065): the first and last months of a role count whole. The month is
+ * as its meetings count: the first and last months of a role count whole. The month is
  * read in UTC, the timeline's clock having no zone; only an exchange in the last hours of a
  * month's last day can fall the other side.
  */

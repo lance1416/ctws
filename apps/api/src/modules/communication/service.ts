@@ -30,7 +30,7 @@ class NotAwaiting extends DomainError {
   }
 }
 
-/** Every party of the message has since been deleted: there is nobody to answer (FR-048). */
+/** Every party of the message has since been deleted: there is nobody to answer. */
 class NoOneLeft extends DomainError {
   constructor() {
     super('conflict', { detail: 'no one is left on this message to reply' })
@@ -172,7 +172,7 @@ export async function updateCommunication(
 }
 
 /**
- * "Log the reply" (FR-048): a received message from the same parties, which answers the sent one
+ * "Log the reply": a received message from the same parties, which answers the sent one
  * and closes its wait. The answer is the new message.
  */
 export async function logReply(

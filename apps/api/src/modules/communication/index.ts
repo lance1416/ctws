@@ -11,7 +11,7 @@ import { communications } from './tables'
 import { communicationWeekCounts } from './weekCounts'
 
 /**
- * A message on another thing's timeline (FR-045, FR-065): what was said with it, or about its
+ * A message on another thing's timeline: what was said with it, or about its
  * project; with whom, by name, what was attached, and when a reply closed it.
  */
 const messages = (registry: LinkRegistry): TimelineSource => ({
