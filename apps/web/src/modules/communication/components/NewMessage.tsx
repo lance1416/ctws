@@ -13,9 +13,9 @@ import { LogMessage } from './LogMessage'
 import type { Party } from './PartyPicker'
 
 /**
- * `N X`, Log a message on a page's head, a block's `+` (FR-070): logged from a person or an
+ * `N X`, Log a message on a page's head, a block's `+`: logged from a person or an
  * organisation, it is with them already, and with where the person works now; from a project, it
- * is filed there. Made from Communication itself, its page opens once logged (FR-026).
+ * is filed there. Made from Communication itself, its page opens once logged.
  */
 export function NewMessage({
   projectId,

@@ -15,7 +15,7 @@ const LONG_WAIT = 4
 const ROW_PX = 48
 
 /**
- * AWAITING REPLY ON THE WORKBENCH (FR-076, artboards 10 and 22): the messages whose follow-up day
+ * Awaiting reply on the workbench: the messages whose follow-up day
  * has come, the longest wait first, each with who it is with, what it was about and how long it
  * has waited; amber from four days. As many as the place holds; the rest are in Communication.
  */

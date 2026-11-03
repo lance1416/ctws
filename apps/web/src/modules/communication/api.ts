@@ -18,7 +18,7 @@ export const communicationKeys = {
   one: (id: string) => ['communication', 'one', id] as const,
 }
 
-/** Every message awaiting a reply, and the organisations in touch lately (FR-071). */
+/** Every message awaiting a reply, and the organisations in touch lately. */
 export const overviewQuery = () =>
   queryOptions({
     queryKey: communicationKeys.overview,
@@ -35,7 +35,7 @@ export const awaitingQuery = () =>
         .awaiting,
   })
 
-/** Those due to be followed up today or before, for Today (FR-079). */
+/** Those due to be followed up today or before, for Today. */
 export const followUpsQuery = () =>
   queryOptions({
     queryKey: communicationKeys.followUps,
@@ -69,7 +69,7 @@ export function patchMessage(
   return call(api.communication.update, { params: { id }, body })
 }
 
-/** "Log the reply": a received message from the same parties, closing the wait (FR-048). */
+/** "Log the reply": a received message from the same parties, closing the wait. */
 export function logReply(
   id: CommunicationId,
   body: Pick<

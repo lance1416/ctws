@@ -8,7 +8,7 @@ export function AwaitingCount() {
   return <span data-count>{awaiting.data.length}</span>
 }
 
-/** What a phone's More says beside Communication (FR-085): "Awaiting 2", or nothing. */
+/** What a phone's More says beside Communication: "Awaiting 2", or nothing. */
 export function AwaitingMoreCount() {
   const awaiting = useQuery(awaitingQuery())
   const n = awaiting.data?.length ?? 0

@@ -19,7 +19,7 @@ const ROW = ({ isActive }: { isActive: boolean }) =>
 const RECENT = 10
 
 /**
- * The Communication sidebar's list (FR-071, artboard 15): what is awaiting a reply, the soonest
+ * The Communication sidebar's list: what is awaiting a reply, the soonest
  * follow-up first, each with who it is with and how its follow-up stands; then the newest
  * exchanges, each by which way it went.
  */

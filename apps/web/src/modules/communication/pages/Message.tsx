@@ -27,7 +27,7 @@ import { PartyChip, type Party } from '../components/PartyPicker'
 import { followUpChip, followUpTone } from '../logic/followUp'
 import { TONE } from './CommunicationOverview'
 
-/** `/communication/:id`: one exchange, read (FR-048), or what happened to it (artboard 23). */
+/** `/communication/:id`: one exchange, read, or what happened to it. */
 export function Message() {
   const { id = '' } = useParams()
   const message = useQuery({ ...messageQuery(idFrom(communicationId, id)), retry: false })
@@ -54,7 +54,7 @@ export function Message() {
 function MessagePage({ message: m }: { message: CommunicationResponse }) {
   const today = useAccountToday()
   const timeZone = useTimeZone()
-  // Edited where it is shown: open, or asked for by the inspector's Edit (`?edit=1`, I-05).
+  // Edited where it is shown: open, or asked for by the inspector's Edit (`?edit=1`).
   const [params, setParams] = useSearchParams()
   const [asked, setAsked] = useState(false)
   const editing = asked || params.get('edit') === '1'

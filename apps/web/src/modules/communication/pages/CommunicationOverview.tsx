@@ -22,10 +22,10 @@ import { overviewQuery } from '../api'
 import { AwaitingActions } from '../components/AwaitingActions'
 import { followUpChip, followUpTone, nextWords } from '../logic/followUp'
 
-/** Each table shows this many before "All N" (FR-015). */
+/** Each table shows this many before "All N". */
 const SHOWN = 5
 
-/** A day or a state's chip, in its tone (FR-071): red when late, amber when near, grey after. */
+/** A day or a state's chip, in its tone: red when late, amber when near, grey after. */
 export const TONE = {
   late: 'bg-stop-bg text-stop-t',
   soon: 'bg-warn-bg text-warn-t',
@@ -33,7 +33,7 @@ export const TONE = {
 } as const
 
 /**
- * THE COMMUNICATION OVERVIEW (FR-071, artboard 15): who has not replied, and where each
+ * The communication overview: who has not replied, and where each
  * organisation in touch stands: the table for "which firm is at which step".
  */
 export function CommunicationOverview() {
@@ -52,7 +52,7 @@ export function CommunicationOverview() {
           <button
             type="button"
             onClick={() => openNew(creator, { opens: true })}
-            // A frame, as every overview's: the ink is the tab bar's capture (P4-20).
+            // A frame, as every overview's: the ink is the tab bar's capture.
             className={BUTTON.secondary}
           >
             <NewIcon size={16} aria-hidden="true" />
@@ -78,7 +78,7 @@ function Heads({ cols, names }: { cols: string; names: readonly string[] }) {
   return (
     <div
       aria-hidden="true"
-      // On a phone a row is a card, named first (FR-088): no column heads over it.
+      // On a phone a row is a card, named first: no column heads over it.
       className={`grid h-8 items-center gap-x-3 border-b border-line px-3 text-meta text-muted max-lg:hidden ${cols}`}
     >
       {names.map((n, i) => (
@@ -88,7 +88,7 @@ function Heads({ cols, names }: { cols: string; names: readonly string[] }) {
   )
 }
 
-/** "All N": the rest of a table, in place (FR-015). */
+/** "All N": the rest of a table, in place. */
 function More({ rows, shown, onAll }: { rows: number; shown: number; onAll: () => void }) {
   if (rows <= shown) return null
   return (
@@ -179,7 +179,7 @@ function With({ row }: { row: AwaitingRow }) {
       </span>
     )
   const known = people.data?.find((p) => p.id === person.id)
-  // Where they work now, under the name (C-01), when the message does not name it itself.
+  // Where they work now, under the name, when the message does not name it itself.
   const works = org?.name ?? known?.roles.find((r) => r.to === null)?.organisationName
   return (
     <Link

@@ -3,7 +3,7 @@ import { monthDay, ymd } from '../../../platform/time/dates'
 import { ReceivedIcon, SentIcon } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
 
-/** A message listed among things of every kind: its day, in figures (DES-001 section 4). */
+/** A message listed among things of every kind: its day, in figures. */
 export function MessageFact({ thing }: { thing: LinkCandidate }) {
   const timeZone = useTimeZone()
   if (thing.type !== 'communication') return null

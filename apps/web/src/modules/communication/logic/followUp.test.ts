@@ -12,14 +12,14 @@ import {
 const TODAY = '2026-10-22'
 
 describe('a follow-up day', () => {
-  it('is late once passed, soon today and tomorrow, later after (FR-071)', () => {
+  it('is late once passed, soon today and tomorrow, later after', () => {
     expect(followUpTone('2026-10-21', TODAY)).toBe('late')
     expect(followUpTone(TODAY, TODAY)).toBe('soon')
     expect(followUpTone('2026-10-23', TODAY)).toBe('soon')
     expect(followUpTone('2026-10-26', TODAY)).toBe('later')
   })
 
-  it('is said on the chip, in the sidebar and on Today as artboards 12 and 15 have it', () => {
+  it('is said on the chip, in the sidebar and on Today', () => {
     expect(followUpChip('2026-10-21', TODAY)).toBe('Oct 21')
     expect(followUpChip('2026-10-23', TODAY)).toBe('Tomorrow')
     expect(followUpChip('2026-10-26', TODAY)).toBe('Mon, Oct 26')
@@ -39,7 +39,7 @@ describe('a follow-up day', () => {
 })
 
 describe('what is next with an organisation', () => {
-  it('reads as the Next column has it (FR-071)', () => {
+  it('reads as the Next column has it', () => {
     expect(nextWords({ kind: 'follow-up', on: '2026-10-26', late: false }, TODAY)).toEqual({
       text: 'Follow up Oct 26',
       tone: 'later',

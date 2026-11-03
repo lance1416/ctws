@@ -23,9 +23,8 @@ import { AwaitingActions } from './AwaitingActions'
 import { CHANNEL_WORDS } from './LogMessage'
 
 /**
- * A MESSAGE IN THE INSPECTOR (FR-022, artboard 33): which way it went and its subject; when, and
- * when to follow it up; who it was with, how and in which project; what it said; and, while a
- * reply is awaited, Log the reply and the follow-up's day.
+ * A message in the inspector; while a reply is awaited, with Log the reply and the follow-up's
+ * day.
  */
 export function MessageNarrow({ id }: { id: string }) {
   const message = useQuery(messageQuery(idFrom(communicationId, id)))

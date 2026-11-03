@@ -17,7 +17,7 @@ import { dueLine } from '../logic/followUp'
 import { AwaitingActions } from './AwaitingActions'
 
 /**
- * FOLLOW UP ON TODAY (FR-079, artboard 12): the messages whose follow-up day has come with no
+ * Follow up on Today: the messages whose follow-up day has come with no
  * reply, each with who it is with, when it was sent and when it fell due, and the two ways on: log
  * the reply, or follow up on Monday. With none, the block is its head saying so.
  */
@@ -76,7 +76,7 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
           <OrganisationMark name={org?.name ?? '?'} />
         )}
         <span className="flex min-w-0 flex-1 flex-col">
-          {/* On a phone, a row's two steps (FR-082). */}
+          {/* On a phone, a row's two steps. */}
           <span className="truncate text-ui text-ink max-lg:text-row">
             {m.subject ?? 'No subject'}
           </span>
@@ -85,7 +85,7 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
             <span>Sent {shortDay(sent, today)}</span>
           </span>
         </span>
-        {/* When it fell due, as its own tag on the right (C-03). */}
+        {/* When it fell due, as its own tag on the right. */}
         {m.followUpOn && (
           <span className="inline-flex h-5.5 shrink-0 items-center rounded-control bg-warn-bg px-2 text-meta font-medium text-warn-t">
             {dueLine(m.followUpOn, today)}
@@ -97,7 +97,7 @@ function FollowUpRow({ message: m, today }: { message: CommunicationResponse; to
   )
 }
 
-/** The whole of Follow up, in the inspector beside Today (FR-011 rule 3, U-08). */
+/** The whole of Follow up, in the inspector beside Today. */
 function FollowUpsList() {
   const followUps = useQuery(followUpsQuery())
   const today = useAccountToday()
@@ -125,7 +125,7 @@ export const followUpLists: InspectorList[] = [
   { name: FOLLOW_UPS, label: 'Today', icon: FollowUpIcon, Body: FollowUpsList },
 ]
 
-/** A block's rows before its "All N" (FR-011 rule 3). */
+/** A block's rows before its "All N". */
 const SHOWN = 5
 
 /** A block's "All N", a row at its foot. */
@@ -133,7 +133,7 @@ const ALL_ROW =
   'flex h-9 max-lg:h-11 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink'
 
 /**
- * FOLLOW UP ON A PHONE'S TODAY (FR-083): the same rows as a section after Overdue, drawn only when
+ * Follow up on a phone's Today: the same rows as a section after Overdue, drawn only when
  * something is to be chased.
  */
 export function FollowUpsPhone({ today }: { today: string }) {

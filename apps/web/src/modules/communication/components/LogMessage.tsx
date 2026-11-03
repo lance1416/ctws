@@ -38,7 +38,7 @@ import { MarkdownField } from '../../../shell/links'
 import { communicationKeys, logMessage, logReply, patchMessage } from '../api'
 import { PartyChip, PartyPicker, type Party } from './PartyPicker'
 
-/** Each channel's name, on its button's hover and to a screen reader (FR-070). */
+/** Each channel's name, on its button's hover and to a screen reader. */
 export const CHANNEL_WORDS: Record<Channel, string> = {
   email: 'Email',
   call: 'Call',
@@ -129,10 +129,8 @@ const text = (v: string) => (v.trim() === '' ? null : v.trim())
 const asLink = (v: string) => (/^https?:\/\//i.test(v) ? v : `https://${v}`)
 
 /**
- * LOG A MESSAGE (FR-048, FR-070, artboard 14): beside the page it is logged from, sent or
- * received, by which channel, with whom, about what and when, what was said and attached, and
- * whether a reply is awaited by a day. Ctrl Enter logs it from any field. The same form logs the
- * reply to a waiting one, with whom fixed, and edits one.
+ * Log a message, beside the page it is logged from. Ctrl Enter logs it from any field. The same
+ * form logs the reply to a waiting one, with whom fixed, and edits one.
  */
 export function LogMessage({
   what,
@@ -149,7 +147,7 @@ export function LogMessage({
   const now = toDayTimeInput(useNow().toISOString(), zone)
   const composing = useComposing()
   const [opened] = useState(() => draftOf(what, now, zone))
-  // What Esc closed it on, for when the same form opens again (FR-029).
+  // What Esc closed it on, for when the same form opens again.
   const kept = keptKey(what)
   const [d, setDraft] = useState(() => keptDraft<Draft>(kept) ?? opened)
   const set = (patch: Partial<Draft>) => setDraft((was) => ({ ...was, ...patch }))
@@ -346,7 +344,7 @@ export function LogMessage({
           </div>
           <div className="flex min-w-0 flex-col gap-1">
             <span className={label}>When</span>
-            {/* The shared date picker for the day, the time beside it (FR-070). */}
+            {/* The shared date picker for the day, the time beside it. */}
             <div className="flex max-w-72 items-center gap-1.5">
               <DayField
                 label="When, day"
@@ -373,13 +371,13 @@ export function LogMessage({
           <label htmlFor={`${ids}-body`} className={label}>
             What was said
           </label>
-          {/* A field (artboard 34): a few lines in a box, the editor's formatting and `@`. */}
+          {/* A field: a few lines in a box, the editor's formatting and `@`. */}
           <MarkdownField
             value={d.body}
             onChange={(body) => set({ body })}
             label="What was said"
             boxed
-            // Four lines to start, `area`'s height; it grows to twelve, then scrolls (artboard 36).
+            // Four lines to start, `area`'s height; it grows to twelve, then scrolls.
             className={`${area} max-h-[calc(12*1.5rem+0.75rem)] overflow-y-auto`}
             fallback={{ id: `${ids}-body`, rows: 4, className: area }}
           />
@@ -442,7 +440,7 @@ export function LogMessage({
         {!reply && (
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Project">
-              {/* Framed as a field (C-02), like Follow up on beside it. */}
+              {/* Framed as a field, like Follow up on beside it. */}
               <div className={`${boxed} flex items-center px-2`}>
                 <ProjectPicker
                   value={d.projectId}
@@ -475,7 +473,7 @@ export function LogMessage({
               onChange={(e) =>
                 set({
                   awaiting: e.target.checked,
-                  // Five days on, unless one was set already (FR-048).
+                  // Five days on, unless one was set already.
                   followUpOn: d.followUpOn ?? addDays(today, FOLLOW_UP_DAYS),
                 })
               }

@@ -10,7 +10,7 @@ import { followUpChip } from '../logic/followUp'
 import { initialsOf } from '../logic/initials'
 
 /**
- * AWAITING REPLY in a project (FR-055, artboard 8): the messages filed under it still awaiting
+ * Awaiting reply in a project: the messages filed under it still awaiting
  * one, the soonest follow-up first, each with its day, whom, what and when to chase it.
  */
 export function useProjectAwaiting(projectId: ProjectId): OwnThings {
@@ -22,8 +22,8 @@ export function useProjectAwaiting(projectId: ProjectId): OwnThings {
       .filter((m) => m.projectId === projectId)
       .map((m) => ({
         id: m.id,
-        // One line, as artboard 8 has it: the day it was sent, who with, what, and when to chase
-        // it; a day gone by is a nudge in warn, not a missed deadline in red (U-12).
+        // One line: the day it was sent, who with, what, and when to chase
+        // it; a day gone by is a nudge in warn, not a missed deadline in red.
         lead: monthDay(ymd(new Date(m.occurredAt), timeZone)),
         withInitials: initialsOf(m.parties[0]?.name ?? ''),
         title: m.subject ?? 'No subject',

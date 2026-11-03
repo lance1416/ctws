@@ -13,7 +13,7 @@ import { LogMessage } from './LogMessage'
 
 const SMALL = `inline-flex h-7 max-lg:tap items-center gap-1.5 rounded-control border border-line-strong px-2.5 text-meta font-medium text-ink hover:bg-hover ${GATED}`
 
-/** Moves a waiting message's follow-up day: "Later", "Follow up Mon" (FR-048, FR-079). */
+/** Moves a waiting message's follow-up day: "Later", "Follow up Mon". */
 function useFollowUpOn(message: CommunicationResponse) {
   return useMutation({
     mutationFn: (followUpOn: string) => patchMessage(message.id, { followUpOn }),
@@ -22,7 +22,7 @@ function useFollowUpOn(message: CommunicationResponse) {
 }
 
 /**
- * What can be done with a message still waiting (FR-048, FR-071, FR-079): log the reply, which
+ * What can be done with a message still waiting: log the reply, which
  * closes it, or move its follow-up day, to a day picked (Later) or to next Monday.
  */
 export function AwaitingActions({
@@ -36,7 +36,7 @@ export function AwaitingActions({
   const today = useAccountToday()
   const [replying, setReplying] = useState(false)
   const move = useFollowUpOn(message)
-  // Both save: offline they are greyed and say why (FR-033).
+  // Both save: offline they are greyed and say why.
   const save = useSaveGate()
   const about = message.subject ?? 'the message'
   return (

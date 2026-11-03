@@ -20,7 +20,7 @@ const OFFERED = 8
 const same = (a: Party, b: Party) => a.type === b.type && a.id === b.id
 
 /**
- * WHO A MESSAGE WAS WITH (FR-048, FR-070): people and organisations as chips, found by typing.
+ * Who a message was with: people and organisations as chips, found by typing.
  * Choosing someone brings the organisations they work at now, once each; a chip goes with its ✕
  * or with Backspace in the empty box.
  */
@@ -64,7 +64,7 @@ export function PartyPicker({
   const choose = (party: Party) => {
     const next = [...value, party]
     if (party.type === 'person') {
-      // Where they work now comes along, unless it is there already (FR-070).
+      // Where they work now comes along, unless it is there already.
       const person = people.data?.find((p) => p.id === party.id)
       for (const role of person?.roles.filter((r) => r.to === null) ?? []) {
         const org: Party = {

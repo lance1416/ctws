@@ -20,11 +20,11 @@ const CommunicationOverview = lazyPage(() =>
 )
 
 const PAGE = topPage('Communication')
-/** One of them, under its kind in the breadcrumbs (FR-018). */
+/** One of them, under its kind in the breadcrumbs. */
 const THING = thingPage('Communication', '/communication')
 
 /**
- * Communication (FR-048, FR-070, FR-071): logging an exchange from any page, the overview of who
+ * Communication: logging an exchange from any page, the overview of who
  * has not replied and where each organisation stands, each exchange's page, and Today's Follow up.
  */
 export const communicationModule: WorkspaceModule = {
@@ -37,14 +37,14 @@ export const communicationModule: WorkspaceModule = {
     MoreCount: AwaitingMoreCount,
     List: CommunicationSidebar,
     chord: 'communication',
-    // After Meetings, before Reading, as on the bar (FR-019).
+    // After Meetings, before Reading, as on the bar.
     order: 35,
   },
   routes: [
     { index: true, element: <CommunicationOverview />, handle: PAGE },
     { path: ':id', element: <Message />, handle: THING },
   ],
-  // The kind's name, as everywhere (DES-001 "种类名"); its button says the act: Log a message.
+  // The kind's name; its button says the act: Log a message.
   creates: [{ kind: 'communication', key: 'x', label: 'Communication', Dialog: NewMessage }],
   chords: [
     {
@@ -70,14 +70,14 @@ export const communicationModule: WorkspaceModule = {
     },
   ],
   widgets: [{ place: 'awaiting', Component: AwaitingReply }],
-  // The day each is to be chased (FR-080); the workbench's week shows them too (FR-076).
+  // The day each is to be chased; the workbench's week shows them too.
   calendar: {
     label: 'Follow-ups',
     useEntries: useFollowUpEntries,
     prefetch: (qc) => void qc.prefetchQuery(awaitingQuery()),
     show: (e) => ({ to: `/${COMMUNICATION_ID}/${e.id}`, label: 'follow up' }),
   },
-  // A project's page lists who is waiting for a reply in it (FR-055).
+  // A project's page lists who is waiting for a reply in it.
   project: {
     Things: {
       kind: 'communication',
@@ -95,7 +95,7 @@ export const communicationModule: WorkspaceModule = {
       Mark: MessageMark,
       Fact: MessageFact,
       Narrow: MessageNarrow,
-      // Edited in place on its page: Edit takes it there with the editor open (I-05).
+      // Edited in place on its page: Edit takes it there with the editor open.
       edit: (id) => `/${COMMUNICATION_ID}/${id}?edit=1`,
     },
   ],

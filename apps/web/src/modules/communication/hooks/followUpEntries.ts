@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { awaitingQuery } from '../api'
 
 /**
- * Follow-ups on the calendar (FR-080) and in the workbench's week (FR-076): each message still
+ * Follow-ups on the calendar and in the workbench's week: each message still
  * awaiting a reply, on the day it is to be chased. Their days are calendar days already, so no
  * zone moves them.
  */
@@ -18,7 +18,7 @@ export function useFollowUpEntries(range: { from: string; to: string }) {
             kind: 'follow-up',
             recurrenceId: null,
             day: m.followUpOn,
-            // Who to chase is what the day says (FR-080); the subject only when nobody is named.
+            // Who to chase is what the day says; the subject only when nobody is named.
             title: m.parties.map((p) => p.name).join(', ') || (m.subject ?? ''),
             startsAt: null,
             endsAt: null,
