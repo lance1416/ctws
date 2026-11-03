@@ -421,6 +421,7 @@ test('the ? list is the board’s three columns, and its switch names the keys i
     'In a form',
   ])
   await expect(help).toContainText('Fold, or go to the parent')
+  await expect(help).toContainText('Unfold, or go to the first subtask')
   await expect(help).toContainText('Open a pinned resource')
   await expect(help).toContainText('Switch between tree and board')
   await expect(help).toContainText('Open a launcher link')

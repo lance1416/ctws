@@ -56,11 +56,8 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
       does: 'Move between rows',
       presses: { ArrowDown: 'next', ArrowUp: 'previous', j: 'next', k: 'previous' },
     },
-    {
-      keys: '← →',
-      does: 'Fold, or go to the parent',
-      presses: { ArrowLeft: 'collapse', ArrowRight: 'expand' },
-    },
+    { keys: '←', does: 'Fold, or go to the parent', presses: { ArrowLeft: 'collapse' } },
+    { keys: '→', does: 'Unfold, or go to the first subtask', presses: { ArrowRight: 'expand' } },
     { keys: 'Home End', does: 'First or last row', presses: { Home: 'first', End: 'last' } },
     // Enter opens the detail (the keyboard way in), so a sibling is Shift+Enter. Ctrl and Meta
     // change none of the three.
