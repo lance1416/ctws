@@ -101,3 +101,47 @@ test('a meeting whose notes are still read says nothing of them, nor Write, till
   await expect(page.getByRole('button', { name: 'Write the notes' })).toBeVisible()
   await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0)
 })
+
+test('a reading item: its timeline waits under the linked blocks, not pushed down by them', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await registerFreshUser(page)
+  const book = await apiPost<{ id: string }>(page, '/reading', {
+    kind: 'book',
+    title: 'The C book',
+  })
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/api\/v1\/relations\?/, async (route) => {
+    await held
+    await route.continue()
+  })
+  await page.goto(`/reading/${book.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'The C book' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Timeline' })).toHaveCount(0)
+  release()
+  await expect(page.getByRole('region', { name: 'Timeline' })).toBeVisible()
+})
+
+test('a person still being read: past 400ms, where their head goes, and nothing under it', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await registerFreshUser(page)
+  const mira = await apiPost<{ id: string }>(page, '/people', { name: 'Mira Chen' })
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/api\/v1\/people(\?|$)/, async (route) => {
+    await held
+    await route.continue()
+  })
+  await page.goto(`/people/${mira.id}`)
+  const head = page.locator('main [aria-busy="true"]')
+  await expect(head).toHaveCount(1)
+  await expect(head.locator('.rounded-full')).toHaveCount(1)
+  await expect(page.getByRole('region', { name: 'Meetings', exact: true })).toHaveCount(0)
+  release()
+  await expect(page.getByRole('heading', { level: 1, name: 'Mira Chen' })).toBeVisible()
+  await expect(head).toHaveCount(0)
+})

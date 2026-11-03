@@ -1,3 +1,4 @@
+import { PageHeadWaiting } from '../../../platform/ui/PageHeadWaiting'
 import {
   idFrom,
   readingId,
@@ -42,7 +43,7 @@ function useAddressed() {
   const { id = '' } = useParams()
   const items = useQuery(readingQuery())
   const item = items.data?.find((i) => i.id === idFrom(readingId, id))
-  return { id, item, gone: items.isSuccess && !item }
+  return { id, item, gone: items.isSuccess && !item, reading: items.isPending }
 }
 
 /** Where a link may go: http(s) only; anything else stays words (FR-073). */
@@ -58,12 +59,12 @@ export const SINCE_WORDS: Record<ReadingStatus, string> = {
 
 /** `/reading/:id`: one item's page (FR-073), or what happened to it. */
 export function ReadingItem() {
-  const { id, item, gone } = useAddressed()
+  const { id, item, gone, reading } = useAddressed()
   useForgetWhenGone('reading', id, gone)
   useSubjectOf(item ? { type: 'reading', id: item.id, title: readingLabel(item) } : null)
   useRecordRecent(item ? recentEntry(item) : null)
   if (gone) return <DeletedNotice type="reading" id={id} />
-  if (!item) return null
+  if (!item) return reading ? <PageHeadWaiting /> : null
   return <ReadingPage key={item.id} item={item} />
 }
 
@@ -74,7 +75,7 @@ export function ReadingItem() {
  */
 function ReadingPage({ item }: { item: ReadingItemResponse }) {
   const registry = useRegistry()
-  const { blocks, picker } = useKindBlocks({
+  const { blocks, ready, picker } = useKindBlocks({
     of: { type: 'reading', id: item.id },
     kinds: (['person', 'task', 'meeting'] as const).filter((k) =>
       registry.relations.some((r) => r.type === k),
@@ -90,10 +91,13 @@ function ReadingPage({ item }: { item: ReadingItemResponse }) {
           {/* What it is linked to, then what happened to it: as a person's page has them (R-04).
               On a phone the timeline comes first, as on every thing's page (FR-088, P4-15). */}
           <div className="grid items-start gap-3 max-lg:order-last xl:grid-cols-2">{blocks}</div>
-          {/* On the page's ground, as a person's is (artboards 5 and 14): a timeline is no block. */}
-          <div>
-            <Timeline of={{ type: 'reading', id: item.id }} />
-          </div>
+          {/* On the page's ground, as a person's is (artboards 5 and 14): a timeline is no block.
+              Under the blocks, it waits for them: drawn first, it would be pushed down. */}
+          {ready && (
+            <div>
+              <Timeline of={{ type: 'reading', id: item.id }} />
+            </div>
+          )}
           {picker}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { PageHeadWaiting } from '../../../platform/ui/PageHeadWaiting'
 import {
   idFrom,
   personId,
@@ -22,16 +23,18 @@ function useAddressed(): {
   person: PersonResponse | undefined
   id: string | undefined
   gone: boolean
+  /** The people are still being read. */
+  reading: boolean
 } {
   const { id } = useParams()
   const people = useQuery(peopleQuery())
   const person = id ? people.data?.find((p) => p.id === idFrom(personId, id)) : undefined
-  return { person, id, gone: people.isSuccess && !person }
+  return { person, id, gone: people.isSuccess && !person, reading: people.isPending }
 }
 
 /** `/people/:id`: their page (FR-061), or what happened to them (artboard 23). */
 export function Person() {
-  const { person, id, gone } = useAddressed()
+  const { person, id, gone, reading } = useAddressed()
   useForgetWhenGone('person', id ?? null, gone)
   useSubjectOf(person ? { type: 'person', id: person.id, title: person.name } : null)
   useRecordRecent(
@@ -46,7 +49,7 @@ export function Person() {
       : null,
   )
   if (gone && id) return <DeletedNotice type="person" id={id} />
-  if (!person) return null
+  if (!person) return reading ? <PageHeadWaiting round /> : null
   return <PersonPage key={person.id} person={person} />
 }
 

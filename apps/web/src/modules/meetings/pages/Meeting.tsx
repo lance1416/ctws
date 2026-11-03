@@ -1,3 +1,4 @@
+import { PageHeadWaiting } from '../../../platform/ui/PageHeadWaiting'
 import { idFrom, meetingId, type MeetingOccurrence, type UpdateSeriesBody } from '@ctws/contracts'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
@@ -54,13 +55,14 @@ function useAddressed() {
     cancelled: cancelled.data === true,
     // Until it is known which, nothing is said.
     settled: !gone || at === null || cancelled.isSuccess || cancelled.isError,
+    reading: read.isPending,
     params,
   }
 }
 
 /** `/meetings/:id`: one occurrence's page (FR-067), or what happened to it. */
 export function Meeting() {
-  const { id, isId, at, meeting: m, gone, cancelled, settled, params } = useAddressed()
+  const { id, isId, at, meeting: m, gone, cancelled, settled, reading, params } = useAddressed()
   useForgetWhenGone('meeting', id, gone && at === null)
   useSubjectOf(m ? { type: 'meeting', id: m.meetingId, title: m.title } : null)
   useRecordRecent(
@@ -79,7 +81,7 @@ export function Meeting() {
   if (!settled) return null
   if (cancelled && at) return <Cancelled id={id} at={at} />
   if (gone) return <DeletedNotice type="meeting" id={id} />
-  if (!m) return null
+  if (!m) return reading ? <PageHeadWaiting /> : null
   return (
     <MeetingPage
       key={`${m.meetingId}@${m.recurrenceId}`}
