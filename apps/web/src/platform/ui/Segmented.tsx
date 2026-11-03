@@ -39,7 +39,7 @@ export function Segmented({
       role={picks ? 'radiogroup' : 'tablist'}
       aria-label={label}
       onKeyDown={picks ? radioKeys : tabKeys}
-      className="inline-flex rounded-card bg-hover p-0.5"
+      className="inline-flex rounded-container bg-hover p-0.5"
     >
       {segments.map(({ id, label: name, icon: Icon, unavailable }) => (
         <button

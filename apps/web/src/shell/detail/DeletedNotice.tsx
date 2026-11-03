@@ -54,7 +54,7 @@ export function DeletedNotice({ type, id }: { type: ObjectType; id: string }) {
     <div
       role="alert"
       data-deleted-notice
-      className="flex max-w-xl flex-col items-start gap-2 rounded-block border border-line bg-panel p-5"
+      className="flex max-w-xl flex-col items-start gap-2 rounded-container border border-line bg-panel p-5"
     >
       <span className="inline-grid size-8 place-items-center rounded-control bg-hover text-muted">
         <RemoveIcon size={16} aria-hidden="true" />

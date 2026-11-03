@@ -86,7 +86,7 @@ function Block({
   return (
     <section
       aria-label={title}
-      className="flex min-w-0 flex-col overflow-hidden rounded-block border border-line bg-panel"
+      className="flex min-w-0 flex-col overflow-hidden rounded-container border border-line bg-panel"
     >
       <div
         className={`flex h-10 shrink-0 items-center gap-2 pr-2 pl-3 ${empty ? '' : 'border-b border-line'}`}

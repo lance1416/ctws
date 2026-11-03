@@ -9,7 +9,7 @@ import { archivedProjectsQuery, useProjects } from './api'
 import { showArchived } from './archivedShown'
 import { ProjectSquare } from './ProjectSquare'
 
-const CARD = 'flex min-w-0 flex-col gap-3 rounded-card border border-line bg-panel p-3.5'
+const CARD = 'flex min-w-0 flex-col gap-3 rounded-container border border-line bg-panel p-3.5'
 
 /** Without a module to order them, the server's order. */
 const useServerOrder = () => () => 0

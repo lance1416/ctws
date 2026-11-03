@@ -111,16 +111,17 @@
   --text-row-sub: 0.8125rem;
   --text-row-sub--line-height: 1.125rem;
 
-  /* RADIUS BY ROLE (FR-009), and Tailwind's own steps removed: `key` 4 for a key cap, `control`
-     6 for controls and chips, `card` 8 for a board card, `block` 10 for blocks and everything that
-     floats, `phone-card` 14 and `phone-sheet` 16 on the phone. Avatars are `rounded-full`. */
+  /* RADIUS BY ROLE (FR-009), three steps and round, Tailwind's own removed: `small` 4 for a key
+     cap, a tick box, a find, the cursor's line, a 20 project square; `control` 6 for controls,
+     chips, menu items, the sidebar's and the icon bar's rows; `container` 8 for blocks, cards and
+     everything that floats; `phone` 12 for the phone's cards and sheets. Round is
+     `rounded-full`. What runs edge to edge of its container (a block's head, a full-width row's
+     hover, a table's cells, the frame's bars) has no radius: the container's own clips it. */
   --radius-*: initial;
-  --radius-key: 4px;
+  --radius-small: 4px;
   --radius-control: 6px;
-  --radius-card: 8px;
-  --radius-block: 10px;
-  --radius-phone-card: 14px;
-  --radius-phone-sheet: 16px;
+  --radius-container: 8px;
+  --radius-phone: 12px;
 
   /* WIDTHS WITH A NAME (tokens.md): the icon bar, the module sidebar, the inspector, the
      narrowest a content column may be, and the measure of running text. */

@@ -155,7 +155,7 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
       </div>
 
       {card && (
-        <ul aria-label="Profile" className="rounded-phone-card border border-line bg-panel py-1">
+        <ul aria-label="Profile" className="rounded-phone border border-line bg-panel py-1">
           {apart && (
             <Line icon={TimeZoneIcon}>
               <span className="text-prose text-ink">
@@ -216,7 +216,7 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
       {moreAbout && (
         <section aria-label={`More about ${called}`} className="flex flex-col gap-1.5">
           <h2 className="px-1 text-ui font-medium text-muted">More about {called}</h2>
-          <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2.5 rounded-phone-card border border-line bg-panel p-3.5 text-prose">
+          <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2.5 rounded-phone border border-line bg-panel p-3.5 text-prose">
             {others.map((c, i) => (
               <Fact key={`${c.kind}-${i}`} name={c.label ?? KIND_LABEL[c.kind]}>
                 <a
@@ -278,7 +278,7 @@ function Reach({
   href: string | null
 }) {
   const look =
-    'flex h-16 flex-col items-center justify-center gap-1 rounded-phone-card border border-line bg-panel text-ui font-medium'
+    'flex h-16 flex-col items-center justify-center gap-1 rounded-phone border border-line bg-panel text-ui font-medium'
   return href ? (
     <a href={href} className={`${look} text-task-t`}>
       <Icon size={22} aria-hidden="true" />

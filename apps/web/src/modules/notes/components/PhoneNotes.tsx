@@ -12,7 +12,7 @@ import { shelvesOf } from '../logic/shelves'
 import { noteTitle } from '../logic/title'
 
 const ROW = 'flex min-h-12 items-center gap-3 px-4 text-prose text-ink active:bg-hover'
-const CARD = 'overflow-hidden rounded-phone-card border border-line bg-panel'
+const CARD = 'overflow-hidden rounded-phone border border-line bg-panel'
 
 /**
  * NOTES ON A PHONE (REQ-002 FR-110, artboard 35): the filter, then the pinned, the folders, the

@@ -77,7 +77,7 @@ function DeskPerson({ person }: { person: PersonResponse }) {
   const registry = useRegistry()
   // One hook per module that lists its own things with a person: the registry's list is fixed.
   const owned = registry.personThings.map((t) => ({ kind: t.kind, ...t.useThings(person.id) }))
-  const { blocks, full, picker } = useKindBlocks({
+  const { blocks, full, ready, picker } = useKindBlocks({
     of: { type: 'person', id: person.id },
     kinds: personLinkKinds(registry),
     owned,
@@ -90,10 +90,12 @@ function DeskPerson({ person }: { person: PersonResponse }) {
     sayAdd: true,
   })
   const profiled = hasProfile(person)
-  // Across as many columns of at least 360 as the blocks' own width holds, three at most: one
-  // with the inspector open beside a 1440 page, more on a wide screen (U-07, DES-001 "宽度和断点").
+  // Across as many columns of at least 360 as the blocks' own width holds, three at most, empty
+  // blocks too: one with the inspector open beside a 1440 page, more on a wide screen (U-07,
+  // DES-001 "宽度和断点"). Still being read, the blocks are one bar across.
   const holder = useRef<HTMLDivElement>(null)
-  const across = Math.max(1, Math.min(3, useColumns(holder), full || 1))
+  const columns = useColumns(holder)
+  const across = ready ? Math.max(1, Math.min(3, columns, blocks.length)) : 1
   // A last full row with a hole in it: its last block takes the rest of the row (FR-011 rule 2).
   const rest = full % across === 0 ? 1 : across - (full % across) + 1
   return (
@@ -125,7 +127,8 @@ function DeskPerson({ person }: { person: PersonResponse }) {
             ))}
           </div>
           {picker}
-          <Timeline of={{ type: 'person', id: person.id }} filters logs />
+          {/* Under the blocks, it waits for them: drawn first, it would be pushed down. */}
+          {ready && <Timeline of={{ type: 'person', id: person.id }} filters logs />}
         </div>
       </div>
     </div>
@@ -208,7 +211,7 @@ function Profile({ person }: { person: PersonResponse }) {
   return (
     <aside
       aria-label="Profile"
-      className="flex flex-col gap-5 rounded-block border border-line bg-panel p-4"
+      className="flex flex-col gap-5 rounded-container border border-line bg-panel p-4"
     >
       {person.channels.length > 0 && (
         <Section title="Contact" icon={ContactIcon}>
@@ -349,7 +352,7 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
       <div className="flex gap-3.5">
         <span
           aria-hidden="true"
-          className="flex size-14 shrink-0 flex-col items-center justify-center rounded-card bg-person-bg text-person-t"
+          className="flex size-14 shrink-0 flex-col items-center justify-center rounded-container bg-person-bg text-person-t"
         >
           <span className="font-mono text-meta uppercase">
             {MONTHS[Number(day.slice(5, 7)) - 1]}

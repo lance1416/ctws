@@ -34,7 +34,7 @@ export function MovedPrompt() {
   return (
     <section
       aria-label="We moved your data"
-      className="flex items-center gap-3 rounded-block border border-warn bg-panel px-4 py-2.5"
+      className="flex items-center gap-3 rounded-container border border-warn bg-panel px-4 py-2.5"
     >
       <MovedIcon size={16} aria-hidden="true" className="shrink-0 text-warn" />
       <p className="min-w-0 flex-1 text-ui text-ink">

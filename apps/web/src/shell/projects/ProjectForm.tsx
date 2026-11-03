@@ -202,7 +202,7 @@ function ProjectForm({
 
       <section
         aria-labelledby={`${ids}-head`}
-        className="flex max-w-[34rem] flex-col rounded-card border border-line bg-panel"
+        className="flex max-w-[34rem] flex-col rounded-container border border-line bg-panel"
       >
         <h2
           id={`${ids}-head`}

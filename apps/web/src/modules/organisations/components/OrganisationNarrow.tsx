@@ -10,7 +10,7 @@ import { Website } from '../pages/OrganisationPage'
 import { OrganisationMark } from './OrganisationMark'
 import { StageOf } from './Standing'
 
-const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-key bg-hover px-2 text-muted'
+const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-small bg-hover px-2 text-muted'
 
 /**
  * AN ORGANISATION IN THE INSPECTOR (FR-022, artboard 33): its mark and name, what it is and

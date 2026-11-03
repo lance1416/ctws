@@ -252,7 +252,7 @@ function Group({
   return (
     <section
       aria-label={title}
-      className="flex min-w-0 flex-col rounded-block border border-line bg-panel"
+      className="flex min-w-0 flex-col rounded-container border border-line bg-panel"
     >
       <h2 className="flex h-10 items-center gap-2 px-3 text-ui font-medium text-ink">
         <Icon size={16} aria-hidden="true" className="text-muted" />

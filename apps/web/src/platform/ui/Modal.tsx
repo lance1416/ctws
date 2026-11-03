@@ -178,7 +178,7 @@ export function Modal({
             className={
               full
                 ? 'flex min-h-0 w-full flex-col bg-float'
-                : `group/modal h-fit w-full rounded-block bg-float shadow-float max-lg:has-[[data-phone-form-bar]]:min-h-full max-lg:has-[[data-phone-form-bar]]:max-w-none max-lg:has-[[data-phone-form-bar]]:bg-ground max-lg:has-[[data-phone-form-bar]]:shadow-none ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : picker ? 'max-w-[23.75rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`
+                : `group/modal h-fit w-full rounded-container bg-float shadow-float max-lg:has-[[data-phone-form-bar]]:min-h-full max-lg:has-[[data-phone-form-bar]]:max-w-none max-lg:has-[[data-phone-form-bar]]:bg-ground max-lg:has-[[data-phone-form-bar]]:shadow-none ${wide ? 'max-w-[70rem]' : narrow ? 'max-w-lg' : picker ? 'max-w-[23.75rem]' : palette ? 'max-w-[58rem]' : 'max-w-reading'}`
             }
           >
             {palette || picker ? (

@@ -72,7 +72,7 @@ export function DayPanel({
             </button>
           )}
           {lunar && (
-            <span className="inline-flex h-5.5 items-center rounded-key bg-hover px-2 text-meta text-muted">
+            <span className="inline-flex h-5.5 items-center rounded-small bg-hover px-2 text-meta text-muted">
               {lunar}
             </span>
           )}

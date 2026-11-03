@@ -105,7 +105,7 @@ export function ScopeChoice({
           onCancel()
         }
       }}
-      className={`absolute top-full right-0 ${LAYER.menu} mt-2 flex w-92 flex-col gap-2 rounded-block bg-float p-3.5 shadow-float`}
+      className={`absolute top-full right-0 ${LAYER.menu} mt-2 flex w-92 flex-col gap-2 rounded-container bg-float p-3.5 shadow-float`}
     >
       <p className="text-ui font-medium text-ink">This meeting repeats. Change which?</p>
       {radios}

@@ -33,7 +33,7 @@ export function TopBar({
         <Link
           to="/"
           aria-label="Workbench"
-          className="inline-grid size-7.5 shrink-0 place-items-center rounded-card bg-ink text-meta font-medium text-on-ink"
+          className="inline-grid size-7.5 shrink-0 place-items-center rounded-control bg-ink text-meta font-medium text-on-ink"
         >
           CT
         </Link>

@@ -76,7 +76,7 @@
 /* The cursor's line, while writing: the row's hover ground, a little wider than the text. */
 .cm-md-active {
   background: var(--color-hover);
-  border-radius: 0.25rem;
+  border-radius: var(--radius-small);
   margin-inline: -0.5rem;
   padding-inline: 0.5rem !important;
 }
@@ -113,7 +113,7 @@
   font-size: 0.875em;
   background: var(--color-ground);
   border: 1px solid var(--color-line);
-  border-radius: 0.25rem;
+  border-radius: var(--radius-small);
   padding: 0.0625rem 0.25rem;
 }
 
@@ -212,15 +212,15 @@
 .cm-md-codefirst::before {
   top: 0.5rem;
   border-top: 1px solid var(--color-line);
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
+  border-top-left-radius: var(--radius-container);
+  border-top-right-radius: var(--radius-container);
 }
 
 .cm-md-codelast::before {
   bottom: 0.5rem;
   border-bottom: 1px solid var(--color-line);
-  border-bottom-left-radius: 0.5rem;
-  border-bottom-right-radius: 0.5rem;
+  border-bottom-left-radius: var(--radius-container);
+  border-bottom-right-radius: var(--radius-container);
 }
 
 .cm-md-codehead {
@@ -314,7 +314,7 @@
 [data-markdown-editor] .cm-tooltip.cm-tooltip-autocomplete {
   background: var(--color-float);
   border: 0;
-  border-radius: 0.625rem;
+  border-radius: var(--radius-container);
   box-shadow: var(--shadow-float);
   padding: 0.25rem;
   font-family: var(--font-sans);
@@ -333,7 +333,7 @@
   gap: 0.5rem;
   min-height: 2rem;
   padding: 0 0.5rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-control);
 }
 
 [data-markdown-editor] .cm-tooltip-autocomplete > ul > li[aria-selected] {
@@ -351,13 +351,13 @@
    light the deeper amber, as white on warn itself is under 4.5:1 (DES-001 "Find"). */
 .cm-md-found {
   background: var(--color-warn-bg);
-  border-radius: 0.125rem;
+  border-radius: var(--radius-small);
 }
 
 .cm-md-found-here {
   background: light-dark(var(--color-warn-t), var(--color-warn));
   color: var(--color-on-ink);
-  border-radius: 0.125rem;
+  border-radius: var(--radius-small);
 }
 
 /* ON A PHONE (DES-001 "笔记编辑器", artboard 35): the text 16/24, as Safari zooms the whole page
@@ -415,7 +415,7 @@
 /* The cursor's line, as drawn: the hover ground, a little wider than the text. */
 .cm-src .cm-activeLine {
   background: var(--color-hover);
-  border-radius: 0.25rem;
+  border-radius: var(--radius-small);
   margin-inline: -0.5rem;
   padding-inline: 0.5rem !important;
 }

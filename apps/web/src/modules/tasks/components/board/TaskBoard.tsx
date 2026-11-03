@@ -76,7 +76,7 @@ export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: React
   const [params, setParams] = useSearchParams()
   if (tasks.isError)
     return (
-      <div className="rounded-block border border-line bg-panel">
+      <div className="rounded-container border border-line bg-panel">
         <BlockFailed what="tasks" onRetry={() => void tasks.refetch()} />
       </div>
     )
@@ -396,7 +396,7 @@ function Board({
         </div>
         <DragOverlay>
           {lifted && (
-            <div className="flex cursor-grabbing flex-col gap-1 rounded-card bg-float px-2.5 py-2 shadow-float">
+            <div className="flex cursor-grabbing flex-col gap-1 rounded-container bg-float px-2.5 py-2 shadow-float">
               <CardFace
                 card={{ task: lifted, path: null }}
                 blockers={data.blockers[lifted.id]}
@@ -424,13 +424,13 @@ function BoardLoading() {
       {(['todo', 'in_progress', 'done'] as const).map((status) => (
         <div
           key={status}
-          className="flex min-w-0 flex-1 basis-0 flex-col gap-2 rounded-block border border-line bg-chrome px-2 pb-2"
+          className="flex min-w-0 flex-1 basis-0 flex-col gap-2 rounded-container border border-line bg-chrome px-2 pb-2"
         >
           <span className="flex h-10 items-center pl-1 text-ui font-medium text-muted">
             {STATUS_LABEL[status]}
           </span>
           {[0, 1, 2].map((i) => (
-            <span key={i} className="h-9 rounded-card bg-line opacity-60" />
+            <span key={i} className="h-9 rounded-container bg-line opacity-60" />
           ))}
         </div>
       ))}

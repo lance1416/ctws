@@ -77,13 +77,13 @@ export function CaptureSheet({
           rows={3}
           aria-label="Capture"
           placeholder="A thought, or a link"
-          className="min-h-24 resize-none rounded-card border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-subtle"
+          className="min-h-24 resize-none rounded-container border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-subtle"
         />
         <div
           role="radiogroup"
           onKeyDown={radioKeys}
           aria-label="Kind"
-          className="grid grid-cols-3 rounded-card bg-hover p-0.5"
+          className="grid grid-cols-3 rounded-container bg-hover p-0.5"
         >
           <Segment on={kind === 'task'} onClick={() => setKind('task')} icon={KIND_ICON.task}>
             Task

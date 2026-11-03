@@ -280,7 +280,7 @@ function Part({
     <section
       id={sectionId(id)}
       aria-label={title}
-      className="shrink-0 scroll-mt-4 overflow-hidden rounded-block border border-line bg-panel"
+      className="shrink-0 scroll-mt-4 overflow-hidden rounded-container border border-line bg-panel"
     >
       <div className="flex h-11 items-center gap-2 border-b border-line pr-2 pl-3 max-lg:h-auto max-lg:min-h-11 max-lg:flex-wrap max-lg:py-1.5">
         <span className="inline-grid size-6 place-items-center rounded-control bg-hover text-muted">
@@ -304,14 +304,14 @@ function Part({
 function Why({ item }: { item: MigrationItem }) {
   if (item.checked)
     return (
-      <span className="inline-flex h-5.5 items-center rounded-key whitespace-nowrap bg-go-bg px-2 text-meta font-medium text-go-t">
+      <span className="inline-flex h-5.5 items-center rounded-small whitespace-nowrap bg-go-bg px-2 text-meta font-medium text-go-t">
         Checked
       </span>
     )
   if (!item.why) return null
   return (
     <span
-      className={`inline-flex h-5.5 items-center rounded-key whitespace-nowrap px-2 text-meta font-medium ${
+      className={`inline-flex h-5.5 items-center rounded-small whitespace-nowrap px-2 text-meta font-medium ${
         item.attention ? 'bg-warn-bg text-warn-t' : 'bg-hover text-muted'
       }`}
     >
@@ -544,7 +544,7 @@ function MergeRow({ item }: { item: MigrationItem }) {
         <span key={g.id} className="flex items-center gap-1.5">
           <Link
             to={`/organisations/${g.id}`}
-            className="inline-flex h-6 items-center gap-1.5 rounded-key bg-organisation-bg px-2 text-meta font-medium text-organisation-t hover:underline max-lg:tap"
+            className="inline-flex h-6 items-center gap-1.5 rounded-small bg-organisation-bg px-2 text-meta font-medium text-organisation-t hover:underline max-lg:tap"
           >
             <KIND_ICON.organisation size={12} aria-hidden="true" />
             {g.name}
@@ -697,7 +697,7 @@ function Value({ item, which }: { item: MigrationItem; which: 'was' | 'now' }) {
       <span
         role="img"
         aria-label={`Was ${was}`}
-        className={`size-4 rounded-key ${PROJECT_SWATCH[was as keyof typeof PROJECT_SWATCH]}`}
+        className={`size-4 rounded-small ${PROJECT_SWATCH[was as keyof typeof PROJECT_SWATCH]}`}
       />
     ) : (
       <span />

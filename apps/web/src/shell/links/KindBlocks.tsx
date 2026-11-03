@@ -1,5 +1,5 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
-import { useContext, useState, type ComponentType, type ReactNode } from 'react'
+import { useContext, useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { Avatar } from '../../platform/ui/Avatar'
 import { Block, BlockFailed, SkeletonRows } from '../../platform/ui/Block'
 import { BUTTON, ICON_BUTTON, SWIPE } from '../../platform/ui/buttonStyles'
@@ -108,7 +108,7 @@ export function useKindBlocks({
   makesFor?: (kind: ObjectType) => Makes | undefined
   /** The subject's name, for what its blocks offer on a thing's own page: "Remove from Job hunt". */
   ofName?: string
-}): { blocks: ReactNode[]; full: number; picker: ReactNode } {
+}): { blocks: ReactNode[]; full: number; ready: boolean; picker: ReactNode } {
   const registry = useRegistry()
   const openNew = useContext(NewContext)
   const { links, groups, unlink, setAdding, picker } = useLinked(of, kinds, makesFor)
@@ -158,13 +158,18 @@ export function useKindBlocks({
   })
   const joinOf = joining ? blocks.find((b) => b.kind === joining) : undefined
   const size = (b: KindBlockProps) => b.things.length + b.linked.length
-  // One still being read keeps its place, so the page does not reorder as the reads come back.
-  const full = blocks.filter((b) => size(b) > 0 || b.pending)
+  // Being read is neither full nor empty: which blocks are full, and so their order and the
+  // columns they take, waits for every read, and the blocks come in at once (DES-001 "加载").
+  const ready = blocks.every((b) => !b.pending)
+  const full = blocks.filter((b) => size(b) > 0)
   return {
-    blocks: [...full, ...blocks.filter((b) => !full.includes(b))].map((b) => (
-      <KindBlock key={b.kind} {...b} />
-    )),
-    full: full.length,
+    blocks: ready
+      ? [...full, ...blocks.filter((b) => !full.includes(b))].map((b) => (
+          <KindBlock key={b.kind} {...b} />
+        ))
+      : [<Waiting key="waiting" />],
+    full: ready ? full.length : 0,
+    ready,
     picker: (
       <>
         {picker}
@@ -194,6 +199,27 @@ export function useKindBlocks({
       </>
     ),
   }
+}
+
+/** How long a region waits for its data before it shows that it is waiting. */
+const WAIT_SHOWN_AFTER_MS = 400
+
+/**
+ * Blocks still being read: nothing at first, then, past 400ms, one neutral bar across every
+ * column at a block head's 40, no guess at the layout the data will decide (DES-001 "加载").
+ */
+function Waiting() {
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setShown(true), WAIT_SHOWN_AFTER_MS)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <div
+      aria-busy="true"
+      className={`col-span-full h-10 rounded-container ${shown ? 'bg-hover' : ''}`}
+    />
+  )
 }
 
 function KindBlock({

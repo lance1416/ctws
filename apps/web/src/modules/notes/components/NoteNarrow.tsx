@@ -37,7 +37,7 @@ export function NoteNarrow({ id }: { id: string }) {
                 <InspectLink
                   thing={{ type: on.type, id: on.id }}
                   to={relationFor(on.type).to(on.id)}
-                  className={`inline-flex h-5.5 items-center gap-1 rounded-key px-2 font-medium hover:underline ${KIND_TINT[on.type as Kind]} ${KIND_ON_TINT[on.type as Kind]}`}
+                  className={`inline-flex h-5.5 items-center gap-1 rounded-small px-2 font-medium hover:underline ${KIND_TINT[on.type as Kind]} ${KIND_ON_TINT[on.type as Kind]}`}
                 >
                   {OnIcon && <OnIcon size={12} aria-hidden="true" />}
                   {on.title}

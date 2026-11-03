@@ -55,7 +55,7 @@ export function MessageNarrow({ id }: { id: string }) {
             </span>
             {waiting && (
               <span
-                className={`inline-flex h-5.5 items-center gap-1 rounded-key px-2 font-medium ${TONE[followUpTone(m.followUpOn!, today)]}`}
+                className={`inline-flex h-5.5 items-center gap-1 rounded-small px-2 font-medium ${TONE[followUpTone(m.followUpOn!, today)]}`}
               >
                 <FollowUpIcon size={12} aria-hidden="true" />
                 Follow up {followUpChip(m.followUpOn!, today)}

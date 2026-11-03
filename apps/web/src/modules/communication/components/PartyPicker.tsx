@@ -136,7 +136,7 @@ export function PartyPicker({
           id={listId}
           role="listbox"
           aria-label={`${label}: matches`}
-          className={`absolute inset-x-0 top-full ${LAYER.menu} mt-1 rounded-block bg-float py-1 shadow-float`}
+          className={`absolute inset-x-0 top-full ${LAYER.menu} mt-1 rounded-container bg-float py-1 shadow-float`}
         >
           {matches.map((p, i) => (
             <li
@@ -189,7 +189,7 @@ export function PartyChip({ party, onRemove }: { party: Party; onRemove?: () => 
             onRemove()
           }}
           aria-label={`Remove ${party.name}`}
-          className="inline-grid size-4.5 place-items-center rounded-key hover:bg-hover"
+          className="inline-grid size-4.5 place-items-center rounded-small hover:bg-hover"
         >
           <CloseIcon size={12} aria-hidden="true" />
         </button>

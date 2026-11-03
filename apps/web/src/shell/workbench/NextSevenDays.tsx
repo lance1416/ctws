@@ -70,7 +70,7 @@ export function NextSevenDays() {
               <li
                 key={day}
                 data-week-day={day}
-                className={`flex min-w-0 flex-col gap-1.5 overflow-hidden rounded-card px-2 py-2.5 ${isToday ? 'bg-select' : ''}`}
+                className={`flex min-w-0 flex-col gap-1.5 overflow-hidden rounded-container px-2 py-2.5 ${isToday ? 'bg-select' : ''}`}
               >
                 <span
                   className={`font-mono text-meta ${isToday ? 'font-medium text-ink' : 'text-muted'}`}
@@ -126,7 +126,7 @@ function Chip({ entry: e, soon }: { entry: ShownEntry; soon: boolean }) {
       to={e.to}
       title={e.title}
       data-week-entry={e.kind}
-      className={`flex h-5.5 min-w-0 items-center gap-1.25 rounded-key px-1.5 text-meta font-medium whitespace-nowrap hover:brightness-95 max-lg:tap ${look.tone}`}
+      className={`flex h-5.5 min-w-0 items-center gap-1.25 rounded-small px-1.5 text-meta font-medium whitespace-nowrap hover:brightness-95 max-lg:tap ${look.tone}`}
     >
       {look.icon}
       <span className="truncate">{look.text}</span>

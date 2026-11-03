@@ -96,7 +96,7 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <span
         aria-hidden="true"
-        className="inline-grid size-14 shrink-0 place-items-center rounded-card bg-meeting-bg text-meeting"
+        className="inline-grid size-14 shrink-0 place-items-center rounded-container bg-meeting-bg text-meeting"
       >
         <KIND_ICON.meeting size={24} />
       </span>
@@ -219,7 +219,7 @@ function Profile({ meeting: m }: { meeting: MeetingOccurrence }) {
   return (
     <aside
       aria-label="Profile"
-      className="flex flex-col gap-5 rounded-block border border-line bg-panel p-4"
+      className="flex flex-col gap-5 rounded-container border border-line bg-panel p-4"
     >
       <Section title="When" icon={DurationIcon}>
         <div className="flex flex-col gap-2.5 pl-6">

@@ -51,7 +51,7 @@ export function BackFromCard() {
   return (
     <div
       data-back-from
-      className="grid shrink-0 grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 rounded-card bg-warn-bg p-3.5"
+      className="grid shrink-0 grid-cols-[20px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 rounded-container bg-warn-bg p-3.5"
     >
       <ReturnedIcon size={20} aria-hidden="true" className="text-warn-t" />
       <span className="flex min-w-0 items-center gap-2 text-ui">
@@ -110,7 +110,7 @@ export function BackFromNote() {
     <div
       role="status"
       data-back-from-note
-      className={`absolute bottom-5 left-1/2 ${LAYER.cover} flex max-w-[calc(100%-2.5rem)] -translate-x-1/2 items-center gap-3 rounded-block bg-float py-2.5 pr-2.5 pl-3.5 text-ui shadow-float max-lg:bottom-20`}
+      className={`absolute bottom-5 left-1/2 ${LAYER.cover} flex max-w-[calc(100%-2.5rem)] -translate-x-1/2 items-center gap-3 rounded-container bg-float py-2.5 pr-2.5 pl-3.5 text-ui shadow-float max-lg:bottom-20`}
     >
       <ReturnedIcon size={16} aria-hidden="true" className="shrink-0 text-warn" />
       <span className="shrink-0 text-muted">Back from</span>

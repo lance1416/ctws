@@ -239,7 +239,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
   // "New task" (FR-031, FR-032, BUG-039).
   if (tasks.isError)
     return (
-      <div className="mt-2 rounded-block border border-line bg-panel">
+      <div className="mt-2 rounded-container border border-line bg-panel">
         <BlockFailed what="tasks" onRetry={() => void tasks.refetch()} />
       </div>
     )
@@ -263,7 +263,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
       )}
       <div
         // The inbox's rows carry Move to… too: their controls' column is wider (FR-059).
-        className={`mt-2 rounded-block border border-line bg-panel ${inInbox ? '[--row-acts:148px]' : ''}`}
+        className={`mt-2 rounded-container border border-line bg-panel ${inInbox ? '[--row-acts:148px]' : ''}`}
       >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
@@ -339,7 +339,7 @@ function TreeLoading() {
   const shown = useDelayed()
   if (!shown) return null
   return (
-    <div aria-busy="true" className="mt-2 rounded-block border border-line bg-panel">
+    <div aria-busy="true" className="mt-2 rounded-container border border-line bg-panel">
       <div
         aria-hidden="true"
         className={`${TREE_ROW} min-h-7.5 border-b border-line text-meta text-muted`}
@@ -354,11 +354,11 @@ function TreeLoading() {
           <div key={i} className={TREE_ROW}>
             <span className="flex items-center gap-2.5">
               <span className="size-4 shrink-0 rounded-full bg-line" />
-              <span className="h-2.5 rounded-key bg-line" style={{ width: `${width}%` }} />
+              <span className="h-2.5 rounded-small bg-line" style={{ width: `${width}%` }} />
             </span>
             <span className={WIDE_ONLY} />
-            <span className={`h-2.5 w-12 rounded-key bg-line opacity-60 ${WIDE_ONLY}`} />
-            <span className="h-2.5 w-10 rounded-key bg-line opacity-60" />
+            <span className={`h-2.5 w-12 rounded-small bg-line opacity-60 ${WIDE_ONLY}`} />
+            <span className="h-2.5 w-10 rounded-small bg-line opacity-60" />
           </div>
         ))}
       </div>

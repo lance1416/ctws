@@ -107,7 +107,7 @@ export function NewMenu({
           role="menu"
           aria-label={`New in ${projectName}`}
           onKeyDown={onKeyDown}
-          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 flex w-95 flex-col rounded-block bg-float pb-1.5 shadow-float max-lg:fixed max-lg:inset-x-4 max-lg:top-16 max-lg:w-auto`}
+          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 flex w-95 flex-col rounded-container bg-float pb-1.5 shadow-float max-lg:fixed max-lg:inset-x-4 max-lg:top-16 max-lg:w-auto`}
         >
           <label className="flex h-11 items-center gap-2.5 border-b border-line px-3 text-muted">
             <NewIcon size={16} aria-hidden="true" />

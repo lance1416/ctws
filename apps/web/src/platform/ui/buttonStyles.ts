@@ -28,7 +28,7 @@ export const BUTTON = {
   /** A small action inside a row or a block head: no frame, muted until hovered. */
   inline: 'rounded-control px-2 py-1 text-ui text-muted hover:bg-hover hover:text-ink max-lg:tap',
   /** The phone's capture, the middle of the tab bar: an ink square with a plus (artboard 25). */
-  tab: 'grid size-11 place-items-center rounded-card bg-ink text-ui text-on-ink',
+  tab: 'grid size-11 place-items-center rounded-container bg-ink text-ui text-on-ink',
   /** An offer to add something, not a command. */
   link: `rounded-control px-2 py-1 text-ui ${LINK} hover:bg-hover max-lg:tap`,
 } as const
@@ -38,7 +38,7 @@ export const CHOSEN = 'bg-ink font-medium text-on-ink'
 
 /** A key cap (tokens.md): mono 12, 5 each side, a `line-strong` edge with a 2px foot, 4 radius. */
 export const KEY =
-  'inline-flex h-4.5 items-center rounded-key border border-b-2 border-line-strong px-1.25 font-mono text-meta text-muted'
+  'inline-flex h-4.5 items-center rounded-small border border-b-2 border-line-strong px-1.25 font-mono text-meta text-muted'
 
 /** The key cap inside a primary button, on its ink. */
 export const KEY_ON_INK = `${KEY} border-on-ink/35 text-on-ink`

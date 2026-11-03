@@ -104,7 +104,7 @@ export function PickCity({
           id={listId}
           role="listbox"
           aria-label={`${label}: matches`}
-          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-block bg-float py-1 shadow-float`}
+          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-container bg-float py-1 shadow-float`}
         >
           {cities.map((c: City, i) => (
             <li

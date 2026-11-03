@@ -270,7 +270,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
             account.
           </span>
         </label>
-        <div className="flex h-10 shrink-0 items-center gap-2 rounded-b-block border-t border-line bg-chrome px-5 text-meta">
+        <div className="flex h-10 shrink-0 items-center gap-2 rounded-b-container border-t border-line bg-chrome px-5 text-meta">
           <span className="text-warn-t">was …</span>
           <span className="text-subtle">This key changes in the redesign.</span>
           <span aria-hidden="true" className="flex-1" />

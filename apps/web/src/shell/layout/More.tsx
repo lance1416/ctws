@@ -37,7 +37,7 @@ export function More() {
       <button
         type="button"
         onClick={() => setSearching(true)}
-        className="flex h-11 items-center gap-2.5 rounded-card bg-hover px-3 text-left text-prose text-subtle"
+        className="flex h-11 items-center gap-2.5 rounded-container bg-hover px-3 text-left text-prose text-subtle"
       >
         <PLACE_ICON.search size={18} aria-hidden="true" />
         Search everything
@@ -120,7 +120,7 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section aria-label={title ?? 'Account'} className="flex flex-col gap-1.5">
       {title && <h2 className="px-1 text-ui font-medium text-muted">{title}</h2>}
-      <ul className="overflow-hidden rounded-phone-card border border-line bg-panel [&>li:last-child>a]:border-b-0">
+      <ul className="overflow-hidden rounded-phone border border-line bg-panel [&>li:last-child>a]:border-b-0">
         {children}
       </ul>
     </section>

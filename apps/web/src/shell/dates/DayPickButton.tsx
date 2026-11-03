@@ -71,7 +71,7 @@ export function DayPickButton({
       )}
       {open && (
         <div
-          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 w-80 rounded-block bg-float p-2 shadow-float`}
+          className={`absolute top-full right-0 ${LAYER.menu} mt-1.5 w-80 rounded-container bg-float p-2 shadow-float`}
         >
           <DayGrid
             month={month}

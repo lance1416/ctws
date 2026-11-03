@@ -116,7 +116,7 @@ function Profile({ organisation: o }: { organisation: OrganisationResponse }) {
   return (
     <aside
       aria-label="Profile"
-      className="flex flex-col gap-5 rounded-block border border-line bg-panel p-4"
+      className="flex flex-col gap-5 rounded-container border border-line bg-panel p-4"
     >
       {(o.website || o.city) && (
         <Section title="About" icon={KIND_ICON.organisation}>

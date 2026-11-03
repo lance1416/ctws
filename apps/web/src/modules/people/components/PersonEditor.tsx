@@ -636,7 +636,7 @@ function Block({
   return (
     <section
       aria-label={title}
-      className="flex min-w-0 flex-col rounded-block border border-line bg-panel"
+      className="flex min-w-0 flex-col rounded-container border border-line bg-panel"
     >
       <h2 className="flex h-10 items-center gap-2 px-3 text-ui font-medium text-ink">
         <Icon size={16} aria-hidden="true" className={tint} />
@@ -872,7 +872,7 @@ function OrganisationBox({
         <ul
           id={listId}
           role="listbox"
-          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full min-w-48 overflow-y-auto rounded-block bg-float py-1 shadow-float`}
+          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full min-w-48 overflow-y-auto rounded-container bg-float py-1 shadow-float`}
         >
           {rows.map((o, i) => (
             <li

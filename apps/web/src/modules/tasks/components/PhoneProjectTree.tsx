@@ -100,7 +100,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
       <ul
         aria-label="Tasks"
         data-task-tree
-        className="overflow-hidden rounded-phone-card border border-line bg-panel py-1"
+        className="overflow-hidden rounded-phone border border-line bg-panel py-1"
       >
         {rows.length === 0 && doneRows(0)}
         {rows.map((row, i) => {

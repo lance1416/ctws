@@ -139,7 +139,7 @@ function Moved({ pending }: { pending: number }) {
   return (
     <section
       aria-label="Your data in the new layout"
-      className="flex items-center gap-3 rounded-block border border-warn bg-panel px-4 py-3"
+      className="flex items-center gap-3 rounded-container border border-warn bg-panel px-4 py-3"
     >
       <MovedIcon size={16} aria-hidden="true" className="shrink-0 text-warn" />
       <div className="flex min-w-0 flex-1 flex-col">

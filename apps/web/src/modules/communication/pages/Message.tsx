@@ -82,7 +82,7 @@ function MessagePage({ message: m }: { message: CommunicationResponse }) {
   return (
     <div className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-        <span className="inline-grid size-10 shrink-0 place-items-center rounded-card bg-communication-bg text-communication">
+        <span className="inline-grid size-10 shrink-0 place-items-center rounded-container bg-communication-bg text-communication">
           <Way size={20} aria-hidden="true" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -127,7 +127,7 @@ function MessagePage({ message: m }: { message: CommunicationResponse }) {
       </div>
 
       {m.awaitingReply && m.followUpOn && (
-        <div className="flex flex-wrap items-center gap-3 rounded-block bg-communication-bg px-3.5 py-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-container bg-communication-bg px-3.5 py-3">
           <span className="flex-1 text-ui text-ink">Waiting for a reply</span>
           <span
             className={`inline-flex h-6 items-center gap-1 rounded-control px-2 text-meta font-medium ${TONE[followUpTone(m.followUpOn, today)]}`}
@@ -150,7 +150,7 @@ function MessagePage({ message: m }: { message: CommunicationResponse }) {
       )}
 
       {m.body && (
-        <div className="rounded-block border border-line bg-panel p-4 text-prose">
+        <div className="rounded-container border border-line bg-panel p-4 text-prose">
           <NoteBody source={m.body} />
         </div>
       )}

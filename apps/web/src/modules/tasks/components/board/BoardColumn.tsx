@@ -55,7 +55,7 @@ export function BoardColumn({
       ref={setNodeRef}
       aria-labelledby={`board-${status}`}
       data-board-column={status}
-      className={`flex min-w-60 flex-1 basis-0 flex-col rounded-block border border-line bg-chrome max-md:min-w-0 ${
+      className={`flex min-w-60 flex-1 basis-0 flex-col rounded-container border border-line bg-chrome max-md:min-w-0 ${
         isOver ? OVER : ''
       }`}
     >
@@ -167,7 +167,7 @@ export function BoardStrip({
       aria-label={count > 0 ? `${label}, ${count}` : label}
       data-board-strip={status}
       onClick={onShow}
-      className={`flex shrink-0 items-center gap-2 rounded-block border border-line bg-chrome text-muted hover:bg-hover max-md:h-10 max-md:px-3 md:w-10 md:flex-col md:py-3 ${
+      className={`flex shrink-0 items-center gap-2 rounded-container border border-line bg-chrome text-muted hover:bg-hover max-md:h-10 max-md:px-3 md:w-10 md:flex-col md:py-3 ${
         isOver ? OVER : ''
       }`}
     >

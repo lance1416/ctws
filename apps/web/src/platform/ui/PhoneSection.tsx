@@ -33,7 +33,7 @@ export function PhoneSection({
         {title}
         {count !== undefined && <span className="font-normal tabular-nums">{count}</span>}
       </h2>
-      <div className="overflow-hidden rounded-phone-card border border-line bg-panel">
+      <div className="overflow-hidden rounded-phone border border-line bg-panel">
         <ul className="py-1">{children}</ul>
         {foot}
       </div>

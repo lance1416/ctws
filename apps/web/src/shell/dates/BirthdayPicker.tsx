@@ -83,7 +83,7 @@ export function BirthdayPicker({
           role="radiogroup"
           onKeyDown={radioKeys}
           aria-label="Which calendar"
-          className="inline-flex rounded-card bg-hover p-0.5"
+          className="inline-flex rounded-container bg-hover p-0.5"
         >
           {(['solar', 'lunar'] as const).map((c) => (
             <button

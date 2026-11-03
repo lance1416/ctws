@@ -112,7 +112,7 @@ function ReadingHead({ item }: { item: ReadingItemResponse }) {
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <span
         aria-hidden="true"
-        className="inline-grid size-14 shrink-0 place-items-center rounded-card bg-reading-bg text-reading"
+        className="inline-grid size-14 shrink-0 place-items-center rounded-container bg-reading-bg text-reading"
       >
         <Icon size={24} />
       </span>
@@ -167,7 +167,7 @@ function Profile({ item }: { item: ReadingItemResponse }) {
   return (
     <aside
       aria-label="Profile"
-      className="flex flex-col gap-5 rounded-block border border-line bg-panel p-4"
+      className="flex flex-col gap-5 rounded-container border border-line bg-panel p-4"
     >
       <Section title="About" icon={item.kind === 'book' ? KIND_ICON.reading : LinkIcon}>
         <dl className="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-3 gap-y-2 pl-6 text-ui">
@@ -288,7 +288,7 @@ function EditPage({ item }: { item: ReadingItemResponse }) {
         Edit {readingLabel(item)}
       </h1>
       <UnsavedAsk guard={guard} />
-      <div className="rounded-block border border-line bg-panel p-4">
+      <div className="rounded-container border border-line bg-panel p-4">
         <ReadingForm
           item={item}
           busy={save.isPending}

@@ -183,7 +183,7 @@ export function DayField({
       )}
       {open && (
         <div
-          className={`absolute top-full left-0 ${LAYER.menu} mt-1.5 w-80 rounded-block bg-float p-2 shadow-float`}
+          className={`absolute top-full left-0 ${LAYER.menu} mt-1.5 w-80 rounded-container bg-float p-2 shadow-float`}
         >
           {mode === 'month' ? (
             <MonthGrid

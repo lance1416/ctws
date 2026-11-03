@@ -96,7 +96,7 @@ export function ResourceAdd({
           // The reason is said under the field, in our words, not by the browser's bubble.
           noValidate
           aria-label={label}
-          className={`absolute top-full ${verb === 'Pin' ? 'left-0' : 'right-0'} ${LAYER.menu} mt-1.5 flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2.5 rounded-block bg-float p-3 shadow-float`}
+          className={`absolute top-full ${verb === 'Pin' ? 'left-0' : 'right-0'} ${LAYER.menu} mt-1.5 flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2.5 rounded-container bg-float p-3 shadow-float`}
         >
           <input
             ref={address}

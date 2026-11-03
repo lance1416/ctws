@@ -73,7 +73,7 @@ export function BoardCard({
         aria-current={open ? 'true' : undefined}
         onClick={onOpen}
         onFocus={onFocus}
-        className={`flex w-full flex-col gap-1 rounded-card border px-2.5 py-2 text-left outline-none ${
+        className={`flex w-full flex-col gap-1 rounded-container border px-2.5 py-2 text-left outline-none ${
           landing
             ? 'border-dashed border-line-strong bg-transparent *:invisible'
             : 'border-line bg-panel hover:border-line-strong focus-visible:border-transparent focus-visible:shadow-[0_0_0_2px_var(--color-task)] aria-[current]:border-transparent aria-[current]:shadow-[0_0_0_2px_var(--color-task)]'

@@ -259,7 +259,7 @@ export function StageBoard({
         </div>
         <DragOverlay>
           {card && (
-            <div className="flex cursor-grabbing flex-col gap-1 rounded-card bg-float px-2.5 py-2 shadow-float">
+            <div className="flex cursor-grabbing flex-col gap-1 rounded-container bg-float px-2.5 py-2 shadow-float">
               <CardFace
                 card={card}
                 counts={counts.get(card.task.id)}
@@ -305,7 +305,7 @@ function StageColumnView({
       aria-labelledby={`stage-${stage.id}`}
       data-stage-column={stage.id}
       // A stage with nothing in it gives its width to the ones that have (FR-058).
-      className={`flex min-w-0 flex-col rounded-block border border-line bg-chrome ${
+      className={`flex min-w-0 flex-col rounded-container border border-line bg-chrome ${
         count === 0 && !adding ? 'md:flex-[0_0_180px]' : 'flex-1 basis-0 md:min-w-60'
       } ${isOver ? OVER : ''}`}
     >
@@ -380,7 +380,7 @@ function NewAtStage({
       aria-label={`New in ${stage.name}`}
       aria-invalid={create.isError ? true : undefined}
       placeholder="Name"
-      className={`h-8 shrink-0 rounded-card border bg-panel px-2.5 text-ui text-ink placeholder:text-subtle ${
+      className={`h-8 shrink-0 rounded-container border bg-panel px-2.5 text-ui text-ink placeholder:text-subtle ${
         create.isError ? 'border-stop' : 'border-line-strong'
       }`}
     />
@@ -406,7 +406,7 @@ function StageStrip({
       aria-label={`${stage.name}, ${count}`}
       data-stage-strip={stage.id}
       onClick={onShow}
-      className={`flex shrink-0 items-center gap-2 rounded-block border border-line bg-chrome text-muted hover:bg-hover max-md:h-10 max-md:px-3 md:w-10 md:flex-col md:py-3 ${
+      className={`flex shrink-0 items-center gap-2 rounded-container border border-line bg-chrome text-muted hover:bg-hover max-md:h-10 max-md:px-3 md:w-10 md:flex-col md:py-3 ${
         isOver ? OVER : ''
       }`}
     >
@@ -463,7 +463,7 @@ function StageCardView({
       aria-current={open ? 'true' : undefined}
       onClick={onOpen}
       onFocus={onFocus}
-      className={`flex w-full shrink-0 flex-col gap-1 rounded-card border px-2.5 py-2 text-left outline-none ${
+      className={`flex w-full shrink-0 flex-col gap-1 rounded-container border px-2.5 py-2 text-left outline-none ${
         lifted
           ? 'border-dashed border-line-strong bg-transparent *:invisible'
           : 'border-line bg-panel hover:border-line-strong focus-visible:border-transparent focus-visible:shadow-[0_0_0_2px_var(--color-task)] aria-[current]:border-transparent aria-[current]:shadow-[0_0_0_2px_var(--color-task)]'

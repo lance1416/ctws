@@ -269,7 +269,7 @@ export function LogMessage({
                     aria-checked={d.direction === dir}
                     tabIndex={d.direction === dir ? 0 : -1}
                     onClick={() => set({ direction: dir })}
-                    className="inline-flex h-7 items-center gap-1.5 rounded-key px-2.5 text-ui text-muted aria-checked:bg-select aria-checked:font-medium aria-checked:text-ink"
+                    className="inline-flex h-7 items-center gap-1.5 rounded-small px-2.5 text-ui text-muted aria-checked:bg-select aria-checked:font-medium aria-checked:text-ink"
                   >
                     <Icon size={14} aria-hidden="true" />
                     {dir === 'sent' ? 'Sent' : 'Received'}
@@ -296,7 +296,7 @@ export function LogMessage({
                   aria-label={CHANNEL_WORDS[c]}
                   title={CHANNEL_WORDS[c]}
                   onClick={() => set({ channel: c })}
-                  className="inline-grid h-7 w-8 place-items-center rounded-key text-muted hover:text-ink aria-checked:bg-select aria-checked:text-ink"
+                  className="inline-grid h-7 w-8 place-items-center rounded-small text-muted hover:text-ink aria-checked:bg-select aria-checked:text-ink"
                 >
                   <Icon size={14} aria-hidden="true" />
                 </button>
@@ -398,7 +398,7 @@ export function LogMessage({
                   type="button"
                   aria-label={`Remove ${url}`}
                   onClick={() => set({ attachments: d.attachments.filter((a) => a !== url) })}
-                  className="inline-grid size-5 place-items-center rounded-key text-muted hover:bg-hover hover:text-ink"
+                  className="inline-grid size-5 place-items-center rounded-small text-muted hover:bg-hover hover:text-ink"
                 >
                   <CloseIcon size={12} aria-hidden="true" />
                 </button>
@@ -467,7 +467,7 @@ export function LogMessage({
         )}
 
         {!reply && d.direction === 'sent' && (
-          <label className="flex items-start gap-3 rounded-block bg-communication-bg px-3.5 py-3">
+          <label className="flex items-start gap-3 rounded-container bg-communication-bg px-3.5 py-3">
             <input
               type="checkbox"
               role="switch"

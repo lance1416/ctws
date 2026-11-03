@@ -100,7 +100,7 @@ export function DetailPane({
           wide
             ? 'right-0 bottom-0 w-inspector lg:bottom-6'
             : // Below 1024 the overlay stops 12px above the tab bar; on a desk, above the status bar.
-              'right-3 bottom-3 w-[calc(100%-1.5rem)] max-w-md rounded-block max-lg:bottom-19 lg:bottom-9'
+              'right-3 bottom-3 w-[calc(100%-1.5rem)] max-w-md rounded-container max-lg:bottom-19 lg:bottom-9'
         }`}
       >
         {children}

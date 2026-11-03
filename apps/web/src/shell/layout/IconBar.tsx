@@ -82,7 +82,7 @@ export function IconBar({
             aria-label={p.label}
             {...tip.cell(p.id)}
             className={({ isActive }) =>
-              `group relative mx-2 flex h-9 items-center gap-2.5 rounded-card px-2 text-ui text-muted hover:bg-hover hover:text-ink ${
+              `group relative mx-2 flex h-9 items-center gap-2.5 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink ${
                 isActive ? 'bg-select font-medium text-ink' : ''
               }`
             }
@@ -111,7 +111,7 @@ export function IconBar({
         aria-label={expanded ? 'Show icons only' : 'Show names'}
         aria-expanded={expanded}
         {...tip.cell('expand')}
-        className="group relative mx-2 flex h-9 items-center gap-2.5 rounded-card px-2 text-ui text-muted hover:bg-hover hover:text-ink"
+        className="group relative mx-2 flex h-9 items-center gap-2.5 rounded-control px-2 text-ui text-muted hover:bg-hover hover:text-ink"
       >
         <Foot size={16} aria-hidden="true" className="mx-0.5" />
         {expanded && <span className="flex-1 truncate text-left">Collapse</span>}

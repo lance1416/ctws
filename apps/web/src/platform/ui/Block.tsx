@@ -46,7 +46,7 @@ export function Block({
   return (
     <section
       aria-label={title}
-      className={`flex min-w-0 flex-col overflow-hidden rounded-block border border-line bg-panel ${className}`}
+      className={`flex min-w-0 flex-col overflow-hidden rounded-container border border-line bg-panel ${className}`}
     >
       <div
         className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:flex-wrap max-lg:py-1.5 ${emptyInHead ? '' : 'border-b border-line'}`}
@@ -96,15 +96,15 @@ export function SkeletonRows({ rows = 3 }: { rows?: number }) {
           <span className="size-6 shrink-0 rounded-full bg-line" />
           <span className="flex flex-1 flex-col gap-1.5">
             <span
-              className="h-2.5 rounded-key bg-line"
+              className="h-2.5 rounded-small bg-line"
               style={{ width: `${70 - (i % 3) * 12}%` }}
             />
             <span
-              className="h-2 rounded-key bg-line opacity-60"
+              className="h-2 rounded-small bg-line opacity-60"
               style={{ width: `${40 + (i % 2) * 10}%` }}
             />
           </span>
-          <span className="h-4.5 w-13 rounded-key bg-line" />
+          <span className="h-4.5 w-13 rounded-small bg-line" />
         </div>
       ))}
     </div>

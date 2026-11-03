@@ -72,7 +72,7 @@ const components: Components = {
       <span
         role="img"
         aria-label={checked ? 'Checked' : 'Empty'}
-        className="relative top-px mr-1.5 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-key border border-line-strong align-text-top"
+        className="relative top-px mr-1.5 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-small border border-line-strong align-text-top"
       >
         {checked && (
           <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" className="text-ink">

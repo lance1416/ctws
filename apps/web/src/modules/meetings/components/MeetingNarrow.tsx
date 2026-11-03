@@ -70,7 +70,7 @@ export function MeetingNarrow({ id, at }: { id: string; at?: string | undefined 
         tags={
           <>
             <span
-              className={`inline-flex h-5.5 items-center rounded-key px-2 font-medium ${KIND_TINT.meeting} ${KIND_ON_TINT.meeting}`}
+              className={`inline-flex h-5.5 items-center rounded-small px-2 font-medium ${KIND_TINT.meeting} ${KIND_ON_TINT.meeting}`}
             >
               {weekdayDay(m.startsLocal.slice(0, 10), today)}
             </span>

@@ -18,10 +18,10 @@ export function ProjectSquare({
 }) {
   const box =
     size === 34
-      ? 'size-8.5 rounded-card text-ui font-medium'
+      ? 'size-8.5 rounded-control text-ui font-medium'
       : size === 28
         ? 'size-7 rounded-control text-initials'
-        : 'size-5 rounded-key text-initials'
+        : 'size-5 rounded-small text-initials'
   if (project.isInbox)
     return (
       <span

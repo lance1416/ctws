@@ -194,7 +194,7 @@ function DeskCalendar() {
           <span
             key={name}
             data-lunar-month-name
-            className="inline-flex h-5.5 items-center rounded-key bg-hover px-2 text-meta text-muted"
+            className="inline-flex h-5.5 items-center rounded-small bg-hover px-2 text-meta text-muted"
           >
             {name}
           </span>
@@ -231,7 +231,7 @@ function DeskCalendar() {
         <ul aria-label="Key" className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
           {LEGEND.map(({ label, swatch }) => (
             <li key={label} className="flex items-center gap-1.5 text-meta text-muted">
-              <span aria-hidden="true" className={`size-2.5 rounded-[3px] ${swatch}`} />
+              <span aria-hidden="true" className={`size-2.5 rounded-small ${swatch}`} />
               {label}
             </li>
           ))}
@@ -257,7 +257,7 @@ function DeskCalendar() {
         <div
           aria-label={monthTitle(cursor)}
           onKeyDown={onGridKey}
-          className="grid min-w-0 grid-cols-7 overflow-hidden rounded-card border border-line bg-panel"
+          className="grid min-w-0 grid-cols-7 overflow-hidden rounded-container border border-line bg-panel"
           style={{
             gridTemplateRows: `2rem repeat(${squares.length / 7}, minmax(7.5rem, 1fr))`,
           }}
@@ -295,7 +295,7 @@ function DeskCalendar() {
         {resident && panel && (
           <aside
             aria-label={longDay(chosen)}
-            className="min-w-0 self-start overflow-hidden rounded-card border border-line bg-panel"
+            className="min-w-0 self-start overflow-hidden rounded-container border border-line bg-panel"
           >
             {panel}
           </aside>
@@ -442,7 +442,7 @@ function Line({ entry, today, open }: { entry: Placed; today: string; open: (() 
   const projects = useEveryProject()
   const project = entry.projectId ? projects.data?.find((p) => p.id === entry.projectId) : null
   const look = lineLook(entry, today)
-  const className = `grid h-6 min-w-0 shrink-0 grid-cols-[12px_auto_minmax(0,1fr)_auto] items-center gap-x-1.5 rounded-key px-1.5 text-left text-meta font-medium hover:brightness-95 ${look.tone}`
+  const className = `grid h-6 min-w-0 shrink-0 grid-cols-[12px_auto_minmax(0,1fr)_auto] items-center gap-x-1.5 rounded-small px-1.5 text-left text-meta font-medium hover:brightness-95 ${look.tone}`
   const stop = (e: MouseEvent) => e.stopPropagation()
   const body = (
     <>

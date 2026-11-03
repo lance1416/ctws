@@ -54,7 +54,7 @@ export function ReadingNarrow({ id }: { id: string }) {
           <>
             {byline(item) && <span className="text-muted">{byline(item)}</span>}
             <span
-              className={`inline-flex h-5.5 items-center rounded-key px-2 font-medium ${KIND_TINT.reading} ${KIND_ON_TINT.reading}`}
+              className={`inline-flex h-5.5 items-center rounded-small px-2 font-medium ${KIND_TINT.reading} ${KIND_ON_TINT.reading}`}
             >
               {READING_STATUS_LABEL[item.status]}
             </span>

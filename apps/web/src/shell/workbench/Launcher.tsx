@@ -81,7 +81,7 @@ export function Launcher({ tall }: { tall: boolean }) {
                   rel="noreferrer noopener"
                   data-launcher={i + 1}
                   onClick={() => open(r)}
-                  className={`flex min-w-0 flex-1 rounded-card border border-line text-ui text-ink hover:border-line-strong hover:bg-hover ${
+                  className={`flex min-w-0 flex-1 rounded-container border border-line text-ui text-ink hover:border-line-strong hover:bg-hover ${
                     tall ? 'flex-col gap-2 p-3' : 'items-center gap-2.5 px-2.5 py-2'
                   }`}
                 >
@@ -128,7 +128,7 @@ function PinALink() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex flex-1 items-center justify-center gap-1.5 rounded-card border border-dashed border-line text-meta text-subtle hover:border-line-strong hover:text-ink max-lg:tap"
+        className="flex flex-1 items-center justify-center gap-1.5 rounded-container border border-dashed border-line text-meta text-subtle hover:border-line-strong hover:text-ink max-lg:tap"
       >
         <NewIcon size={14} aria-hidden="true" />
         Pin a link

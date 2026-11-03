@@ -134,7 +134,7 @@ function Week() {
             <section
               aria-label="No movement"
               data-no-movement
-              className="flex flex-col gap-2 rounded-phone-card border border-line bg-panel p-3.5"
+              className="flex flex-col gap-2 rounded-phone border border-line bg-panel p-3.5"
             >
               <h2 className="text-ui font-medium text-muted">No movement</h2>
               <ul className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -153,7 +153,7 @@ function Week() {
         <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
           <section
             aria-label="By project"
-            className="overflow-x-auto rounded-card border border-line bg-panel"
+            className="overflow-x-auto rounded-container border border-line bg-panel"
           >
             <div className="min-w-[640px]">
               <div className={`${LANE_GRID} h-10 items-center border-b border-line`}>
@@ -213,7 +213,7 @@ function PhoneLane({ project: p }: { project: ReviewProject }) {
     <section
       aria-label={p.projectName}
       data-review-lane={p.projectName}
-      className="flex flex-col gap-3 rounded-phone-card border border-line bg-panel p-3.5"
+      className="flex flex-col gap-3 rounded-phone border border-line bg-panel p-3.5"
     >
       <h2 className="flex items-center gap-2 text-prose font-medium text-ink">
         {project && <ProjectSquare project={project} />}
@@ -358,7 +358,7 @@ function Parent({
           <Toggle size={14} aria-hidden="true" />
         </span>
         <span className="text-ui font-medium text-ink">{line.parent.title}</span>
-        <span className="inline-flex h-5 items-center rounded-key bg-go-bg px-2 text-meta font-medium text-go-t tabular-nums">
+        <span className="inline-flex h-5 items-center rounded-small bg-go-bg px-2 text-meta font-medium text-go-t tabular-nums">
           {line.tasks.length}
         </span>
       </button>
@@ -389,7 +389,7 @@ function Brief({
   return (
     <aside
       aria-label="This week in brief"
-      className="flex flex-col rounded-card border border-line bg-panel pb-2"
+      className="flex flex-col rounded-container border border-line bg-panel pb-2"
     >
       {/* On a phone, not drawn when none moved (DES-001 "回顾"); the desk keeps its 0. */}
       {(stages.length > 0 || !phone) && (

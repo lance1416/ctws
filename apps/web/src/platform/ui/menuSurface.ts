@@ -2,7 +2,7 @@ import { LAYER } from './layers'
 
 /** The look of every menu, its layer included: a float, 10 radius, the float's shadow. */
 export const MENU_SURFACE =
-  `${LAYER.menu} max-h-80 min-w-36 overflow-y-auto rounded-block ` + 'bg-float p-1 shadow-float'
+  `${LAYER.menu} max-h-80 min-w-36 overflow-y-auto rounded-container ` + 'bg-float p-1 shadow-float'
 
 /** A menu's row: 32 high like any control, highlighted by the hover layer. */
 export const MENU_ITEM =

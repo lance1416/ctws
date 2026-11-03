@@ -100,7 +100,7 @@ function NextOne({
   return (
     <div
       data-next-meeting-card={m.meetingId}
-      className="grid shrink-0 grid-cols-[4.25rem_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 rounded-card bg-meeting-bg p-2.5"
+      className="grid shrink-0 grid-cols-[4.25rem_minmax(0,1fr)] gap-x-2.5 gap-y-1.5 rounded-container bg-meeting-bg p-2.5"
     >
       <span className="flex flex-col font-mono text-meta font-medium text-meeting-t">
         <span>{when.day}</span>

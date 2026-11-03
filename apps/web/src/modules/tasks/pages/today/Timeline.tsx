@@ -35,7 +35,7 @@ export function Timeline({
     return (
       <section
         aria-label="Timeline of the day"
-        className="rounded-block border border-line bg-panel"
+        className="rounded-container border border-line bg-panel"
       >
         <BlockFailed what="timeline" onRetry={onRetry} />
       </section>
@@ -45,14 +45,14 @@ export function Timeline({
   return (
     <section
       aria-label="Timeline of the day"
-      className="rounded-block border border-line bg-panel px-4 pt-3 pb-2.5"
+      className="rounded-container border border-line bg-panel px-4 pt-3 pb-2.5"
     >
       <div ref={holder} className="relative h-16.5">
-        <div className="absolute inset-x-0 top-0 h-10 rounded-card bg-hover" />
+        <div className="absolute inset-x-0 top-0 h-10 rounded-container bg-hover" />
         {line.now !== null && (
           <div
             data-past
-            className="absolute top-0 left-0 h-10 rounded-l-card bg-[repeating-linear-gradient(135deg,var(--color-select)_0_4px,transparent_4px_8px)]"
+            className="absolute top-0 left-0 h-10 rounded-l-container bg-[repeating-linear-gradient(135deg,var(--color-select)_0_4px,transparent_4px_8px)]"
             style={{ width: pct(line.now) }}
           />
         )}
@@ -233,7 +233,7 @@ function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number
       {open && (
         <ul
           aria-label={name}
-          className={`absolute top-full left-0 ${LAYER.menu} mt-1.5 w-72 rounded-block bg-float p-1.5 shadow-float`}
+          className={`absolute top-full left-0 ${LAYER.menu} mt-1.5 w-72 rounded-container bg-float p-1.5 shadow-float`}
         >
           {items.map((m) => {
             const joinable = m.joinUrl && (m.end ?? m.start) > nowMinutes

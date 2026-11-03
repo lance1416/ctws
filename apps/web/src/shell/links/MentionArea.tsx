@@ -175,7 +175,7 @@ export function MentionArea({
           role="listbox"
           aria-label="Mention"
           style={{ left: point.left, top: point.top }}
-          className={`absolute ${LAYER.menu} mt-1 max-h-72 w-72 max-w-full overflow-y-auto rounded-block bg-float py-1 shadow-float`}
+          className={`absolute ${LAYER.menu} mt-1 max-h-72 w-72 max-w-full overflow-y-auto rounded-container bg-float py-1 shadow-float`}
         >
           {groups.map((g) => (
             <li key={g.type} role="presentation">

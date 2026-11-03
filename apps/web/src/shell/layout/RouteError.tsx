@@ -12,7 +12,7 @@ export function RouteError() {
     <div className="flex flex-1 items-start justify-center p-6 sm:pt-16">
       <div
         role="alert"
-        className="flex max-w-xl flex-col gap-2 rounded-block border border-line bg-panel p-5"
+        className="flex max-w-xl flex-col gap-2 rounded-container border border-line bg-panel p-5"
       >
         <h1 className="text-subject text-ink">Something went wrong on this page</h1>
         <p className="text-ui text-muted">

@@ -139,7 +139,7 @@ export function PhoneCalendar() {
               aria-label={`${longDay(day)}${dots.length ? `, ${dots.length} kinds of things` : ''}`}
               onClick={() => choose(day)}
               // 2 + the day's 28 + its lunar name's 16 (12 is a phone's smallest, FR-082) + the dots.
-              className={`flex h-14 flex-col items-center justify-start gap-0.5 rounded-card pt-0.5 ${
+              className={`flex h-14 flex-col items-center justify-start gap-0.5 rounded-container pt-0.5 ${
                 day === chosen && !isToday ? 'bg-hover' : ''
               } ${inMonth ? '' : 'opacity-40'}`}
             >
@@ -184,7 +184,7 @@ function DayList({ parts }: { parts: ReturnType<typeof dayParts> }) {
   const rows = [...parts.meetings, ...parts.due, ...parts.followUps, ...parts.birthdays]
   if (rows.length === 0) return <p className="text-prose text-muted">Nothing on this day.</p>
   return (
-    <ul className="overflow-hidden rounded-phone-card border border-line bg-panel py-1">
+    <ul className="overflow-hidden rounded-phone border border-line bg-panel py-1">
       {rows.map((e) => {
         const project = e.projectId ? projects.data?.find((p) => p.id === e.projectId) : undefined
         const edge =

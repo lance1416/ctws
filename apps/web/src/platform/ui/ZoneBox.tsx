@@ -77,7 +77,7 @@ export function ZoneBox({
         <ul
           id={listId}
           role="listbox"
-          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-block bg-float py-1 shadow-float`}
+          className={`absolute ${LAYER.menu} mt-1 max-h-56 w-full overflow-y-auto rounded-container bg-float py-1 shadow-float`}
         >
           {found.map((z) => (
             <li key={z} role="option" aria-selected={z === zone}>

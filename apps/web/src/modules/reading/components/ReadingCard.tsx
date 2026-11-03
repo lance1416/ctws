@@ -22,7 +22,7 @@ export function ReadingCard({ item }: { item: ReadingItemResponse }) {
     <Link
       to={`/reading/${item.id}`}
       data-reading-card={item.id}
-      className="flex min-w-0 flex-col gap-3 rounded-block border border-line bg-panel p-4 hover:border-line-strong"
+      className="flex min-w-0 flex-col gap-3 rounded-container border border-line bg-panel p-4 hover:border-line-strong"
     >
       <span className="flex items-start gap-3">
         <span

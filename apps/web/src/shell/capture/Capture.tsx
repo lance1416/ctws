@@ -255,7 +255,7 @@ export function Capture() {
         <div
           role="dialog"
           aria-label="Capture"
-          className={`absolute top-full left-0 ${LAYER.menu} mt-2 flex w-105 flex-col rounded-block bg-float pt-3 shadow-float max-sm:fixed max-sm:inset-x-4 max-sm:w-auto`}
+          className={`absolute top-full left-0 ${LAYER.menu} mt-2 flex w-105 flex-col rounded-container bg-float pt-3 shadow-float max-sm:fixed max-sm:inset-x-4 max-sm:w-auto`}
         >
           <textarea
             ref={box}
@@ -271,13 +271,13 @@ export function Capture() {
             aria-label="Capture"
             placeholder="A thought, or a link"
             disabled={!fallback?.target}
-            className="mx-3 min-h-16 resize-none rounded-card border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-subtle disabled:opacity-50"
+            className="mx-3 min-h-16 resize-none rounded-container border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-subtle disabled:opacity-50"
           />
           <div
             role="radiogroup"
             onKeyDown={radioKeys}
             aria-label="Kind"
-            className="mx-3 mt-2.5 grid grid-cols-3 rounded-card bg-hover p-0.5"
+            className="mx-3 mt-2.5 grid grid-cols-3 rounded-container bg-hover p-0.5"
           >
             <Segment on={kind === 'task'} onClick={() => setSwitched('task')} icon={KIND_ICON.task}>
               Task
@@ -291,7 +291,7 @@ export function Capture() {
             </Segment>
             <Segment on={false} disabled icon={KIND_ICON.meeting}>
               Event
-              <span className="inline-flex h-5 items-center rounded-key bg-warn-bg px-1.5 text-meta font-medium text-warn-t">
+              <span className="inline-flex h-5 items-center rounded-small bg-warn-bg px-1.5 text-meta font-medium text-warn-t">
                 Later
               </span>
             </Segment>

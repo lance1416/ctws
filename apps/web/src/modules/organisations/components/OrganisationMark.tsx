@@ -25,9 +25,9 @@ export function OrganisationMark({ name, size = 24 }: { name: string; size?: 24 
       // The page's 56 takes the subject step's own 600, as a large avatar does.
       className={`inline-grid shrink-0 place-items-center bg-organisation-bg text-organisation-t ${
         size === 56
-          ? 'size-14 rounded-card text-subject'
+          ? 'size-14 rounded-container text-subject'
           : size === 40
-            ? 'size-10 rounded-card text-ui font-medium'
+            ? 'size-10 rounded-container text-ui font-medium'
             : 'size-6 rounded-control text-meta font-medium'
       }`}
     >

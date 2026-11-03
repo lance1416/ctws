@@ -142,7 +142,7 @@ function LinkedChip({ item, onUnlink }: { item: Item; onUnlink: (() => void) | u
           type="button"
           onClick={onUnlink}
           aria-label={`Unlink ${item.title}`}
-          className="mr-0.5 grid size-4.5 shrink-0 place-items-center rounded-key opacity-60 hover:opacity-100 focus-visible:opacity-100"
+          className="mr-0.5 grid size-4.5 shrink-0 place-items-center rounded-small opacity-60 hover:opacity-100 focus-visible:opacity-100"
         >
           <CloseIcon size={12} aria-hidden="true" />
         </button>

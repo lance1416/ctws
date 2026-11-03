@@ -29,7 +29,7 @@ import { cityAndCountry } from '../logic/places'
 
 /** A birthday this near is a tag under the name, as on the full page. */
 const SOON_DAYS = 30
-const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-key px-2 font-medium'
+const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-small px-2 font-medium'
 
 /**
  * A PERSON IN THE INSPECTOR (FR-022, artboard 33): their face and name, where they work and a
