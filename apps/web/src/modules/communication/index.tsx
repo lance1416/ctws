@@ -66,6 +66,7 @@ export const communicationModule: WorkspaceModule = {
       Block: FollowUpsToday,
       Phone: FollowUpsPhone,
       prefetch: (qc) => void qc.prefetchQuery(followUpsQuery()),
+      key: () => followUpsQuery().queryKey,
     },
   ],
   widgets: [{ place: 'awaiting', Component: AwaitingReply }],

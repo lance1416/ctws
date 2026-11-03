@@ -1,6 +1,6 @@
 import type { TaskId, TodayTaskResponse } from '@ctws/contracts'
 import { clockTime } from '@ctws/core/clock'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { useRef, useState, type CSSProperties } from 'react'
 import { longDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
@@ -74,6 +74,15 @@ function DeskToday() {
   const columns = useColumns(page)
   const { main: taskColumns, side } = splitColumns(columns)
   const sideColumns = inColumns(registry.todayBlocks, side)
+  // How tall each block on the side is, and whether it is there, is its data's to say: the side
+  // waits whole the first time, as the tasks do. Watched only: each block reads its own. Once
+  // drawn it stays: a new day is read by the blocks in place.
+  const allIn = useQueries({
+    queries: registry.todayBlocks.map((b) => ({ queryKey: b.key(day), enabled: false })),
+    combine: (results) => results.every((r) => !r.isPending),
+  })
+  const [sideIn, setSideIn] = useState(allIn)
+  if (allIn && !sideIn) setSideIn(true)
 
   // The timed things: meetings from their module, and deadlines today at a time.
   const nowClock = clockTime(now, timeZone)
@@ -154,7 +163,7 @@ function DeskToday() {
       <div
         data-today-columns={columns}
         className="grid min-w-0 grid-cols-1 items-start gap-3 lg:grid-cols-[repeat(var(--columns),minmax(0,1fr))]"
-        style={{ '--columns': columns, '--tasks': taskColumns } as CSSProperties}
+        style={{ '--columns': columns, '--tasks': taskColumns, '--side': side } as CSSProperties}
       >
         <div className="flex min-w-0 flex-col gap-3 lg:col-span-(--tasks)">
           {today.isError ? (
@@ -218,10 +227,17 @@ function DeskToday() {
           )}
         </div>
 
+        {!sideIn && (
+          <div data-today-side-waiting className="min-w-0 lg:col-span-(--side)">
+            <Waiting />
+          </div>
+        )}
+        {/* Drawn hidden till then, so each block reads what it shows. */}
         {sideColumns.map((blocks) => (
           <div
             key={`${blocks[0]!.moduleId}:${blocks[0]!.id}`}
             data-today-side
+            hidden={!sideIn}
             className="flex min-w-0 flex-col gap-3"
           >
             {blocks.map(({ moduleId, id, Block: Part }) => (

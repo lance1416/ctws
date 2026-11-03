@@ -168,7 +168,7 @@
   --color-task-t: light-dark(#2457c5, #96b9ff);
   --color-task-bg: light-dark(rgb(53 116 240 / 0.11), rgb(84 138 247 / 0.16));
   --color-meeting: light-dark(#8150e0, #a37cf2);
-  --color-meeting-t: light-dark(#6a3bc4, #c6adfe);
+  --color-meeting-t: light-dark(#6a3bc4, #ccb6fe);
   --color-meeting-bg: light-dark(rgb(129 80 224 / 0.11), rgb(163 124 242 / 0.16));
   --color-person: light-dark(#d6337a, #f06ba8);
   --color-person-t: light-dark(#af245e, #ff9ac7);

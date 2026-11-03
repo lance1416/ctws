@@ -305,7 +305,9 @@ export type TodayBlock = {
   /** What it is on a phone's Today, after Overdue (FR-083); without one it is not on a phone. */
   Phone?: ComponentType<{ today: string }>
   /** Starts what the block will read, when Today is opened (baseline.md §8). */
-  prefetch?: (qc: QueryClient, today: string) => void
+  prefetch: (qc: QueryClient, today: string) => void
+  /** The key of what it reads: Today draws its blocks once every one of them is in. */
+  key: (today: string) => QueryKey
 }
 
 /** A module's half of the calendar; the shell merges them. */

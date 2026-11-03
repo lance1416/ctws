@@ -89,7 +89,7 @@ export const taskModule: WorkspaceModule = {
         // together, as soon as the session is known (baseline.md §8).
         prefetch: ({ qc, today, registry }) => {
           void qc.prefetchQuery(todayQuery(today))
-          for (const block of registry.todayBlocks) block.prefetch?.(qc, today)
+          for (const block of registry.todayBlocks) block.prefetch(qc, today)
           for (const p of registry.calendar) p.prefetch?.(qc, { from: today, to: today })
           prefetchLunarName(qc, today)
         },
@@ -151,12 +151,14 @@ export const taskModule: WorkspaceModule = {
       order: 20,
       Block: ReadyBlock,
       prefetch: (qc, today) => void qc.prefetchQuery(readyQuery(today)),
+      key: (today) => readyQuery(today).queryKey,
     },
     {
       id: 'week',
       order: 30,
       Block: WeekBlock,
       prefetch: (qc, today) => void qc.prefetchQuery(movementQuery(today)),
+      key: (today) => movementQuery(today).queryKey,
     },
   ],
   lists: todayLists,

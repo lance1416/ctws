@@ -52,3 +52,25 @@ test('still being read, the blocks are one bar; no count, no timeline, until all
   await expect(bar).toHaveCount(0)
   await expect(page.getByText('Timeline', { exact: true })).toBeVisible()
 })
+
+test('Today: while one side block is still read, the side is one bar, no block saying 0', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await registerFreshUser(page)
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/api\/v1\/communication\?.*view=followups/, async (route) => {
+    await held
+    await route.continue()
+  })
+  await page.goto('/today')
+  const waiting = page.locator('[data-today-side-waiting]')
+  await expect(waiting.locator('[aria-busy="true"]')).toHaveCount(1)
+  for (const name of ['Follow up', 'Ready to start', 'Birthdays'])
+    await expect(page.getByRole('region', { name, exact: true })).toBeHidden()
+  release()
+  for (const name of ['Follow up', 'Ready to start', 'Birthdays'])
+    await expect(page.getByRole('region', { name, exact: true })).toBeVisible()
+  await expect(waiting).toHaveCount(0)
+})

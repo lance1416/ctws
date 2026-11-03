@@ -82,6 +82,7 @@ export const peopleModule: WorkspaceModule = {
       Block: BirthdaysToday,
       Phone: BirthdaysPhone,
       prefetch: (qc) => void qc.prefetchQuery(birthdaysQuery()),
+      key: () => birthdaysQuery().queryKey,
     },
   ],
   // A project's page lists the people on it (FR-055).
