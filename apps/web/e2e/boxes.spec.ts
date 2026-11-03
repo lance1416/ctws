@@ -53,7 +53,7 @@ test('the Workbench is the ground, and its widgets are blocks on it', async ({ p
   expect(await style(widget)).toEqual({
     fill: await token(page, 'panel'),
     border: '1px',
-    radius: '10px',
+    radius: '8px',
     shadow: 'none',
   })
 })
