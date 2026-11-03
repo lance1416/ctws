@@ -21,11 +21,11 @@ export { OrganisationMark } from './components/OrganisationMark'
 export { useOrganisations } from './hooks/useOrganisations'
 
 const PAGE = topPage('Organisations')
-/** One of them, under its kind in the breadcrumbs (FR-018). */
+/** One of them, under its kind in the breadcrumbs. */
 const THING = thingPage('Organisations', '/organisations')
 
 /**
- * Organisations (FR-064, FR-065): the overview, each one's page, and the form that writes one
+ * Organisations: the overview, each one's page, and the form that writes one
  * down. Who works where is the people module's; this one reads it from the server's answer.
  */
 export const organisationModule: WorkspaceModule = {

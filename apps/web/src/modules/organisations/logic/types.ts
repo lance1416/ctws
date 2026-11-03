@@ -1,4 +1,4 @@
-/** What the filters call the organisations with no type (FR-064). */
+/** What the filters call the organisations with no type. */
 export const OTHER = 'Other'
 
 /**

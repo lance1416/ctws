@@ -34,7 +34,7 @@ function useAddressed(): {
   return { organisation, id, gone: organisations.isSuccess && !organisation }
 }
 
-/** `/organisations/:id`: its page (FR-065), or what happened to it (artboard 23). */
+/** `/organisations/:id`: its page, or what happened to it. */
 export function Organisation() {
   const { organisation: o, id, gone } = useAddressed()
   useForgetWhenGone('organisation', id ?? null, gone)
@@ -57,7 +57,7 @@ export function Organisation() {
 
 /**
  * Writes an organisation, then opens its page; or, written down from a project's block, links it
- * to the project and goes back there (FR-026, FR-055).
+ * to the project and goes back there.
  */
 function useWriteOrganisation(
   organisation: OrganisationResponse | null,

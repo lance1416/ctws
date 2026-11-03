@@ -44,7 +44,7 @@ const site = (v: string) => {
 }
 
 /**
- * WRITING AN ORGANISATION DOWN (FR-064, FR-065; the form after artboard 11): the name, its type
+ * Writing an organisation down: the name, its type
  * from the ones used so far or a new one, its website and city, and notes. Only the name is
  * needed; Ctrl Enter saves from any field. The same form edits one, filled.
  */

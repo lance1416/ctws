@@ -17,11 +17,11 @@ import { OrganisationMark } from '../components/OrganisationMark'
 import { ProjectNamed, StageOf } from '../components/Standing'
 import { OTHER, pluralType } from '../logic/types'
 
-/** The table shows this many before "All N" (FR-064). */
+/** The table shows this many before "All N". */
 const SHOWN = 5
 
 /**
- * THE ORGANISATIONS OVERVIEW (FR-064, artboard 18): which kinds there are, and who you were in
+ * The organisations overview: which kinds there are, and who you were in
  * touch with in the last 30 days, where each stands in its project.
  */
 export function OrganisationsOverview() {
@@ -101,7 +101,7 @@ function Chip({
   )
 }
 
-/** "In touch, last 30 days": one row an organisation, five before "All N" (FR-064, FR-015). */
+/** "In touch, last 30 days": one row an organisation, five before "All N". */
 function InTouch({ type }: { type: string | null }) {
   const inTouch = useQuery(inTouchQuery())
   const organisations = useQuery(organisationsQuery())
@@ -152,7 +152,7 @@ function InTouchRow({ row }: { row: OrganisationInTouch }) {
       className="grid min-h-10 grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_7rem_6rem] items-center gap-x-3 px-3 text-ui max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:gap-y-1.5 max-lg:py-3"
     >
       {/* On a phone a card, every one the same: the name; when and how many; the project and its
-          stage. What a card lacks is left empty, never filled by what comes after (P4-14). */}
+          stage. What a card lacks is left empty, never filled by what comes after. */}
       <Link
         to={`/organisations/${row.organisationId}`}
         className="flex min-w-0 items-center gap-3 text-ink hover:underline max-lg:col-span-2 max-lg:min-h-11"
@@ -167,7 +167,7 @@ function InTouchRow({ row }: { row: OrganisationInTouch }) {
         <StageOf standing={row.standing} />
       </span>
       <span className="flex items-center gap-2 text-meta text-muted max-lg:ml-9">
-        {/* Either way on the message tint, as the people overview marks them (H-02). */}
+        {/* Either way on the message tint, as the people overview marks them. */}
         <span className="inline-grid size-6 place-items-center rounded-control bg-communication-bg text-communication">
           <Way size={14} aria-hidden="true" />
           <span className="sr-only">

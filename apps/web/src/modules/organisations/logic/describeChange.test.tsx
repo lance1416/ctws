@@ -33,7 +33,7 @@ describe('describeOrganisationChange', () => {
     expect(said('merged', { from: { name: 'H&L' } })).toBe('“H&L” merged into it')
   })
 
-  it('says where a node related to it moved, in which project (FR-065)', () => {
+  it('says where a node related to it moved, in which project', () => {
     expect(
       said('stage_changed', {
         from: 'Contacted',

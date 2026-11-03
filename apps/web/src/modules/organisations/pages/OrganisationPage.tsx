@@ -38,7 +38,7 @@ function safeHref(url: string): string | null {
 }
 
 /**
- * AN ORGANISATION'S PAGE (FR-065, artboard 14): what it is and where at the head, with Log a
+ * An organisation's page: what it is and where at the head, with Log a
  * message; down the left what it is, who is there and which projects it is in; beside it the
  * timeline of what was said and done with it.
  */
@@ -54,7 +54,7 @@ export function OrganisationPage({ organisation: o }: { organisation: Organisati
         className={`grid items-start gap-4 ${profiled ? 'lg:grid-cols-[17.5rem_minmax(0,1fr)]' : ''}`}
       >
         {profiled && <Profile organisation={o} />}
-        {/* On the page's ground, as a person's is (artboards 5 and 14): a timeline is no block. */}
+        {/* On the page's ground, as a person's is: a timeline is no block. */}
         <div className="min-w-0">
           <Timeline of={{ type: 'organisation', id: o.id }} filters logs />
         </div>
@@ -70,7 +70,7 @@ function OrganisationHead({ organisation: o }: { organisation: OrganisationRespo
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <OrganisationMark name={o.name} size={56} />
       {/* On a phone the name takes the rest of its line and wraps; the buttons go under, on the
-          left (P4-10). */}
+          left. */}
       <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
         <h1
           tabIndex={-1}

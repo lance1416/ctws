@@ -1,11 +1,11 @@
 import { KIND_ICON } from '../../../platform/ui/icons'
 
 /**
- * An organisation's mark (artboard 14): its initials on the kind's tint, square where a person is
+ * An organisation's mark: its initials on the kind's tint, square where a person is
  * round. 24 in a row, 40 at the head of its narrow page, 56 at the head of its page.
  */
 export function OrganisationMark({ name, size = 24 }: { name: string; size?: 24 | 40 | 56 }) {
-  // A row's mark has room for one letter; a head's for two, a word's first each (I-03).
+  // A row's mark has room for one letter; a head's for two, a word's first each.
   // Words with a letter in them: "Harbour & Lane" is HL, not H&.
   const words = name
     .trim()
@@ -31,7 +31,7 @@ export function OrganisationMark({ name, size = 24 }: { name: string; size?: 24 
             : 'size-6 rounded-control text-meta font-medium'
       }`}
     >
-      {/* With no name yet (a new one), the kind's icon stands in (G-04). */}
+      {/* With no name yet (a new one), the kind's icon stands in. */}
       {letter ?? <Building size={size === 24 ? 14 : size === 40 ? 20 : 24} />}
     </span>
   )

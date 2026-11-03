@@ -11,8 +11,8 @@ const ROW = ({ isActive }: { isActive: boolean }) =>
   }`
 
 /**
- * The Organisations sidebar's list (FR-020, artboard 14): every organisation, grouped A to Z, and
- * above it All and every type used, as the overview has them (G-03). A type (`?type=`) narrows
+ * The Organisations sidebar's list: every organisation, grouped A to Z, and
+ * above it All and every type used, as the overview has them. A type (`?type=`) narrows
  * the list, and the overview's table with it.
  */
 export function OrganisationsSidebar() {

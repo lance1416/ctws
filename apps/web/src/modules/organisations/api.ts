@@ -31,7 +31,7 @@ export const organisationsQuery = () =>
     queryFn: ({ signal }) => listOrganisations(signal),
   })
 
-/** Each type with its count, and how many in all (FR-064). */
+/** Each type with its count, and how many in all. */
 export const overviewQuery = () =>
   queryOptions({
     queryKey: organisationKeys.overview,

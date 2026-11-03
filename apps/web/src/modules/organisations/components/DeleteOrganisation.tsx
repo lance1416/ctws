@@ -4,7 +4,7 @@ import { DangerAction } from '../../../platform/ui/DangerZone'
 import { useDestroy } from '../../../shell/detail'
 import { deleteOrganisation, organisationKeys } from '../api'
 
-/** Deletes an organisation, saying first what goes with it and what stays (FR-035). */
+/** Deletes an organisation, saying first what goes with it and what stays. */
 export function DeleteOrganisation({
   organisation: o,
   onDeleted,
@@ -30,7 +30,6 @@ export function DeleteOrganisation({
       <DangerAction
         label={`Delete ${o.name}`}
         confirmLabel={`Delete ${o.name}`}
-        // First what goes, then what stays (FR-035).
         message={`Delete ${o.name}?${roles} Messages with it, and the tasks and meetings linked to it, stay.`}
         confirm={`Delete ${o.name}`}
         busy={drop.isPending}

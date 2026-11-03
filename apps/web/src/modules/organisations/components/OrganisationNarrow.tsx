@@ -12,11 +12,7 @@ import { StageOf } from './Standing'
 
 const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-small bg-hover px-2 text-muted'
 
-/**
- * AN ORGANISATION IN THE INSPECTOR (FR-022, artboard 33): its mark and name, what it is and
- * where; its website; the people there now; the projects it is in, at their stage; and the
- * latest of its timeline.
- */
+/** An organisation in the inspector. */
 export function OrganisationNarrow({ id }: { id: string }) {
   const organisations = useQuery(organisationsQuery())
   const projects = useEveryProject()
