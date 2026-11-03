@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useRef, useState, type CSSProperties } from 'react'
 import { longDay, ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
-import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
+import { Block, BlockFailed } from '../../../platform/ui/Block'
+import { Waiting } from '../../../platform/ui/Waiting'
 import { inColumns, splitColumns, useColumns } from '../../../platform/ui/columns'
 import { CarriedIcon, FlagIcon, InProgressIcon, PLACE_ICON } from '../../../platform/ui/icons'
 import { useTimeZone } from '../../../shell/auth'
@@ -161,9 +162,8 @@ function DeskToday() {
               <BlockFailed what="tasks for today" onRetry={() => void today.refetch()} />
             </Block>
           ) : today.isPending ? (
-            <Block title="In progress">
-              <SkeletonRows rows={3} />
-            </Block>
+            // Which of its blocks show, and in what order, is the data's to say: it waits whole.
+            <Waiting />
           ) : (
             <>
               {/* Left column blocks keep their order and are not drawn empty (FR-079). */}

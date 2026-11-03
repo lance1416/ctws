@@ -4,7 +4,8 @@ import type { ResourceResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useDocumentKeys } from '../../platform/keyboard/keyTable'
-import { Block, BlockFailed, SkeletonRows } from '../../platform/ui/Block'
+import { Block, BlockFailed } from '../../platform/ui/Block'
+import { Waiting } from '../../platform/ui/Waiting'
 import { KEY } from '../../platform/ui/buttonStyles'
 import { LauncherIcon, NewIcon } from '../../platform/ui/icons'
 import { ProjectSquare, useEveryProject } from '../projects'
@@ -57,7 +58,10 @@ export function Launcher({ tall }: { tall: boolean }) {
       {pinned.isError ? (
         <BlockFailed what="launcher" onRetry={() => void pinned.refetch()} />
       ) : !pinned.isSuccess ? (
-        <SkeletonRows rows={2} />
+        // How many cards, and so their shape, waits on the pins: one bar till they come.
+        <div className="p-3">
+          <Waiting />
+        </div>
       ) : (
         <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-4 gap-2 p-3 max-sm:grid-cols-2">
           {shown.map((r, i) => {

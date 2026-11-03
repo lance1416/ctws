@@ -23,7 +23,8 @@ export function PinnedResources({ projectId, name }: { projectId: ProjectId; nam
   const goOut = useGoOut()
   const pinned = pinnedOf(all.data ?? [])
   return (
-    <div data-pinned-resources className="flex flex-wrap items-center gap-2">
+    // A line's height while the pins are read, so nothing moves when they come.
+    <div data-pinned-resources className="flex min-h-7 flex-wrap items-center gap-2">
       {pinned.map((r) => (
         <a
           key={r.id}

@@ -9,6 +9,7 @@ import { CloseIcon, ForwardIcon, KIND_ICON, PLACE_ICON } from '../../../platform
 import { ICON_BUTTON } from '../../../platform/ui/buttonStyles'
 import { useMe } from '../../../shell/auth'
 import { OrganisationMark } from '../../organisations'
+import { Waiting } from '../../../platform/ui/Waiting'
 import { usePeople } from '../../people'
 
 /** Past this many, the list is a row of faces, counted by organisation (FR-069). */
@@ -56,7 +57,10 @@ export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
         Attending
         <span className="text-meta font-normal text-muted tabular-nums">{count}</span>
       </h2>
-      {attendees.length <= LISTED ? (
+      {/* Who they are, their initials and where they work, waits for the people to be read. */}
+      {people.isPending ? (
+        <Waiting />
+      ) : attendees.length <= LISTED ? (
         <ul className="flex flex-col gap-2 pl-6">
           <li className="flex items-center gap-2.5 text-ui text-ink">
             <Avatar initials={(me?.email.slice(0, 1) ?? '').toLocaleUpperCase()} />

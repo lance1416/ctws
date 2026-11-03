@@ -37,7 +37,17 @@ export function ProjectHead({
   if (!project) {
     return projects.isSuccess ? (
       <p className="text-ui text-muted">This project is not here any more.</p>
-    ) : null
+    ) : (
+      // Still being read: the head's own room, its square, its name and the pins' row, so the
+      // page under it does not move when it arrives (DES-001 "加载").
+      <div aria-busy="true" className="flex min-w-0 flex-col gap-3.5">
+        <div className="flex h-8.5 items-center gap-3">
+          <span className="size-8.5 shrink-0 rounded-control bg-hover" />
+          <span className="h-4 w-48 rounded-small bg-hover" />
+        </div>
+        <div className="h-7" />
+      </div>
+    )
   }
   return (
     <div className="flex min-w-0 flex-col gap-3.5">

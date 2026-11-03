@@ -1,7 +1,8 @@
 import type { LinkCandidate, ObjectType } from '@ctws/contracts'
-import { useContext, useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import { useContext, useState, type ComponentType, type ReactNode } from 'react'
 import { Avatar } from '../../platform/ui/Avatar'
 import { Block, BlockFailed, SkeletonRows } from '../../platform/ui/Block'
+import { Waiting } from '../../platform/ui/Waiting'
 import { BUTTON, ICON_BUTTON, SWIPE } from '../../platform/ui/buttonStyles'
 import { DeleteConfirm } from '../../platform/ui/DeleteConfirm'
 import { SwipeRow } from '../../platform/ui/SwipeRow'
@@ -199,27 +200,6 @@ export function useKindBlocks({
       </>
     ),
   }
-}
-
-/** How long a region waits for its data before it shows that it is waiting. */
-const WAIT_SHOWN_AFTER_MS = 400
-
-/**
- * Blocks still being read: nothing at first, then, past 400ms, one neutral bar across every
- * column at a block head's 40, no guess at the layout the data will decide (DES-001 "加载").
- */
-function Waiting() {
-  const [shown, setShown] = useState(false)
-  useEffect(() => {
-    const t = setTimeout(() => setShown(true), WAIT_SHOWN_AFTER_MS)
-    return () => clearTimeout(t)
-  }, [])
-  return (
-    <div
-      aria-busy="true"
-      className={`col-span-full h-10 rounded-container ${shown ? 'bg-hover' : ''}`}
-    />
-  )
 }
 
 function KindBlock({
