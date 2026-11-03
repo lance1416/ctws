@@ -16,6 +16,7 @@ import {
 } from '../../../platform/editor/OutlineNav'
 import { OUTLINE_KEYS, useNoteKeys } from '../../../platform/editor/noteKeys'
 import { outlineOf } from '../../../platform/editor/outline'
+import { readableWidth } from '../../../platform/editor/measure'
 import { SourceButton } from '../../../platform/editor/SourceButton'
 import { useNoteChoice } from '../../../shell/auth'
 import { noteTitle } from '../logic/title'
@@ -130,9 +131,7 @@ export function NoteEditor({
     // On a desk the page takes the main area's edges back: the outline runs down its right side.
     <div ref={outline.frame} className="relative flex flex-1 lg:-m-5">
       <div className="flex min-w-0 flex-1 flex-col gap-4 lg:px-10 lg:py-5">
-        <div
-          className={`flex w-full flex-col gap-3 ${readable ? 'mx-auto max-w-[45em] text-prose' : ''}`}
-        >
+        <div className={`flex w-full flex-col gap-3 ${readable ? readableWidth(source) : ''}`}>
           {above}
           <PhoneNoteBar
             note={note}

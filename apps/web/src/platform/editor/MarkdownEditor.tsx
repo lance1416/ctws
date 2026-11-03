@@ -391,22 +391,17 @@ export default function MarkdownEditor({
   }, [])
 
   // The source and the drawn note swapped, the cursor where it was in the text and its line kept
-  // at the height it was on the screen: the page scrolls by however far the line moved.
+  // at the height it was on the screen. Held there a moment longer, while what is drawn late (a
+  // formula, the mono face) changes the height above it, until the hand moves the page itself.
   useEffect(() => {
     const v = view.current
     if (!v || sourceAt.current === source) return
     sourceAt.current = source
     const head = v.state.selection.main.head
-    const before = v.coordsAtPos(head)?.top
+    const top = lineTop(v, head)
     v.dispatch({ effects: lookSlot.reconfigure(source ? sourceView : livePreview) })
     reportMode(v, v.hasFocus)
-    v.requestMeasure({
-      read: () => v.coordsAtPos(head)?.top,
-      write: (after) => {
-        if (before === undefined || after === undefined || after === before) return
-        scrollerOf(v.dom)?.scrollBy({ top: after - before })
-      },
-    })
+    return holdLine(v, head, top)
   }, [source, lookSlot])
 
   // Vim's keys taken on or off; fetched the first time they are wanted.
@@ -508,3 +503,45 @@ function scrollerOf(el: HTMLElement): HTMLElement | null {
   }
   return document.scrollingElement as HTMLElement | null
 }
+
+/**
+ * Where the top of the line at `pos` is in the window: the line's own box, not the character's,
+ * which sits differently in the drawn text and in the mono source.
+ */
+function lineTop(view: EditorView, pos: number): number {
+  const { node } = view.domAtPos(view.state.doc.lineAt(pos).from)
+  const line = (node instanceof Element ? node : node.parentElement)?.closest('.cm-line')
+  return line?.getBoundingClientRect().top ?? view.documentTop + view.lineBlockAt(pos).top
+}
+
+/** How long a line is held still after the view under it changed, for what is drawn late. */
+const HOLD_MS = 2000
+
+/**
+ * Keeps the line at `head` `top` from the top of the window: the page scrolls by however far it
+ * moved, now and each time the text's height changes, until the hold runs out or the hand scrolls,
+ * presses or moves the cursor. Returns the way to let go.
+ */
+function holdLine(view: EditorView, head: number, top: number): () => void {
+  const keep = () =>
+    view.requestMeasure({
+      read: () => lineTop(view, head),
+      write: (now) => {
+        if (Math.abs(now - top) > 0.5) scrollerOf(view.dom)?.scrollBy({ top: now - top })
+      },
+    })
+  keep()
+  const grown = new ResizeObserver(keep)
+  grown.observe(view.contentDOM)
+  const done = () => {
+    grown.disconnect()
+    clearTimeout(timer)
+    for (const type of LET_GO) window.removeEventListener(type, done, true)
+  }
+  const timer = setTimeout(done, HOLD_MS)
+  for (const type of LET_GO) window.addEventListener(type, done, true)
+  return done
+}
+
+/** What the hand does that ends a hold: it is moving the page or the cursor itself. */
+const LET_GO = ['wheel', 'pointerdown', 'keydown', 'touchstart'] as const

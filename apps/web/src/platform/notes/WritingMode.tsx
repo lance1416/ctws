@@ -5,6 +5,7 @@ import type { EditorHandle } from '../editor/MarkdownEditor'
 import { outlineOf } from '../editor/outline'
 import { OutlineButton, OutlineNav, useOutline, useSectionInSight } from '../editor/OutlineNav'
 import { OUTLINE_KEYS, useNoteKeys } from '../editor/noteKeys'
+import { readableWidth } from '../editor/measure'
 import { SourceButton } from '../editor/SourceButton'
 import { escapeInEditor } from '../editor/focused'
 import { enterOverlay, exitOverlay } from '../keyboard/overlayState'
@@ -134,7 +135,7 @@ export function WritingMode({
             <div className="flex min-w-0 flex-1 flex-col gap-3 px-4 py-6 lg:px-10">
               <div
                 className={`flex w-full flex-col gap-3 ${
-                  choices.readableLines ? 'mx-auto max-w-[45em] text-prose' : ''
+                  choices.readableLines ? readableWidth(choices.sourceView) : ''
                 }`}
               >
                 {finding !== null && (

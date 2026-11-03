@@ -240,3 +240,98 @@ test('the account page switches the line length, Full by default', async ({ page
     page.getByRole('radiogroup', { name: 'Line length' }).getByRole('radio', { name: 'Readable' }),
   ).toBeChecked()
 })
+
+test('switching to the source and back holds the cursor’s line still, scrolled or not', async ({
+  page,
+}) => {
+  test.setTimeout(180_000)
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await registerFreshUser(page)
+  // Blocks drawn taller or shorter than their source above the line and below it.
+  const lines: string[] = []
+  for (let i = 1; i <= 120; i++) {
+    lines.push(`Line ${i}.`)
+    if (i % 20 === 0)
+      lines.push(
+        '',
+        `## Part ${i / 20}`,
+        '',
+        '| A | B |',
+        '| - | - |',
+        '| 1 | 2 |',
+        '',
+        '```js',
+        'x',
+        '```',
+        '',
+        // Drawn by KaTeX once it has arrived: a height that comes a beat after the rest.
+        '$$',
+        'p = 1 - (1 - r)^n',
+        '$$',
+        '',
+      )
+  }
+  const id = (
+    await apiPost<{ id: string }>(page, '/notes', { title: 'Long', body: lines.join('\n') })
+  ).id
+  const main = page.getByRole('main')
+  for (const fromSource of [false, true]) {
+    for (const words of ['Line 10.', 'Line 70.']) {
+      for (const scrolled of [false, true]) {
+        const res = await page.request.patch('/api/v1/auth/me', {
+          headers: WEB,
+          data: { sourceView: fromSource },
+        })
+        expect(res.ok()).toBe(true)
+        await page.goto(`/notes/${id}`)
+        await expect(page.locator('[data-markdown-editor] .cm-content')).toBeVisible()
+        if (words === 'Line 70.') await main.evaluate((el) => el.scrollTo(0, el.scrollHeight / 2))
+        const line = page
+          .locator('[data-markdown-editor] .cm-line')
+          .filter({ hasText: words })
+          .first()
+        await line.scrollIntoViewIfNeeded()
+        if (scrolled) await main.evaluate((el) => el.scrollBy(0, 250))
+        await line.click()
+        const y = (await line.boundingBox())!.y
+        for (let n = 0; n < 2; n++) {
+          await page.keyboard.press('Control+Shift+V')
+          // Whatever arrives late (a formula, the mono face) has arrived: the line is where it stays.
+          await page.waitForTimeout(1500)
+          await expect
+            .poll(async () => Math.abs((await line.boundingBox())!.y - y), {
+              message: `${fromSource ? 'source' : 'drawn'} first, ${words}, ${scrolled ? 'scrolled' : 'at rest'}, switch ${n + 1}`,
+            })
+            .toBeLessThanOrEqual(1)
+        }
+      }
+    }
+  }
+})
+
+test('Readable in the source stops a line at eighty characters', async ({ page }) => {
+  await page.setViewportSize({ width: 2000, height: 900 })
+  await registerFreshUser(page)
+  const res = await page.request.patch('/api/v1/auth/me', {
+    headers: WEB,
+    data: { readableLines: true, sourceView: true },
+  })
+  expect(res.ok()).toBe(true)
+  // 120 characters with no space: the first eighty on the first line, the rest on the next.
+  await openNote(page, ['x'.repeat(80) + 'y'.repeat(40)])
+  const rows = await page
+    .locator('[data-markdown-editor] .cm-line')
+    .first()
+    .evaluate((line) => {
+      const text = line.firstChild!.firstChild ?? line.firstChild!
+      const range = document.createRange()
+      const at = (i: number) => {
+        range.setStart(text, i)
+        range.setEnd(text, i + 1)
+        return Math.round(range.getBoundingClientRect().top)
+      }
+      return [at(0), at(79), at(80)]
+    })
+  expect(rows[0]).toBe(rows[1])
+  expect(rows[2]).toBeGreaterThan(rows[1]!)
+})
