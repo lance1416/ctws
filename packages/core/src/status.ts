@@ -1,7 +1,7 @@
 import type { TaskStatus } from '@ctws/contracts'
 
 /**
- * The status of a task that has subtasks, worked out from theirs (FR-038). A parent is never set
+ * The status of a task that has subtasks, worked out from theirs. A parent is never set
  * by hand: "Amazon" is in progress because a step under it is, and done when every step is closed.
  *
  * In order, the first rule that holds:

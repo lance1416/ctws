@@ -100,7 +100,7 @@ describe('progress', () => {
 
 describe('the counts beside the percentage', () => {
   it('counts the leaves in progress across the subtree, not the parents derived from them', () => {
-    // A parent's status is its children's (FR-038): `a` and `b` read "in progress" because `c`
+    // A parent's status is its children's: `a` and `b` read "in progress" because `c`
     // is, and that is one task being worked on, not three.
     const nodes = [
       node('a', null, { status: 'in_progress' }),

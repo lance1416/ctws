@@ -1,10 +1,10 @@
-/** Little words a name's initials skip (FR-052), unless the name is nothing but them. */
+/** Little words a name's initials skip, unless the name is nothing but them. */
 const SMALL = new Set(['a', 'an', 'the', 'and', 'of', 'for', 'to', 'in', 'on'])
 
 const HAN = /^\p{Script=Han}/u
 
 /**
- * A project's initials, from its name (FR-052): one or two characters for the coloured square.
+ * A project's initials, from its name: one or two characters for the coloured square.
  * Two words or more give the first letters of the first two ("Job hunt" JH, "Find a lawyer" FL,
  * "rust-analyzer" RA); one word gives its first two letters ("CTWS" CT, "Thesis" TH); a name that
  * starts with a Han character gives that character ("搬家" 搬). Latin letters are raised. The person

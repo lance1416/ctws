@@ -1,5 +1,5 @@
 /**
- * What a resource's address says about itself (FR-046), read from the address alone: no request
+ * What a resource's address says about itself, read from the address alone: no request
  * is made. A recognised site gets its own icon and a short label; a GitHub pull request or issue
  * is shown as its number.
  */

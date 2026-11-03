@@ -1,5 +1,5 @@
 /**
- * The role a person is placed by (DES-001, search rows): of the roles with no end, the one that
+ * The role a person is placed by in search rows: of the roles with no end, the one that
  * began first; a role with no known start comes after those with one, then the person's own order.
  * Null when every role has ended.
  */

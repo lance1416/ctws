@@ -1,7 +1,7 @@
 import { OBJECT_TYPES, type ObjectType } from '@ctws/contracts'
 
 /**
- * An @-mention in Markdown text (FR-042): an ordinary link whose address names a thing by type
+ * An @-mention in Markdown text: an ordinary link whose address names a thing by type
  * and id, `[@Mira Chen](ctws://person/<uuid>)`. Writing it as a link keeps the Markdown pipeline
  * as it is and reads plainly as text; the name inside the brackets is what was typed, and does
  * not follow a later rename, as in Bear or Obsidian.
@@ -33,7 +33,7 @@ const CUT_LINK = /\[([^\]\n]+)\]\([^)\s]*$/
 
 /**
  * Text with Markdown links in it as it reads: each link, a mention included, as its words. An
- * excerpt then says "Ask @Mira Chen which questions came up", never an address (BUG-036).
+ * excerpt then says "Ask @Mira Chen which questions came up", never an address.
  */
 export const linkWords = (text: string): string => text.replace(LINK, '$1').replace(CUT_LINK, '$1')
 

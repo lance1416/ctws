@@ -71,7 +71,7 @@ describe('sortKey', () => {
 })
 
 describe('avatarInitials', () => {
-  it("follows FR-049's examples", () => {
+  it('gives initials for Latin and Chinese names, with or without a family name', () => {
     expect(avatarInitials({ givenName: 'Mira', familyName: 'Chen' })).toBe('MC')
     expect(avatarInitials({ givenName: 'Cher', familyName: null })).toBe('CH')
     expect(avatarInitials({ givenName: '雯', familyName: '李' })).toBe('李')

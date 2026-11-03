@@ -1,7 +1,7 @@
 import { addDays } from '../day'
 
 /**
- * A DAY TYPED ANY WAY (FR-034): "Oct 29", "29 Oct", "29/10", "2026-10-29", "tomorrow", "fri",
+ * A day typed any way: "Oct 29", "29 Oct", "29/10", "2026-10-29", "tomorrow", "fri",
  * "next week", "in 3 days". Returns `YYYY-MM-DD`, or null for words that are not a day or a day
  * that does not exist. `today` is given, never read from the clock. A month and day without a
  * year are the next such day from today, this year or next.
@@ -50,7 +50,7 @@ function datedParts(t: string): { month: number; day: number; year: number | nul
 }
 
 /**
- * Why `text` is not a day (FR-034), for the field to say instead of reading it: the day that does
+ * Why `text` is not a day, for the field to say instead of reading it: the day that does
  * not exist, named ("There is no April 31."), or the ways a day can be written.
  */
 export function whyNotADay(text: string, today: string): string {

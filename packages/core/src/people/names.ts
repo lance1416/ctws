@@ -1,5 +1,5 @@
 /**
- * A person's name in three parts, after vCard's `N` (RFC 6350): given, middle, family (FR-049).
+ * A person's name in three parts, after vCard's `N` (RFC 6350): given, middle, family.
  * The parts are what is stored; how they are shown follows the script, and how they are sorted
  * follows the family name's first letter, with Chinese surnames filed by their pinyin.
  */
@@ -10,7 +10,7 @@ export type NameParts = {
   familyName: string | null
 }
 
-/** Why a split needs a look (FR-099's "Names" section), or null when it was plain. */
+/** Why a split needs a look in the migration report, or null when it was plain. */
 export type SplitWhy =
   'Had a comma' | 'One word' | 'Had a space' | 'Several words' | 'Compound surname'
 
@@ -86,7 +86,7 @@ const COMPOUND_SURNAMES = [
 ] as const
 
 /**
- * Splits a name written as one string (FR-095). Chinese: the first character is the family name,
+ * Splits a name written as one string. Chinese: the first character is the family name,
  * two for a compound surname, the rest the given name; a space inside is dropped. Latin script: a
  * comma puts the family name first ("Li, Wendy"); otherwise the last word is the family name, the
  * first the given name, anything between a middle name; one word is a given name alone.
@@ -138,7 +138,7 @@ export function splitName(text: string): NameParts & { why: SplitWhy | null } {
 }
 
 /**
- * The name as it is shown (FR-049): a Chinese family name goes first with no space (李雯); a
+ * The name as it is shown: a Chinese family name goes first with no space (李雯); a
  * Latin one goes last, after any middle name (Mary Jane Watson).
  */
 export function displayName(parts: NameParts): string {
@@ -150,7 +150,7 @@ export function displayName(parts: NameParts): string {
 }
 
 /**
- * The letters on a person's avatar (FR-049): given and family initials for a Latin name (Mira Chen
+ * The letters on a person's avatar: given and family initials for a Latin name (Mira Chen
  * MC, never the middle name), the first two letters of a lone given name (Cher CH), the surname's
  * first character for a Chinese one (李雯 李, 欧阳娜娜 欧), and a lone Chinese given name's first.
  */

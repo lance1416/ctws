@@ -1,7 +1,7 @@
 import { projectColors, type ProjectColor } from '@ctws/contracts'
 
 /**
- * The colour a new project gets (FR-052): one not yet used; once all eight are, the least used,
+ * The colour a new project gets: one not yet used; once all eight are, the least used,
  * earliest in the list. `taken` is every project's, archived ones and the inbox included.
  */
 export function leastUsedColor(taken: readonly ProjectColor[]): ProjectColor {

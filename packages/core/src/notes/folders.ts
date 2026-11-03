@@ -1,4 +1,4 @@
-/** How deep folders of notes go (REQ-002 FR-117): a folder, one in it, and one in that. */
+/** How deep folders of notes go: a folder, one in it, and one in that. */
 export const FOLDER_DEPTH = 3
 
 /** A folder as the tree needs it: itself and where it sits. */
@@ -43,7 +43,7 @@ export function mayGoInto(folders: readonly Placed[], id: string, parent: string
 }
 
 /**
- * The name a folder keeps moving among `taken` (FR-117): its own, else the first of "Talks 2",
+ * The name a folder keeps moving among `taken`: its own, else the first of "Talks 2",
  * "Talks 3"… not taken. Never merged, never refused.
  */
 export function freeName(name: string, taken: ReadonlySet<string>): string {

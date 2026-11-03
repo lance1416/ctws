@@ -8,7 +8,6 @@ describe('derivedStatus', () => {
   })
 
   it.each<[TaskStatus[], TaskStatus]>([
-    // FR-038's own example: Done, Cancelled, To do.
     [['done', 'cancelled', 'todo'], 'in_progress'],
     [['done', 'cancelled', 'done'], 'done'],
     [['done', 'cancelled', 'cancelled'], 'done'],

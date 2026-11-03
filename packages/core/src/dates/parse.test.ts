@@ -4,7 +4,7 @@ import { daysInMonth, parseDay, parseMonth, whyNotADay } from './parse'
 // A Wednesday.
 const TODAY = '2026-10-21'
 
-describe('parseDay (FR-034)', () => {
+describe('parseDay', () => {
   it("reads the ways the requirement lists, and today's words", () => {
     expect(parseDay('Oct 29', TODAY)).toBe('2026-10-29')
     expect(parseDay('29 Oct', TODAY)).toBe('2026-10-29')

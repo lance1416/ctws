@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { initialsOf } from './initials'
 
 describe('initialsOf', () => {
-  it("takes the first letters of the first two words, skipping the little ones (FR-052's examples)", () => {
+  it('takes the first letters of the first two words, skipping the little ones', () => {
     expect(initialsOf('Job hunt')).toBe('JH')
     expect(initialsOf('Find a lawyer')).toBe('FL')
     expect(initialsOf('rust-analyzer')).toBe('RA')
