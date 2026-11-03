@@ -8,7 +8,7 @@ import { notes } from './tables'
 const counted = z.object({ meetings: z.coerce.number().int() })
 
 /**
- * The review's "With notes" (FR-081): the meetings held in the week that have a note hung on
+ * The review's "With notes": the meetings held in the week that have a note hung on
  * them, each occurrence once however many it has.
  */
 export const noteWeekCounts: WeekCounts = async (q, workspaceId, window) => {

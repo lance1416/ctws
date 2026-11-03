@@ -20,7 +20,7 @@ import { type Note, notes } from './tables'
 
 const subject = (id: NoteId) => ({ type: 'note' as const, id })
 
-/** A note hung on a thing goes where the thing is: no folder, no pin (FR-110). */
+/** A note hung on a thing goes where the thing is: no folder, no pin. */
 class OnAThing extends DomainError {
   constructor() {
     super('conflict', { detail: 'A note on something goes where that thing is' })
@@ -29,7 +29,7 @@ class OnAThing extends DomainError {
 
 /**
  * The columns an anchor becomes, once the thing is known to be one this workspace can see. A note
- * on one occurrence of a meeting takes that occurrence's instant as the day it is about (FR-050);
+ * on one occurrence of a meeting takes that occurrence's instant as the day it is about;
  * the meeting's module says which zone the occurrence's local time is in.
  */
 async function anchorColumns(
@@ -59,7 +59,7 @@ export async function createNote(
 ): Promise<Note> {
   return db.transaction(async (tx) => {
     const anchored = await anchorColumns(registry, tx, ctx, body.anchor)
-    // Made in a folder, from the folder's own New note (FR-115): a note on a thing has none.
+    // Made in a folder, from the folder's own New note: a note on a thing has none.
     const folderId = body.folderId ?? null
     if (folderId !== null) {
       if (body.anchor) throw new OnAThing()
@@ -133,7 +133,7 @@ export async function updateNote(
       set.body = patch.body
       await log.append(subject(id), 'edited', {})
     }
-    // Where it is kept, not what it says: no edit, so its edited time stays (FR-110).
+    // Where it is kept, not what it says: no edit, so its edited time stays.
     const shelf: Partial<Note> = {}
     const anchored = ('anchorType' in set ? set.anchorType : row.anchorType) !== null
     if (patch.folderId !== undefined && patch.folderId !== row.folderId) {
@@ -161,7 +161,7 @@ export async function updateNote(
   })
 }
 
-/** Deletes a note for good (FR-035): a tombstone that says what it hung on, and the row goes. */
+/** Deletes a note for good: a tombstone that says what it hung on, and the row goes. */
 export async function deleteNote(db: Db, ctx: Actor, id: NoteId): Promise<void> {
   await db.transaction(async (tx) => {
     const [current] = await tx

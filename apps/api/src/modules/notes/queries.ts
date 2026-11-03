@@ -51,7 +51,7 @@ const noteAt = sql`coalesce(${notes.heldAt}, ${notes.createdAt})`
 
 /**
  * The notes hung on one thing, newest first, for its timeline; nothing for a kind notes skip. A
- * project's timeline also carries the notes of the meetings held under it (FR-050), read here by
+ * project's timeline also carries the notes of the meetings held under it, read here by
  * the meeting's `project_id` since no module owns both.
  */
 export async function notesOn(

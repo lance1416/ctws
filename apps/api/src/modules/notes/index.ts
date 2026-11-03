@@ -6,14 +6,14 @@ import { notesOn, wordCount } from './queries'
 import { noteRoutes } from './routes'
 import { noteWeekCounts } from './weekCounts'
 
-/** The notes hung on a thing, on its timeline (FR-045). */
+/** The notes hung on a thing, on its timeline. */
 const hung: TimelineSource = {
   kind: 'note',
   read: async (q, workspaceId, subject, span) => {
     const rows = await notesOn(q, workspaceId, subject, span)
     return rows.map((n): TimelineEntry => ({
       kind: 'note',
-      // A meeting note is about the day it was held, whenever it was written (FR-050).
+      // A meeting note is about the day it was held, whenever it was written.
       at: (n.heldAt ?? n.createdAt).toISOString(),
       note: {
         id: n.id,

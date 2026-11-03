@@ -20,7 +20,7 @@ import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
 
 /**
- * A folder of notes (REQ-002 FR-110, FR-117): up to three deep, its name its own among the folders
+ * A folder of notes: up to three deep, its name its own among the folders
  * beside it, open or closed in the sidebar as it was left. Deleting one moves what is in it up a
  * level first (`deleteFolder`); the parent's own `on delete set null` is only a backstop.
  */
@@ -49,7 +49,7 @@ export const noteFolders = pgTable(
 export type NoteFolder = typeof noteFolders.$inferSelect
 
 /**
- * A note (FR-050): Markdown on its own or hung on another thing, named by type and id with no
+ * A note: Markdown on its own or hung on another thing, named by type and id with no
  * foreign key. A note on one occurrence of a meeting names the occurrence's local time.
  */
 export const notes = pgTable(
@@ -66,15 +66,15 @@ export const notes = pgTable(
     anchorId: uuid('anchor_id'),
     occurrenceId: text('occurrence_id'),
     /**
-     * The instant of the occurrence a note was hung on (FR-050): a meeting note is about that day,
+     * The instant of the occurrence a note was hung on: a meeting note is about that day,
      * whenever it was written, and keeps the day after the meeting is gone.
      */
     heldAt: timestamp('held_at', { withTimezone: true }),
-    /** Its folder, a note on its own only (FR-110); a folder deleted leaves its notes in none. */
+    /** Its folder, a note on its own only; a folder deleted leaves its notes in none. */
     folderId: uuid('folder_id')
       .$type<NoteFolderId>()
       .references(() => noteFolders.id, { onDelete: 'set null' }),
-    /** When it was pinned to the top of the list, a note on its own only (FR-110). */
+    /** When it was pinned to the top of the list, a note on its own only. */
     pinnedAt: timestamp('pinned_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

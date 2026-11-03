@@ -16,7 +16,7 @@ export const noteLinkable: Linkable = {
       within(scoped(notes, workspaceId), matchingOr(TEXT, text, notes.id, also)),
     ),
   // An untitled note on a meeting is called by the meeting's name (`retitle`), so that name finds
-  // it too: "Atlas weekly" finds the series' notes (FR-050).
+  // it too: "Atlas weekly" finds the series' notes.
   alsoFound: async (q, workspaceId, text, registry) => {
     const meetings = await registry.of('meeting').rows(q, workspaceId, { text, limit: 50 })
     if (meetings.length === 0) return []
@@ -63,7 +63,7 @@ export const noteLinkable: Linkable = {
     }))
   },
   // An untitled note on one meeting is that meeting's, on that day, as every list calls it
-  // ("Atlas weekly, Oct 19", FR-050): its name comes from the meetings, through the registry.
+  // ("Atlas weekly, Oct 19"): its name comes from the meetings, through the registry.
   retitle: async (q, workspaceId, rows, registry) => {
     const ids = rows.map((r) => idFrom(noteId, r.id))
     if (ids.length === 0) return rows

@@ -20,14 +20,14 @@ class NameTaken extends DomainError {
   }
 }
 
-/** Folders go three deep (FR-117), and a folder never goes inside itself. */
+/** Folders go three deep, and a folder never goes inside itself. */
 class TooDeep extends DomainError {
   constructor() {
     super('conflict', { detail: 'Folders go three deep' })
   }
 }
 
-/** Every folder, by name (FR-110): the client lays them out as the tree. */
+/** Every folder, by name: the client lays them out as the tree. */
 export function listFolders(q: Queryable, workspaceId: WorkspaceId): Promise<NoteFolder[]> {
   return q
     .select()
@@ -101,7 +101,7 @@ export function createFolder(db: Db, ctx: Actor, body: NoteFolderBody): Promise<
 }
 
 /**
- * Renames a folder, moves it with all it holds (FR-117), or opens or closes it in the sidebar.
+ * Renames a folder, moves it with all it holds, or opens or closes it in the sidebar.
  * Opening is no edit: its edited time stays.
  */
 export function updateFolder(
@@ -136,7 +136,7 @@ export function updateFolder(
 }
 
 /**
- * Deletes a folder (FR-117): the folders and notes in it move up a level, nothing goes with it. A
+ * Deletes a folder: the folders and notes in it move up a level, nothing goes with it. A
  * folder moving up whose name is taken there takes the first number free ("Talks 2").
  */
 export async function deleteFolder(db: Db, ctx: Actor, id: NoteFolderId): Promise<void> {
