@@ -31,16 +31,19 @@ export const NOTE_ROW = ({ isActive }: { isActive: boolean }) =>
  */
 export function NoteRow({
   note,
+  place,
   onDeleted,
 }: {
   note: NoteResponse
+  /** Where in the list this row is: a pinned note in a folder is listed twice, each a drag. */
+  place: string
   /** Where to go once it is gone: the next note in the list. */
   onDeleted: () => void
 }) {
   const type = note.anchor?.type ?? 'note'
   const Icon = KIND_ICON[type]
   const own = note.anchor === null
-  const drag = useDraggable({ id: note.id, disabled: !own })
+  const drag = useDraggable({ id: `${place}:${note.id}`, data: { note: note.id }, disabled: !own })
   const shelve = useShelveNote()
   const rename = useRenameNote()
   const drop = useDestroy({

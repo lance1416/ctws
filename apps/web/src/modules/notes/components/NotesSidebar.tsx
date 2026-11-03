@@ -149,11 +149,17 @@ export function NotesSidebar() {
   const onThings = allOnThings || filtering ? s.onThings : s.onThings.slice(0, ON_THINGS_SHOWN)
   const shelves = everyShelf(s.folders)
   // The notes as they are listed, for the one after a note deleted from the list (FR-114).
-  const order = [...s.pinned, ...shelves.flatMap((f) => f.notes), ...s.loose, ...onThings]
-  const row = (n: NoteResponse) => (
+  const order = [
+    ...s.pinned,
+    ...shelves.flatMap((f) => [...f.pinned, ...f.notes]),
+    ...s.loose,
+    ...onThings,
+  ]
+  const row = (n: NoteResponse, place = 'list') => (
     <NoteRow
       key={n.id}
       note={n}
+      place={place}
       onDeleted={() => {
         const left = order.filter((o) => o.id !== n.id)
         const next = left[order.findIndex((o) => o.id === n.id)] ?? left.at(-1)
@@ -164,7 +170,7 @@ export function NotesSidebar() {
   const newNote = (folderId: NoteFolderId) => navigate(`/${NOTES_ID}/new?folder=${folderId}`)
   const nothing =
     s.pinned.length + s.loose.length + s.onThings.length === 0 &&
-    shelves.every((f) => f.notes.length === 0)
+    shelves.every((f) => f.count === 0)
 
   const branch = (shelf: Shelf, depth: number): ReactNode => {
     const { folder } = shelf
@@ -206,8 +212,9 @@ export function NotesSidebar() {
           </li>
         )}
         {newIn === folder.id && <Untitled />}
+        {shelf.pinned.map((n) => row(n, folder.id))}
         {shelf.folders.map((f) => branch(f, depth + 1))}
-        {shelf.notes.map(row)}
+        {shelf.notes.map((n) => row(n, folder.id))}
       </FolderRow>
     )
   }
@@ -223,7 +230,7 @@ export function NotesSidebar() {
         onDragStart={({ active }) => {
           const id = String(active.id)
           const folder = id.startsWith('move:') ? fs.find((f) => dragOf(f) === id) : null
-          const note = all.find((n) => n.id === id)
+          const note = all.find((n) => n.id === active.data.current?.note)
           setDragged(folder ? { folder } : note ? { note } : null)
         }}
         onDragMove={({ activatorEvent, delta }) => {
@@ -250,7 +257,7 @@ export function NotesSidebar() {
         >
           {s.pinned.length > 0 && (
             <Section title="Pinned" icon={<PinIcon size={12} aria-hidden="true" />}>
-              {s.pinned.map(row)}
+              {s.pinned.map((n) => row(n, 'pinned'))}
             </Section>
           )}
           {!filtering && (
@@ -299,18 +306,18 @@ export function NotesSidebar() {
           )}
           {filtering &&
             shelves
-              .filter((f) => f.notes.length > 0)
-              .map(({ folder, notes: inside }) => (
+              .filter((f) => f.pinned.length + f.notes.length > 0)
+              .map(({ folder, pinned, notes: inside }) => (
                 <Section key={folder.id} title={folder.name}>
-                  {inside.map(row)}
+                  {[...pinned, ...inside].map((n) => row(n, folder.id))}
                 </Section>
               ))}
           {(s.loose.length > 0 || dragged) && (
-            <Loose hasFolders={s.folders.length > 0}>{s.loose.map(row)}</Loose>
+            <Loose hasFolders={s.folders.length > 0}>{s.loose.map((n) => row(n))}</Loose>
           )}
           {s.onThings.length > 0 && (
             <Section title="On other things">
-              {onThings.map(row)}
+              {onThings.map((n) => row(n))}
               {onThings.length < s.onThings.length && (
                 <li>
                   <button

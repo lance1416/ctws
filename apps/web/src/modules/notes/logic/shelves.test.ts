@@ -44,12 +44,17 @@ describe('the notes sidebar’s places', () => {
     note('Atlas weekly', { anchor: { type: 'meeting', id: id(), occurrenceId: null, title: 'A' } }),
   ]
 
-  it('puts each note in one place: pinned first, newest pin on top', () => {
+  it('lists the pinned first, newest pin on top, and each in its folder too', () => {
     const s = shelvesOf(notes, [job, ideas])
     expect(titles(s.pinned)).toEqual(['Questions for the onsite', 'System design prep'])
     expect(s.folders.map((f) => [f.folder.name, titles(f.notes)])).toEqual([
       ['Job hunt prep', ['Salary bands']],
       ['Ideas', []],
+    ])
+    // A pinned note in a folder is first in it too, and counted there.
+    expect(s.folders.map((f) => [titles(f.pinned), f.count])).toEqual([
+      [['System design prep'], 2],
+      [[], 0],
     ])
     expect(titles(s.loose)).toEqual(['Weekend plan'])
     expect(titles(s.onThings)).toEqual(['Atlas weekly'])
@@ -69,7 +74,7 @@ describe('the notes sidebar’s places', () => {
       [job, ideas, offers, london],
     )
     const top = s.folders.find((f) => f.folder.name === 'Job hunt prep')!
-    expect(top.count).toBe(3)
+    expect(top.count).toBe(4)
     expect(top.folders.map((f) => [f.folder.name, f.count])).toEqual([['Offers', 2]])
     expect(top.folders[0]!.folders.map((f) => f.folder.name)).toEqual(['London'])
     expect(everyShelf(s.folders).map((f) => f.folder.name)).toEqual([

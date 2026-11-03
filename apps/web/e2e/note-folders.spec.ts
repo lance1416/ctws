@@ -323,3 +323,36 @@ test('Move to a folder… keeps No folder and New folder… in sight, the folder
   await expect(next).toBeFocused()
   await expect.poll(() => next.evaluate(outline)).toBe('solid')
 })
+
+test('a pinned note in a folder is under Pinned and first in its folder, counted there', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  const job = await apiPost<{ id: string }>(page, '/notes/folders', { name: 'Job hunt prep' })
+  await page.request.patch(`/api/v1/notes/folders/${job.id}`, {
+    headers: WEB,
+    data: { open: true },
+  })
+  const pin = await apiPost<{ id: string }>(page, '/notes', {
+    title: 'Offer',
+    body: 'x',
+    folderId: job.id,
+  })
+  await apiPost(page, '/notes', { title: 'Salary bands', body: 'x', folderId: job.id })
+  await page.request.patch(`/api/v1/notes/${pin.id}`, { headers: WEB, data: { pinned: true } })
+  await page.goto('/notes')
+  await expect(section(page, 'Pinned').locator('[data-note-row]')).toHaveText(['Offer'])
+  const job_ = folderRow(page, 'Job hunt prep')
+  await expect(job_.locator('[data-count]').first()).toHaveText('2')
+  await expect(sidebar(page).locator(`[data-note-row="${pin.id}"]`)).toHaveCount(2)
+  // Either row drags the one note.
+  await apiPost(page, '/notes/folders', { name: 'Ideas' })
+  await page.reload()
+  const inFolder = sidebar(page).locator(`[data-note-row="${pin.id}"]`).nth(1)
+  await inFolder.dragTo(sidebar(page).getByRole('button', { name: 'Ideas', exact: true }), {
+    steps: 8,
+  })
+  await expect
+    .poll(async () => (await (await page.request.get(`/api/v1/notes/${pin.id}`)).json()).folderId)
+    .not.toBe(job.id)
+})

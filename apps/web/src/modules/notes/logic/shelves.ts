@@ -2,11 +2,13 @@ import type { NoteFolderResponse, NoteResponse } from '@ctws/contracts'
 import { noteTitle } from './title'
 
 /**
- * One folder: the folders in it, by name, then its notes, the latest edited first; `count` is
- * every note in it and in the folders under it (FR-117).
+ * One folder: its pinned notes, newest pin first, then the folders in it, by name, then its other
+ * notes, the latest edited first; `count` is every note in it and in the folders under it, the
+ * pinned too (FR-117).
  */
 export type Shelf = {
   folder: NoteFolderResponse
+  pinned: NoteResponse[]
   folders: Shelf[]
   notes: NoteResponse[]
   count: number
@@ -14,8 +16,9 @@ export type Shelf = {
 
 /**
  * THE NOTES SIDEBAR'S PLACES (REQ-002 FR-110, FR-117, artboards 34 and 40): the pinned, newest pin
- * first; the folders as a tree, each with the folders in it by name and then its notes; the notes
- * on their own in none; and those hung on other things. A pinned note is listed under Pinned only.
+ * first; the folders as a tree, each with its pinned notes, the folders in it by name and then its
+ * other notes; the notes on their own in none; and those hung on other things. A pinned note in a
+ * folder is listed twice, under Pinned and first in its folder; one in none, under Pinned only.
  * `filter` keeps the notes whose name has its words; a folder with none of them left under it
  * goes too.
  */
@@ -42,11 +45,13 @@ export function shelvesOf(
       .map(shelfOf)
       .filter((s) => !words || s.count > 0)
     const own = unpinned.filter((n) => n.folderId === folder.id)
+    const pins = pinned.filter((n) => n.folderId === folder.id)
     return {
       folder,
+      pinned: pins,
       folders: under,
       notes: own,
-      count: own.length + under.reduce((n, s) => n + s.count, 0),
+      count: pins.length + own.length + under.reduce((n, s) => n + s.count, 0),
     }
   }
   // At the top: those with no parent, and any whose parent another tab has just deleted.
