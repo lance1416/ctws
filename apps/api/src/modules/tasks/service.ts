@@ -37,14 +37,14 @@ import { type Task, taskDependencies, tasks } from './tables'
 import { childStatuses, depthOf, lockTaskTree } from './tree'
 
 /**
- * A parent's status is worked out from its children (FR-038) and written into its own `status`
+ * A parent's status is worked out from its children and written into its own `status`
  * column, so every read that filters by status sees it without recursing. This settles the chain
  * above a task whose status, place or existence just changed: each ancestor in turn, bottom up,
  * written only when its derived status differs from what it holds, and logged as a
  * `status_changed` with `derived: true` so the review can tell it from a change somebody made.
  *
  * `removed` says the caller just took a child away: an ancestor left with no live children has
- * turned back into a leaf (FR-039), which is logged once and keeps the status it had derived.
+ * turned back into a leaf, which is logged once and keeps the status it had derived.
  *
  * Runs inside the caller's transaction under the tree lock; a chain is at most MAX_TASK_DEPTH
  * long, so the walk is bounded.
@@ -90,8 +90,8 @@ async function settleAncestors(
 }
 
 /**
- * What happens to a leaf that is about to get its first child (FR-039): it is logged as a parent
- * from now on, and its planned day, which only a leaf can have (FR-043), moves down to the new
+ * What happens to a leaf that is about to get its first child: it is logged as a parent
+ * from now on, and its planned day, which only a leaf can have, moves down to the new
  * child when that child has none, or is dropped. Returns the planned day the child should take.
  * Call before the child is written, while the parent is still a leaf.
  */
@@ -446,9 +446,9 @@ async function rankFor(
 }
 
 /**
- * Deletes a task and everything under it, for good (FR-035): each node leaves a tombstone that
+ * Deletes a task and everything under it, for good: each node leaves a tombstone that
  * says where it was, and the rows go with their log, relations and resources. A finished task is
- * history (review, FR-043); deleting one takes it out of that history too.
+ * history in the review; deleting one takes it out of that history too.
  */
 export async function deleteTask(db: Db, ctx: Actor, id: TaskId): Promise<void> {
   await db.transaction(async (tx) => {
@@ -611,7 +611,7 @@ export async function addDependency(
       .onConflictDoNothing()
       .returning({ blockerId: taskDependencies.blockerId })
     if (added.length === 0) return
-    // Its title as it was, so the timeline names it (FR-045) without reading it again.
+    // Its title as it was, so the timeline names it without reading it again.
     await taskLog(tx, ctx).append(blockedId, 'dependency_added', {
       blockerId,
       title: blocker.title,

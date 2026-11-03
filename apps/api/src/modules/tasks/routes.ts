@@ -110,7 +110,7 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
         'organisation',
       )
       // A card reads the soonest of what comes next about its node, the nodes above it and their
-      // organisations (FR-058).
+      // organisations.
       const byId = new Map(board.tasks.map((t) => [t.id, t]))
       const about = new Map<string, ObjectType>()
       for (const staged of board.tasks.filter((t) => t.stageId !== null)) {

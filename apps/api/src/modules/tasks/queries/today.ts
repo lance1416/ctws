@@ -14,16 +14,16 @@ const todayRow = pathRow.extend({
 export type TodayTask = z.output<typeof todayRow>
 
 /**
- * Open LEAVES in unarchived projects that are in progress, planned up to today, or due before
+ * Open leaves in unarchived projects that are in progress, planned up to today, or due before
  * tomorrow, except a late one planned for a later day, which waits for that day. Each falls in
  * exactly one segment so no row shows twice: overdue wins, then in progress (what is being done
- * stays there, due today or not, FR-079), then today's plans and deadlines. A plan from an earlier
+ * stays there, due today or not), then today's plans and deadlines. A plan from an earlier
  * day stays until it is done; a late one is overdue again instead. Overdue here is late and not
  * yet given a day: a late task planned for today is today's, still saying how late it is.
  *
- * A parent shows only by its own deadline (FR-043): due today it is a row of today's, missed it is
+ * A parent shows only by its own deadline: due today it is a row of today's, missed it is
  * overdue, and it carries its children's counts. Never in progress: its status is its children's,
- * and the child that is in progress is that row (FR-037).
+ * and the child that is in progress is that row.
  */
 export async function listToday(
   q: Queryable,
@@ -78,7 +78,7 @@ export async function listToday(
         )
     )
     -- A parent's leaves, walked only for the parents picked: done, counted (neither in the backlog
-    -- nor cancelled) and in the backlog, the one measure its square and its "1/4" share (FR-051).
+    -- nor cancelled) and in the backlog, the one measure its square and its "1/4" share.
     select
       picked.*,
       case when picked.is_parent then (

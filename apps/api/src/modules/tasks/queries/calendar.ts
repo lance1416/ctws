@@ -20,9 +20,9 @@ export type CalendarRow = z.output<typeof calendarRow>
 
 /**
  * Open tasks by the day they are planned for and the day they are due, which may be two
- * entries for one task; and the deadlines met, which the calendar keeps struck through (FR-080).
+ * entries for one task; and the deadlines met, which the calendar keeps struck through.
  * A deadline is an instant, so its day is read in the account's zone. A plan for a day gone by,
- * still open, is carried to today, as Today carries it, so the two say the same (U-10).
+ * still open, is carried to today, as Today carries it, so the two say the same.
  */
 export async function listTaskCalendar(
   q: Queryable,

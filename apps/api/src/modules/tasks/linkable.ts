@@ -93,7 +93,7 @@ export const taskLinkable: Linkable = {
 }
 
 /**
- * Where each thing stands in projects (FR-064, FR-065): the live nodes related to it, by hand or by
+ * Where each thing stands in projects: the live nodes related to it, by hand or by
  * a mention, one a project. Of several in one project, the one at a stage, most recently moved to
  * it, speaks for the project; the projects come in that order too.
  */

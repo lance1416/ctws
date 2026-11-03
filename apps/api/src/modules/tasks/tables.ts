@@ -41,7 +41,7 @@ export const tasks = pgTable(
     dueAt: timestamp('due_at', { withTimezone: true }),
     // COLLATE "C" is added in the migration SQL; (rank, id) is the sibling order.
     rank: text('rank').notNull(),
-    /** Where this has got to (FR-040), one of its project's stages, and since when. */
+    /** Where this has got to, one of its project's stages, and since when. */
     stageId: uuid('stage_id').$type<StageId>(),
     stageSince: timestamp('stage_since', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),

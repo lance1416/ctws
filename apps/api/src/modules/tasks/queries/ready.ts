@@ -10,9 +10,9 @@ const readyRow = pathRow.omit({ parentTitle: true })
 export type ReadyTask = z.output<typeof readyRow>
 
 /**
- * Leaves that could be started now (FR-041): to do, in an unarchived project that is not the
+ * Leaves that could be started now: to do, in an unarchived project that is not the
  * inbox, waiting for no unfinished task. What is in the inbox is still to be sorted, not a next
- * step (BUG-065). Parents are never here, since their status is their children's. Oldest plan
+ * step. Parents are never here, since their status is their children's. Oldest plan
  * first: a task planned for a day comes before one with no day, then by deadline, then by place
  * in its tree.
  */

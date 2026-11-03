@@ -36,7 +36,7 @@ const reviewRow = z.object({
   title: z.string(),
   to_status: z.enum(RECOUNTED),
   at: z.string(),
-  /** A parent's change, worked out from its children rather than made (FR-043). */
+  /** A parent's change, worked out from its children rather than made. */
   derived: z.boolean(),
   parent_id: taskId.nullable(),
   parent_title: z.string().nullable(),
@@ -182,9 +182,9 @@ const weekRow = z.object({ week: calendarDate, finished: z.coerce.number().int()
 
 /**
  * Every week from the one the workspace's first change is in, or last week if that is later, to
- * this one, newest first, each by
- * its Monday in the account's zone with how many leaves it finished: the review's list of weeks,
- * a week with nothing finished included. Counted as the review counts, once per task in its week.
+ * this one, newest first, each by its Monday in the account's zone with how many leaves it
+ * finished: the review's list of weeks, a week with nothing finished included. Counted as the
+ * review counts, once per task in its week.
  */
 export async function listReviewWeeks(
   q: Queryable,

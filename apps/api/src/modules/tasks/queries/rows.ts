@@ -15,7 +15,7 @@ export const taskRow = z.object({
   parentTitle: z.string().nullable(),
 })
 
-/** The task under the alias has no live children: a leaf, whose status is its own (FR-037). */
+/** The task under the alias has no live children: a leaf, whose status is its own. */
 export const isLeafSql = (task: string): SQL =>
   sql`not exists (
     select 1 from tasks child

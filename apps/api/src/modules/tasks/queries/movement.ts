@@ -25,7 +25,7 @@ const movementRow = z.object({
  * How each unarchived project moved: finished this week, still open, under way, its progress,
  * overdue, and how long since its last logged change (the event log, so a reorder does not count).
  * Finished, open, under way and progress count leaves only: a parent closes with its last child,
- * and is not one more thing done (FR-043). Weeks and days are the account's. The projects are the
+ * and is not one more thing done. Weeks and days are the account's. The projects are the
  * shell's; the counts are this module's, one row per project.
  */
 export async function listProjectMovement(

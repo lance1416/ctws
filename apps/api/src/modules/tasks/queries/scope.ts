@@ -31,7 +31,7 @@ export const taskFinishedSql = (task: string): SQL => sql`${ident(task)}.status 
 export const taskOpenSql = (task: string): SQL => sql`${ident(task)}.status not in (${FINISHED})`
 
 /**
- * The task under the alias is LATE (FR-079): open, and its deadline before the day that starts at
+ * The task under the alias is late: open, and its deadline before the day that starts at
  * `dayStarts`. One meaning everywhere a missed deadline is counted or coloured; planning it for a
  * day does not unmiss it.
  */
@@ -44,7 +44,7 @@ export const lateSql = (task: string, dayStarts: SQL) =>
 
 /**
  * How many live open leaves the project `projectId` names has: a parent organises the work under
- * it, and is not one more thing open (FR-037). The project list correlates it through the literal
+ * it, and is not one more thing open. The project list correlates it through the literal
  * `projects.id`: a drizzle column would render unqualified.
  */
 export const openTaskCountSql = (projectId: SQL = sql`projects.id`) =>
@@ -56,7 +56,7 @@ export const openTaskCountSql = (projectId: SQL = sql`projects.id`) =>
       and ${isLeafSql('open_t')}
   )`.mapWith(Number)
 
-/** How many live tasks of the project have one under them: Move to… offers those (FR-059). */
+/** How many live tasks of the project have one under them: Move to… offers those. */
 export const parentTaskCountSql = (projectId: SQL = sql`projects.id`) =>
   sql<number>`(
     select count(*) from tasks parent_t
