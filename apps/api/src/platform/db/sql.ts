@@ -11,7 +11,7 @@ export function likePattern(query: string): string {
 }
 
 /**
- * How well `title` answers `query` (FR-024): 0 when it starts with it, 1 when one of its words
+ * How well `title` answers `query`: 0 when it starts with it, 1 when one of its words
  * does, 2 when it only has it inside. `alsoStarts`, when given, counts as a start too (an alias).
  */
 export function matchTier(title: SQL | AnyPgColumn, query: string, alsoStarts?: SQL): SQL {

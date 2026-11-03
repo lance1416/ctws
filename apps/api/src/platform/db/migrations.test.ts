@@ -3,14 +3,12 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * THE MIGRATION A DATABASE SILENTLY SKIPS.
+ * Guards against a migration a database silently skips. Drizzle's migrator applies an entry only
+ * when its `when` is later than the last one the database recorded. A hand-written entry stamped
+ * with a round, made-up timestamp in the future makes the next generated one, which gets the real
+ * clock, earlier, and a running stack skips it without a word.
  *
- * Drizzle's migrator applies an entry only when its `when` is later than the last one the
- * database recorded. A hand-written entry stamped with a round, made-up timestamp in the future
- * makes the next generated one -- which gets the real clock -- EARLIER, and a running stack skips
- * it without a word: the table simply does not exist.
- *
- * NOTHING ELSE CAN CATCH THIS. A fresh database applies every entry regardless of order, so the
+ * Nothing else catches this: a fresh database applies every entry regardless of order, so the
  * whole suite stays green; the defect exists only for a database that has already migrated once.
  */
 describe('migration journal', () => {
