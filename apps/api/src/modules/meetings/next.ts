@@ -21,10 +21,10 @@ const uuids = (ids: readonly string[]) =>
   )
 
 /**
- * The next meeting about each task or organisation (FR-058): the soonest occurrence not yet over
+ * The next meeting about each task or organisation: the soonest occurrence not yet over
  * of a series related to it outright, wherever it is filed, or, for an organisation, of a series
  * filed under the project asked from, held while an attendee had a role there (as its timeline
- * counts them, FR-065).
+ * counts them).
  */
 export async function nextMeetingAbout(
   q: Queryable,
@@ -126,7 +126,7 @@ export async function nextMeetingAbout(
 const BACK_MS = 3 * 366 * DAY_MS
 
 /**
- * The last meeting with each of these people (FR-060): the latest occurrence started by `now` of a
+ * The last meeting with each of these people: the latest occurrence started by `now` of a
  * series they attend, or of one related to them outright.
  */
 export async function lastMeetingWith(

@@ -53,9 +53,9 @@ async function organisationFilter(
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
- * The meetings a thing was in, one entry per occurrence that has happened (FR-045): a person's
+ * The meetings a thing was in, one entry per occurrence that has happened: a person's
  * are the series they attend, a project's the series held under it, an organisation's those its
- * people attended while they held a role there, or that were related to it outright (FR-065).
+ * people attended while they held a role there, or that were related to it outright.
  * Occurrences come out of the rule up to now, newest first.
  */
 export const meetingSource: TimelineSource = {

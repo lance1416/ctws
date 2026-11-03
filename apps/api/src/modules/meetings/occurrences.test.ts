@@ -10,12 +10,8 @@ import {
 } from './occurrences'
 
 /**
- * EXPANDING A RECURRENCE, in the meeting's own zone.
- *
- * The cases below are the ones that break a hand-rolled implementation, and two of them are the
- * reason this exists at all: a weekly meeting in Toronto and a weekly meeting in London, each
- * across its own DST change. They change on DIFFERENT dates, so "the server's offset" is wrong
- * for at least one of them for several weeks a year.
+ * Recurrences expanded in the meeting's own zone. Toronto and London change for DST on different
+ * dates, so "the server's offset" is wrong for at least one of them for weeks a year.
  *
  * No database: this is arithmetic, and arithmetic that needs a container is arithmetic nobody
  * runs often enough.
@@ -61,7 +57,7 @@ describe('one-off meetings', () => {
 
 describe('a weekly meeting across a DST change', () => {
   it('stays at 09:00 in TORONTO, and the instant moves', () => {
-    // THE WHOLE POINT. Toronto leaves EDT on 2026-11-01. A series stored as an instant and
+    // Toronto leaves EDT on 2026-11-01. A series stored as an instant and
     // advanced by seven days would hold 13:00Z and move the meeting to 08:00 for the people in
     // the room.
     const got = occurrencesIn(weekly(), none, window('2026-10-20T00:00Z', '2026-11-18T00:00Z'))
@@ -150,9 +146,8 @@ describe('exceptions', () => {
   })
 
   it('finds an occurrence that was MOVED INTO the window from well outside it', () => {
-    // This week's meeting moved to next Monday. The rule produces nothing anywhere near this window, so walking the
-    // rule alone -- even with the slack the zone conversion needs -- would miss it, and the
-    // meeting would simply not be on the day it was moved to.
+    // This week's meeting moved to next Monday. The rule produces nothing near this window, so
+    // walking the rule alone, even with the slack the zone conversion needs, would miss it.
     const got = occurrencesIn(
       weekly(),
       [
@@ -273,7 +268,7 @@ describe('rules', () => {
   })
 
   it('refuses a rule carrying a second line, whatever that line says', () => {
-    // An RRULE body is ONE content line. A newline lets the stored string smuggle another
+    // An RRULE body is one content line. A newline lets the stored string smuggle another
     // property into the text the parser is handed -- another RRULE, an RDATE, a DTSTART of its
     // own -- so what the parser sees stops being what the check read.
     // Built with an explicit newline rather than an escape: a source file is exactly the wrong
@@ -443,9 +438,8 @@ describe('wall clocks and instants', () => {
 
 describe('what one request may cost', () => {
   it('bounds the walk itself, not its result', () => {
-    // MEASURED: `FREQ=SECONDLY` over a month is 2,646,001 occurrences and 5.5s of one core. The
-    // contract refuses sub-daily rules, but a limit applied AFTER `between()` returns bounds
-    // nothing -- the array is already built. This is the layer that actually stops it.
+    // `FREQ=SECONDLY` over a month is 2,646,001 occurrences and 5.5s of one core. A limit applied
+    // after `between()` returns bounds nothing: the array is already built.
     const started = Date.now()
     const got = occurrencesIn(
       weekly({ rrule: 'FREQ=SECONDLY', startsLocal: '2026-01-01T00:00', durationMinutes: 1 }),

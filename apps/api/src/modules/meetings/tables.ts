@@ -36,12 +36,12 @@ export const meetings = pgTable(
     durationMinutes: integer('duration_minutes').notNull(),
     /** `RRULE` without its prefix; null when it happens once. */
     rrule: text('rrule'),
-    /** A place; a link to join is its own column (FR-067). */
+    /** A place; a link to join is its own column. */
     location: text('location'),
     joinUrl: text('join_url'),
     /** Being replaced by notes hung on the meeting; kept until the migration report is done. */
     note: text('note'),
-    /** The project it belongs to (FR-042): a field, no longer an edge. */
+    /** The project it belongs to: a field, no longer an edge. */
     projectId: uuid('project_id').$type<ProjectId>(),
     /**
      * When the first occurrence starts and the last one ends, overrides included; the end is null
@@ -72,7 +72,7 @@ export const meetings = pgTable(
   ],
 )
 
-/** Who is in the room (FR-042): a field of the series, replaced as a set. */
+/** Who is in the room: a field of the series, replaced as a set. */
 export const meetingAttendees = pgTable(
   'meeting_attendees',
   {

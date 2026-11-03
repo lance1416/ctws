@@ -17,7 +17,7 @@ export class OnceOnlyError extends DomainError {
 }
 
 /**
- * One occurrence cancelled from its More menu (FR-068): not there, but not gone either, since it
+ * One occurrence cancelled from its More menu: not there, but not gone either, since it
  * can be taken back. Named, so its page can say so rather than call it deleted.
  */
 export class OccurrenceCancelledError extends DomainError {

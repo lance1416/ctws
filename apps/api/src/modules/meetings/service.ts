@@ -177,7 +177,7 @@ async function editFollowing(e: Edit) {
   await eventLog(tx, { workspaceId, now }).append(subject(nextId), 'created', {
     to: { title: fields.title ?? series.title, continuedFrom: series.id, from: recurrenceId },
   })
-  // Notes on occurrences from the split on hang on the new series (RFC-001 2.7).
+  // Notes on occurrences from the split on hang on the new series.
   await tx.execute(sql`
     update notes set anchor_id = ${nextId}
     where anchor_type = 'meeting' and anchor_id = ${series.id}
@@ -264,7 +264,7 @@ async function cancelOne({ tx, workspaceId, now, series, recurrenceId }: Cancel)
 }
 
 /**
- * Undoes cancelling one occurrence (FR-068): its cancelled exception goes, and the rule produces it
+ * Undoes cancelling one occurrence: its cancelled exception goes, and the rule produces it
  * again. One moved, not cancelled, is left as it is.
  */
 export async function restoreOccurrence(
@@ -302,7 +302,7 @@ async function cancelFollowing(c: Cancel) {
   await recomputeBounds(tx, series.id)
 }
 
-/** The whole series goes, for good (FR-035): a tombstone, and the row with its exceptions. */
+/** The whole series goes, for good: a tombstone, and the row with its exceptions. */
 async function cancelAll({ tx, workspaceId, now, series }: Cancel) {
   await bury(tx, { workspaceId, now }, [
     {
