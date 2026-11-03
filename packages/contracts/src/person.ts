@@ -83,7 +83,7 @@ const channels = z.array(personChannel).max(20)
 
 export const personParams = z.object({ id: personId }).strict()
 
-/** A month, `YYYY-MM`: roles are known to the month (FR-047). */
+/** A month, `YYYY-MM`: roles are known to the month. */
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'expected a month like 2026-03')
 
 /** One role on the way in. No `to` means the role is current. */
@@ -121,8 +121,8 @@ const aliasResponse = z.object({ name: z.string(), label: z.string().nullable() 
 export type PersonAlias = z.infer<typeof personAlias>
 
 /**
- * What can be said about a person; null clears a field. The name comes as its three parts
- * (FR-049), or as one string that the server splits the way the migration does; one or the other
+ * What can be said about a person; null clears a field. The name comes as its three parts,
+ * or as one string that the server splits the way the migration does; one or the other
  * is needed to add someone. `timeZone` null means "from the city they live in".
  */
 const personFields = {
@@ -177,7 +177,7 @@ export const personResponse = z.object({
   hometownKey: z.string().nullable(),
   org: z.string().nullable(),
   note: z.string().nullable(),
-  /** The live projects they are in, the one that moved last first (FR-061). */
+  /** The live projects they are in, the one that moved last first. */
   projects: z.array(
     z.object({
       id: projectId,
@@ -238,7 +238,7 @@ export const personSearchResponse = z.object({
 const birthdayListRow = z.object({
   personId,
   name: z.string(),
-  /** What their avatar shows (FR-049). */
+  /** What their avatar shows. */
   initials: z.string(),
   circle: z.enum(CIRCLES).nullable(),
   day: calendarDate,
@@ -252,17 +252,17 @@ const birthdayListRow = z.object({
   timeZone: z.string(),
 })
 
-/** The latest exchange with someone (FR-060): a message sent or received, or a meeting together. */
+/** The latest exchange with someone: a message sent or received, or a meeting together. */
 const lastExchange = z.object({
   kind: z.enum(['sent', 'received', 'meeting']),
   at: instant,
 })
 export type LastExchange = z.infer<typeof lastExchange>
 
-/** Last in touch this long ago or more, someone is "not in touch for a while" (FR-060). */
+/** Last in touch this long ago or more, someone is "not in touch for a while". */
 export const QUIET_AFTER_DAYS = 90
 
-/** Who you were in touch with lately, and with whom it has been a while (FR-060). */
+/** Who you were in touch with lately, and with whom it has been a while. */
 export const peopleTouchResponse = z.object({
   /** In the last 30 days on your calendar, the latest first. */
   recent: z.array(lastExchange.extend({ personId })),

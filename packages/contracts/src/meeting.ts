@@ -103,7 +103,7 @@ const meetingFields = {
   durationMinutes,
   rrule: rrule.nullable(),
   location: location.nullable(),
-  /** A link to join (FR-067): "Join" is shown when there is one. */
+  /** A link to join: "Join" is shown when there is one. */
   joinUrl: joinUrl.nullable(),
   note: note.nullable(),
   projectId: projectId.nullable(),

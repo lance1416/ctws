@@ -5,7 +5,7 @@ import { thingWith } from './link'
 import { objectType } from './object'
 
 /**
- * A relation joins any two things without saying how (FR-042): relations with a fixed meaning
+ * A relation joins any two things without saying how: relations with a fixed meaning
  * (a meeting's people, a reading's recommender, what belongs to a project) are fields of the
  * things themselves. A relation is made by hand, with an optional line of why, or by mentioning
  * one thing in another's text, which carries the sentence it was mentioned in.

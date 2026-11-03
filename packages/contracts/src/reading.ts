@@ -50,7 +50,7 @@ export const updateReadingItemBody = patchOf({
   author: author.nullable(),
   status: readingStatus,
   projectId: projectId.nullable(),
-  /** Who recommended it (FR-042): a field, one person. */
+  /** Who recommended it: a field, one person. */
   recommendedById: personId.nullable(),
   planOn: calendarDate.nullable(),
 })
@@ -71,7 +71,7 @@ export const readingItemResponse = z.object({
   /** What the page itself says, kept apart from `title`; a title someone typed wins. */
   fetchedTitle: z.string().nullable(),
   fetchedSummary: z.string().nullable(),
-  /** When it took the status it has: started reading, finished, set aside (FR-072, FR-073). */
+  /** When it took the status it has: started reading, finished, set aside. */
   statusSince: instant,
   createdAt: instant,
   updatedAt: instant,

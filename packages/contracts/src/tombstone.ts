@@ -4,7 +4,7 @@ import { objectId, projectId } from './id'
 import { objectType } from './object'
 
 /**
- * Where a deleted thing was (FR-035): enough for its old address to say what it was and offer
+ * Where a deleted thing was: enough for its old address to say what it was and offer
  * the way to what held it. A task has its project, its parent and the titles above it; a meeting
  * or a reading item its project; a note the thing it hung on; a person or a project nothing.
  */

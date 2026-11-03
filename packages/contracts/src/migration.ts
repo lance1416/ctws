@@ -4,7 +4,7 @@ import { objectId } from './id'
 import { objectType } from './object'
 
 /**
- * The migration report (FR-099): the places where the move to the new layout made a guess for
+ * The migration report: the places where the move to the new layout made a guess for
  * you, to look at once and mark Done.
  */
 const MIGRATION_SECTIONS = [

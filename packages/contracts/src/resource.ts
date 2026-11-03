@@ -4,7 +4,7 @@ import { objectId, resourceId } from './id'
 import { objectType } from './object'
 
 /**
- * A resource is an outside address any thing can carry (FR-046): a document, a pull request, a
+ * A resource is an outside address any thing can carry: a document, a pull request, a
  * folder. It has an optional name of its own; what it is (a Google Doc, "#123") is read from the
  * address by the client. A project may pin a few of its resources in its head, numbered 1 to 9.
  */

@@ -28,8 +28,8 @@ export const loginBody = z
   .strict()
 
 /**
- * What the account changes: its time zone, whether single keys act (FR-029), whether the editor
- * takes vim's keys (REQ-002 FR-112), and how a note is laid out (REQ-002 FR-109, FR-116).
+ * What the account changes: its time zone, whether single keys act, whether the editor
+ * takes vim's keys, and how a note is laid out.
  */
 export const updateMeBody = z
   .object({
@@ -74,15 +74,15 @@ export const meResponse = userResponse.extend({
   migrationReport: z.object({ pending: z.number().int().nonnegative() }).nullable(),
   /** When the password was last changed here; null for one set at sign-up. */
   passwordChangedAt: instant.nullable(),
-  /** Whether keys without Ctrl or Alt act (FR-029); kept with the account. */
+  /** Whether keys without Ctrl or Alt act; kept with the account. */
   singleKeyShortcuts: z.boolean(),
-  /** Whether the editor takes vim's keys on a desk (REQ-002 FR-112); off unless turned on. */
+  /** Whether the editor takes vim's keys on a desk; off unless turned on. */
   vimKeys: z.boolean(),
-  /** Whether a note's outline is shown beside it (REQ-002 FR-109). */
+  /** Whether a note's outline is shown beside it. */
   outlineShown: z.boolean(),
-  /** Whether a note stops at a readable line length instead of the full width (FR-109). */
+  /** Whether a note stops at a readable line length instead of the full width. */
   readableLines: z.boolean(),
-  /** Whether a note is shown as its Markdown source (REQ-002 FR-116). */
+  /** Whether a note is shown as its Markdown source. */
   sourceView: z.boolean(),
 })
 

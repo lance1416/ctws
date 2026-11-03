@@ -5,7 +5,7 @@ import { projectStanding } from './organisation'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
- * A communication (FR-048): one exchange logged by hand, sent or received, by some channel, with
+ * A communication: one exchange logged by hand, sent or received, by some channel, with
  * one or more people or organisations, about something. A sent one may wait for a reply by a
  * follow-up day; logging the reply closes it.
  */
@@ -18,7 +18,7 @@ export type Channel = (typeof CHANNELS)[number]
 /** How many days after sending a follow-up falls when none is given. */
 export const FOLLOW_UP_DAYS = 5
 
-/** Sent this long ago with no reply and no follow-up set: "No reply, N days" (FR-071). */
+/** Sent this long ago with no reply and no follow-up set: "No reply, N days". */
 export const NO_REPLY_AFTER_DAYS = 7
 
 const party = z.object({ type: z.enum(['person', 'organisation']), id: objectId }).strict()
@@ -107,7 +107,7 @@ export const communicationsResponse = z.object({
   page: pageInfo,
 })
 
-/** A sent message still waiting, with how it stands against today (FR-071, FR-079). */
+/** A sent message still waiting, with how it stands against today. */
 const awaitingRow = communicationResponse.extend({
   /** Days since it was sent, on the account's calendar. */
   waitingDays: z.number().int().nonnegative(),
@@ -121,7 +121,7 @@ export const awaitingResponse = z.object({ awaiting: z.array(awaitingRow) })
 /** "Follow up": those whose follow-up day is today or past, for Today and the Workbench. */
 export const followUpsQuery = viewQuery('followups')
 
-/** What comes next with an organisation, said as the overview's "Next" column (FR-071). */
+/** What comes next with an organisation, said as the overview's "Next" column. */
 const nextStep = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('follow-up'), on: calendarDate, late: z.boolean() }),
   z.object({ kind: z.literal('no-reply'), days: z.number().int().nonnegative() }),
@@ -132,7 +132,7 @@ const nextStep = z.discriminatedUnion('kind', [
 const organisationInTouch = z.object({
   organisationId,
   organisationName: z.string(),
-  /** The project it stands furthest along in, and that node's stage (FR-064, FR-071). */
+  /** The project it stands furthest along in, and that node's stage. */
   standing: projectStanding.nullable(),
   /** People of that organisation the exchanges were with. */
   peopleCount: z.number().int().nonnegative(),
@@ -147,8 +147,8 @@ const organisationInTouch = z.object({
 export type OrganisationInTouch = z.infer<typeof organisationInTouch>
 
 /**
- * The overview (FR-071): every message awaiting a reply and every organisation in touch in the last
- * 30 days. A page shows five of each and the rest behind "All N" (FR-015).
+ * The overview: every message awaiting a reply and every organisation in touch in the last
+ * 30 days. A page shows five of each and the rest behind "All N".
  */
 export const communicationOverviewResponse = z.object({
   awaiting: z.array(awaitingRow),
@@ -158,5 +158,5 @@ export const communicationOverviewResponse = z.object({
 })
 export type CommunicationOverviewResponse = z.infer<typeof communicationOverviewResponse>
 
-/** "In touch": an exchange within this many days (FR-060, FR-071). */
+/** "In touch": an exchange within this many days. */
 export const IN_TOUCH_DAYS = 30

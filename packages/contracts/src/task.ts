@@ -68,7 +68,7 @@ export const createTaskBody = z
     status: taskStatus.default(NEW_TASK_STATUS),
     scheduledOn: calendarDate.nullish(),
     dueAt: instant.nullish(),
-    /** One of the project's stages (FR-040). */
+    /** One of the project's stages. */
     stageId: stageId.nullish(),
   })
   .strict()
@@ -119,7 +119,7 @@ export const taskResponse = z.object({
   dueAt: instant.nullable(),
   rank: z.string(),
   stageId: stageId.nullable(),
-  /** When it reached its stage, for "5d" on the board by stage (FR-058). */
+  /** When it reached its stage, for "5d" on the board by stage. */
   stageSince: instant.nullable(),
   completedAt: instant.nullable(),
   createdAt: instant,
@@ -128,7 +128,7 @@ export const taskResponse = z.object({
 
 /**
  * Why a PATCH to a parent's status or planned day is refused: a task with subtasks takes its
- * status from them (FR-038) and is planned by them (FR-043). The parent's deadline is its own.
+ * status from them and is planned by them. The parent's deadline is its own.
  */
 export const DERIVED_STATUS_REFUSED = 'a task with subtasks takes its status from them'
 export const DERIVED_PLAN_REFUSED = 'a task with subtasks is planned by its subtasks'
@@ -147,7 +147,7 @@ const rollupResponse = z.object({
 export type RollupResponse = z.infer<typeof rollupResponse>
 
 /**
- * A parent's leaves, counted for its progress square and its "1/4" (FR-051, artboard 32): how
+ * A parent's leaves, counted for its progress square and its "1/4": how
  * many are done, how many count (neither in the backlog nor cancelled), and how many wait in the
  * backlog.
  */
@@ -178,7 +178,7 @@ export const dependencyParams = z.object({ id: taskId, blockerId: taskId }).stri
 export const projectTasksQuery = z.object({ projectId: projectId }).strict()
 
 /**
- * What comes next about a thing, for a card on the board by stage (FR-058): its next meeting not
+ * What comes next about a thing, for a card on the board by stage: its next meeting not
  * yet over, and the soonest day a reply to it is awaited by.
  */
 const nextAbout = z.object({
@@ -189,24 +189,24 @@ export type NextAbout = z.infer<typeof nextAbout>
 
 /** A project's flat task list with each task's rollup and what is still in its way. */
 export const projectTasksResponse = z.object({
-  /** The project's stages, in order, for the board by stage (FR-058). */
+  /** The project's stages, in order, for the board by stage. */
   stages: z.array(stageResponse),
   tasks: z.array(taskResponse),
   rollups: z.record(taskId, rollupResponse),
   /** Keyed by the waiting task; unfinished blockers only. */
   blockers: z.record(taskId, z.array(dependencyRef)),
   /**
-   * The organisations each task is linked to, for the mark after its name in the tree (FR-047,
-   * FR-054); a task linked to none is not a key.
+   * The organisations each task is linked to, for the mark after its name in the tree; a
+   * task linked to none is not a key.
    */
   organisations: z.record(taskId, z.array(z.object({ id: z.string(), title: z.string() }))),
   /**
    * What comes next about the nodes with a stage, their ancestors and their organisations, keyed
-   * by their ids; a card reads the soonest among its own (FR-058). Things with nothing next are not
+   * by their ids; a card reads the soonest among its own. Things with nothing next are not
    * keys.
    */
   next: z.record(objectId, nextAbout),
-  /** Each task's first GitHub pull request, as "#418", for its card (FR-057); none, no key. */
+  /** Each task's first GitHub pull request, as "#418", for its card; none, no key. */
   pullRequests: z.record(taskId, z.string()),
 })
 
@@ -215,7 +215,7 @@ const reviewTask = z.object({
   id: taskId,
   title: z.string(),
   at: instant,
-  /** What it is under, so the leaves of one parent are told as one line (FR-081). */
+  /** What it is under, so the leaves of one parent are told as one line. */
   parent: z.object({ id: taskId, title: z.string() }).nullable(),
 })
 
@@ -223,7 +223,7 @@ export const reviewResponse = z.object({
   /** The window's own bounds, as days in the account's zone. */
   from: calendarDate,
   to: calendarDate,
-  /** Leaves only: a parent's derived change is not a thing anybody did (FR-043). */
+  /** Leaves only: a parent's derived change is not a thing anybody did. */
   projects: z.array(
     z.object({
       projectId: projectId,
@@ -235,7 +235,7 @@ export const reviewResponse = z.object({
       closedParents: z.array(reviewTask),
     }),
   ),
-  /** The nodes whose stage changed in the window, newest first (FR-081). */
+  /** The nodes whose stage changed in the window, newest first. */
   stagesMoved: z.array(
     z.object({
       taskId,
@@ -273,7 +273,7 @@ export const todayTaskResponse = taskResponse.extend({
   segment: z.enum(TODAY_SEGMENTS),
   /** Unfinished blockers. */
   blockedBy: z.array(dependencyRef),
-  /** A parent's children, for the square it wears where a leaf has its status (FR-043). Null on a leaf. */
+  /** A parent's children, for the square it wears where a leaf has its status. Null on a leaf. */
   children: childCounts.nullable(),
 })
 export type TodayTaskResponse = z.infer<typeof todayTaskResponse>
@@ -282,7 +282,7 @@ export const todayResponse = z.object({ tasks: z.array(todayTaskResponse) })
 
 /**
  * A leaf that could be started now: to do, waiting for nothing unfinished, in an unarchived
- * project. What Today and the Workbench recommend as the next move (FR-041).
+ * project. What Today and the Workbench recommend as the next move.
  */
 const readyTaskResponse = taskResponse.extend({
   projectName: z.string(),
@@ -298,12 +298,12 @@ export const projectMovementResponse = z.object({
   projectName: z.string(),
   doneThisWeek: z.number().int().nonnegative(),
   remaining: z.number().int().nonnegative(),
-  /** Leaves under way, for the overview's card (FR-051). */
+  /** Leaves under way, for the overview's card. */
   inProgress: z.number().int().nonnegative(),
   /** Its progress, "19 of 31": the leaves done, of those neither in the backlog nor cancelled. */
   done: z.number().int().nonnegative(),
   counted: z.number().int().nonnegative(),
-  /** Open and due before today: deadlines missed, given another day or not (FR-079). */
+  /** Open and due before today: deadlines missed, given another day or not. */
   overdue: z.number().int().nonnegative(),
   lastActivityOn: calendarDate.nullable(),
   quietDays: z.number().int().nonnegative().nullable(),
@@ -342,10 +342,10 @@ export const TASK_EVENT_TYPES = [
   'dependency_added',
   'dependency_removed',
   'deleted',
-  // A leaf got its first subtask, or a parent lost its last one (FR-039).
+  // A leaf got its first subtask, or a parent lost its last one.
   'became_parent',
   'became_leaf',
-  // From one of the project's stages to another, by name (FR-040).
+  // From one of the project's stages to another, by name.
   'stage_changed',
   // The stage it is at was renamed in Edit stages: the same stage, a new name.
   'stage_renamed',

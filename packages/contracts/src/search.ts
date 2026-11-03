@@ -14,11 +14,11 @@ const searchText = z.string().trim().min(1).max(200)
 export const searchQueryOf = (fallback: number) =>
   z.object({ q: searchText, ...pageQuery(SEARCH_LIMIT, fallback) }).strict()
 
-/** "All" shows this many of each kind; the rest are a tab away (FR-024). */
+/** "All" shows this many of each kind; the rest are a tab away. */
 export const SEARCH_GROUP = 5
 
 /**
- * Everything at once (`GET /search`, FR-024): every kind's first few and how many there are; or,
+ * Everything at once (`GET /search`): every kind's first few and how many there are; or,
  * with `kind`, that kind alone a page at a time. Empty text is every row, most likely first.
  */
 export const searchEverythingQuery = z
@@ -27,7 +27,7 @@ export const searchEverythingQuery = z
     kind: objectType.optional(),
     /**
      * What this person opened lately, newest first, comma-separated: among equally good matches
-     * these come first (FR-024). The browser keeps the list; the server only orders by it.
+     * these come first. The browser keeps the list; the server only orders by it.
      */
     recent: z
       .string()
@@ -39,7 +39,7 @@ export const searchEverythingQuery = z
   .strict()
 
 export const searchEverythingResponse = z.object({
-  /** Kind by kind, in the fixed order (DES-001), each with its total; a kind with none left out. */
+  /** Kind by kind, in the fixed order, each with its total; a kind with none left out. */
   groups: z.array(
     z.object({ type: objectType, total: z.number().int(), items: z.array(linkCandidate) }),
   ),

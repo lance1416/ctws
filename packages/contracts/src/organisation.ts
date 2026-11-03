@@ -4,7 +4,7 @@ import { organisationId, personId, projectId } from './id'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
- * An organisation (FR-047): a company, a law firm, a school. People hold roles at organisations
+ * An organisation: a company, a law firm, a school. People hold roles at organisations
  * (see `person.ts`); a task node may be related to one, which is how "Amazon" in a job hunt
  * knows which company it is.
  */
@@ -52,7 +52,7 @@ const roleHolder = z.object({
 })
 
 /**
- * Where a thing stands in one project (FR-064, FR-065): the project, and the stage of the node
+ * Where a thing stands in one project: the project, and the stage of the node
  * there that is related to it ("Shortlisted"), or null when that node has no stage.
  */
 export const projectStanding = z.object({
@@ -72,7 +72,7 @@ export const organisationResponse = z.object({
   note: z.string().nullable(),
   /** Current roles first, then past ones. */
   people: z.object({ now: z.array(roleHolder), before: z.array(roleHolder) }),
-  /** How many people hold or held a role here, for "3 people lose a role there" (FR-035). */
+  /** How many people hold or held a role here, for "3 people lose a role there". */
   roleCount: z.number().int().nonnegative(),
   /** The projects it is in through a node related to it, the most recently staged first. */
   inProjects: z.array(projectStanding),
@@ -90,13 +90,13 @@ export const organisationsResponse = z.object({
   page: pageInfo,
 })
 
-/** The types used so far and how many organisations have each, for the filter row (FR-064). */
+/** The types used so far and how many organisations have each, for the filter row. */
 export const organisationTypesResponse = z.object({
   types: z.array(z.object({ type: z.string(), count: z.number().int().nonnegative() })),
 })
 
 /**
- * The organisations overview (FR-064): each type with its count, and how many there are. The
+ * The organisations overview: each type with its count, and how many there are. The
  * "In touch, last 30 days" table is `communication?view=overview`'s `inTouch`, which the page reads
  * beside this.
  */
@@ -107,5 +107,5 @@ export const organisationOverviewResponse = z.object({
   total: z.number().int().nonnegative(),
 })
 
-/** Fold this organisation into another: its roles and relations move, and it goes (FR-099). */
+/** Fold this organisation into another: its roles and relations move, and it goes. */
 export const mergeOrganisationBody = z.object({ into: organisationId }).strict()

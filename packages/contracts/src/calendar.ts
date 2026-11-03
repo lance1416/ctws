@@ -76,9 +76,9 @@ const calendarEntry = z.object({
   turns: z.number().int().nullable(),
   /** Where to join, for a meeting held on a call (Today's "Join"). */
   joinUrl: z.string().nullable(),
-  /** A deadline met: the calendar keeps it, struck through (FR-080). */
+  /** A deadline met: the calendar keeps it, struck through. */
   done: z.boolean(),
-  /** One meeting of a series, drawn with the repeat mark (artboard 13). */
+  /** One meeting of a series, drawn with the repeat mark. */
   repeats: z.boolean(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
@@ -101,6 +101,6 @@ export const weekCountsQuery = z
 
 /**
  * What each module counted of the window, by the name it gives: "meetingsHeld", "peopleAdded". The
- * review's "Also this week" (FR-081); the web words them.
+ * review's "Also this week"; the web words them.
  */
 export const weekCountsResponse = z.object({ counts: z.record(z.string(), z.number().int()) })

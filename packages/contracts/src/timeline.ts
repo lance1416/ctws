@@ -4,7 +4,7 @@ import { objectId, relationId } from './id'
 import { objectType } from './object'
 
 /**
- * A thing's timeline (FR-045): what happened to it, and what was said, held or written about it,
+ * A thing's timeline: what happened to it, and what was said, held or written about it,
  * newest first. Each entry is one of these kinds; a module that keeps a kind of entry (messages,
  * meetings, notes) adds its own shape here as it arrives.
  */
@@ -19,7 +19,7 @@ const changeEntry = z.object({
   event: z.object({ type: z.string(), payload: z.unknown() }),
 })
 
-/** A message sent to or received from the thing, or logged under its project (FR-045). */
+/** A message sent to or received from the thing, or logged under its project. */
 const messageEntry = z.object({
   kind: z.literal('message'),
   at: instant,
@@ -36,7 +36,7 @@ const messageEntry = z.object({
     ),
     attachments: z.array(z.string()),
     repliedBy: objectId.nullable(),
-    /** When the reply that closed it came: "Replied Oct 15" (FR-065). */
+    /** When the reply that closed it came: "Replied Oct 15". */
     repliedAt: instant.nullable(),
   }),
 })
@@ -55,7 +55,7 @@ const meetingEntry = z.object({
   }),
 })
 
-/** A note hung on the thing (FR-045, FR-050). */
+/** A note hung on the thing. */
 const noteEntry = z.object({
   kind: z.literal('note'),
   at: instant,
@@ -69,7 +69,7 @@ const noteEntry = z.object({
   }),
 })
 
-/** Somewhere the thing was mentioned: the sentence, and what it was written in (FR-042). */
+/** Somewhere the thing was mentioned: the sentence, and what it was written in. */
 const mentionEntry = z.object({
   kind: z.literal('mention'),
   relationId,
@@ -87,7 +87,7 @@ const timelineEntry = z.discriminatedUnion('kind', [
 ])
 export type TimelineEntry = z.infer<typeof timelineEntry>
 
-/** How many entries a page holds; the timeline is read a segment at a time (FR-015). */
+/** How many entries a page holds; the timeline is read a segment at a time. */
 const TIMELINE_PAGE = 100
 
 /**

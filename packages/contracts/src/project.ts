@@ -4,7 +4,7 @@ import { instant, nameText, patchOf } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
- * A project's colour is one of eight names (FR-004, tokens.md), each a `--color-project-<name>`
+ * A project's colour is one of eight names, each a `--color-project-<name>`
  * token; the square is a solid fill with the initials in white, the same hex in light and dark.
  */
 export const projectColors = [
@@ -20,7 +20,7 @@ export const projectColors = [
 const projectColor = z.enum(projectColors)
 export type ProjectColor = z.infer<typeof projectColor>
 
-/** One or two characters on the square (FR-052); taken from the name unless given. */
+/** One or two characters on the square; taken from the name unless given. */
 const initials = z.string().trim().min(1).max(2)
 
 export const projectParams = z.object({ id: projectId }).strict()
@@ -28,7 +28,7 @@ export const projectParams = z.object({ id: projectId }).strict()
 export const createProjectBody = z
   .object({
     name: nameText,
-    /** A colour not yet used is chosen when left out (FR-052). */
+    /** A colour not yet used is chosen when left out. */
     color: projectColor.optional(),
     initials: initials.optional(),
   })
@@ -53,7 +53,7 @@ export type StageResponse = z.infer<typeof stageResponse>
 const stageName = z.string().trim().min(1).max(60)
 
 /**
- * A project's stages as a whole list (FR-040): the order given is the order; an entry with an
+ * A project's stages as a whole list: the order given is the order; an entry with an
  * `id` renames that stage, one without is new, a stage left out is removed (only an unused one
  * may be). `mergeInto` moves this stage's tasks into another and drops it.
  */

@@ -7,7 +7,7 @@ import { TASK_STATUSES } from './task'
 /**
  * How a thing is named when listed among other things: its title, and the facts its kind shows
  * on the second line, which the web puts into words. `shape` is what every kind has besides.
- * Relations with a meaning are fields of the things themselves (FR-042); what joins any two is
+ * Relations with a meaning are fields of the things themselves; what joins any two is
  * in `relation.ts`.
  */
 export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
@@ -20,9 +20,9 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       status: z.enum(TASK_STATUSES),
       projectId: objectId,
       projectName: z.string(),
-      /** The task it sits under, if any: with the project's square, where it is (artboard 9). */
+      /** The task it sits under, if any: with the project's square, where it is. */
       parentTitle: z.string().nullable(),
-      /** Its deadline and its planned day, for a row that says when (artboard 5). */
+      /** Its deadline and its planned day, for a row that says when. */
       dueAt: instant.nullable(),
       scheduledOn: calendarDate.nullable(),
     }),
@@ -38,7 +38,7 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       type: z.literal('person'),
       id: objectId,
       title: z.string(),
-      /** The avatar's letters (FR-049). */
+      /** The avatar's letters. */
       initials: z.string(),
       /** Where they work now: the current role that began first; null with no current role. */
       org: z.string().nullable(),
@@ -82,7 +82,7 @@ const objectTypeList = z
   .pipe(z.array(objectType).min(1))
 
 /**
- * Things of every kind by name, among which kinds (`/`, FR-024): the link picker's question, what
+ * Things of every kind by name, among which kinds (`/`): the link picker's question, what
  * could this thing be related to, and search's for the kinds no module searches more closely.
  */
 export const candidatesQuery = z

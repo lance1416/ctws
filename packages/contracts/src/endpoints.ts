@@ -516,7 +516,7 @@ export const api = {
     counts: endpoint({
       method: 'GET',
       path: '/review/counts',
-      summary: 'What each module counts of a week, for the review (FR-081).',
+      summary: 'What each module counts of a week, for the review.',
       query: weekCountsQuery,
       ok: 200,
       response: weekCountsResponse,
@@ -776,7 +776,7 @@ export const api = {
     restoreOccurrence: endpoint({
       method: 'POST',
       path: '/meetings/:id/occurrences/:recurrenceId/restore',
-      summary: 'Undo cancelling one occurrence of a repeating meeting (FR-068).',
+      summary: 'Undo cancelling one occurrence of a repeating meeting.',
       params: occurrenceParams,
       ok: 200,
       response: meetingOccurrence,
