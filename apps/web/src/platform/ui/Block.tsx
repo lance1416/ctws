@@ -1,12 +1,12 @@
 import type { ComponentType, ReactNode } from 'react'
 import { useDelayed } from '../time/useDelayed'
 import { BUTTON } from './buttonStyles'
-import { AlertIcon, KIND_ICON, RetryIcon, type Kind } from './icons'
+import { AlertIcon, KIND_ICON, RetryIcon, type IconComponent, type Kind } from './icons'
 import { KIND_TEXT, KIND_TINT } from './kinds'
 
 /**
  * THE BLOCK (artboard 3, FR-011): the one container every page is built from. A panel with a
- * hairline and a 10px corner; a 40px head that names the kind with its icon and colour, says how
+ * hairline and an 8px corner; a 40px head that names the kind with its icon and colour, says how
  * many, and holds the block's own views and actions. An empty block is its head alone, saying so,
  * with its own New kept (rule 4).
  */
@@ -48,40 +48,82 @@ export function Block({
       aria-label={title}
       className={`flex min-w-0 flex-col overflow-hidden rounded-container border border-line bg-panel ${className}`}
     >
-      <div
-        className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:flex-wrap max-lg:py-1.5 ${emptyInHead ? '' : 'border-b border-line'}`}
-      >
-        {Icon && (
-          <span
-            aria-hidden="true"
-            className={`inline-grid size-6 shrink-0 place-items-center rounded-control ${tint}`}
-          >
-            <Icon size={14} />
-          </span>
-        )}
-        <span className="flex min-w-0 items-center gap-2 max-lg:flex-wrap max-lg:gap-y-0">
-          <h2 className="shrink-0 text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
-          {emptyInHead && (
+      <BlockHead
+        icon={Icon}
+        tint={tint}
+        title={title}
+        ruled={!emptyInHead}
+        aside={
+          emptyInHead && (
             // One line beside the name, cut short rather than wrapped (M-07); on a phone, where a
             // long name leaves it no room, it goes under the name whole (P4-08).
             <span className="min-w-0 truncate text-meta text-muted max-lg:whitespace-normal">
               {empty}
             </span>
-          )}
-        </span>
-        {emptyInHead
-          ? null
-          : count !== undefined && (
-              <span data-count className="text-meta text-muted tabular-nums">
-                {count}
-              </span>
-            )}
-        <span aria-hidden="true" className="flex-1" />
-        {actions}
-      </div>
+          )
+        }
+        count={emptyInHead ? undefined : count}
+        actions={actions}
+      />
       {empty && keepsSize && <p className="px-4 py-3 text-ui text-muted">{empty}</p>}
       {!empty && children}
     </section>
+  )
+}
+
+/**
+ * A BLOCK'S HEAD (tokens.md "块"): 40 high, 12 in, its 24 badge, then the name 45 from the edge,
+ * what it counts and its actions at the end. A section of a panel that reads as a block takes
+ * the same head, so every name sits on the same line from its edge.
+ */
+export function BlockHead({
+  icon: Icon,
+  tint,
+  title,
+  level = 'h2',
+  ruled = true,
+  aside,
+  count,
+  actions,
+}: {
+  icon: IconComponent | ComponentType<{ size?: number; className?: string }> | null
+  tint: string
+  title: string
+  level?: 'h2' | 'h3'
+  /** A line under it, over what the block holds. */
+  ruled?: boolean
+  /** Said beside the name, in place of a count (an empty block's words). */
+  aside?: ReactNode
+  count?: ReactNode
+  actions?: ReactNode
+}) {
+  const Heading = level
+  return (
+    <div
+      className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:flex-wrap max-lg:py-1.5 ${ruled ? 'border-b border-line' : ''}`}
+    >
+      {Icon && (
+        <span
+          aria-hidden="true"
+          className={`inline-grid size-6 shrink-0 place-items-center rounded-control ${tint}`}
+        >
+          <Icon size={14} />
+        </span>
+      )}
+      <span className="flex min-w-0 items-center gap-2 max-lg:flex-wrap max-lg:gap-y-0">
+        <Heading className="shrink-0 text-ui font-medium whitespace-nowrap text-ink">
+          {title}
+        </Heading>
+        {aside}
+      </span>
+      {count !== undefined && (
+        <span data-count className="text-meta text-muted tabular-nums">
+          {count}
+        </span>
+      )}
+      <span aria-hidden="true" className="flex-1" />
+      {actions}
+    </div>
   )
 }
 

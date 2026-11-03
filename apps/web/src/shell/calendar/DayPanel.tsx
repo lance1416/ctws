@@ -1,7 +1,8 @@
-import type { ComponentType, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useContext } from 'react'
 import { Link } from 'react-router-dom'
 import { longDay, nearDay } from '../../platform/time/dates'
+import { BlockHead } from '../../platform/ui/Block'
 import { BUTTON, ICON_BUTTON } from '../../platform/ui/buttonStyles'
 import {
   CakeIcon,
@@ -13,6 +14,7 @@ import {
   ToDoIcon,
   type IconComponent,
 } from '../../platform/ui/icons'
+import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 import { NewContext } from '../creates'
 import { useEveryProject } from '../projects/api'
 import { ProjectSquare } from '../projects/ProjectSquare'
@@ -81,7 +83,11 @@ export function DayPanel({
       </div>
 
       {parts.meetings.length > 0 && (
-        <Section icon={KIND_ICON.meeting} title="Meetings" tone="text-meeting">
+        <Section
+          icon={KIND_ICON.meeting}
+          title="Meetings"
+          tint={`${KIND_TINT.meeting} ${KIND_TEXT.meeting}`}
+        >
           {parts.meetings.map((m) =>
             row(
               m,
@@ -119,7 +125,11 @@ export function DayPanel({
         </Section>
       )}
       {parts.followUps.length > 0 && (
-        <Section icon={KIND_ICON.communication} title="Follow up" tone="text-communication">
+        <Section
+          icon={KIND_ICON.communication}
+          title="Follow up"
+          tint={`${KIND_TINT.communication} ${KIND_TEXT.communication}`}
+        >
           {parts.followUps.map((f) =>
             row(
               f,
@@ -130,7 +140,7 @@ export function DayPanel({
         </Section>
       )}
       {parts.birthdays.length > 0 && (
-        <Section icon={CakeIcon} title="Birthdays" tone="text-person">
+        <Section icon={CakeIcon} title="Birthdays" tint={`${KIND_TINT.person} ${KIND_TEXT.person}`}>
           {parts.birthdays.map((b) =>
             row(
               b,
@@ -170,26 +180,22 @@ export function DayPanel({
 }
 
 function Section({
-  icon: Icon,
+  icon,
   title,
-  tone = 'text-muted',
+  tint = 'bg-hover text-muted',
   count,
   children,
 }: {
-  icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean | 'true'; className?: string }>
+  icon: IconComponent
   title: string
-  tone?: string
+  tint?: string
   count?: number
   children: ReactNode
 }) {
   return (
-    <section aria-label={title} className="flex flex-col gap-2 border-t border-line px-4 py-3">
-      <h3 className="flex items-center gap-2 text-ui font-medium text-ink">
-        <Icon size={14} aria-hidden="true" className={tone} />
-        {title}
-        {count !== undefined && <span className="text-meta font-normal text-muted">{count}</span>}
-      </h3>
-      <ul className="flex flex-col">{children}</ul>
+    <section aria-label={title} className="border-t border-line pb-3">
+      <BlockHead icon={icon} tint={tint} title={title} level="h3" ruled={false} count={count} />
+      <ul className="flex flex-col px-4">{children}</ul>
     </section>
   )
 }

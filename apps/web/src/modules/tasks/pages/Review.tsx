@@ -12,7 +12,9 @@ import {
   ExpandIcon,
   ForwardIcon,
   InTouchIcon,
+  type IconComponent,
 } from '../../../platform/ui/icons'
+import { BlockHead } from '../../../platform/ui/Block'
 import { StageLabel } from '../../../platform/ui/StageLabel'
 import { useProjects, ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { OpensBeside } from '../../../shell/inspector'
@@ -393,11 +395,7 @@ function Brief({
     >
       {/* On a phone, not drawn when none moved (DES-001 "回顾"); the desk keeps its 0. */}
       {(stages.length > 0 || !phone) && (
-        <BriefSection
-          icon={<ByStageIcon size={16} aria-hidden="true" />}
-          title="Stages moved"
-          count={stages.length}
-        >
+        <BriefSection icon={ByStageIcon} title="Stages moved" count={stages.length}>
           {stages.map((s) => {
             const project = every.data?.find((p) => p.id === s.projectId)
             return (
@@ -419,7 +417,7 @@ function Brief({
           })}
         </BriefSection>
       )}
-      <BriefSection icon={<InTouchIcon size={16} aria-hidden="true" />} title="Also this week">
+      <BriefSection icon={InTouchIcon} title="Also this week">
         {also.isError && (
           <li className="px-3.5 text-ui text-stop-t">
             Couldn't count them{' '}
@@ -450,20 +448,14 @@ function BriefSection({
   count,
   children,
 }: {
-  icon: ReactNode
+  icon: IconComponent
   title: string
   count?: number
   children: ReactNode
 }) {
   return (
     <section aria-label={title} className="pt-1">
-      <h2 className="flex h-10 items-center gap-2 px-3.5 text-ui font-medium text-ink">
-        <span className="text-muted">{icon}</span>
-        {title}
-        {count !== undefined && (
-          <span className="text-meta font-normal text-muted tabular-nums">{count}</span>
-        )}
-      </h2>
+      <BlockHead icon={icon} tint="bg-hover text-muted" title={title} ruled={false} count={count} />
       <ul className="flex flex-col pb-1.5">{children}</ul>
     </section>
   )
