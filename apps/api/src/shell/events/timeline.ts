@@ -138,7 +138,7 @@ export type TimelinePage = {
 /**
  * A thing's timeline: every source's entries for it, merged newest first, one page of them. Each
  * source is asked for a whole page of its own after the cursor, since a page may be all of one
- * kind; a timeline that runs to hundreds of entries is read a segment at a time (FR-015).
+ * kind; a timeline that runs to hundreds of entries is read a segment at a time.
  */
 export async function readTimeline(
   q: Queryable,

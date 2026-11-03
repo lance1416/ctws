@@ -5,7 +5,7 @@ import { on, serve } from '../../platform/http/serve'
 import { currentUser } from '../auth/authenticated'
 import { getTombstone } from './store'
 
-/** A deleted thing's old address asks here what it was (FR-035). */
+/** A deleted thing's old address asks here what it was. */
 export const tombstoneRoutes: FastifyPluginAsyncZod = async (app) => {
   serve(app, [
     on(api.tombstones.get, async (req) => {

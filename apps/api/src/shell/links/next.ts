@@ -10,7 +10,7 @@ import type { NextAt } from './linkable'
 import type { LinkRegistry } from './registry'
 
 /**
- * What comes next about each of these things, by their id (FR-058): every module with things still
+ * What comes next about each of these things, by their id: every module with things still
  * to come adds its part, a meeting from one, a follow-up from another. Things with nothing next are
  * left out.
  */
@@ -32,7 +32,7 @@ export async function nextAbout(
 
 /**
  * The latest exchange with each of these people, by their id, across every module that keeps
- * exchanges (FR-060): whichever of a message and a meeting together was last. None, not a key.
+ * exchanges: whichever of a message and a meeting together was last. None, not a key.
  */
 export async function lastAbout(
   registry: LinkRegistry,
@@ -56,7 +56,7 @@ export async function lastAbout(
 }
 
 /**
- * Where each of these things stands in projects, by their id (FR-064, FR-065): a project each, and
+ * Where each of these things stands in projects, by their id: a project each, and
  * the stage of the node there related to it. None, not a key.
  */
 export async function standingOf(

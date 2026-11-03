@@ -24,7 +24,7 @@ export const projects = pgTable(
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     color: text('color').$type<ProjectColor>().notNull(),
-    /** On the square (FR-052); the move fills it from the name for projects from before. */
+    /** On the square; the move fills it from the name for projects from before. */
     initials: text('initials').notNull().default(''),
     // One per workspace, by a partial unique index in the migration SQL.
     isInbox: boolean('is_inbox').notNull().default(false),
@@ -44,7 +44,7 @@ export const projects = pgTable(
 export type Project = typeof projects.$inferSelect
 
 /**
- * The stages a project's tasks may be at (FR-040): "Applied", "Onsite", "Spec review". A list of
+ * The stages a project's tasks may be at: "Applied", "Onsite", "Spec review". A list of
  * the project's own, in its order; a task names one by id, so a rename reaches every task.
  */
 export const projectStages = pgTable(
@@ -55,12 +55,12 @@ export const projectStages = pgTable(
     projectId: uuid('project_id').$type<ProjectId>().notNull(),
     name: text('name').notNull(),
     rank: integer('rank').notNull(),
-    /** Folded into a narrow strip on the board by stage (FR-058). */
+    /** Folded into a narrow strip on the board by stage. */
     collapsed: boolean('collapsed').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    // Two names that differ only in case are one stage (FR-040, REQ v1.5).
+    // Two names that differ only in case are one stage.
     uniqueIndex('project_stages_project_name_key').on(t.projectId, sql`lower(${t.name})`),
     index('project_stages_project_idx').on(t.projectId, t.rank),
     unique('project_stages_workspace_id_id_key').on(t.workspaceId, t.id),

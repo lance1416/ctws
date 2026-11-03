@@ -17,7 +17,7 @@ import { groupBy } from '../../platform/values'
 import { eventLog } from '../events'
 import { projectStages } from './tables'
 
-/** A stage still in use cannot go (FR-040): the tasks at it have to be moved first. */
+/** A stage still in use cannot go: the tasks at it have to be moved first. */
 class StageInUse extends DomainError {
   constructor(name: string, count: number) {
     super('conflict', {
@@ -26,7 +26,7 @@ class StageInUse extends DomainError {
   }
 }
 
-/** A rename that lands on another stage's name: the client asks whether to merge (FR-040). */
+/** A rename that lands on another stage's name: the client asks whether to merge. */
 class StageNameTaken extends DomainError {
   constructor(name: string) {
     super('conflict', { detail: `${name} already exists` })
@@ -88,7 +88,7 @@ export async function getStage(
 }
 
 /**
- * Makes the list the whole set of a project's stages (FR-040, REQ v1.4): the order given is the
+ * Makes the list the whole set of a project's stages: the order given is the
  * order; one named by id is renamed, one without is new, one left out is removed, which only an
  * unused stage may be. A rename is logged on each task at the stage. A rename onto an existing name
  * is refused unless the entry says which stage to merge into; then its tasks move there, each
@@ -143,7 +143,7 @@ export async function putStages(
     if (!merged.has(s.id) && s.count > 0) throw new StageInUse(s.name, s.count)
   }
   // A new name that another kept stage already has, without a merge, is a question for the client.
-  // Case does not tell two stages apart (REQ v1.5).
+  // Case does not tell two stages apart.
   const names = new Set<string>()
   for (const e of kept) {
     if (names.has(e.name.toLowerCase())) throw new StageNameTaken(e.name)
@@ -159,7 +159,7 @@ export async function putStages(
     )
   }
   // A rename is logged on each task at the stage, as a rename and not a move: the review's "Stages
-  // moved" leaves it out, and the days at the stage go on (BUG-045).
+  // moved" leaves it out, and the days at the stage go on.
   for (const e of kept) {
     const was = e.id === undefined ? undefined : byId.get(e.id)
     if (!was || was.name === e.name) continue

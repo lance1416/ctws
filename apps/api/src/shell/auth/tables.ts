@@ -26,16 +26,16 @@ export const users = pgTable(
     disabledAt: timestamp('disabled_at', { withTimezone: true }),
     // When the password was last changed; null for the one set at sign-up.
     passwordChangedAt: timestamp('password_changed_at', { withTimezone: true }),
-    // Single-key shortcuts on (FR-029): off, only keys with Ctrl or Alt act. Kept with the
+    // Single-key shortcuts on: off, only keys with Ctrl or Alt act. Kept with the
     // account, so it stays off on another computer.
     singleKeyShortcuts: boolean('single_key_shortcuts').notNull().default(true),
-    /** The editor takes vim's keys (REQ-002 FR-112): off unless the account turns it on. */
+    /** The editor takes vim's keys: off unless the account turns it on. */
     vimKeys: boolean('vim_keys').notNull().default(false),
-    /** A note's outline is shown beside it (REQ-002 FR-109); the same on every note and screen. */
+    /** A note's outline is shown beside it; the same on every note and screen. */
     outlineShown: boolean('outline_shown').notNull().default(true),
-    /** A note runs the full width, or stops at a readable length (REQ-002 FR-109). */
+    /** A note runs the full width, or stops at a readable length. */
     readableLines: boolean('readable_lines').notNull().default(false),
-    /** A note is shown as its Markdown source, not drawn (REQ-002 FR-116). */
+    /** A note is shown as its Markdown source, not drawn. */
     sourceView: boolean('source_view').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -72,7 +72,7 @@ export const workspaces = pgTable('workspaces', {
   /**
    * When this workspace came to be in the new layout: at registration for a new one, at the end
    * of its move for one from before the redesign. Null means the move is still owed, and the
-   * server will not serve it until then (REQ section 4).
+   * server will not serve it until then.
    */
   movedAt: timestamp('moved_at', { withTimezone: true }),
 })

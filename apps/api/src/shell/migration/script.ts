@@ -11,13 +11,12 @@ import { resolveCity } from '../cities'
 import { migrationBackup, type MigrationCounts, migrationReports } from './tables'
 
 /**
- * THE MOVE TO THE NEW LAYOUT (RFC-001 3.1, FR-090 to FR-099).
- *
- * Runs after the schema migrations and before the server listens: one transaction per workspace,
- * skipped once that workspace has a report. The schema migrations already copied rows that need
- * no judgement (task events, `about` links, the three kinds of edge); this script does what needs
- * one: splits names, makes organisations and roles, settles parents, turns meeting notes into
- * notes, buries what was soft-deleted, and writes the report of every guess it made.
+ * The move to the new layout. Runs after the schema migrations and before the server listens: one
+ * transaction per workspace, skipped once that workspace has a report. The schema migrations
+ * already copied rows that need no judgement (task events, `about` links, the three kinds of edge);
+ * this script does what needs one: splits names, makes organisations and roles, settles parents,
+ * turns meeting notes into notes, buries what was soft-deleted, and writes the report of every
+ * guess it made.
  *
  * `failAt` names a step to fail in, for a rehearsal of the failure path: that workspace rolls
  * back whole, the rest are still attempted, and the run ends in an error so the server does not
@@ -85,7 +84,7 @@ const id = () => uuidv7()
  * attempt it is the newest dump, the one the `backup` service made just before this start, from
  * before any schema migration ran. A retry reuses the remembered one, since every dump made since
  * is of a database already changed; a rollback restores a database that remembers nothing, so the
- * next release chooses afresh (BUG-013, BUG-014). No backup, no move (FR-090).
+ * next release chooses afresh. No backup, no move.
  */
 async function backupOfRecord(
   db: Db,
@@ -247,7 +246,7 @@ async function migrateWorkspace(tx: Tx, run: Run): Promise<MigrationCounts> {
   step('count')
   const before = await countLive(tx, workspaceId)
 
-  // ---- legacy-deleted: what was soft-deleted becomes a tombstone, and goes (FR-090) ------------
+  // ---- legacy-deleted: what was soft-deleted becomes a tombstone, and goes ------------
   step('legacy-deleted')
   const buried = await buryLegacy(tx, workspaceId, now)
   moved.deleted = buried.buried
@@ -256,31 +255,31 @@ async function migrateWorkspace(tx: Tx, run: Run): Promise<MigrationCounts> {
   moved.edgesToDeleted = await countDanglingEdges(tx, workspaceId)
   moved['links.about.toDeleted'] = buried.aboutDropped
 
-  // ---- projects: the six slots become eight names, by hue; initials from the name (FR-091) ----
+  // ---- projects: the six slots become eight names, by hue; initials from the name ----
   step('projects')
   await moveProjects(tx, workspaceId, now, add)
 
-  // ---- organisations: from the company text on people (FR-095) -----------------------------
+  // ---- organisations: from the company text on people -----------------------------
   step('organisations')
   const orgOf = await makeOrganisations(tx, workspaceId, now, add)
 
-  // ---- people: names, roles, circles, time zones (FR-095) ----------------------------------
+  // ---- people: names, roles, circles, time zones ----------------------------------
   step('people')
   await movePeople(tx, workspaceId, now, orgOf, add)
 
-  // ---- tasks: parents settle, planned days move down (FR-092) ------------------------------
+  // ---- tasks: parents settle, planned days move down ------------------------------
   step('tasks')
   await settleParents(tx, workspaceId, now, add)
 
-  // ---- meetings: the note becomes a note, a URL place becomes the join link (FR-096) -------
+  // ---- meetings: the note becomes a note, a URL place becomes the join link -------
   step('meetings')
   moved.meetingNotes = await moveMeetingNotes(tx, workspaceId, now)
 
-  // ---- edges: counted where 0038 put them (FR-094) ------------------------------------------
+  // ---- edges: counted where 0038 put them ------------------------------------------
   step('edges')
   Object.assign(moved, await countMovedEdges(tx, workspaceId))
 
-  // ---- created: every thing without a log gets its "Created" (FR-093) ----------------------
+  // ---- created: every thing without a log gets its "Created" ----------------------
   step('created')
   moved.createdAdded = await backfillCreated(tx, workspaceId)
 
@@ -433,7 +432,7 @@ async function buryLegacy(
   return { buried: graves.length, aboutDropped }
 }
 
-/** Edges in `links` with an end that is a tombstone now: not lost, counted (FR-090). */
+/** Edges in `links` with an end that is a tombstone now: not lost, counted. */
 async function countDanglingEdges(tx: Tx, workspaceId: WorkspaceId): Promise<number> {
   const result = await tx.execute(sql`
     select count(*)::int as n from links l
@@ -446,7 +445,7 @@ async function countDanglingEdges(tx: Tx, workspaceId: WorkspaceId): Promise<num
 
 // ---- projects --------------------------------------------------------------------------------
 
-/** The last release's six slots, each to the nearest of the eight hues (FR-091). */
+/** The last release's six slots, each to the nearest of the eight hues. */
 const COLOUR_OF: Record<string, string> = {
   'project-1': 'blue',
   'project-2': 'amber',
@@ -593,7 +592,7 @@ async function movePeople(
   add: (item: Omit<MigrationItem, 'checked'>) => void,
 ): Promise<void> {
   const accountZone = await accountTimeZone(tx, workspaceId)
-  // The three circles the last release had, as the first three of the list (FR-095).
+  // The three circles the last release had, as the first three of the list.
   const circleIds = new Map<string, string>()
   for (const [rank, [key, name]] of Object.entries(CIRCLES).entries()) {
     const [row] = (
@@ -630,7 +629,7 @@ async function movePeople(
       attention,
     })
 
-    // Company and title: one role now; a title alone stays in the note (FR-095).
+    // Company and title: one role now; a title alone stays in the note.
     const orgId = p.org && p.org.trim() !== '' ? orgOf.get(p.org) : undefined
     let note = p.note
     if (orgId) {
@@ -660,7 +659,7 @@ async function movePeople(
         on conflict do nothing`)
     }
 
-    // The time zone, from the city; the account's when there is none (FR-095).
+    // The time zone, from the city; the account's when there is none.
     let timeZone: string | null = null
     let source: 'city' | 'manual' | null = null
     let cityKey = p.cityKey
@@ -744,9 +743,9 @@ const parentRow = z.object({
 })
 
 /**
- * Parents take their status from their children (FR-038), deepest first so each reads settled
+ * Parents take their status from their children, deepest first so each reads settled
  * children; the planned day a parent cannot keep moves down to the leaves under it that have none,
- * or is dropped and reported (FR-092).
+ * or is dropped and reported.
  */
 async function settleParents(
   tx: Tx,
@@ -925,7 +924,7 @@ const KINDS: { type: ObjectType; table: string; title: string }[] = [
   { type: 'note', table: 'notes', title: "coalesce(title, '')" },
 ]
 
-/** A "Created" at its own creation instant for everything that has no log yet (FR-093). */
+/** A "Created" at its own creation instant for everything that has no log yet. */
 async function backfillCreated(tx: Tx, workspaceId: WorkspaceId): Promise<number> {
   let added = 0
   for (const kind of KINDS) {

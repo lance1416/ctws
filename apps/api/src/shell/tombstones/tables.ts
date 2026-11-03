@@ -9,7 +9,7 @@ import { inList } from '../../platform/db/sql'
 import { workspaces } from '../auth/tables'
 
 /**
- * What is left of a deleted thing (FR-035): its name, when it went and where it was, so its old
+ * What is left of a deleted thing: its name, when it went and where it was, so its old
  * address still says what happened. The row itself is gone, with its log, relations and resources.
  */
 export const tombstones = pgTable(

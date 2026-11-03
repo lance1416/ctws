@@ -118,7 +118,7 @@ export async function updateProject(
 }
 
 /**
- * Deletes a project and every task in it, for good (FR-035): a tombstone each, then the rows go.
+ * Deletes a project and every task in it, for good: a tombstone each, then the rows go.
  * What was filed in it from other modules (meetings, reading, people, messages) stays, unfiled,
  * by their foreign keys. `graves` is how the tasks module names its tasks' tombstones: the shell
  * cannot read a module's table.

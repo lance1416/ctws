@@ -12,7 +12,7 @@ import { inList } from '../../platform/db/sql'
 import { workspaces } from '../auth/tables'
 
 /**
- * A relation between any two things, with no kind (FR-042). Neither end has a foreign key, since
+ * A relation between any two things, with no kind. Neither end has a foreign key, since
  * there is no one table to point at; every read resolves the ends against their own tables and
  * drops what it cannot see. `from` is the end that made the relation: the thing it was added on,
  * or the thing whose text mentions the other.

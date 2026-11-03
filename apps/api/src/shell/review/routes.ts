@@ -7,7 +7,7 @@ import { instantOf } from '../../platform/zone'
 import type { WeekCounts } from '../module'
 
 /**
- * What every module counts of a week, for the review's "Also this week" (FR-081): meetings held,
+ * What every module counts of a week, for the review's "Also this week": meetings held,
  * messages sent, people added. The week runs to the end of its last day or to now, whichever is
  * first: a meeting later today has not been held.
  */

@@ -134,8 +134,8 @@ export async function setTimezone(db: Queryable, userId: UserId, timezone: strin
 }
 
 /**
- * What the account chose for how it works: single keys (FR-029), vim's keys (REQ-002 FR-112), and
- * how a note is laid out (REQ-002 FR-109, FR-116).
+ * What the account chose for how it works: single keys, vim's keys, and
+ * how a note is laid out.
  */
 export type Choices = {
   singleKeyShortcuts: boolean

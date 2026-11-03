@@ -13,7 +13,7 @@ export type MigrationCounts = {
  * The backup this release's move goes back to, chosen once, at the first attempt: the dump the
  * `backup` service had just made, from before any schema migration. A retry keeps it, since the
  * dumps made since are of a database already changed. A rollback restores a database without
- * this row, so the next release chooses afresh (BUG-014).
+ * this row, so the next release chooses afresh.
  */
 export const migrationBackup = pgTable('migration_backup', {
   key: text('key').primaryKey(),
@@ -23,7 +23,7 @@ export const migrationBackup = pgTable('migration_backup', {
 })
 
 /**
- * One row per workspace moved to the new layout (RFC-001 3.3): when, from which backup, the
+ * One row per workspace moved to the new layout: when, from which backup, the
  * counts, and the guesses to look at. Its presence is what makes the move idempotent.
  */
 export const migrationReports = pgTable('migration_reports', {

@@ -29,7 +29,7 @@ export const toResourceResponse = (r: Resource): ResourceResponse => ({
   createdAt: r.createdAt.toISOString(),
 })
 
-/** Only a project pins resources in its head (FR-053). */
+/** Only a project pins resources in its head. */
 class OnlyProjectsPin extends DomainError {
   constructor() {
     super('unprocessable', { detail: 'only a project pins resources in its head' })
@@ -64,7 +64,7 @@ export async function resourcesOf(
 
 /**
  * Each of `ids`' first GitHub pull request, as its label ("#418"): what a card on the board says of
- * its task (FR-057). In the owners' own order of their resources; an owner with none is not a key.
+ * its task. In the owners' own order of their resources; an owner with none is not a key.
  */
 export async function pullRequestsOf(
   q: Queryable,
@@ -94,7 +94,7 @@ export async function pullRequestsOf(
 }
 
 /**
- * What the projects still worked on pin in their heads (FR-076): not an archived project's, nor a
+ * What the projects still worked on pin in their heads: not an archived project's, nor a
  * deleted one's. In the projects' own order, then by digit.
  */
 export async function pinnedOnActiveProjects(

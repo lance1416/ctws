@@ -11,7 +11,7 @@ import type { LinkRegistry } from './registry'
 /** Candidates per type, so a box full of tasks still shows people. */
 const CANDIDATES_PER_TYPE = 8
 
-/** Search's kinds in their fixed order (DES-001 section 4): people first, notes last. */
+/** Search's kinds in their fixed order: people first, notes last. */
 const SEARCH_ORDER: readonly ObjectType[] = [
   'person',
   'organisation',
@@ -46,7 +46,7 @@ export const linkRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
       return { candidates }
     }),
 
-    // One question for every kind (FR-024): each kind's first few and its total, or one kind's
+    // One question for every kind: each kind's first few and its total, or one kind's
     // page; the counts and the rows are each module's own reading of the text.
     on(api.search.everything, async (req) => {
       const { workspaceId } = currentUser(req)

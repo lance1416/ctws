@@ -14,7 +14,7 @@ import type { ProjectGraves } from './projects/service'
 export type ProjectColumns = Record<string, SQL<number>>
 
 /**
- * What a module counts of a window for the review's "Also this week" (FR-081), each by a name no
+ * What a module counts of a window for the review's "Also this week", each by a name no
  * other module uses. The window is instants, its end no later than now.
  */
 export type WeekCounts = (

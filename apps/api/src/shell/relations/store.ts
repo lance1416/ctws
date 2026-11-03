@@ -27,7 +27,7 @@ export const toRelationResponse = (r: Relation): RelationResponse => ({
   createdAt: r.createdAt.toISOString(),
 })
 
-/** Both ends hear about a relation coming or going (FR-044). */
+/** Both ends hear about a relation coming or going. */
 async function logBoth(
   tx: Tx,
   ctx: Actor,
@@ -57,7 +57,7 @@ export async function addRelation(
   ctx: Actor,
   { from, to, note }: { from: Endpoint; to: Endpoint; note?: string | null | undefined },
 ): Promise<{ relation: Relation; created: boolean }> {
-  // The pair may already be related from the other end: a relation has no direction (FR-042).
+  // The pair may already be related from the other end: a relation has no direction.
   const [either] = await tx
     .select()
     .from(relations)
@@ -152,7 +152,7 @@ export async function removeRelation(tx: Tx, ctx: Actor, id: RelationId): Promis
 }
 
 /**
- * Makes the mention relations from one field of one thing match the text it now holds (FR-042):
+ * Makes the mention relations from one field of one thing match the text it now holds:
  * a sentence that newly mentions something adds one, a sentence that no longer does removes it.
  * Mentions of things this workspace cannot see are kept too: the read drops what it cannot
  * resolve, and a thing that comes back is related again without the text changing.

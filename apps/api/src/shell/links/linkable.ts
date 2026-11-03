@@ -27,7 +27,7 @@ export type Linkable = {
   rows: (q: Queryable, workspaceId: WorkspaceId, want: Want) => Promise<LinkCandidate[]>
   /**
    * Names its rows by what another module knows, once `rows` has found them (a note on a meeting
-   * is that meeting's, on that day: FR-050). Given the registry, so no module reads another's
+   * is that meeting's, on that day). Given the registry, so no module reads another's
    * tables; every caller of `rows` through the registry gets the names.
    */
   retitle?: (
@@ -37,7 +37,7 @@ export type Linkable = {
     registry: LinkRegistry,
   ) => Promise<LinkCandidate[]>
   /**
-   * How many of them a text matches, as `rows` would find them all: search's totals (FR-024).
+   * How many of them a text matches, as `rows` would find them all: search's totals.
    * `also` are found whatever their text, as `alsoFound` gave them.
    */
   count: (
@@ -48,7 +48,7 @@ export type Linkable = {
   ) => Promise<number>
   /**
    * Its own things a text finds through what another module names (a note on a meeting is found
-   * by the meeting's name, as it is called by it: FR-050), by id. The registry asks before every
+   * by the meeting's name, as it is called by it), by id. The registry asks before every
    * search by text and passes them to `rows` and `count` as `also`.
    */
   alsoFound?: (
@@ -59,7 +59,7 @@ export type Linkable = {
   ) => Promise<string[]>
   /**
    * For a module with things still to come, its part of what comes next about each of these other
-   * things, by their id (FR-058): a meeting's next occurrence, a reply's follow-up day. What is
+   * things, by their id: a meeting's next occurrence, a reply's follow-up day. What is
    * related to a thing outright counts wherever it is filed; what is only inferred through a person
    * counts when it is filed under `projectId`. Things with nothing next are left out.
    */
@@ -71,7 +71,7 @@ export type Linkable = {
   ) => Promise<Map<string, NextAbout>>
   /**
    * For a module whose things are exchanges with people, the latest of its own with each of these
-   * people by their id, up to `now` (FR-060): a message, a meeting together. None, not a key.
+   * people by their id, up to `now`: a message, a meeting together. None, not a key.
    */
   lastAbout?: (
     q: Queryable,
@@ -81,7 +81,7 @@ export type Linkable = {
   ) => Promise<Map<string, LastExchange>>
   /**
    * For a module whose things sit in projects at a stage, where each of these other things stands:
-   * by their id, a project each, through a thing of its own related to it (FR-064, FR-065), the
+   * by their id, a project each, through a thing of its own related to it, the
    * most recently staged first. None, not a key.
    */
   standingOf?: (
@@ -105,7 +105,7 @@ export type Want =
       limit: number
       offset?: number
       also?: readonly string[]
-      /** Opened lately, newest first: first among equally good matches (FR-024). */
+      /** Opened lately, newest first: first among equally good matches. */
       recent?: readonly string[]
     }
 
@@ -146,7 +146,7 @@ export function wanted(
   const also = want.also ?? []
   return {
     where: matchingOr(columns.text, want.text, columns.id, also),
-    // Those it starts, then those a word of starts, then the rest (FR-024); each the module's way.
+    // Those it starts, then those a word of starts, then the rest; each the module's way.
     orderBy: [
       ...(want.text === ''
         ? []
@@ -181,7 +181,7 @@ export const matchingOr = (
     ? matching(text, words)
     : or(textMatches(text, words), inArray(id, [...also]))
 
-/** How many rows of `from` meet `where`: a kind's total for search (FR-024). */
+/** How many rows of `from` meet `where`: a kind's total for search. */
 export async function countWhere(
   q: Queryable,
   from: PgTable,

@@ -29,7 +29,7 @@ export async function migrationPending(
   return { pending: row.items.filter((i) => i.attention && !i.checked).length }
 }
 
-/** The report of this workspace's move (FR-099); 404 until a move has happened. */
+/** The report of this workspace's move; 404 until a move has happened. */
 export const migrationRoutes: FastifyPluginAsyncZod = async (app) => {
   const reportOf = async (workspaceId: (typeof migrationReports.$inferSelect)['workspaceId']) => {
     const [row] = await app.db

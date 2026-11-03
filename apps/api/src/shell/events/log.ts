@@ -10,7 +10,7 @@ export type Subject = { type: ObjectType; id: string }
 type LogEvent = { subject: Subject; type: string; payload: unknown }
 
 /**
- * The change log, for every kind of thing (FR-044). It runs inside the caller's transaction, so a
+ * The change log, for every kind of thing. It runs inside the caller's transaction, so a
  * rolled-back command leaves no trace. A command's events share its instant; their ids are
  * time-ordered, so `(occurred_at, id)` is the order they were written in.
  *

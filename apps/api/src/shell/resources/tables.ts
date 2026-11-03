@@ -14,7 +14,7 @@ import { inList } from '../../platform/db/sql'
 import { workspaces } from '../auth/tables'
 
 /**
- * An outside address a thing carries (FR-046). The owner is named by type and id, with no foreign
+ * An outside address a thing carries. The owner is named by type and id, with no foreign
  * key, since there is no one table to point at; a thing's resources are deleted with it.
  */
 export const resources = pgTable(

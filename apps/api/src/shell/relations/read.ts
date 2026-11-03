@@ -84,9 +84,8 @@ export async function relationsOf(
 
 /**
  * For each of many things of one kind, the things of kind `to` related to it, named by their own
- * module: the organisations each task in a project is linked to, for the mark after its name
- * (FR-047, FR-054). Read in both directions, as a relation is one fact; things with none are
- * left out.
+ * module: the organisations each task in a project is linked to, for the mark after its name.
+ * Read in both directions, as a relation is one fact; things with none are left out.
  */
 export async function relatedAmong(
   registry: LinkRegistry,

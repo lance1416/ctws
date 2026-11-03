@@ -10,7 +10,7 @@ const LEGACY_LINK_KINDS = ['belongs', 'attends', 'recommends', 'about'] as const
 /**
  * The edge table of the last release, read by nothing: 0030 moved `about` into `relations` and
  * 0038 made the other kinds the modules' own fields. It stays until the cleanup release so the
- * migration report can count what was moved against what was there (RFC-001 3.1), and is dropped
+ * migration report can count what was moved against what was there, and is dropped
  * once the report is marked Done.
  */
 export const links = pgTable(

@@ -7,7 +7,7 @@ import type { LinkRegistry } from '../links'
 import { relations } from './tables'
 
 /**
- * An organisation's timeline carries the stage changes of the tasks related to it (FR-065): what
+ * An organisation's timeline carries the stage changes of the tasks related to it: what
  * a company's application moved to. The event is the task's own; the entry names the task and its
  * project, so the row can read "Stage set to Shortlisted in Find a lawyer".
  */
@@ -77,7 +77,7 @@ export const relatedStageChanges = (registry: LinkRegistry): TimelineSource => (
 })
 
 /**
- * Where a thing was mentioned, on its timeline (FR-042, FR-045): the sentence, and what it was
+ * Where a thing was mentioned, on its timeline: the sentence, and what it was
  * written in, named by that thing's own module through the registry. What this workspace cannot
  * see is left out.
  */

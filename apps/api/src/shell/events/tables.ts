@@ -4,9 +4,9 @@ import { inList } from '../../platform/db/sql'
 import { workspaces } from '../auth/tables'
 
 /**
- * What happened to a thing: every kind of thing has a log here (FR-044). A row names the thing by
+ * What happened to a thing: every kind of thing has a log here. A row names the thing by
  * type and id rather than by a foreign key, since there is no one table to point at; a thing's
- * rows are deleted with it, and its tombstone is what remains (FR-032).
+ * rows are deleted with it, and its tombstone is what remains.
  *
  * Ids are time-ordered (uuid v7), so `(occurred_at, id)` is the order rows were written in; a
  * command's events share its instant.
