@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-/** The inspector's field rows: an icon, a name, then the value (artboard 8), in one grid. */
+/** The inspector's field rows: an icon, a name, then the value, in one grid. */
 export const FIELDS = 'grid grid-cols-[16px_76px_minmax(0,1fr)] items-center gap-x-2.5'
 
 /**

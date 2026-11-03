@@ -57,7 +57,7 @@ describe('the tree keys', () => {
 })
 
 describe('the help', () => {
-  it('lists Today’s row keys with the tree’s, one group (artboard 24)', () => {
+  it('lists Today’s row keys with the tree’s, one group', () => {
     expect(TODAY_KEYS.title).toBe(TREE_KEYS.title)
     expect(TASK_KEYS[0]).toBe(TREE_KEYS)
   })

@@ -7,7 +7,7 @@ import { ExpandIcon } from '../../../platform/ui/icons'
 import { putStages } from '../../../shell/projects'
 import { projectTasksQuery } from '../api'
 
-/** The stage row's mark: the dot every stage label starts with (DES-001 section 4). */
+/** The stage row's mark: the dot every stage label starts with. */
 export function StageDot() {
   return (
     <span className="grid size-4 place-items-center">
@@ -17,9 +17,9 @@ export function StageDot() {
 }
 
 /**
- * A node's stage, edited (FR-040): the project's stages to pick from as it is typed, a new name
- * made one of them, nothing for none. A new stage is added to the project the moment it is
- * named, so it is there to pick again at once; the node takes it with the edit's Save.
+ * A node's stage, edited: the project's stages to pick from as it is typed, a new name made one of
+ * them, nothing for none. A new stage is added to the project the moment it is named, so it is
+ * there to pick again at once; the node takes it with the edit's Save.
  */
 export function StagePicker({
   projectId,
@@ -55,7 +55,7 @@ export function StagePicker({
   const commit = async () => {
     const name = text.trim()
     if (name === '') return onChange(null)
-    // A stage is one name, whatever its case: "Phone Screen" is "Phone screen" (FR-040).
+    // A stage is one name, whatever its case: "Phone Screen" is "Phone screen".
     const found = stages.find((s) => s.name.toLocaleLowerCase() === name.toLocaleLowerCase())
     if (found) {
       setText(found.name)

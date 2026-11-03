@@ -36,9 +36,9 @@ const OPEN_UNTIL = 10
 export const weekStartOf = (today: string): string => addDays(nextMonday(today), -7)
 
 /**
- * THE BOARD BY STATUS (FR-057): each status's leaves, those straight under the project first,
- * then the rest grouped under their top-level parent, in the tree's own order. A parent is never
- * a card: its status is its children's. Done holds only this week's unless asked for all.
+ * The board by status: each status's leaves, those straight under the project first, then the rest
+ * grouped under their top-level parent, in the tree's own order. A parent is never a card: its
+ * status is its children's. Done holds only this week's unless asked for all.
  */
 export function boardColumns(
   tasks: readonly TaskResponse[],

@@ -33,10 +33,9 @@ const DUE_TONE: Record<string, string> = {
 }
 
 /**
- * A PROJECT'S TREE ON A PHONE (FR-088, DES-001 "项目页"): no board and no dragging. A row a task,
- * 44 and over, in from the left 16 a level up to the fourth; what the desk's columns say (its
- * stage, its deadline, "1/4") as tags on a second line, none where there is nothing. The circle
- * finishes a leaf; its name opens it in the sheet. Moving it elsewhere is its Move to….
+ * A project's tree on a phone: no board and no dragging. What the desk's columns say (its stage,
+ * its deadline, "1/4") goes as tags on a second line. The circle finishes a leaf; its name opens it
+ * in the sheet.
  */
 export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
   const tasks = useQuery(projectTasksQuery(projectId))
@@ -55,8 +54,8 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
   const counts = leafCounts(all)
   const stages = new Map((tasks.data?.stages ?? []).map((s) => [s.id, s]))
   const rows = flatten(shown.visible, new Set<TaskId>())
-  // Each group's "3 done" after the last row it would show among, as on the desk (FR-054, P4-12):
-  // at the end of its parent's block, the project's own at the end of the list.
+  // Each group's "3 done" after the last row it would show among, as on the desk: at the end of its
+  // parent's block, the project's own at the end of the list.
   const doneAfter = new Map<number, { group: DoneGroup; depth: number }[]>()
   const sayDone = (at: number, group: DoneGroup, depth: number) => {
     const counts = shown.closed.get(group)
@@ -125,8 +124,8 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
                 <button
                   type="button"
                   onClick={() => {
-                    // Finished here, it stays where it was to be undone, as on a desk (BUG-095);
-                    // undone, it is what it was before.
+                    // Finished here, it stays where it was to be undone, as on a desk; undone, it
+                    // is what it was before.
                     if (!done) shown.keep([t.id])
                     actions.setStatus(t.id, toggleDoneTarget(t.status))
                   }}
@@ -138,7 +137,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
               )}
               <button
                 type="button"
-                // The row's focus carrier, as the desk tree's handle is (BUG-094).
+                // The row's focus carrier, as the desk tree's handle is.
                 data-handle-id={t.id}
                 onClick={() => inspect({ type: 'task', id: t.id })}
                 className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1 self-stretch py-2 text-left"
@@ -194,7 +193,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
   )
 }
 
-/** Edit stages on a phone: the board's editor (artboard 29), which draws its own panel. */
+/** Edit stages on a phone: the board's editor, which draws its own panel. */
 export function EditStagesSheet({
   projectId,
   onClose,

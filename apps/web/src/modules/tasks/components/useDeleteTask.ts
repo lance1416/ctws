@@ -40,7 +40,7 @@ export function useDeleteTask(
       changes: ['task'],
       awaits: WRITE_AWAITS,
       ownsError: true,
-      // Still on screen while the refresh runs, its own reads are not asked again (BUG-094).
+      // Still on screen while the refresh runs, its own reads are not asked again.
       gone: [taskKeys.one(task.id), taskKeys.dependencies(task.id)],
     },
     onSuccess: () => {

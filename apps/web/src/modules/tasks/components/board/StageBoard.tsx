@@ -57,10 +57,10 @@ const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const
 const OVER = 'shadow-[inset_0_0_0_100vmax_var(--color-select)]'
 
 /**
- * THE BOARD BY STAGE (FR-058, artboard 20): a column per stage the project uses, in its order,
- * each the whole list of the nodes at that stage, scrolling inside itself; the stages folded by
- * default wait as strips at the right. A card is dragged to another stage, or moved with Alt and
- * an arrow; a column's + makes a node at its stage, at the top of the project.
+ * The board by stage: a column per stage the project uses, in its order, each scrolling inside
+ * itself; the stages folded by default wait as strips at the right. A card is dragged to another
+ * stage, or moved with Alt and an arrow; a column's + makes a node at its stage, at the top of the
+ * project.
  */
 export function StageBoard({
   projectId,
@@ -110,14 +110,14 @@ export function StageBoard({
 
   const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions(setError)
-  /** A new stage for one node: logged, and its status left as it is (FR-040). */
+  /** A new stage for one node: logged, and its status left as it is. */
   const move = (id: TaskId, to: StageId) => {
     if (byId.get(id)?.stageId === to) return
     setError(null)
     actions.patch(id, { stageId: to })
   }
-  // A card moved from the keyboard keeps focus once it has been drawn in its new column (the
-  // change reaches the cache a tick after the key), or the strip it went into has it (BUG-044).
+  // A card moved from the keyboard keeps focus once it has been drawn in its new column (the change
+  // reaches the cache a tick after the key), or the strip it went into has it.
   const focusNext = useRef<{ card: TaskId; in: StageId } | { strip: StageId } | null>(null)
   useEffect(() => {
     const next = focusNext.current
@@ -207,8 +207,8 @@ export function StageBoard({
           id={BOARD_ID}
           data-board="stage"
           onKeyDown={onKeyDown}
-          // At least 240 a column (DES-001 v1.21), scrolling sideways in here, not the page. Its
-          // height is the window's less the frame and the page above it, the status bar's 1.5rem too.
+          // At least 240 a column, scrolling sideways in here, not the page. Its height is the
+          // window's less the frame and the page above it, the status bar's 1.5rem too.
           className="flex min-w-0 gap-3 max-md:flex-col md:h-[calc(100dvh-17.5rem)] md:min-h-96 md:overflow-x-auto md:pb-1"
         >
           {columns.map(({ stage, cards: list }) =>
@@ -304,13 +304,13 @@ function StageColumnView({
       ref={setNodeRef}
       aria-labelledby={`stage-${stage.id}`}
       data-stage-column={stage.id}
-      // A stage with nothing in it gives its width to the ones that have (FR-058).
+      // A stage with nothing in it gives its width to the ones that have.
       className={`flex min-w-0 flex-col rounded-container border border-line bg-chrome ${
         count === 0 && !adding ? 'md:flex-[0_0_180px]' : 'flex-1 basis-0 md:min-w-60'
       } ${isOver ? OVER : ''}`}
     >
       <h3 className="flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 text-ui">
-        {/* A stage folded by default stays quiet when it is opened (S-07). */}
+        {/* A stage folded by default stays quiet when it is opened. */}
         <i
           aria-hidden="true"
           className={`size-2 shrink-0 rounded-full ${stage.collapsed ? 'border-[1.5px] border-muted' : 'bg-muted'}`}
@@ -351,7 +351,7 @@ function StageColumnView({
   )
 }
 
-/** A node typed in at a stage: at the top of the project, to do, at this stage (FR-058). */
+/** A node typed in at a stage: at the top of the project, to do, at this stage. */
 function NewAtStage({
   projectId,
   stage,
@@ -387,7 +387,7 @@ function NewAtStage({
   )
 }
 
-/** A stage folded by default (FR-040): a strip with its dot, count and name; a card drops on it. */
+/** A stage folded by default: a strip with its dot, count and name; a card drops on it. */
 function StageStrip({
   stage,
   count,
@@ -475,10 +475,10 @@ function StageCardView({
 }
 
 /**
- * What a card says, only the lines it has data for (FR-058): the path above a node below the
- * top; the node's organisation, name and progress; the next leaf to do; the next meeting; how long
- * it has been at the stage, amber once that is two weeks, its deadline and the day a reply is
- * awaited by. With nothing more than its name, one line: name, days, progress.
+ * What a card says, only the lines it has data for: the path above a node below the top; the node's
+ * organisation, name and progress; the next leaf to do; the next meeting; how long it has been at
+ * the stage, amber once that is two weeks, its deadline and the day a reply is awaited by. With
+ * nothing more than its name, one line: name, days, progress.
  */
 const Meeting = KIND_ICON.meeting
 
@@ -565,7 +565,7 @@ function CardFace({ card, counts, organisations, now, today, timeZone }: CardPro
   )
 }
 
-/** The day a reply is awaited by (DES-001 v1.22): the communication tint, warn once it has passed. */
+/** The day a reply is awaited by: the communication tint, warn once it has passed. */
 function FollowUpChip({ on, today }: { on: string; today: string }) {
   const said = followUpWords(on, today)
   return (

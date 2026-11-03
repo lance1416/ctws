@@ -43,8 +43,8 @@ export type RowRefs = ReturnType<typeof useRowRefs>
 
 /**
  * When a row leaves a list, focus goes to the nearest row before it, where the eye already was,
- * else after it, else the heading (BUG-094). `expect(id)` before a change that may remove the row, `drop(id)` once it settled with
- * the row still there; the open pane's row is expected until the pane closes.
+ * else after it, else the heading. `expect(id)` before a change that may remove the row, `drop(id)`
+ * once it settled with the row still there; the open pane's row is expected until the pane closes.
  */
 function useFocusAfterRemoval({
   rows,

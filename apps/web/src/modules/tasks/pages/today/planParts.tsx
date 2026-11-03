@@ -15,7 +15,7 @@ const planDays = (day: string) => [
   { label: 'Mon', to: nextMonday(day) },
 ]
 
-/** An overdue row's action (FR-079): plan it for a day, a press each, or another from the picker. */
+/** An overdue row's action: plan it for a day, a press each, or another from the picker. */
 export function PlanButtons({
   task,
   day,
@@ -50,7 +50,7 @@ export function PlanButtons({
   )
 }
 
-/** Overdue's head, past five (FR-015): every one planned for the same day at once. */
+/** Overdue's head, past five: every one planned for the same day at once. */
 export function MoveAllMenu({
   overdue,
   day,
@@ -76,7 +76,7 @@ export function MoveAllMenu({
           {planDays(day).map((d) => (
             <DropdownMenu.Item
               key={d.label}
-              // A parent's plan is its children's (FR-043).
+              // A parent's plan is its children's.
               onSelect={() => overdue.filter((t) => !t.children).forEach((t) => onMove(t.id, d.to))}
               className={MENU_ITEM}
             >

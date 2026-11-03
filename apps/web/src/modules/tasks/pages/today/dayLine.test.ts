@@ -15,7 +15,7 @@ const due = (key: string, at: string): TimedItem => ({
   start: minutesOf(at),
 })
 
-describe('the day timeline (FR-079)', () => {
+describe('the day timeline', () => {
   it('runs 08 to 20, with now, the free stretch and the things in their places', () => {
     // The acceptance: 09:10, a 14:00 meeting, an 18:00 deadline.
     const line = dayTimeline(
@@ -48,7 +48,7 @@ describe('the day timeline (FR-079)', () => {
     expect(night.free).toBeNull()
   })
 
-  it('draws things too close to read apart as one node (FR-015)', () => {
+  it('draws things too close to read apart as one node', () => {
     const line = dayTimeline(
       [
         meeting('a', '10:00', '10:30'),
@@ -68,7 +68,7 @@ describe('the day timeline (FR-079)', () => {
   })
 })
 
-describe('what is too close to read apart, on a line of a given width (U-09)', () => {
+describe('what is too close to read apart, on a line of a given width', () => {
   const calls = ['09:00', '10:00', '11:00', '12:00'].map((t, i) =>
     meeting(`Call ${i + 1}`, t, t.replace(/:00$/, ':30')),
   )

@@ -10,8 +10,8 @@ import { CHIP, DUE_TONE } from './board/BoardCard'
 import { StatusMark } from '../../../platform/ui/StatusMark'
 
 /**
- * A task on a person's page (artboard 5): its status, its title, and when, its deadline as the
- * tree says it, or the day it is planned for. Not the sentence that linked it.
+ * A task on a person's page: its status, its title, and its deadline as the tree says it, or the
+ * day it is planned for. Not the sentence that linked it.
  */
 export function PersonTaskRow({ thing }: { thing: LinkCandidate }) {
   const timeZone = useTimeZone()
@@ -49,6 +49,6 @@ export function PersonTaskRow({ thing }: { thing: LinkCandidate }) {
   )
 }
 
-/** A person's tasks counted as the artboard heads them: "3 open". */
+/** A person's tasks counted: "3 open". */
 export const openOf = (things: readonly LinkCandidate[]) =>
   `${things.filter((t) => t.type === 'task' && !isFinished(t.status)).length} open`

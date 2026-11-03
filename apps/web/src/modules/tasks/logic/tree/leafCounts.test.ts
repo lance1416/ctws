@@ -10,7 +10,7 @@ const node = (n: string, parent: string | null, status: TaskStatus = 'todo') => 
 })
 
 describe('leafCounts', () => {
-  it('counts a parent’s leaves at any depth, never the parents between (artboard 8)', () => {
+  it('counts a parent’s leaves at any depth, never the parents between', () => {
     // Amazon: SDE II's four, one of them done, and one more directly under Amazon.
     const counts = leafCounts([
       node('1', null),

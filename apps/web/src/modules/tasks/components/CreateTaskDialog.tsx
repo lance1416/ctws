@@ -53,7 +53,7 @@ export function CreateTaskDialog({
   const timeZone = useTimeZone()
   const todayYmd = ymd(useNow(), timeZone)
 
-  // What was typed before Esc closed it, opened from the same place (FR-029).
+  // What was typed before Esc closed it, opened from the same place.
   const draft = `task:new:${projectId}:${relatedTo?.id ?? ''}:${plannedOn ?? ''}`
 
   // The deadline is picked as a named day and held as the end of that day, the instant the
@@ -176,7 +176,7 @@ export function CreateTaskDialog({
               setValue('parentId', null)
             }}
           />
-          {/* On a phone a field like the others, named above it (DES-001 "表单页"). */}
+          {/* On a phone a field like the others, named above it. */}
           <span aria-hidden="true" className={`${label} mt-2 lg:hidden`}>
             Title
           </span>

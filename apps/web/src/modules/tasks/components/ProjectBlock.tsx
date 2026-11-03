@@ -9,10 +9,10 @@ import { TaskBoard } from './board/TaskBoard'
 import { markStart, TREE_ROW } from './TaskRowParts'
 import { TaskTree } from './TaskTree'
 
-/** The two ways to look at a project's tasks (FR-053). The first is the default. */
+/** The two ways to look at a project's tasks. The first is the default. */
 export const PROJECT_VIEWS = [
   { id: 'tree', label: 'Tree', icon: TreeIcon },
-  // The board takes the page's width: its columns are the view (artboard 21).
+  // The board takes the page's width: its columns are the view.
   { id: 'board', label: 'Board', icon: BoardIcon, wide: true },
 ] as const
 
@@ -40,7 +40,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
     </p>
   )
 
-  // On the board it heads To do (FR-057); in the tree it is the last row.
+  // On the board it heads To do; in the tree it is the last row.
   if (view === 'board')
     return (
       <TaskBoard
@@ -75,7 +75,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
       key={projectId}
       projectId={projectId}
       last={
-        // "New task", typed into where it will land: no dialog (FR-054).
+        // "New task", typed into where it will land: no dialog.
         <div data-new-root className={`${TREE_ROW} pb-1`}>
           <div
             style={{ paddingLeft: markStart(1) }}

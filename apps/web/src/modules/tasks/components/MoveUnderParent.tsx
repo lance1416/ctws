@@ -15,10 +15,10 @@ import { ProgressSquare } from './ProgressSquare'
 const LEVEL = 16
 
 /**
- * MOVE TO…'S SECOND STEP (FR-059): the parents of the project gone into, in the tree's order and
- * indent, each with its progress; no leaves, and no "Top of" row, which the first step already
- * is. Words typed filter them flat, each with the parent above it. A parent the moved task's tree
- * would sink past MAX_TASK_DEPTH under is not offered. "‹" or ← goes back to the projects.
+ * The second step of Move to…: the parents of the project gone into, in tree order, each with its
+ * progress; no leaves, and no "Top of" row, which the first step already is. Typed words filter
+ * them flat, each with the parent above it. A parent the moved task's tree would sink past
+ * MAX_TASK_DEPTH under is not offered.
  */
 export function MoveUnderParent({
   project,
@@ -68,7 +68,7 @@ export function MoveUnderParent({
   return (
     <>
       <div className="flex h-11 items-center gap-1 border-b border-line pr-4 pl-2">
-        {/* A phone's full screen shuts here, the way back beside it (DES-001 "从底部弹出的面板"). */}
+        {/* A phone's full screen shuts here, the way back beside it. */}
         <button
           type="button"
           onClick={close}

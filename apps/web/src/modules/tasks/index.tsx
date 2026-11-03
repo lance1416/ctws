@@ -78,7 +78,7 @@ export const taskModule: WorkspaceModule = {
     Status: TaskStatusLine,
     order: 10,
   },
-  // Today and Review are pages across kinds, at the root (FR-019); a task's own address stays here.
+  // Today and Review are pages across kinds, at the root; a task's own address stays here.
   places: [
     {
       path: '/today',
@@ -86,7 +86,7 @@ export const taskModule: WorkspaceModule = {
       handle: {
         ...topPage('Today'),
         // Today's own rows, every module's blocks and day entries, and its lunar name: started
-        // together, as soon as the session is known (baseline.md §8).
+        // together, as soon as the session is known.
         prefetch: ({ qc, today, registry }) => {
           void qc.prefetchQuery(todayQuery(today))
           for (const block of registry.todayBlocks) block.prefetch(qc, today)
@@ -122,7 +122,7 @@ export const taskModule: WorkspaceModule = {
     }),
   },
   widgets: [{ place: 'now', Component: NowWidget }],
-  // A person's page draws the tasks linked to them by when they are due (FR-061).
+  // A person's page draws the tasks linked to them by when they are due.
   person: { Linked: { kind: 'task', Row: PersonTaskRow, count: openOf } },
   project: {
     Main: {
@@ -177,7 +177,7 @@ export const taskModule: WorkspaceModule = {
       Fact: TaskFact,
       describeChange: describeTaskChange,
       finish: (id) => patchTask(id as TaskId, { status: 'done' }),
-      // Its own head, with Open full page, Edit and close: the pane's (artboard 8).
+      // Its own head, with Open full page, Edit and close: the pane's.
       Narrow: TaskNarrow,
       ownHead: true,
     },

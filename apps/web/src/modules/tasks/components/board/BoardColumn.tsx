@@ -16,9 +16,8 @@ import { StatusMark } from '../../../../platform/ui/StatusMark'
 const OVER = 'shadow-[inset_0_0_0_100vmax_var(--color-select)]'
 
 /**
- * ONE STATUS'S COLUMN (FR-057, artboard 21): its head, then the project's own cards, then a group
- * per top-level parent, each with its fold, progress, name and count in this column. A column
- * with nothing in it is only its head.
+ * One status's column: its head, then the project's own cards, then a group per top-level parent. A
+ * column with nothing in it is only its head.
  */
 export function BoardColumn({
   status,
@@ -140,8 +139,8 @@ export function BoardColumn({
 }
 
 /**
- * A FOLDED SIDE COLUMN (FR-057): Backlog or Cancelled as a narrow strip with its mark, count and
- * name; opened with a click, and a card dropped on it takes its status. On a phone it lies flat.
+ * A folded side column: Backlog or Cancelled as a narrow strip; opened with a click, and a card
+ * dropped on it takes its status. On a phone it lies flat.
  */
 export function BoardStrip({
   status,

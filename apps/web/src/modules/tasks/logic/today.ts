@@ -10,8 +10,8 @@ export function todaySegments(rows: readonly TodayTaskResponse[]) {
 }
 
 /**
- * READY TO START, one list wherever it is shown (FR-041, v2.8): the leaves that could be started,
- * less those Today already lists as planned or overdue, so the workbench and Today say one number.
+ * Ready to start, one list wherever it is shown: the leaves that could be started, less those Today
+ * already lists as planned or overdue, so the workbench and Today say one number.
  */
 export function offeredReady<T extends { id: string }>(
   ready: readonly T[],

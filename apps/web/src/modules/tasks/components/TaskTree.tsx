@@ -30,9 +30,9 @@ import { useTreeVisibility, type DoneGroup } from './tree/useTreeVisibility'
 const NONE: readonly TaskResponse[] = []
 
 /**
- * THE TREE (FR-054, artboard 8): one block, a row of column names, then the tasks in their
- * columns; `last` is the row that adds a task at the end. Empty, it is those two alone: the empty
- * table says there is nothing, and the row is the way to add (P-06).
+ * The tree: one block, a row of column names, then the tasks; `last` is the row that adds a task at
+ * the end. Empty, it is those two alone: the empty table says there is nothing, and the row is the
+ * way to add.
  */
 export function TaskTree({ projectId, last }: { projectId: ProjectId; last: ReactNode }) {
   const qc = useQueryClient()
@@ -52,7 +52,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
 
   // Said above the tree: a refused move or a depth limit has no single row to sit beside.
   const [error, setError] = useState<string | null>(null)
-  // The inbox's row being moved to a project (FR-059), and the move itself.
+  // The inbox's row being moved to a project, and the move itself.
   const [moving, setMoving] = useState<TaskResponse | null>(null)
   // Where a move under a parent landed, said at the foot for a moment.
   const [moved, setMoved] = useState<string | null>(null)
@@ -163,14 +163,14 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
     inputSlot = at < 0 ? rows.length : at + blockLength(rows, at)
     inputDepth = at < 0 ? 1 : rows[at]!.depth + 1
   }
-  // Each group's "12 done" goes after the last row it would show among: at the end of its
-  // parent's block, or of the list for the project's own (FR-054). Nested ones that end together
-  // are said innermost first.
+  // Each group's "12 done" goes after the last row it would show among: at the end of its parent's
+  // block, or of the list for the project's own. Nested ones that end together are said innermost
+  // first.
   const doneAfter = new Map<number, { group: DoneGroup; depth: number }[]>()
   const sayDone = (at: number, group: DoneGroup, depth: number) => {
     const counts = shown.closed.get(group)
     if (!counts || (shown.isOpen(group) ? counts.all : counts.hidden) === 0) return
-    // Deepest first, the project's own last: each closes the block it belongs to (BUG-034).
+    // Deepest first, the project's own last: each closes the block it belongs to.
     const here = [...(doneAfter.get(at) ?? []), { group, depth }]
     doneAfter.set(
       at,
@@ -236,7 +236,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
   const said = moved && <Toast onGone={unsay}>{moved}</Toast>
 
   // Reading or not read: the tree's own block says so, and never draws an empty project with its
-  // "New task" (FR-031, FR-032, BUG-039).
+  // "New task".
   if (tasks.isError)
     return (
       <div className="rounded-container border border-line bg-panel">
@@ -262,7 +262,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
         </p>
       )}
       <div
-        // The inbox's rows carry Move to… too: their controls' column is wider (FR-059).
+        // The inbox's rows carry Move to… too: their controls' column is wider.
         className={`rounded-container border border-line bg-panel ${inInbox ? '[--row-acts:148px]' : ''}`}
       >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -334,7 +334,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
   )
 }
 
-/** The tree's block in grey rows under its column names, after the first 300 ms (FR-031). */
+/** The tree's block in grey rows under its column names, after the first 300 ms. */
 function TreeLoading() {
   const shown = useDelayed()
   if (!shown) return null

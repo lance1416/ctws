@@ -23,8 +23,8 @@ const field = (payload: unknown, key: string): unknown =>
 const side = (payload: unknown, key: 'from' | 'to'): unknown => field(payload, key)
 
 /**
- * A task's changes on its timeline (FR-044, FR-045): "Started", "Due Oct 22 → Oct 24",
- * "Renamed from …". A parent's status follows its children's and says nothing of its own here.
+ * A task's changes on its timeline: "Started", "Due Oct 22 → Oct 24", "Renamed from …". A parent's
+ * status follows its children's and says nothing of its own here.
  */
 export function describeTaskChange(
   event: { type: string; payload: unknown },

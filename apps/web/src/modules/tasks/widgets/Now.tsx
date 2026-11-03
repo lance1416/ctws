@@ -31,10 +31,9 @@ const CAPTION = 'px-3 pb-1.5 text-meta font-medium tracking-[0.06em] text-muted 
 const opens = (t: { id: string; projectId: string }) => `/projects/${t.projectId}?task=${t.id}`
 
 /**
- * NOW ON THE WORKBENCH (FR-076, FR-078, artboards 10 and 22): coming back from a resource
- * (FR-028), then the leaves in progress, each with the tick that finishes it, then the leaves
- * ready to start (FR-041), each with Start; as many as the place holds, shared by `nowRows`. A
- * list with nothing in it is left out. The rest of the day is in Today.
+ * Now on the workbench: coming back from a resource, then the leaves in progress, each with the
+ * tick that finishes it, then the leaves ready to start, each with Start; as many as the place
+ * holds, shared by `nowRows`. A list with nothing in it is left out.
  */
 export function NowWidget() {
   const today = useAccountToday()

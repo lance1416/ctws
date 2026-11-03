@@ -31,19 +31,19 @@ import { useTaskActions } from '../../hooks/useTaskActions'
 import { carriedFrom, dueMark } from '../../logic/todayMarks'
 import { todaySegments } from '../../logic/today'
 
-/** How far a row slides left to show its two buttons, each 84 wide (artboard 25). */
+/** How far a row slides left to show its two buttons, each 84 wide. */
 const OPEN_PX = 168
 /** How far a row is swiped right before letting go finishes it. */
 const DONE_PX = 96
 
-/** A block's rows before its "All N", as on the desk (FR-015, DES-001 section 4). */
+/** A block's rows before its "All N", as on the desk. */
 const SHOWN = 5
 
 /**
- * TODAY ON A PHONE (FR-083, artboard 25): the date and its lunar day, then a section a card for
- * what is in progress, planned for today and late, then what the modules add (follow-ups due,
- * birthdays near). No timeline, no Ready to start, no This week. The circle finishes a row; swiped
- * left it offers Tomorrow and Pick a date, swiped right it is done; its name opens it.
+ * Today on a phone: the date and its lunar day, then a card for each of in progress, planned for
+ * today and late, then what the modules add. No timeline, no Ready to start, no This week. The
+ * circle finishes a row; swiped left it offers Tomorrow and Pick a date, swiped right it is done;
+ * its name opens it.
  */
 export function PhoneToday() {
   const timeZone = useTimeZone()
@@ -56,7 +56,7 @@ export function PhoneToday() {
   const [searching, setSearching] = useState(false)
   const [opened, setOpened] = useState<TaskId | null>(null)
   const [picking, setPicking] = useState<TodayTaskResponse | null>(null)
-  // Its name opens it in the sheet over the page, a phone's inspector (DES-001).
+  // Its name opens it in the sheet over the page, a phone's inspector.
   const inspect = useShowInInspector()
   const rows = today.data ?? []
   const { inProgress, planned, overdue } = todaySegments(rows)
@@ -172,7 +172,7 @@ export function PhoneToday() {
           task={picking}
           today={day}
           onPick={(to) => {
-            // A plan, not a deadline: the deadline stays where it was (DES-001 "Pick a date").
+            // A plan, not a deadline: the deadline stays where it was.
             actions.patch(picking.id, { scheduledOn: to })
             setPicking(null)
             setOpened(null)
@@ -216,7 +216,7 @@ const MARK_TONE = {
 /**
  * One task as a phone row: the circle (44 to touch), its name over the project's square and the
  * task it sits under, its deadline on the right. A parent wears its progress and is opened, not
- * finished or moved: those are its children's (FR-043).
+ * finished or moved: those are its children's.
  */
 function PhoneTaskRow({
   task: t,
@@ -307,7 +307,7 @@ function PhoneTaskRow({
         <div
           className="absolute inset-y-0 right-0 flex"
           // The swipe is a shortcut: a screen reader and a keyboard reach these as they are, and
-          // reaching one slides the row open on it (DES-001 "滑动只是快捷方式").
+          // reaching one slides the row open on it.
           onFocus={() => setOpen(true)}
           onBlur={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false)

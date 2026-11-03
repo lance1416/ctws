@@ -12,10 +12,9 @@ import { type StatusMove, toggleDoneTarget } from '../../logic/status'
 import { dueMark } from '../../logic/todayMarks'
 
 /**
- * THE COLUMNS EVERY LIST ON TODAY SHARES (DES-001 section 4, artboard 12): status, title, where it
- * sits, its mark, and what can be done about it. A row without one of them leaves that cell empty;
- * nothing moves left. Below the desk width the path and the mark give way to the title. Inside the
- * list's 6, a row's 10 puts its status under the block's badge and its title under the block's name.
+ * The columns every list on Today shares: status, title, where it sits, its mark, and what can be
+ * done about it. A row without one of them leaves that cell empty; nothing moves left. Below the
+ * desk width the path and the mark give way to the title.
  */
 export const LINE =
   'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_184px_104px_220px] items-center gap-x-3 rounded-control px-2.5 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
@@ -49,7 +48,10 @@ const MARK_TONE = {
   late: 'bg-stop-bg text-stop-t',
 } as const
 
-/** The fourth column: when it is due (FR-079), a chip; empty when it is due on no day. Also on the workbench's Now. */
+/**
+ * The fourth column: when it is due, a chip; empty when it is due on no day. Also on the
+ * workbench's Now.
+ */
 export function DueChip({
   dueAt,
   today,
@@ -73,9 +75,9 @@ export function DueChip({
 }
 
 /**
- * One task on Today, in the shared columns; `action` is the fifth. A parent (FR-043) has its
- * progress where a leaf has its status, and how many of its children are done where a leaf has
- * its action: its status and its plan are its children's to change (artboard 32).
+ * One task on Today, in the shared columns; `action` is the fifth. A parent has its progress where
+ * a leaf has its status, and how many of its children are done where a leaf has its action: its
+ * status and its plan are its children's to change.
  */
 export function TaskLine({
   task: t,

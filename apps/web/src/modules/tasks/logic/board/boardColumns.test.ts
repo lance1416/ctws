@@ -84,7 +84,7 @@ describe('boardColumns', () => {
 })
 
 describe('openGroups', () => {
-  // Two leaves of its own, then groups of 14, 8 and 7 leaves in To do (artboard 21).
+  // Two leaves of its own, then groups of 14, 8 and 7 leaves in To do.
   const groups = (status: TaskStatus, sizes: number[]) => {
     const tasks = [task('1', null, 'a', { status }), task('2', null, 'b', { status })]
     sizes.forEach((size, g) => {

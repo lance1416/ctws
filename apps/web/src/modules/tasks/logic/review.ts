@@ -18,8 +18,8 @@ export type CellLine =
   | { kind: 'parent'; parent: { id: string; title: string }; tasks: ReviewTask[] }
 
 /**
- * A cell's lines (FR-081): the leaves of one parent as one line, where more than one of them moved
- * or the parent itself closed (FR-043); the rest one line each. Parents first, the most first.
+ * A cell's lines: the leaves of one parent as one line, where more than one of them moved or the
+ * parent itself closed; the rest one line each. Parents first, the most first.
  */
 export function cellLines(tasks: readonly ReviewTask[], closed: ReadonlySet<string>): CellLine[] {
   const under = new Map<string, { parent: { id: string; title: string }; tasks: ReviewTask[] }>()

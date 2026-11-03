@@ -3,9 +3,9 @@ import type { ChildCounts, TaskId, TaskResponse } from '@ctws/contracts'
 type Node = Pick<TaskResponse, 'id' | 'parentId' | 'status'>
 
 /**
- * Each parent's leaves, at any depth (FR-051): how many are done, how many count (neither in the
- * backlog nor cancelled), and how many wait in the backlog. The measure a parent's square and its
- * "1/4" share. Only parents are in the map; a leaf has its own status instead.
+ * Each parent's leaves, at any depth: how many are done, how many count (neither in the backlog nor
+ * cancelled), and how many wait in the backlog. The measure a parent's square and its "1/4" share.
+ * Only parents are in the map; a leaf has its own status instead.
  */
 export function leafCounts(tasks: readonly Node[]): Map<TaskId, ChildCounts> {
   const children = new Map<TaskId, Node[]>()

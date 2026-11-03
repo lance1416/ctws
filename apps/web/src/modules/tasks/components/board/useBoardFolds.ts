@@ -6,10 +6,10 @@ import { loadBoardFolds, saveBoardFolds } from '../../logic/board/folds'
 const key = (status: TaskStatus, root: TaskId | null) => `${status}:${root ?? 'own'}`
 
 /**
- * Which groups each column has open and which show all their cards. A group starts as
- * `openGroups` found it when it first appeared, so a card moving in or out never folds its
- * neighbours; one folded or opened by hand stays so, remembered per project (DES-001 section 4).
- * "N more" lasts until the board is left.
+ * Which groups each column has open and which show all their cards. A group starts as `openGroups`
+ * found it when it first appeared, so a card moving in or out never folds its neighbours; one
+ * folded or opened by hand stays so, remembered per project. "N more" lasts until the board is
+ * left.
  */
 export function useBoardFolds(projectId: ProjectId, columns: ReadonlyMap<TaskStatus, BoardColumn>) {
   const first = useRef(new Map<string, boolean>())

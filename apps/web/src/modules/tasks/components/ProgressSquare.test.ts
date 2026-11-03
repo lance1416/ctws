@@ -4,7 +4,7 @@ import { fillOf } from './ProgressSquare'
 const counts = (done: number, counted: number, backlog = 0) => ({ done, counted, backlog })
 
 describe('fillOf', () => {
-  it('fills in quarter steps of what is done (artboard 32)', () => {
+  it('fills in quarter steps of what is done', () => {
     expect(fillOf(counts(0, 4))).toBe(0)
     expect(fillOf(counts(1, 4))).toBe(25)
     expect(fillOf(counts(2, 4))).toBe(50)

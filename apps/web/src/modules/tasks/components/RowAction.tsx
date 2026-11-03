@@ -3,8 +3,7 @@ import { useSaveGate } from '../../../platform/http/online'
 import { BUTTON, GATED } from '../../../platform/ui/buttonStyles'
 
 /**
- * A row's one small action that saves (Start, Plan): greyed while offline, its hover saying why
- * (FR-033).
+ * A row's one small action that saves (Start, Plan): greyed while offline, its hover saying why.
  */
 export function RowAction({
   label,

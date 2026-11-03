@@ -43,15 +43,15 @@ const weekTitle = (monday: string) =>
   `Week of ${new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${monday}T12:00:00Z`))}`
 
 /**
- * THE WEEKLY REVIEW (FR-081, artboard 19): what each project finished, started and dropped in a
- * week, read from the change log; the leaves of one parent as one line; the projects with no
- * movement together at the end. Beside it, the stages that moved and what else the week held.
- * The weeks to choose from are in the sidebar.
+ * The weekly review: what each project finished, started and dropped in a week, read from the
+ * change log; the leaves of one parent as one line; the projects with no movement together at the
+ * end. Beside it, the stages that moved and what else the week held. The weeks to choose from are
+ * in the sidebar.
  */
 export function Review() {
   const [params] = useSearchParams()
   const phone = usePhone()
-  // A phone has no sidebar: the weeks are a page of their own, "‹ Weeks" from the week (DES-001).
+  // A phone has no sidebar: the weeks are a page of their own, "‹ Weeks" from the week.
   if (phone && params.get('list') === 'weeks')
     return (
       <>
@@ -59,7 +59,7 @@ export function Review() {
         <ReviewWeeks />
       </>
     )
-  // The Done view is gone (RV-01): its address is the review, as the retired pages' are (FR-023).
+  // The Done view is gone: its address is the review, as the retired pages' are.
   if (params.has('view')) return <Navigate to="/review" replace />
   return <Week />
 }
@@ -108,7 +108,7 @@ function Week() {
         {data && (
           <p data-review-total className="ml-auto flex items-center gap-2">
             <span className="text-hero tracking-[-0.02em] text-ink tabular-nums">{total}</span>
-            {/* Two lines beside the number, however short the words (RV-02). */}
+            {/* Two lines beside the number, however short the words. */}
             <span className="flex w-[70px] flex-col text-ui text-muted">
               <span>finished</span>
               <span>{monday === thisMonday ? 'so far' : 'this week'}</span>
@@ -205,8 +205,8 @@ function Week() {
 }
 
 /**
- * A project's week on a phone (DES-001 "回顾"): a card, its square and name on top, then what was
- * finished, started and dropped, a section each and only where there is some, five rows a section.
+ * A project's week on a phone: a card, its square and name on top, then what was finished, started
+ * and dropped, a section each and only where there is some, five rows a section.
  */
 function PhoneLane({ project: p }: { project: ReviewProject }) {
   const project = useEveryProject().data?.find((x) => x.id === p.projectId)
@@ -324,7 +324,7 @@ function Item({
       <span className="flex h-5 items-center">
         <StatusMark status={status} size={14} />
       </span>
-      {/* In the inspector, the review staying put (FR-022, DES-001 "回顾"). */}
+      {/* In the inspector, the review staying put. */}
       <OpensBeside
         thing={{ type: 'task', id }}
         to={`/projects/${projectId}?task=${id}`}
@@ -393,7 +393,7 @@ function Brief({
       aria-label="This week in brief"
       className="flex flex-col rounded-container border border-line bg-panel pb-2"
     >
-      {/* On a phone, not drawn when none moved (DES-001 "回顾"); the desk keeps its 0. */}
+      {/* On a phone, not drawn when none moved; the desk keeps its 0. */}
       {(stages.length > 0 || !phone) && (
         <BriefSection icon={ByStageIcon} title="Stages moved" count={stages.length}>
           {stages.map((s) => {

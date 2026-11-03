@@ -11,11 +11,10 @@ const clock = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minut
 const pct = (share: number) => `${(share * 100).toFixed(3)}%`
 
 /**
- * THE DAY ON ONE LINE (FR-079, artboard 12): the hours from 08 to 20, the past hatched, a line at
- * now, the stretch free until the next timed thing, meetings as purple spans with Join, and timed
- * deadlines as flags. Things too close to read apart are one node with a count, listed on hover.
- * When a module's meetings or other timed things could not be read, it says so instead of drawing
- * a day that looks free (FR-032).
+ * The day on one line: the hours from 08 to 20, the past hatched, a line at now, the stretch free
+ * until the next timed thing, meetings as spans with Join, and timed deadlines as flags. When a
+ * module's meetings or other timed things could not be read, it says so instead of drawing a day
+ * that looks free.
  */
 export function Timeline({
   items,
@@ -28,7 +27,7 @@ export function Timeline({
   failed: boolean
   onRetry: () => void
 }) {
-  // Its own width, for what is too close to read apart there (U-09).
+  // Its own width, for what is too close to read apart there.
   const holder = useRef<HTMLDivElement>(null)
   const width = useWidth(holder)
   if (failed)
@@ -101,7 +100,7 @@ export function Timeline({
                 className="absolute top-0 grid h-10 min-w-6 place-items-center rounded-control bg-meeting text-on-project"
                 style={{ left: pct(node.at), width: pct(node.until - node.at) }}
               >
-                {/* A node of several says how many beside it, not in it (U-09). */}
+                {/* A node of several says how many beside it, not in it. */}
                 <Meeting size={14} aria-hidden="true" />
               </div>
               <div
@@ -186,9 +185,9 @@ function clusterName(items: TimedItem[]): string {
 }
 
 /**
- * Things too close to draw apart (FR-015): how many, and when, which list them on hover and on a
- * press, so a keyboard and a screen reader reach each one too (WCAG 2.1.1, 1.4.13). Esc and a
- * press elsewhere put the list away.
+ * Things too close to draw apart: how many, and when, which list them on hover and on a press, so a
+ * keyboard and a screen reader reach each one too (WCAG 2.1.1, 1.4.13). Esc and a press elsewhere
+ * put the list away.
  */
 function Cluster({ items, nowMinutes }: { items: TimedItem[]; nowMinutes: number }) {
   const [pressed, setPressed] = useState(false)

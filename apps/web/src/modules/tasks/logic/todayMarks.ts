@@ -1,7 +1,7 @@
 import { addDays } from '@ctws/core/day'
 import { monthDay, weekdayOf, ymd } from '../../../platform/time/dates'
 
-/** The fourth column of a Today row (DES-001 section 4): when it is due, and how loudly. */
+/** The fourth column of a Today row: when it is due, and how loudly. */
 export type DueMark = { text: string; tone: 'today' | 'soon' | 'late' }
 
 /**

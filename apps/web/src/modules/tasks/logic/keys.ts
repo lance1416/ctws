@@ -15,7 +15,7 @@ export const statusActions = (status: TaskStatus, set: (next: StatusMove) => voi
   complete: () => set(toggleDoneTarget(status)),
 })
 
-/** Where a task row's keys are listed (artboard 24): Today's rows answer to the tree's keys. */
+/** Where a task row's keys are listed: Today's rows answer to the tree's keys. */
 const ROW_KEYS_TITLE = 'In a tree or list, with a row focused'
 
 /** Plain Enter on a row is the button's own click, which opens the details. */
@@ -93,7 +93,7 @@ export const TREE_KEYS: KeyTable<TreeAction> = {
       },
     },
     ...STATUS_ROWS,
-    // The inbox's rows only (FR-059): the picker its rows' Move to… opens.
+    // The inbox's rows only: the picker its rows' Move to… opens.
     { keys: 'M', does: 'Move to a project, in the inbox', presses: { m: 'moveTo' } },
   ],
 }

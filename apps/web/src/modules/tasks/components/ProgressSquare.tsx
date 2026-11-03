@@ -1,7 +1,7 @@
 import type { ChildCounts, TaskStatus } from '@ctws/contracts'
 import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
 
-/** What the square shows: a quarter step of what is done, or how it all ended (artboard 32). */
+/** What the square shows: a quarter step of what is done, or how it all ended. */
 type Fill = 0 | 25 | 50 | 75 | 'check' | 'x' | 'dash'
 
 export function fillOf({ done, counted, backlog }: ChildCounts): Fill {
@@ -18,11 +18,10 @@ const FILLED = { 25: { y: 14, height: 3 }, 50: { y: 11.5, height: 5.5 }, 75: { y
 const TONE: Partial<Record<TaskStatus, string>> = { in_progress: 'text-go', todo: 'text-muted' }
 
 /**
- * A parent's progress where a leaf has its status (FR-043, artboard 32): a rounded square filled
- * from the bottom by the share of its leaves that is done (of those neither in the backlog nor
- * cancelled), in quarter steps; a check when all are done, a cross when all were cancelled, a
- * dashed edge while the rest wait in the backlog. The same size as the status mark beside it: 16
- * in a row, 20 in a title.
+ * A parent's progress where a leaf has its status: filled from the bottom by the share of its
+ * leaves that is done (of those neither in the backlog nor cancelled), in quarter steps; a check
+ * when all are done, a cross when all were cancelled, a dashed edge while the rest wait in the
+ * backlog.
  */
 export function ProgressSquare({
   status,

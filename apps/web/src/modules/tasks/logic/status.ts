@@ -5,8 +5,8 @@ const FINISHED: ReadonlySet<TaskStatus> = new Set(FINISHED_TASK_STATUSES)
 export const isFinished = (s: TaskStatus) => FINISHED.has(s)
 
 /**
- * A finished task brought back: to what it was before it was finished (BUG-095, 04-projects.md),
- * which `useTaskActions` finds out, the change log asked when this client did not see it go.
+ * A finished task brought back: to what it was before it was finished, which `useTaskActions` finds
+ * out, the change log asked when this client did not see it go.
  */
 export const REOPEN = 'reopen'
 

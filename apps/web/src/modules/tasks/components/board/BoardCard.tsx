@@ -19,9 +19,8 @@ export const DUE_TONE = {
 } as const
 
 /**
- * A CARD ON THE BOARD (FR-057, artboard 21): the leaf's status and name, its pull request and its
- * deadline or else its planned day, then the steps from its group's head and what it is waiting on. A click or Enter
- * opens it in the inspector; the pointer drags it to another column.
+ * A leaf's card on the board. A click or Enter opens it in the inspector; the pointer drags it to
+ * another column.
  */
 export function BoardCard({
   card: { task, path },
@@ -38,7 +37,7 @@ export function BoardCard({
 }: {
   card: Card
   blockers: readonly { id: TaskId; title: string }[] | undefined
-  /** Its first GitHub pull request, "#418" (FR-057). */
+  /** Its first GitHub pull request, "#418". */
   pullRequest: string | undefined
   today: string
   timeZone: string

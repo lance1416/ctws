@@ -16,8 +16,8 @@ function useMoved(projectId: ProjectId) {
 }
 
 /**
- * When a project last moved, beside its name on the overview's card (FR-051): "Moved Oct 20", or,
- * with open work and a week unchanged, an amber "Quiet for 9 days".
+ * When a project last moved, beside its name on the overview's card: "Moved Oct 20", or, with open
+ * work and a week unchanged, an amber "Quiet for 9 days".
  */
 export function ProjectMoved({ project: p }: { project: ProjectResponse }) {
   const m = useMoved(p.id)
@@ -40,8 +40,8 @@ export function ProjectMoved({ project: p }: { project: ProjectResponse }) {
 }
 
 /**
- * A project's tasks on its card (FR-051, artboard 18): its progress, "19 of 31", then what is under
- * way, what is late and the next deadline, each in its own row.
+ * A project's tasks on its card: its progress, "19 of 31", then what is under way, what is late and
+ * the next deadline, each in its own row.
  */
 export function ProjectCardFacts({ project: p }: { project: ProjectResponse }) {
   const m = useMoved(p.id)
@@ -101,7 +101,7 @@ function Count({ n, tone = 'text-ink' }: { n: number; tone?: string }) {
   return <span className={`tabular-nums ${n === 0 ? 'text-muted' : tone}`}>{n}</span>
 }
 
-/** The overview's order, the latest moved first and the quiet last (FR-051); a hook, once a page. */
+/** The overview's order, the latest moved first and the quiet last; a hook, once a page. */
 export function useProjectOrder(): (a: ProjectResponse, b: ProjectResponse) => number {
   const movement = useQuery(movementQuery(useAccountToday()))
   return byRecency(movement.data ?? [])

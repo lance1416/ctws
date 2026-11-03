@@ -12,9 +12,9 @@ const FIRST_INDENT = 22
 const LEVEL = 18
 
 /**
- * THE OPEN PROJECT'S OUTLINE in the sidebar (FR-020, artboard 8): its parents at every depth and
- * its own leaves, each with its progress or its status, what is finished gone (`outlineRows`). A
- * click opens it on the page, in the inspector, as a row's would, so a long tree is a jump away.
+ * The open project's outline in the sidebar: its parents at every depth and its own leaves, what is
+ * finished left out (`outlineRows`). A click opens it in the inspector, as a row's would, so a long
+ * tree is a jump away.
  */
 export function ProjectOutline({ projectId }: { projectId: ProjectId }) {
   const tasks = useQuery(projectTasksQuery(projectId)).data?.tasks ?? []

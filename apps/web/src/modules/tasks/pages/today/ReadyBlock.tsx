@@ -10,12 +10,12 @@ import { ALL_ROW, TODAY_LISTS } from '../../components/TodayLists'
 import { AllInInspector } from '../../../../shell/inspector'
 import { RowAction } from '../../components/RowAction'
 
-/** How many leaves the block offers; the rest are its "All N", beside it (FR-011). */
+/** How many leaves the block offers; the rest are its "All N", beside it. */
 const SHOWN = 5
 
 /**
- * READY TO START (FR-041, FR-079, artboard 12): leaves waiting for nothing and not already on
- * Today's lists, each with Start. Two lines a row, its own columns: what it is, and where it sits.
+ * Ready to start: leaves waiting for nothing and not already on Today's lists, each with Start. Two
+ * lines a row, its own columns: what it is, and where it sits.
  */
 export function ReadyBlock({ today }: { today: string }) {
   const ready = useQuery(readyQuery(today))

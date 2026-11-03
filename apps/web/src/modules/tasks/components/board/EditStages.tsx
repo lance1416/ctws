@@ -25,10 +25,10 @@ const tasksWord = (n: number) => `${n} task${n === 1 ? '' : 's'}`
 const same = (a: string, b: string) => a.toLocaleLowerCase() === b.toLocaleLowerCase()
 
 /**
- * EDIT STAGES (FR-040, artboard 29), in the inspector: the project's stages in board order, each
- * dragged to its place, renamed in place (on every task at it; a name that exists already asks
- * to merge the two), shown or folded on the board, and removed while nothing uses it. Every
- * change is written at once, as the whole list.
+ * Edit stages, in the inspector: the project's stages in board order, each dragged to its place,
+ * renamed in place (on every task at it; a name that exists already asks to merge the two), shown
+ * or folded on the board, and removed while nothing uses it. Every change is written at once, as
+ * the whole list.
  */
 export function EditStages({
   project,
@@ -197,7 +197,7 @@ function StageRow({
           {...attributes}
           {...listeners}
           aria-label={`Move ${stage.name}`}
-          // Alt and an arrow moves it a place, as a tree row moves (FR-029).
+          // Alt and an arrow moves it a place, as a tree row moves.
           onKeyDown={(e) => {
             if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return
             e.preventDefault()
@@ -240,7 +240,7 @@ function StageRow({
           />
         )}
         <span className="shrink-0 text-meta text-muted tabular-nums">{tasksWord(stage.count)}</span>
-        {/* Nothing at it, on the board or in the tree: it can go (FR-040). */}
+        {/* Nothing at it, on the board or in the tree: it can go. */}
         {stage.count === 0 && naming === null && (
           <button
             type="button"

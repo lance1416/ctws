@@ -34,11 +34,9 @@ import type { useTaskDetailForm } from './useTaskDetailForm'
 import { useTaskPlace } from './useTaskPlace'
 
 /**
- * THE TASK EDITED IN PLACE (FR-056): the inspector's own rows, each turned into its control --
- * the title where it is read, Status, Planned and Due on their lines, what it waits on beside
- * them, then the notes -- saved by one Save where Edit was, with the leave guard's question
- * inline. The head's project is the control that moves it. A parent's status and plan are its
- * children's (FR-038, FR-043).
+ * The task edited in place: the inspector's own rows, each turned into its control, saved by one
+ * Save where Edit was, with the leave guard's question inline. The head's project is the control
+ * that moves it. A parent's status and plan are its children's.
  */
 export function TaskEditForm({
   task,
@@ -63,8 +61,8 @@ export function TaskEditForm({
   const projects = useEveryProject()
   const { counts, stages, path, height } = useTaskPlace(task)
   const phone = usePhone()
-  // A phone's Move to… (FR-088): its pick is in the form, saved with the rest; the parent's name
-  // is kept for the head, the tree it is in not being the one loaded.
+  // A phone's Move to…: its pick is in the form, saved with the rest; the parent's name is kept for
+  // the head, the tree it is in not being the one loaded.
   const [moving, setMoving] = useState(false)
   const [under, setUnder] = useState<string | null>(null)
   const [stageBusy, setStageBusy] = useState(false)
@@ -83,7 +81,7 @@ export function TaskEditForm({
 
   /** Full-screen writing for the notes: a bigger place to type, inside the same form and guard. */
   const [writing, setWriting] = useState(false)
-  // Full screen is a whole page of writing: the account's choices for one (REQ-002 FR-109).
+  // Full screen is a whole page of writing: the account's choices for one.
   const choices = useNoteChoices()
   // The guard's question is drawn in this form; a layer over it would hide the question, so the
   // question closes it, in the render that asks.
@@ -125,7 +123,7 @@ export function TaskEditForm({
         onSubmit={submit(() =>
           onSaved(movingTo?.isInbox && projectId !== task.projectId ? 'Moved to Inbox' : undefined),
         )}
-        // Ctrl Enter saves from any field (FR-029); a plain Enter in the notes is a new line.
+        // Ctrl Enter saves from any field; a plain Enter in the notes is a new line.
         onKeyDown={(e) => {
           if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.nativeEvent.isComposing) return
           e.preventDefault()
@@ -280,8 +278,8 @@ export function TaskEditForm({
               onClear={() => setValue('dueAt', null, dirty)}
               htmlFor="detail-due"
               exact={
-                // The day typed or pointed at as everywhere (FR-034, I-01), its time after it; the
-                // form holds the instant, read and written on the account's clock.
+                // The day typed or pointed at as everywhere, its time after it; the form holds the
+                // instant, read and written on the account's clock.
                 <span className="mt-1.5 flex flex-wrap items-start gap-2">
                   <DayField
                     id="detail-due"
@@ -353,7 +351,7 @@ export function TaskEditForm({
             onChange={(next) => setValue('notes', next.trim() === '' ? null : next, dirty)}
             label="Notes"
             boxed
-            // Grows with the text to half the inspector, then scrolls inside (artboard 36).
+            // Grows with the text to half the inspector, then scrolls inside.
             className={`${area} mt-1.5 max-h-[50vh] max-w-reading overflow-y-auto`}
             fallback={{ id: 'detail-notes', rows: 5, className: `${area} mt-1.5 max-w-reading` }}
           />

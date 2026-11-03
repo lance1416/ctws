@@ -62,11 +62,11 @@ function visibleTasks(
 }
 
 /**
- * A finished row folds away under its parent (FR-054), which says "12 done" and opens them on a
- * press, remembered per project; the project's own finished rows fold the same way at the end. A
- * finished parent with unfinished children stays, and so does a row finished right here, for this
- * mount, greyed where it was so a second `x` can undo it. A group holding such a row reads as open:
- * its "Hide done" folds every closed row in it away, the ones just finished too (04-projects.md).
+ * A finished row folds away under its parent, which says "12 done" and opens them on a press,
+ * remembered per project; the project's own finished rows fold the same way at the end. A finished
+ * parent with unfinished children stays, and so does a row finished right here, for this mount,
+ * greyed where it was so a second `x` can undo it. A group holding such a row reads as open: its
+ * "Hide done" folds every closed row in it away, the ones just finished too.
  */
 export function useTreeVisibility(projectId: ProjectId, all: readonly TaskResponse[]) {
   const [open, setOpen] = useState<ReadonlySet<DoneGroup>>(() => loadShownDone(projectId))

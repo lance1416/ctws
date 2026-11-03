@@ -38,7 +38,7 @@ export function TaskStatusLine() {
   return line ? <span data-status>{line}</span> : null
 }
 
-/** What a phone's More says beside Review (FR-085): how many were finished this week. */
+/** What a phone's More says beside Review: how many were finished this week. */
 export function ReviewMoreCount() {
   const today = useAccountToday()
   const weeks = useQuery(reviewWeeksQuery(today))

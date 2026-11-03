@@ -5,9 +5,9 @@ import { BOARD_ORDER } from './boardColumns'
 export type ShownColumn = { status: TaskStatus; ids: readonly TaskId[] }
 
 /**
- * Where an arrow takes the selection (FR-029, the board): up and down within the column, left and
- * right to the same place in the nearest column beside it that shows a card, or the last card
- * there when it is shorter. Nowhere to go stays put.
+ * Where an arrow takes the selection on the board: up and down within the column, left and right to
+ * the same place in the nearest column beside it that shows a card, or the last card there when it
+ * is shorter. Nowhere to go stays put.
  */
 export function cardBeside(
   columns: readonly { ids: readonly TaskId[] }[],

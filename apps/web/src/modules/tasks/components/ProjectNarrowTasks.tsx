@@ -11,18 +11,18 @@ import { revealHref } from '../logic/crumb'
 import { leafCounts } from '../logic/tree/leafCounts'
 import { isFinished } from '../logic/status'
 
-/** Top-level rows before the way to the whole tree (FR-011). */
+/** Top-level rows before the way to the whole tree. */
 const SHOWN = 5
 
 /**
- * A project's tasks on its narrow page (artboard 33): how many are open, the top level only, each
- * with its stage, then "The whole tree" on the project's page.
+ * A project's tasks on its narrow page: how many are open, the top level only, each with its stage,
+ * then "The whole tree" on the project's page.
  */
 export function ProjectNarrowTasks({ projectId }: { projectId: ProjectId }) {
   const tasks = useQuery(projectTasksQuery(projectId)).data?.tasks ?? []
   const top = tasks.filter((t) => t.parentId === null && !isFinished(t.status))
   const open = tasks.filter((t) => !isFinished(t.status)).length
-  // A parent shows its progress, a leaf its status (I-04, DES-001 "进度方块").
+  // A parent shows its progress, a leaf its status.
   const counts = leafCounts(tasks)
   const project = useEveryProject().data?.find((p) => p.id === projectId)
   const stageOf = (id: string | null) => project?.stages.find((s) => s.id === id)?.name

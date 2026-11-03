@@ -19,7 +19,7 @@ import { RowAction } from './RowAction'
 export const ALL_ROW =
   'flex h-9 max-lg:h-11 w-full items-center border-t border-line px-4 text-ui text-muted hover:bg-hover hover:text-ink'
 
-/** A Today block's "All N" names its full list by these (FR-011 rule 3). */
+/** A Today block's "All N" names its full list by these. */
 export const TODAY_LISTS = {
   inProgress: 'today-in-progress',
   overdue: 'today-overdue',
@@ -32,11 +32,9 @@ type Listed = Pick<
 > & { children?: TodayTaskResponse['children'] }
 
 /**
- * A BLOCK'S WHOLE LIST IN THE INSPECTOR (FR-011 rule 3, artboard 32): the block's own head (its
- * icon, name and count, its action, and close), then every row on two lines: status, name and
- * the block's marker; where it sits, and the block's action. A row opened takes the panel, with
- * "‹ Overdue 3 of 7" back and ↑ ↓ along the list. A row that leaves the list goes at once, and
- * the panel closes when none is left.
+ * A block's whole list in the inspector: the block's own head, then every row on two lines. A row
+ * opened takes the panel, with "‹ Overdue 3 of 7" back and ↑ ↓ along the list. A row that leaves
+ * the list goes at once, and the panel closes when none is left.
  */
 function TaskList({
   title,
@@ -175,8 +173,8 @@ function ReadyList() {
 }
 
 /**
- * A row's action, its own write: it acts from the row's own page too, after the list is gone
- * from the panel, and then goes back to it (`done`, U-29).
+ * A row's action, its own write: it acts from the row's own page too, after the list is gone from
+ * the panel, and then goes back to it (`done`).
  */
 function useActOnTask() {
   const [error, setError] = useState<string | null>(null)

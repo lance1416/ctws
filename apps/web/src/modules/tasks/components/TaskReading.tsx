@@ -40,11 +40,8 @@ const DUE_CHIP = {
 } as const
 
 /**
- * THE TASK IN THE INSPECTOR (FR-056, artboard 8), reading: where it sits, what it is, its fields
- * a line each with what it waits on or holds up among them, its notes, its resources, and what
- * it is linked to.
- * Nothing a stray click can change but the status. A parent's status is its children's, and it
- * has no plan of its own (FR-038, FR-043).
+ * The task in the inspector, reading. Nothing a stray click can change but the status. A parent's
+ * status is its children's, and it has no plan of its own.
  */
 export function TaskReading({
   task,
@@ -55,7 +52,7 @@ export function TaskReading({
   task: TaskResponse
   onEdit: () => void
   onClose: () => void
-  /** Opened from a list in the inspector: that list's action, under the facts (U-29). */
+  /** Opened from a list in the inspector: that list's action, under the facts. */
   act?: ReactNode
 }) {
   const timeZone = useTimeZone()
@@ -70,7 +67,7 @@ export function TaskReading({
     mutationFn: (status: TaskStatus) => patchTask(task.id, { status }),
     meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
   })
-  // Its plan moved, not its deadline (DES-001 "Pick a date").
+  // Its plan moved, not its deadline.
   const plan = useMutation({
     mutationFn: (day: string) => patchTask(task.id, { scheduledOn: day }),
     meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
@@ -146,7 +143,7 @@ export function TaskReading({
       <dl className={FIELDS}>
         <Field icon={<StatusMark status={task.status} size={16} />} name="Status">
           {counts ? (
-            // Its children's to change (FR-038).
+            // Its children's to change.
             <span className="text-ui text-ink">{STATUS_LABEL[task.status]}</span>
           ) : (
             <StatusPicker
@@ -156,7 +153,7 @@ export function TaskReading({
             />
           )}
         </Field>
-        {/* A field without a value is not a line (DES-001 "Empty values", I-02). */}
+        {/* A field without a value is not a line. */}
         {!counts && task.scheduledOn && (
           <Field icon={<PLACE_ICON.calendar size={16} aria-hidden="true" />} name="Planned">
             <span className="text-ui text-ink tabular-nums">
@@ -165,7 +162,7 @@ export function TaskReading({
           </Field>
         )}
         {/* On a phone's sheet, a row's swipe as buttons under its plan: the swipe is only a
-            shortcut (DES-001 "滑动只是快捷方式"). Done is the status above. */}
+            shortcut. Done is the status above. */}
         {inSheet && !counts && !isFinished(task.status) && (
           <PlanAgain
             named={task.scheduledOn === null}
@@ -194,7 +191,7 @@ export function TaskReading({
             <StageLabel name={stage.name} quiet={stage.collapsed} />
           </Field>
         )}
-        {/* Beside the fields, each only when there is one (P-07); changed in the edit. */}
+        {/* Beside the fields, each only when there is one; changed in the edit. */}
         <DependencyRows
           taskId={task.id}
           title={task.title}
@@ -209,7 +206,7 @@ export function TaskReading({
         </p>
       )}
 
-      {/* Notes only when there are some: an empty section is no news (I-02). */}
+      {/* Notes only when there are some: an empty section is no news. */}
       {task.notes && (
         <div>
           <span className={label}>Notes</span>
@@ -245,7 +242,7 @@ function PlanAgain({
   busy,
   onPlan,
 }: {
-  /** No plan row above to say what these change: they say it (P4-23). */
+  /** No plan row above to say what these change: they say it. */
   named: boolean
   title: string
   today: string

@@ -7,10 +7,9 @@ import { KIND_ICON, LockIcon } from '../../../platform/ui/icons'
 export const opensOnClick = (e: MouseEvent) => !(e.target as HTMLElement).closest('button')
 
 /**
- * The tree's four columns (FR-054, artboard 8): name, stage, progress, due, a row 36 high; then
- * a place of its own for the row's hover controls, so they never cover the due day (I-06): 64
- * for two buttons, wider where a list sets `--row-acts` (the inbox's Move to…). On a phone only
- * the name and the due day: the stage and the progress are in the detail.
+ * The tree's four columns: name, stage, progress, due; then a place of its own for the row's hover
+ * controls, so they never cover the due day, wider where a list sets `--row-acts` (the inbox's Move
+ * to…). On a phone only the name and the due day: the stage and the progress are in the detail.
  */
 export const TREE_ROW =
   'grid min-h-9 grid-cols-[minmax(0,1fr)_112px_96px_92px_var(--row-acts,64px)] items-center gap-x-3 px-3 max-md:grid-cols-[minmax(0,1fr)_84px]'
@@ -71,10 +70,9 @@ export function PlanMark() {
 }
 
 /**
- * A lock on the status mark's corner, for a leaf something unfinished holds up (FR-041,
- * artboard 8). Inside the 28px status button that sits at -6px, so it lands on the glyph's own
- * corner; on a bare 16px mark (a board card) it hangs 4px past it. The words are the row's, said
- * elsewhere.
+ * A lock on the status mark's corner, for a leaf something unfinished holds up. Inside the 28px
+ * status button that sits at -6px, so it lands on the glyph's own corner; on a bare 16px mark (a
+ * board card) it hangs 4px past it.
  */
 export function WaitingBadge({ bare = false }: { bare?: boolean }) {
   return (
@@ -91,8 +89,8 @@ export function WaitingBadge({ bare = false }: { bare?: boolean }) {
 }
 
 /**
- * The organisation a node is linked to (FR-047, artboard 8): the kind's building on its tint, so
- * a company's row is told from a role's at a glance. Its names, on hover and said.
+ * The organisation a node is linked to: the kind's building on its tint, so a company's row is told
+ * from a role's at a glance. Its names, on hover and said.
  */
 export function OrganisationMark({ names }: { names: readonly string[] }) {
   const Building = KIND_ICON.organisation

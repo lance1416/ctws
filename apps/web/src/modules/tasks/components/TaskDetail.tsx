@@ -26,13 +26,13 @@ type Props = {
   onClose: () => void
   /** The save was accepted by the server; the pane stays open and the owner acknowledges it. */
   onSaved?: () => void
-  /** Opened from a list in the inspector: that list's action, under the facts (U-29). */
+  /** Opened from a list in the inspector: that list's action, under the facts. */
   act?: ReactNode
   /** Where the frame around it finds how to close it: keeping an edit, as the ✕ does. */
   closing?: RefObject<() => void>
   /**
-   * Deleted: where it was shown goes too. The inspector's, which nothing else closes (BUG-090);
-   * a page's pane is closed by its list, whose row has gone.
+   * Deleted: where it was shown goes too. The inspector's, which nothing else closes; a page's pane
+   * is closed by its list, whose row has gone.
    */
   onDeleted?: () => void
 }
@@ -41,7 +41,7 @@ type Props = {
 export function TaskDetail({ task, onClose, onSaved }: Props) {
   // The pane's own ways out (Esc, a click outside) close as the body's ✕ does.
   const closing = useRef(onClose)
-  // The pane is the inspector a task's own list opens it in: `L` links from it (BUG-080).
+  // The pane is the inspector a task's own list opens it in: `L` links from it.
   useInspectedOf({ type: 'task', id: task.id, title: task.title })
   return (
     <DetailPane label="Task details" onClose={() => closing.current()}>
@@ -57,7 +57,7 @@ export function TaskDetail({ task, onClose, onSaved }: Props) {
 
 /**
  * The task itself, wherever it is shown: the pane above, and the inspector, where it is edited in
- * place too (artboard 8, DES-001 "检查器里的窄版").
+ * place too.
  */
 export function TaskDetailBody({ task, onClose, onSaved, act, closing, onDeleted }: Props) {
   useRecordRecent({
@@ -70,7 +70,7 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing, onDeleted
   /** The pane's body: where focus goes back to, rather than <body>. */
   const panel = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
-  // What a save said where it lands, once: "Moved to Inbox" (FR-059).
+  // What a save said where it lands, once: "Moved to Inbox".
   const [said, setSaid] = useState<string | null>(null)
   const unsay = useCallback(() => setSaid(null), [])
   const edit = useTaskDetailForm(task)
@@ -85,7 +85,7 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing, onDeleted
     setEditing(false)
     backToPanel()
   }
-  // The ✕ and a click outside close as Esc does: without asking, what was typed kept (FR-029).
+  // The ✕ and a click outside close as Esc does: without asking, what was typed kept.
   const requestClose = () => {
     if (editing) edit.keep()
     guard.release(onClose)
@@ -94,8 +94,8 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing, onDeleted
 
   /**
    * Escape unwinds one level: the discard question, then editing, which it leaves without asking
-   * and keeping what was typed for the next Edit (FR-029). Closing the pane is the shell's job, so
-   * only a press handled here is marked with `preventDefault`.
+   * and keeping what was typed for the next Edit. Closing the pane is the shell's job, so only a
+   * press handled here is marked with `preventDefault`.
    */
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Escape' || e.defaultPrevented) return
@@ -137,8 +137,8 @@ export function TaskDetailBody({ task, onClose, onSaved, act, closing, onDeleted
                 onSaved?.()
               }}
             />
-            {/* The edit's last thing, under a rule (FR-035): destroying it is not a peer of
-                saving it, and reading it offers neither. */}
+            {/* The edit's last thing, under a rule: destroying it is not a peer of saving it, and
+                reading it offers neither. */}
             <DangerZone>
               <DangerAction
                 label="Delete task"

@@ -11,7 +11,7 @@ describe('status targets', () => {
     expect(toggleDoneTarget('cancelled')).toBe(REOPEN)
   })
 
-  it('a finished task comes back to what it left the last time it was finished (BUG-095)', () => {
+  it('a finished task comes back to what it left the last time it was finished', () => {
     const changed = (from: string, to: string) => ({
       type: 'status_changed',
       payload: { from, to },

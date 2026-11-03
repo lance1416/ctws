@@ -30,7 +30,7 @@ describe('describeTaskChange', () => {
     expect(say('created', { from: null, to: { title: 'x' } })).toBe('Created')
     expect(say('title_changed', { from: 'Old', to: 'New' })).toBe('Renamed from “Old”')
     expect(say('stage_changed', { from: null, to: 'Onsite' })).toBe('Stage set to Onsite')
-    // From what, when it had one (FR-044, BUG-083).
+    // From what, when it had one.
     expect(say('stage_changed', { from: 'Phone screen', to: 'Onsite' })).toBe(
       'Stage Phone screen → Onsite',
     )

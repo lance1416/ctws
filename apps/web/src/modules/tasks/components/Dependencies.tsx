@@ -51,10 +51,9 @@ function Row({
 }
 
 /**
- * WHAT IT WAITS ON AND HOLDS UP, as the inspector's field rows (FR-056, artboard 8): "Waiting on"
- * and "Blocks" beside Status and Due, behind a lock, each only when there is one. Editing, Waiting
- * on is always there, to add to and take from; each change is written the moment it is made.
- * Blocks is the other task's to change.
+ * What it waits on and what it holds up, as the inspector's field rows, each only when there is
+ * one. Editing, Waiting on is always there, to add to and take from; each change is written the
+ * moment it is made. Blocks is the other task's to change.
  */
 export function DependencyRows({
   taskId,
@@ -130,8 +129,8 @@ export function DependencyRows({
                 Add
               </button>
             )}
-            {/* The search box with its keys (FR-024), tasks only, never this one: the server
-                refuses a task waiting on itself outright, nor what it already waits on. */}
+            {/* Tasks only, never this one, which the server refuses outright, nor what it already
+                waits on. */}
             {adding && (
               <PickThing
                 of={{ type: 'task', id: taskId }}

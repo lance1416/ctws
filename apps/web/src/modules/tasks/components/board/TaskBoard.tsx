@@ -52,7 +52,7 @@ const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const
 const isStatus = (id: UniqueIdentifier | undefined): id is TaskStatus =>
   BOARD_ORDER.some((s) => s === id)
 
-/** The cards made during this visit first among the project's own, newest first (BUG-040). */
+/** The cards made during this visit first among the project's own, newest first. */
 function freshFirst(column: BoardColumnData, fresh: readonly TaskId[]): BoardColumnData {
   if (fresh.length === 0) return column
   const at = (id: TaskId) => {
@@ -68,8 +68,8 @@ const landed = (tasks: readonly TaskResponse[], id: TaskId, to: TaskStatus) =>
   tasks.map((t) => (t.id === id ? { ...t, status: to, completedAt: null } : t))
 
 /**
- * THE BOARD BY STATUS (FR-057, artboard 21): the project's leaves in To do, In progress and Done,
- * with Backlog and Cancelled folded to strips at the sides; `add` is To do's "New task".
+ * The board by status: the project's leaves in To do, In progress and Done, with Backlog and
+ * Cancelled folded to strips at the sides; `add` is To do's "New task".
  */
 export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: ReactNode }) {
   const tasks = useQuery(projectTasksQuery(projectId))
@@ -81,7 +81,7 @@ export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: React
       </div>
     )
   if (!tasks.isSuccess) return <BoardLoading />
-  // By stage only where some node has one (FR-058); the choice is in the address, as the view is.
+  // By stage only where some node has one; the choice is in the address, as the view is.
   const hasStages = tasks.data.tasks.some((t) => t.stageId !== null)
   const byStage = hasStages && params.get('columns') === 'stage'
   const columnsSwitch = (
@@ -149,10 +149,10 @@ function Board({
     [all, drag, today, timeZone, allDone],
   )
   const folds = useBoardFolds(projectId, columns)
-  // A card that arrives while the board is open stays in sight (BUG-040): one of the project's own
-  // (To do's box makes those) goes to the top of its column for this visit, newest first; one
-  // under a parent opens its group, and the whole run when it lands past the fifth. What was
-  // there on the first draw is not new.
+  // A card that arrives while the board is open stays in sight: one of the project's own (To do's
+  // box makes those) goes to the top of its column for this visit, newest first; one under a parent
+  // opens its group, and the whole run when it lands past the fifth. What was there on the first
+  // draw is not new.
   const seen = useRef<Set<TaskId> | null>(null)
   const [fresh, setFresh] = useState<readonly TaskId[]>([])
   useEffect(() => {
@@ -322,8 +322,7 @@ function Board({
           if (task && isStatus(over?.id)) move(task, over.id, { keys: false })
         }}
       >
-        {/* At least 240 a column (DES-001 v1.21): what does not fit scrolls sideways in here,
-            never the page. */}
+        {/* At least 240 a column: what does not fit scrolls sideways in here, never the page. */}
         <div
           id={BOARD_ID}
           data-board
@@ -415,7 +414,7 @@ function Board({
   )
 }
 
-/** Grey cards in the three columns, after the first 300 ms (FR-031). */
+/** Grey cards in the three columns, after the first 300 ms. */
 function BoardLoading() {
   const shown = useDelayed()
   if (!shown) return <div className="h-10" />

@@ -30,13 +30,13 @@ import { RowAction } from '../components/RowAction'
 import { usePhone } from '../../../platform/ui/phone'
 import { PhoneToday } from './today/PhoneToday'
 
-/** A block shows this many before its "All 12", which opens the rest beside it (FR-011). */
+/** A block shows this many before its "All 12", which opens the rest beside it. */
 const SHOWN = 5
 
 /**
- * TODAY (FR-079, artboard 12): what to move next. The day on one timeline across the top; then, on
- * the left, what is in progress, what is planned and what is late, all in one set of columns; on
- * the right, the blocks the modules add: follow up, ready to start, this week, birthdays.
+ * Today: what to move next. The day on one timeline across the top; then, on the left, what is in
+ * progress, what is planned and what is late, all in one set of columns; on the right, the blocks
+ * the modules add.
  */
 export function Today() {
   return usePhone() ? <PhoneToday /> : <DeskToday />
@@ -69,7 +69,7 @@ function DeskToday() {
   const { openTask } = pane
   const { inProgress, planned, overdue } = todaySegments(rows)
 
-  // Not held to a width: the page's columns are what its width gives (DES-001 section 4).
+  // Not held to a width: the page's columns are what its width gives.
   const page = useRef<HTMLDivElement>(null)
   const columns = useColumns(page)
   const { main: taskColumns, side } = splitColumns(columns)
@@ -175,7 +175,7 @@ function DeskToday() {
             <Waiting />
           ) : (
             <>
-              {/* Left column blocks keep their order and are not drawn empty (FR-079). */}
+              {/* Left column blocks keep their order and are not drawn empty. */}
               {inProgress.length > 0 && (
                 <Block
                   badge={{ icon: InProgressIcon, tint: 'bg-go-bg text-go' }}
@@ -264,9 +264,8 @@ function DeskToday() {
 type Line = (t: TodayTaskResponse, action: React.ReactNode) => React.ReactNode
 
 /**
- * PLANNED FOR TODAY: planned for today with no time of its own, and plans carried over from a day
- * already gone, said on the right. With nothing planned, the tasks ready to start, each with Plan
- * (FR-030).
+ * Planned for today: planned for today with no time of its own, and plans carried over from a day
+ * already gone, said on the right. With nothing planned, the tasks ready to start, each with Plan.
  */
 function PlannedBlock({
   planned,
@@ -294,7 +293,7 @@ function PlannedBlock({
         <ul className="p-1.5">
           {offered.map((t) => (
             <li key={t.id} data-plan-row={t.id} className={LINE}>
-              {/* Its status, as every task row starts (C-04). */}
+              {/* Its status, as every task row starts. */}
               <StatusMark status={t.status} size={16} />
               <span className="truncate text-ui text-ink">{t.title}</span>
               <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
@@ -334,12 +333,11 @@ function PlannedBlock({
 }
 
 /**
- * OVERDUE: what is late, how late, and the days it can move to, which make it a plan (FR-079):
- * Today, Tomorrow, next Monday, or a day picked. The deadline stays: the row leaves Overdue for
- * that day, comes back on it in Planned for today, still "N days late", and is overdue again the
- * day after if it is still open. Past five, the head moves them all at once. A
- * parent has no plan of its own (FR-043): its row offers no day, and moving them all passes it
- * by; it is opened to change its deadline or to get on with what is under it.
+ * Overdue: what is late, how late, and the days it can move to, which make it a plan. The deadline
+ * stays: the row leaves Overdue for that day, comes back on it in Planned for today, still "N days
+ * late", and is overdue again the day after if it is still open. Past five, the head moves them all
+ * at once. A parent has no plan of its own: its row offers no day, and moving them all passes it
+ * by.
  */
 function OverdueBlock({
   overdue,

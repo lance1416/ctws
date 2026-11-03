@@ -23,9 +23,9 @@ export const WRITE_AWAITS = [taskKeys.all]
  */
 export function useTaskDetailForm(task: TaskResponse) {
   const timeZone = useTimeZone()
-  // What Esc left the edit with, for when Edit is pressed again (FR-029).
+  // What Esc left the edit with, for when Edit is pressed again.
   const draft = `task:edit:${task.id}`
-  // The notes as stored, mentions and all: the editor writes them so (REQ-002 FR-106).
+  // The notes as stored, mentions and all: the editor writes them so.
   const defaults = (): DetailTaskForm => {
     return {
       projectId: task.projectId,

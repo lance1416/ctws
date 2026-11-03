@@ -8,8 +8,8 @@ export function TaskMark({ thing }: { thing: LinkCandidate }) {
 }
 
 /**
- * Where a task sits (DES-001 section 4, artboard 9): its project's square and the task it is under,
- * or the project's name when it is under nothing.
+ * Where a task sits: its project's square and the task it is under, or the project's name when it
+ * is under nothing.
  */
 export function TaskFact({ thing }: { thing: LinkCandidate }) {
   const projects = useEveryProject()

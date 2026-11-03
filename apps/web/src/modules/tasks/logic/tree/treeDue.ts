@@ -3,7 +3,7 @@ import { addDays } from '@ctws/core/day'
 import { nearDay, shortDay, weekdayOf, ymd } from '../../../../platform/time/dates'
 import { isFinished } from '../status'
 
-/** The tree's Due column (FR-054): what it says, and how loudly. */
+/** The tree's Due column: what it says, and how loudly. */
 export type TreeDue = { text: string; tone: 'soon' | 'late' | 'quiet' | 'waiting' }
 
 /**

@@ -4,14 +4,14 @@ import { useCloseInspector, useListAct, useNarrowName } from '../../../shell/ins
 import { taskQuery } from '../api'
 import { TaskDetailBody } from './TaskDetail'
 
-/** A task in the inspector: the pane's own reading and editing, in place (artboard 8). */
+/** A task in the inspector: the pane's own reading and editing, in place. */
 export function TaskNarrow({ id }: { id: string }) {
   const task = useQuery(taskQuery(idFrom(taskId, id)))
   const close = useCloseInspector()
   const act = useListAct()
   useNarrowName(task.data?.title)
   // Deleted, it hands focus to the row above it in the project's tree, desk or phone, as the row it
-  // was opened from goes; the first row's goes to the tree's New task (BUG-094).
+  // was opened from goes; the first row's goes to the tree's New task.
   const deleted = () => {
     const rows = [...document.querySelectorAll<HTMLElement>('[data-handle-id]')]
     const at = rows.findIndex((r) => r.dataset.handleId === id)

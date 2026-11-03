@@ -34,7 +34,7 @@ export function movedLine(r: ProjectMovementResponse, today: string): string {
   return 'Not moved yet'
 }
 
-/** When a project last moved, as its card on the overview says it (FR-051): "Moved Oct 20". */
+/** When a project last moved, as its card on the overview says it: "Moved Oct 20". */
 export function movedOn(r: ProjectMovementResponse, today: string): string {
   if (!r.lastActivityOn) return 'Not moved yet'
   const near = nearDay(r.lastActivityOn, today)
@@ -42,8 +42,8 @@ export function movedOn(r: ProjectMovementResponse, today: string): string {
 }
 
 /**
- * The overview's order (FR-051): the projects that moved most lately first, the quiet ones after
- * all the rest. Those it knows nothing of keep their place among the ones that never moved.
+ * The overview's order: the projects that moved most lately first, the quiet ones after all the
+ * rest. Those it knows nothing of keep their place among the ones that never moved.
  */
 export function byRecency(
   rows: readonly ProjectMovementResponse[],

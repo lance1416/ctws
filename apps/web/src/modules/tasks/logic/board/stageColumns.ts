@@ -4,7 +4,7 @@ import { isFinished } from '../status'
 import { ancestorsOf } from '../tree/ancestors'
 import { flatten } from '../tree/flatten'
 
-/** In a stage this long, it is time to chase (FR-058); a project may set its own one day. */
+/** In a stage this long, it is time to chase; a project may set its own one day. */
 export const STALE_DAYS = 14
 
 /** A node on the board by stage, with what its card says beyond its name. */
@@ -26,7 +26,7 @@ export type StageCard = {
   soonest: string | null
 }
 
-/** What the project's list says about its tasks beyond themselves (FR-047, FR-058). */
+/** What the project's list says about its tasks beyond themselves. */
 export type Around = {
   organisations: Readonly<Record<string, readonly { id: string }[]>>
   next: Readonly<Record<string, NextAbout>>
@@ -39,10 +39,10 @@ const daysBetween = (from: string, to: string) =>
   Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS)
 
 /**
- * THE BOARD BY STAGE (FR-058, artboard 20): a column per stage in the project's order, each the
- * whole list of the nodes at that stage, at any depth. Those with a date (a deadline, a meeting, a
- * follow-up) come first, the nearest first; the rest by how long they have waited at the stage,
- * longest first. `today` is given; nothing here reads the clock.
+ * The board by stage: a column per stage in the project's order, each the whole list of the nodes
+ * at that stage, at any depth. Those with a date (a deadline, a meeting, a follow-up) come first,
+ * the nearest first; the rest by how long they have waited at the stage, longest first. `today` is
+ * given; nothing here reads the clock.
  */
 export function stageColumns(
   tasks: readonly TaskResponse[],

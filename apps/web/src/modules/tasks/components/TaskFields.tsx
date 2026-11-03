@@ -41,8 +41,8 @@ export function StatusRadios({
   /** In a field row whose name says Status already: the label is for a screen reader only. */
   bare?: boolean
 }) {
-  // On a phone a dropdown, drawn as where the status is read (DES-001 "44 和看起来的大小"):
-  // five chips of 44 would fold into three lines.
+  // On a phone a dropdown, drawn as where the status is read: five chips of 44 would fold into
+  // three lines.
   if (usePhone())
     return (
       <div className="flex flex-col gap-1">
@@ -149,10 +149,10 @@ export function DateDecisions({
       ) : (
         <span className={headingClass}>{heading}</span>
       )}
-      {/* In a field row, one line: the four never wrap Clear onto a line of its own (I-10). */}
+      {/* In a field row, one line: the four never wrap Clear onto a line of its own. */}
       <div className={`flex gap-1 ${bare ? '' : 'mt-1.5 flex-wrap'}`}>
-        {/* Shown short, as Today's overdue row says them (DES-001 v1.20); named in full, so a
-            form with two dates has two different Todays. */}
+        {/* Shown short, as Today's overdue row says them; named in full, so a form with two dates
+            has two different Todays. */}
         {namedDays(today).map(([shown, said, day]) => (
           <button
             key={shown}

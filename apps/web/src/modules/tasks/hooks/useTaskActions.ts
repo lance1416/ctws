@@ -13,7 +13,7 @@ type TodayTasks = TodayTaskResponse[]
 
 /**
  * What each task was when this client finished it, for this visit: what it comes back to, at once
- * and without asking (BUG-095). One finished elsewhere asks its change log.
+ * and without asking. One finished elsewhere asks its change log.
  */
 const before = new Map<TaskId, 'todo' | 'in_progress'>()
 

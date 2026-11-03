@@ -80,8 +80,8 @@ export const movementQuery = (day: string) =>
       (await call(api.tasks.movement, { query: { view: 'movement' } }, { signal })).projects,
   })
 
-/** Leaves that could be started now (FR-041), the server's order. */
-/** A task's own recorded changes, newest first: what a finished one comes back to (BUG-095). */
+/** Leaves that could be started now, in the server's order. */
+/** A task's own recorded changes, newest first: what a finished one comes back to. */
 export async function taskChanges(id: TaskId): Promise<{ type: string; payload: unknown }[]> {
   const { entries } = await call(api.timeline.of, {
     query: { type: 'task', id, kinds: 'change' },
@@ -142,7 +142,7 @@ export function createTask(body: CreateTaskForm): Promise<TaskResponse> {
   return call(api.tasks.create, { body })
 }
 
-/** Relates a new task to the thing it was made from: a person, an organisation (FR-061). */
+/** Relates a new task to the thing it was made from: a person, an organisation. */
 export function relateTask(id: TaskId, to: { type: ObjectType; id: string }): Promise<unknown> {
   return call(api.relations.create, { body: { from: { type: 'task', id }, to } })
 }

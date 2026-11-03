@@ -3,9 +3,9 @@ import type { ProjectId } from '@ctws/contracts'
 const keyFor = (projectId: ProjectId) => `ctws.boardFolds.${projectId}`
 
 /**
- * The board's groups someone folded or opened by hand, per project (DES-001 section 4): a
- * status and a group's head, `todo:<id>`, to whether it is open. Every access is wrapped:
- * `localStorage` throws in a private window or with storage disabled.
+ * The board's groups someone folded or opened by hand, per project: a status and a group's head,
+ * `todo:<id>`, to whether it is open. Every access is wrapped: `localStorage` throws in a private
+ * window or with storage disabled.
  */
 export function loadBoardFolds(projectId: ProjectId): Map<string, boolean> {
   try {

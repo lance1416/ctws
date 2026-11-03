@@ -34,24 +34,24 @@ export type DayTimeline = {
   nodes: TimelineNode[]
 }
 
-/** Items closer than this start as one node: their words could not both be read (FR-015). */
+/** Items closer than this start as one node: their words could not both be read. */
 const CLOSE_MINUTES = 40
 
 /**
  * What a node's words need across before they are cut: a short name over its time ("Call 1",
- * "09:00"), beside its mark. Hourly meetings on a 1440 Today with nothing beside it fit (U-09).
+ * "09:00"), beside its mark.
  */
 const LABEL_PX = 88
 
 /**
- * THE DAY'S TIMELINE (FR-079): 08 to 20 by default, reaching out to the hour of anything earlier
- * or later; now, the stretch free until the next timed thing, and the things themselves, those
- * too close to read apart drawn as one node.
+ * The day's timeline: 08 to 20 by default, reaching out to the hour of anything earlier or later;
+ * now, the stretch free until the next timed thing, and the things themselves, those too close to
+ * read apart drawn as one node.
  */
 export function dayTimeline(
   items: readonly TimedItem[],
   nowMinutes: number,
-  /** How wide the line is drawn, when known: closeness is in its pixels there (U-09). */
+  /** How wide the line is drawn, when known: closeness is in its pixels there. */
   widthPx?: number,
 ): DayTimeline {
   const sorted = [...items].sort((a, b) => a.start - b.start)
@@ -75,8 +75,8 @@ export function dayTimeline(
       ? { at: share(nowMinutes), until: share(next.start), minutes: next.start - nowMinutes }
       : null
 
-  // Close is as close as the line's width makes it: a narrow line (the inspector open beside
-  // Today) puts things an hour apart into one node rather than cutting their words (U-09).
+  // Close is as close as the line's width makes it: a narrow line (the inspector open beside Today)
+  // puts things an hour apart into one node rather than cutting their words.
   const close = widthPx ? Math.max(CLOSE_MINUTES, (span * LABEL_PX) / widthPx) : CLOSE_MINUTES
   const groups: TimedItem[][] = []
   for (const item of sorted) {

@@ -6,9 +6,9 @@ import { movementQuery } from '../../api'
 import { hasMovement, isQuiet } from '../../logic/movement'
 
 /**
- * THIS WEEK, CLOSED PER PROJECT (FR-079, artboard 12): what each project finished this week, as a
- * bar against the busiest and a count; a project left too long says it has gone quiet instead.
- * The inbox is not a line of work and is left out, as is a project with nothing open or closed.
+ * This week, per project: what each project finished this week, as a bar against the busiest and a
+ * count; a project left too long says it has gone quiet instead. The inbox is not a line of work
+ * and is left out, as is a project with nothing open or closed.
  */
 export function WeekBlock({ today }: { today: string }) {
   const movement = useQuery(movementQuery(today))

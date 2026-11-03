@@ -12,9 +12,9 @@ const monthName = (month: string) =>
   )
 
 /**
- * THE WEEKS (FR-081, artboard 19), in the sidebar beside Review: the recent weeks under their
- * months, each by its Monday with a bar of what it finished, every bar on one scale, the busiest
- * week full. This week says "so far".
+ * The weeks, in the sidebar beside Review: the recent weeks under their months, each by its Monday
+ * with a bar of what it finished, every bar on one scale, the busiest week full. This week says "so
+ * far".
  */
 export function ReviewWeeks() {
   const today = useAccountToday()

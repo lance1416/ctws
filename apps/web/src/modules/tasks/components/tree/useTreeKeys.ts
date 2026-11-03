@@ -33,7 +33,7 @@ export function useTreeKeys({
   toggle: (id: TaskId) => void
   /** Focuses this row, if there is one. */
   focusRow: (row: FlatRow | undefined) => void
-  /** Opens Move to… for this row; only the inbox's rows have it (FR-059). */
+  /** Opens Move to… for this row; only the inbox's rows have it. */
   moveTo?: ((id: TaskId) => void) | undefined
 }) {
   const keys = useKeyTable(TREE_KEYS)

@@ -36,7 +36,7 @@ type Props = {
   stage: { name: string; quiet: boolean } | null
   /** What is still in the way: the Due column says Waiting while there is any. */
   blockedBy: readonly { id: TaskId; title: string }[] | undefined
-  /** The organisations it is linked to: a mark after its name says which (FR-047). */
+  /** The organisations it is linked to: a mark after its name says which. */
   organisations: readonly { id: string; title: string }[] | undefined
   /**
    * `saved` is true for a moment after a save from the pane: the row says it worked. `tabStop` is
@@ -57,13 +57,13 @@ type RowActions = {
   open: () => void
   toggleSelected: () => void
   addChild: () => void
-  /** The inbox's rows: picks a project to move it to (FR-059). */
+  /** The inbox's rows: picks a project to move it to. */
   moveTo?: (() => void) | undefined
 }
 
 /**
- * ONE ROW OF THE TREE (FR-054, artboard 8), in its four columns: the name, behind its fold and its
- * status (a leaf) or its progress square (a parent); the stage; a parent's progress; the deadline.
+ * One row of the tree: the name, behind its fold and its status (a leaf) or its progress square (a
+ * parent); the stage; a parent's progress; the deadline.
  */
 export function TaskRow({
   row,
@@ -90,7 +90,7 @@ export function TaskRow({
   const now = useNow()
   const today = ymd(now, timeZone)
   const due = treeDue({ dueAt, status, waiting: blocked !== null }, today, timeZone)
-  // The inbox's rows say their age while no date says more (STORY-016).
+  // The inbox's rows say their age while no date says more.
   const age =
     aged && !dueAt && !task?.scheduledOn && task
       ? capturedLabel(task.createdAt, timeZone, now)
@@ -234,9 +234,9 @@ export function TaskRow({
         )}
       </span>
 
-      {/* The hover controls in their own last column, after the due day (I-06). On a phone,
-          which has no room for it, they sit over the row's end on an opaque ground. Without
-          hover they always show. */}
+      {/* The hover controls in their own last column, after the due day, so they never cover it. On
+          a phone, which has no room for it, they sit over the row's end on an opaque ground.
+          Without hover they always show. */}
       <span
         data-row-acts
         className="flex h-9 items-center justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 max-md:absolute max-md:top-0 max-md:right-2 max-md:bg-panel max-md:shadow-[inset_0_0_0_100vmax_var(--color-hover)] [@media(hover:none)]:opacity-100"
@@ -281,8 +281,8 @@ const DUE_TONE = {
 } as const
 
 /**
- * The Due column: within the week a flag on amber, missed one on red, further off grey words
- * (FR-054); Waiting, behind a lock, for a leaf something unfinished holds up.
+ * The Due column: within the week a flag on amber, missed one on red, further off grey words;
+ * Waiting, behind a lock, for a leaf something unfinished holds up.
  */
 function DueLabel({ due }: { due: TreeDue }) {
   return (

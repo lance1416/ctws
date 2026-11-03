@@ -1,9 +1,9 @@
-/** Rows Ready to start keeps for itself however much is in progress (FR-078). */
+/** Rows Ready to start keeps for itself however much is in progress. */
 const READY_KEEPS = 2
 
 /**
- * How Now's rows are shared (FR-078): what is in progress first, as many as fit while Ready to
- * start keeps two rows, or as many as it has when that is fewer; Ready to start has the rest.
+ * How Now's rows are shared: what is in progress first, as many as fit while Ready to start keeps
+ * two rows, or as many as it has when that is fewer; Ready to start has the rest.
  */
 export function nowRows(
   rows: number,

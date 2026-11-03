@@ -15,7 +15,7 @@ export function StatusButton({
   status: TaskStatus
   title: string
   onClick: () => void
-  /** 16 in a row whose first column is 16 wide (Today, DES-001 section 4). */
+  /** 16 in a row whose first column is 16 wide, as on Today. */
   size?: 16 | 20
 }) {
   const inactive = isFinished(status)
