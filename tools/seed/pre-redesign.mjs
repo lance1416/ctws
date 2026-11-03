@@ -1,17 +1,16 @@
 /**
- * Fills a workspace with the "before the redesign" data set from
- * docs/product/2026-10-redesign/acceptance-data.md, through the API of the version BEFORE the
- * redesign (main at 3863d95 or later, schema 0027). The result is dumped as the SQL fixture the
+ * Fills a workspace with the "before the redesign" data set, through the API of the version BEFORE
+ * the redesign (main at 3863d95 or later, schema 0027). The result is dumped as the SQL fixture the
  * migration tests start from (`apps/api/tests/fixtures/pre-redesign.sql`), so every guess the
- * migration makes (how a name splits, which companies look alike, which parents change status)
- * has a known input.
+ * migration makes (how a name splits, which companies look alike, which parents change status) has
+ * a known input.
  *
  *   node tools/seed/pre-redesign.mjs --base http://localhost:3301 [--email ...] [--password ...]
  *
  * Registers the account if it does not exist (the stack must allow registration or be empty),
  * then creates everything. Not idempotent: run it against an empty database.
  *
- * What is in here, and why (each line is a case the migration must handle, FR-090 to FR-099):
+ * What is in here, and why (each line is a case the migration must handle):
  *   names      欧阳娜娜 (compound surname), Mary Jane Watson (middle name), Cher (one word),
  *              "Li, Wendy" (comma), "王 磊" (a space inside a Chinese name)
  *   companies  "Stripe", "stripe", "Stripe Inc." (same, differently written); a title with no
@@ -259,7 +258,7 @@ const former = await person({ name: 'Former Agent', org: 'Foxtons', circle: 'wor
 await link(T(measure.id), P(former.id), 'about')
 await call('DELETE', `/people/${former.id}`)
 
-// A second account, with its own "Stripe": organisations are made per account (FR-090).
+// A second account, with its own "Stripe": organisations are made per account.
 cookie = ''
 await post('/auth/register', {
   email: 'other@example.com',

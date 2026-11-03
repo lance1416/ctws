@@ -1,10 +1,10 @@
 /*
- * VENDORED, NOT WRITTEN HERE. This is the `validate_palette.js` that ships with Claude's `dataviz`
+ * Vendored, not written here. This is the `validate_palette.js` that ships with Claude's `dataviz`
  * skill (bundled-skills 2.1.291), copied verbatim below this header.
  *
- * It is in the repo because `projectColors.test.ts` runs it as the acceptance test for the six
- * project hues, and a test may not reach into a versioned temp directory that disappears with the
- * next skill release. Nothing here is ours: do not edit the body. To take a newer version, copy the
+ * It is in the repo because `projectColors.test.ts` checks the project colours with its `contrast`,
+ * and a test may not reach into a versioned temp directory that disappears with the next skill
+ * release. Nothing here is ours: do not edit the body. To take a newer version, copy the
  * file again and re-run the test.
  */
 /**

@@ -1,7 +1,6 @@
 /**
- * Measures how long four pages take to load, as the page-load baseline for the redesign
- * (docs/product/2026-10-redesign/README.md section 2: five runs per page, the median must not
- * grow past 110% after the switch).
+ * Measures how long four pages take to load, as the page-load baseline for the redesign: five
+ * runs per page, and the median must not grow past 110% after the switch.
  *
  *   node tools/perf/measure.mjs --base http://localhost:3300 \
  *     --email me@example.com --password '...' \

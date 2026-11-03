@@ -1,5 +1,5 @@
 /**
- * The three accounts the API test cases run against (test-plan section 5): Admin, A and B. A gets
+ * The three accounts the API test cases run against: Admin, A and B. A gets
  * a small set of everything the new layout holds, B a few things of its own, so a case can show
  * that one account never sees or changes the other's. Runs against the CURRENT version, through
  * its API, so it can only be run on a stack whose registration is open (or empty).
@@ -175,8 +175,8 @@ await post('/meetings', {
   attendeeIds: [mira.id],
 })
 
-// A meeting Mira attended while she was at Shopify (2021 to Feb 2026, as artboard 5 and FR-061
-// have it): it stays on Shopify's timeline, and only there, after she moved to Stripe (FR-065).
+// A meeting Mira attended while she was at Shopify (2021 to Feb 2026): it stays on Shopify's
+// timeline, and only there, after she moved to Stripe.
 await post('/meetings', {
   title: 'Payments platform review',
   startsLocal: '2022-05-10T15:00',
@@ -230,7 +230,7 @@ await post('/relations', {
   to: { type: 'organisation', id: stripe.id },
   note: 'Mira works there',
 })
-// The company the card is about: its next meeting is the phone screen with Mira (FR-058).
+// The company the card is about: its next meeting is the phone screen with Mira.
 await post('/relations', {
   from: { type: 'task', id: stripeTask.id },
   to: { type: 'organisation', id: stripe.id },

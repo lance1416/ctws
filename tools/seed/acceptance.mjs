@@ -1,9 +1,9 @@
 /**
- * The acceptance data set (docs/product/2026-10-redesign/acceptance-data.md): the states the
- * artboards show and the ones a tidy seed hides. Three accounts:
- *   typical  as the artboards have it, to hold each block against its artboard;
- *   many     every place past five rows, for FR-015;
- *   empty    a new account, for FR-030.
+ * The acceptance data set: the states the designs show and the ones a tidy seed hides. Three
+ * accounts:
+ *   typical  as the designs have it, to hold each block against its design;
+ *   many     every place past five rows, to show what is behind "All N";
+ *   empty    a new account, with nothing in it.
  * Runs through the API of the CURRENT version, on a stack whose clock is pinned at the
  * acceptance "now", 2026-10-22 09:10 in London (`CLOCK_PINNED_AT=2026-10-22T08:10:00Z`): what
  * the server stamps (made, done, started) is that day. Not idempotent: an empty database.
@@ -141,7 +141,7 @@ async function reading(title, fields = {}) {
 // ======================================================================= typical: history
 /**
  * What happened before the acceptance "now", by the day it happened on (the clock pinned there):
- * the review's weeks, finished counts newest first 25, 14, 8, 10, 6, 9 (acceptance-data.md), and
+ * the review's weeks, finished counts newest first 25, 14, 8, 10, 6, 9, and
  * Moving flat, last touched on the 13th, nine days quiet by the 22nd.
  */
 const HISTORY = {
@@ -149,7 +149,7 @@ const HISTORY = {
   '2026-09-16': { done: 6 },
   '2026-09-23': { done: 10 },
   '2026-09-30': { done: 8 },
-  // GitLab has sat at Applied 21 days by the 22nd, Datadog 15 (acceptance-data.md, BUG-081).
+  // GitLab has sat at Applied 21 days by the 22nd, Datadog 15.
   '2026-10-01': { applied: 'GitLab' },
   '2026-10-07': { done: 14, applied: 'Datadog' },
   '2026-10-13': { done: 25, dropped: 2, movingFlat: true },
@@ -302,7 +302,7 @@ const wanglei = await person({
   name: '王磊',
   city: 'Shanghai, China',
   circleIds: [circle.University],
-  // A number to call, so a phone's Call opens the dialler (FR-087).
+  // A number to call, so a phone's Call opens the dialler.
   channels: [{ kind: 'phone', value: '+86 139 1234 5678' }],
 })
 const lena = await person({
@@ -393,7 +393,7 @@ const prepare = await task(JH, 'Prepare the system design round', {
   status: 'in_progress',
   notes: `Ask [@Mira Chen](ctws://person/${mira.id}) which questions came up.`,
 })
-// The task just back from its Google Doc (UAT-012).
+// The task just back from its Google Doc.
 await post('/resources', {
   owner: { type: 'task', id: prepare.id },
   url: 'https://docs.google.com/document/d/1sysdesign/edit',
@@ -466,13 +466,13 @@ await post('/resources', {
 // ---- Today: planned, carried over, overdue ----------------------------------------------------
 // Moving flat is left alone today: its history says nine days quiet.
 await task(P.Atlas, 'Book the room for the Atlas demo', { scheduledOn: '2026-10-22' })
-// A parent planned for today: its progress and "0/2" where a leaf has its status (T-04).
+// A parent planned for today: its progress and "0/2" where a leaf has its status.
 const demo = await task(P.Atlas, 'Prepare the Atlas demo', { scheduledOn: '2026-10-22' })
 await task(P.Atlas, 'Record the walkthrough', { parentId: demo.id })
 await task(P.Atlas, 'Send the agenda', { parentId: demo.id })
 await task(P.Thesis, 'Email the supervisor', { scheduledOn: '2026-10-18' })
 await task(P['Find a lawyer'], 'Send the lease to Harbour & Lane', { dueAt: at('2026-10-15') })
-// The firms are nodes at a stage; Harbour & Lane moved on to Shortlisted (acceptance-data.md).
+// The firms are nodes at a stage; Harbour & Lane moved on to Shortlisted.
 const lawyerStage = await stagesOf(P['Find a lawyer'], [
   { name: 'Contacted' },
   { name: 'Shortlisted' },
@@ -631,7 +631,7 @@ await message({
   body: 'Would you be able to look at a residential lease this month?',
   occurredAt: '2026-10-13T09:00:00Z',
   projectId: P['Find a lawyer'],
-  // Not waited on: its Next is "No reply, 9 days" (UAT-011).
+  // Not waited on: its Next is "No reply, 9 days".
 })
 // Waited on, to be followed up tomorrow: the three waiting are past, tomorrow and next week.
 await message({
@@ -785,7 +785,7 @@ for (let i = 1; i <= 40; i++) {
     ],
     subject: `Thread ${i}`,
     // Every other day from August to the 20th of October: the latest within the 30 days that
-    // Organisations in touch looks back (FR-071).
+    // Organisations in touch looks back.
     occurredAt: new Date(Date.UTC(2026, 7, 1 + i * 2, 10)).toISOString(),
     ...(i % 2 && i > 10
       ? { awaitingReply: true, followUpOn: `2026-10-${String(10 + (i % 20)).padStart(2, '0')}` }
@@ -799,7 +799,7 @@ for (let i = 1; i <= 200; i++) {
   })
 }
 
-// One word every kind has a dozen or more of, for search's groups (BUG-081): "Atlas".
+// One word every kind has a dozen or more of, for search's groups: "Atlas".
 const ATLAS = [
   'Freight',
   'Robotics',
