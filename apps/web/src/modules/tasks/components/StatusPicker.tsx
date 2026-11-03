@@ -35,7 +35,7 @@ export function StatusPicker({
           <StatusMark status={status} />
         </span>
         {STATUS_LABEL[status]}
-        <ExpandIcon size={16} className="h-3 w-3 text-subtle" />
+        <ExpandIcon size={16} className="h-3 w-3 text-muted" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
@@ -52,7 +52,7 @@ export function StatusPicker({
                 <StatusMark status={s} />
               </span>
               {STATUS_LABEL[s]}
-              {s === status && <span className="ml-auto text-meta text-subtle">Current</span>}
+              {s === status && <span className="ml-auto text-meta text-muted">Current</span>}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.Content>

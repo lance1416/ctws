@@ -153,7 +153,7 @@ export function NoteEditor({
               value={title}
               autoFocus={note === null}
               onChange={(e) => setTitle(e.target.value)}
-              className={`min-w-0 flex-1 bg-transparent max-lg:min-h-11 text-title text-ink outline-none placeholder:text-subtle ${
+              className={`min-w-0 flex-1 bg-transparent max-lg:min-h-11 text-title text-ink outline-none placeholder:text-muted ${
                 named ? 'placeholder:text-ink' : ''
               }`}
             />
@@ -175,7 +175,7 @@ export function NoteEditor({
           </div>
           <div className="-mt-1 flex min-h-5.5 items-center gap-2">
             <FolderTag folderId={note?.folderId ?? folderId} noteId={note?.id ?? null} />
-            <p className="text-meta text-subtle" aria-live="polite">
+            <p className="text-meta text-muted" aria-live="polite">
               {save.isPending ? 'Saving…' : made.current && !save.isError ? 'Saved' : ''}
             </p>
           </div>

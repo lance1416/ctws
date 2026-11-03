@@ -188,7 +188,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           <span aria-hidden="true" className="flex-1" />
           <label
             data-field
-            className="flex h-7.5 w-70 items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-subtle"
+            className="flex h-7.5 w-70 items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-muted"
           >
             <PLACE_ICON.search size={16} aria-hidden="true" />
             <input
@@ -197,7 +197,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Filter keys"
               aria-label="Filter keys"
-              className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+              className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted"
             />
           </label>
           <button type="button" onClick={onClose} aria-label="Close" className={ICON_BUTTON}>
@@ -265,16 +265,16 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
               </kbd>
             ))}
           </span>
-          <span className="text-meta text-subtle">
+          <span className="text-meta text-muted">
             Arrows, Enter, Esc and {keyLabel('keys with Ctrl or Alt')} always work. Kept with your
             account.
           </span>
         </label>
         <div className="flex h-10 shrink-0 items-center gap-2 rounded-b-container border-t border-line bg-chrome px-5 text-meta">
           <span className="text-warn-t">was …</span>
-          <span className="text-subtle">This key changes in the redesign.</span>
+          <span className="text-muted">This key changes in the redesign.</span>
           <span aria-hidden="true" className="flex-1" />
-          <span className="text-subtle">Hover any button to see its key.</span>
+          <span className="text-muted">Hover any button to see its key.</span>
         </div>
       </div>
     </Modal>
@@ -286,7 +286,7 @@ function Caps({ keys }: { keys: string }) {
   const alternatives = keys.split(' or ')
   return alternatives.map((alt, i) => (
     <Fragment key={alt}>
-      {i > 0 && <span className="text-meta text-subtle">or</span>}
+      {i > 0 && <span className="text-meta text-muted">or</span>}
       {alt.split(' ').map((cap, j) => (
         <kbd key={`${cap}-${j}`} className={KEY}>
           {cap.length === 1 ? cap.toUpperCase() : keyLabel(cap)}

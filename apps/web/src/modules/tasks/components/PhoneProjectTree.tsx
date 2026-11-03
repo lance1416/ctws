@@ -145,9 +145,9 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
               >
                 <span
                   data-row-title
-                  className={`truncate text-row ${done ? 'text-subtle' : 'text-ink'}`}
+                  className={`truncate text-row ${done ? 'text-muted' : 'text-ink'}`}
                 >
-                  {deeper && <span className="text-subtle">… </span>}
+                  {deeper && <span className="text-muted">… </span>}
                   {t.title}
                 </span>
                 {(stage || due || children) && (

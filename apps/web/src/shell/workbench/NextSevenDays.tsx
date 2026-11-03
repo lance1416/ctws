@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { weekdayOf } from '../../platform/time/dates'
 import { Block, BlockFailed } from '../../platform/ui/Block'
 import { FlagIcon, GoOnIcon, KIND_ICON, PLACE_ICON } from '../../platform/ui/icons'
-import { KIND_ON_TINT, KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
+import { KIND_ON_TINT, KIND_TINT } from '../../platform/ui/kinds'
 import { useAccountToday } from '../auth'
 import type { ShownEntry } from '../contract'
 import { OpensBeside } from '../inspector'
@@ -111,7 +111,7 @@ function Chip({ entry: e, soon }: { entry: ShownEntry; soon: boolean }) {
         }
       : e.kind === 'follow-up'
         ? {
-            tone: `${KIND_TINT.communication} ${KIND_TEXT.communication}`,
+            tone: `${KIND_TINT.communication} ${KIND_ON_TINT.communication}`,
             icon: <KIND_ICON.communication size={12} aria-hidden="true" className="shrink-0" />,
             text: 'Follow up',
           }

@@ -137,7 +137,7 @@ export function TaskLine({
       <DueChip dueAt={t.dueAt} today={today} timeZone={timeZone} />
       <span className="justify-self-end">
         {t.children ? (
-          <span data-row-children className="text-meta text-subtle tabular-nums">
+          <span data-row-children className="text-meta text-muted tabular-nums">
             {t.children.done}/{t.children.counted}
           </span>
         ) : (

@@ -50,7 +50,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
           <div className="flex flex-col gap-1">
             {/* Lined up with the cards under it: the plus where a card's status is, as wide, and
                 the words where a card's title starts (a card's 1 of border and 10 inside). */}
-            <label className="flex h-7.5 items-center gap-2 rounded-control px-[11px] text-subtle hover:bg-hover">
+            <label className="flex h-7.5 items-center gap-2 rounded-control px-[11px] text-muted hover:bg-hover">
               <span aria-hidden="true" className="flex w-4 shrink-0 justify-center">
                 <NewIcon size={14} />
               </span>
@@ -62,7 +62,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
                 aria-label="New task"
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
-                className="h-7 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+                className="h-7 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted"
               />
             </label>
             {failure}

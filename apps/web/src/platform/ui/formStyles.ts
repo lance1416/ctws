@@ -6,13 +6,13 @@
  * 30 high, 10 each side, 6 radius, a `line-strong` edge on the panel.
  */
 export const boxed =
-  'h-7.5 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-ink placeholder:text-subtle aria-invalid:border-stop max-lg:h-11'
+  'h-7.5 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-ink placeholder:text-muted aria-invalid:border-stop max-lg:h-11'
 
 export const field = `w-full ${boxed}`
 
 /** A field for lines of prose (notes): `field`'s edge and type, as tall as its rows, five at least. */
 export const area =
-  'w-full min-h-28 rounded-control border border-line-strong bg-panel px-2.5 py-1.5 text-ui text-ink placeholder:text-subtle aria-invalid:border-stop'
+  'w-full min-h-28 rounded-control border border-line-strong bg-panel px-2.5 py-1.5 text-ui text-ink placeholder:text-muted aria-invalid:border-stop'
 
 export const label = 'block text-meta text-muted'
 

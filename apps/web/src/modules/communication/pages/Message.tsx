@@ -119,7 +119,7 @@ function MessagePage({ message: m }: { message: CommunicationResponse }) {
         <span className="text-meta text-muted">{m.direction === 'sent' ? 'To' : 'From'}</span>
         <div className="flex flex-wrap gap-1.5">
           {m.parties.length === 0 ? (
-            <span className="text-ui text-subtle">No one</span>
+            <span className="text-ui text-muted">No one</span>
           ) : (
             m.parties.map((p) => <PartyChip key={`${p.type}:${p.id}`} party={p as Party} />)
           )}

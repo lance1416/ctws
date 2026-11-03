@@ -79,7 +79,7 @@ function Everyone({ circle }: { circle: string | null }) {
           )}
           {letters.map((letter) => (
             <section key={letter} aria-label={letter} id={`people-${letter}`}>
-              <h3 className="px-3.5 pt-2.5 pb-1 text-meta text-subtle">{letter}</h3>
+              <h3 className="px-3.5 pt-2.5 pb-1 text-meta text-muted">{letter}</h3>
               <ul className="flex flex-col gap-px">
                 {sortByFiled(groups.get(letter)!).map((p) => (
                   <li key={p.id} data-person-row={p.id}>
@@ -94,7 +94,7 @@ function Everyone({ circle }: { circle: string | null }) {
                     <span className="flex h-7.5 items-center gap-2 rounded-control bg-select px-2 text-ui font-medium text-ink">
                       <Avatar initials={draft.initials} />
                       <span className="flex-1 truncate">{draft.name}</span>
-                      <span className="text-meta font-normal text-subtle">New</span>
+                      <span className="text-meta font-normal text-muted">New</span>
                     </span>
                   </li>
                 )}
@@ -144,7 +144,7 @@ function BirthdayList() {
             <NavLink to={toPerson(r.personId, params.toString())} className={ROW}>
               <Avatar initials={r.initials} />
               <span className="flex-1 truncate">{r.name}</span>
-              <span className="shrink-0 text-meta text-subtle tabular-nums">{r.inDays} d</span>
+              <span className="shrink-0 text-meta text-muted tabular-nums">{r.inDays} d</span>
             </NavLink>
           </li>
         ))}
@@ -158,7 +158,7 @@ function Narrowed({ label, count }: { label: string; count: number }) {
   return (
     <div className="mx-1.5 mb-1 flex h-7.5 items-center gap-2 rounded-control bg-hover pr-0.5 pl-2 text-ui">
       <span className="flex-1 truncate font-medium text-ink">{label}</span>
-      <span className="text-meta text-subtle tabular-nums">{count}</span>
+      <span className="text-meta text-muted tabular-nums">{count}</span>
       <Link to="/people" aria-label="Show everyone" className={ICON_BUTTON}>
         <CloseIcon size={14} aria-hidden="true" />
       </Link>

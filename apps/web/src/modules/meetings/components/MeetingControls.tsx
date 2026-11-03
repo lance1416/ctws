@@ -114,7 +114,7 @@ export function EndsPicker({
           Never
         </Button>
       ) : (
-        <span className="text-ui text-subtle">Never</span>
+        <span className="text-ui text-muted">Never</span>
       )}
     </>
   )

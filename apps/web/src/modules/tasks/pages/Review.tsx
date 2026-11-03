@@ -127,7 +127,7 @@ function Week() {
             <PhoneLane key={p.projectId} project={p} />
           ))}
           {data.projects.length === 0 && (
-            <p className="px-1 text-ui text-subtle">Nothing happened this week</p>
+            <p className="px-1 text-ui text-muted">Nothing happened this week</p>
           )}
           <Brief stages={data.stagesMoved} range={{ from: data.from, to: data.to }} />
           {still.length > 0 && (
@@ -175,7 +175,7 @@ function Week() {
                 <Lane key={p.projectId} project={p} />
               ))}
               {data.projects.length === 0 && (
-                <p className="px-3.5 py-3 text-ui text-subtle">Nothing happened this week</p>
+                <p className="px-3.5 py-3 text-ui text-muted">Nothing happened this week</p>
               )}
               {still.length > 0 && (
                 <div
@@ -326,7 +326,7 @@ function Item({
       <OpensBeside
         thing={{ type: 'task', id }}
         to={`/projects/${projectId}?task=${id}`}
-        className={`text-left text-ui hover:underline ${dropped ? 'text-subtle line-through' : 'text-ink'}`}
+        className={`text-left text-ui hover:underline ${dropped ? 'text-muted line-through' : 'text-ink'}`}
       >
         {title}
       </OpensBeside>

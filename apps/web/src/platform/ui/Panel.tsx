@@ -5,7 +5,7 @@ import { HANG } from './hang'
 export function PanelEmpty({ children, hang = false }: { children: ReactNode; hang?: boolean }) {
   return (
     <p
-      className={`py-1.5 text-ui text-subtle ${hang ? `${HANG} pl-[calc(3px+var(--spacing)*3.5)]` : 'px-2'}`}
+      className={`py-1.5 text-ui text-muted ${hang ? `${HANG} pl-[calc(3px+var(--spacing)*3.5)]` : 'px-2'}`}
     >
       {children}
     </p>

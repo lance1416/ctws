@@ -15,9 +15,8 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
  */
 export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 14 | 16 | 20 }) {
   const half = status === 'in_progress'
-  // Artboard 1: what is being worked on is green, what waits to be started muted, and the backlog
-  // and what is settled subtle; the shape says which it is as well.
-  const tone = half ? 'text-go' : status === 'todo' ? 'text-muted' : 'text-subtle'
+  // Artboard 1: what is being worked on is green; the rest muted, its shape saying which it is.
+  const tone = half ? 'text-go' : 'text-muted'
   return (
     <svg
       role="img"

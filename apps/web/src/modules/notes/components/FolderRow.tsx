@@ -105,7 +105,7 @@ export function FolderRow({
               <DropdownMenu.Content align="end" sideOffset={4} className={MENU_SURFACE}>
                 <DropdownMenu.Item onSelect={onNewNote} className={MENU_ITEM}>
                   New note
-                  <span className="ml-auto pl-4 text-meta text-subtle">N N</span>
+                  <span className="ml-auto pl-4 text-meta text-muted">N N</span>
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator className="my-1 h-px bg-line" />
                 <DropdownMenu.Item onSelect={() => setRenaming(true)} className={MENU_ITEM}>
@@ -122,7 +122,7 @@ export function FolderRow({
           </DropdownMenu.Root>
           <span
             data-count
-            className={`pr-2 pl-1 text-meta text-subtle tabular-nums group-focus-within:hidden group-hover:hidden ${
+            className={`pr-2 pl-1 text-meta text-muted tabular-nums group-focus-within:hidden group-hover:hidden ${
               menu ? 'hidden' : ''
             }`}
           >

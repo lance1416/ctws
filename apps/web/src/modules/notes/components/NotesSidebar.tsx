@@ -254,7 +254,7 @@ function Untitled() {
     <li>
       <span aria-current="page" className={NOTE_ROW({ isActive: true })}>
         <KIND_ICON.note size={14} aria-hidden="true" className={`shrink-0 ${KIND_TEXT.note}`} />
-        <span className="truncate font-normal text-subtle">Untitled</span>
+        <span className="truncate font-normal text-muted">Untitled</span>
       </span>
     </li>
   )

@@ -214,7 +214,7 @@ function KindButton({
                 <ChoiceIcon size={14} aria-hidden="true" className="text-muted" />
                 <span>{choice.label}</span>
                 {choice.value === kind && (
-                  <span className="ml-auto text-meta text-subtle">Current</span>
+                  <span className="ml-auto text-meta text-muted">Current</span>
                 )}
               </DropdownMenu.Item>
             )

@@ -67,7 +67,7 @@ export function BoardColumn({
           {label}
         </span>
         {count > 0 && (
-          <span data-count className="text-meta text-subtle tabular-nums">
+          <span data-count className="text-meta text-muted tabular-nums">
             {count}
           </span>
         )}
@@ -109,7 +109,7 @@ export function BoardColumn({
                     <ProgressSquare status={root.status} children={counts.get(root.id)!} />
                   )}
                   <span className="min-w-0 flex-1 truncate font-medium text-ink">{root.title}</span>
-                  <span data-count className="text-meta text-subtle tabular-nums">
+                  <span data-count className="text-meta text-muted tabular-nums">
                     {group.count}
                   </span>
                 </button>
@@ -172,7 +172,7 @@ export function BoardStrip({
       }`}
     >
       <StatusMark status={status} size={14} />
-      {count > 0 && <span className="text-meta text-subtle tabular-nums">{count}</span>}
+      {count > 0 && <span className="text-meta text-muted tabular-nums">{count}</span>}
       <span className="text-ui font-medium text-ink md:[writing-mode:vertical-rl]">{label}</span>
     </button>
   )

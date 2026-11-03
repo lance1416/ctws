@@ -15,7 +15,7 @@ export function StatusBar() {
     <footer
       aria-label="Status"
       // A bar of the frame, as the top bar: over the pane beside it, and that pane's shadow.
-      className={`relative ${LAYER.bar} flex h-6 shrink-0 items-center gap-4 border-t border-line bg-chrome px-3 text-meta text-subtle tabular-nums max-lg:hidden`}
+      className={`relative ${LAYER.bar} flex h-6 shrink-0 items-center gap-4 border-t border-line bg-chrome px-3 text-meta text-muted tabular-nums max-lg:hidden`}
     >
       {editing && <EditorPlace {...editing} />}
       <span className="ml-auto" />

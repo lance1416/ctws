@@ -192,7 +192,7 @@ function Section({
       <h2 className="flex items-center gap-2 text-ui font-medium text-ink">
         <Icon size={16} aria-hidden="true" className="text-muted" />
         {title}
-        {note && <span className="text-meta font-normal text-subtle">{note}</span>}
+        {note && <span className="text-meta font-normal text-muted">{note}</span>}
       </h2>
       {children}
     </section>

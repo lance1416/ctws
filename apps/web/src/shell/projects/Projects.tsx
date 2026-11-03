@@ -115,7 +115,7 @@ function InboxCard({ inbox }: { inbox: ProjectResponse }) {
       <div className="flex min-w-0 items-center gap-2.5">
         <ProjectSquare project={inbox} size={28} />
         <span className="flex-1 text-ui font-medium text-ink">{name}</span>
-        <span className="shrink-0 text-meta text-subtle tabular-nums">{waiting} to sort</span>
+        <span className="shrink-0 text-meta text-muted tabular-nums">{waiting} to sort</span>
       </div>
       <p className="text-ui text-muted">Captured lines that have not been given a project yet.</p>
       {/* Above the card's own link, which covers the rest of it. */}

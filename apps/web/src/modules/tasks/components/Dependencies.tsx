@@ -29,19 +29,19 @@ function Row({
 }) {
   return (
     <li className="flex min-h-8 min-w-0 items-center gap-2 text-ui">
-      <span className={`truncate ${task.done ? 'text-subtle line-through' : 'text-ink'}`}>
+      <span className={`truncate ${task.done ? 'text-muted line-through' : 'text-ink'}`}>
         {task.title}
       </span>
       {/* The project only when it is not the open task's. */}
       {task.projectId !== here && (
-        <span className="truncate text-meta text-subtle">{task.projectName}</span>
+        <span className="truncate text-meta text-muted">{task.projectName}</span>
       )}
       {onRemove && (
         <button
           type="button"
           onClick={onRemove}
           aria-label={`Remove dependency “${task.title}”`}
-          className="ml-auto grid size-7 shrink-0 place-items-center rounded-control text-subtle hover:bg-hover hover:text-ink"
+          className="ml-auto grid size-7 shrink-0 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink"
         >
           <CloseIcon size={14} aria-hidden="true" />
         </button>

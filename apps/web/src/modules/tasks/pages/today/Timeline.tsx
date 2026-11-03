@@ -150,7 +150,7 @@ export function Timeline({
           <span
             key={t.hour}
             aria-hidden="true"
-            className={`absolute top-12 font-mono text-meta text-subtle ${
+            className={`absolute top-12 font-mono text-meta text-muted ${
               i === 0 ? '' : i === line.ticks.length - 1 ? '-translate-x-full' : '-translate-x-1/2'
             }`}
             style={{ left: pct(t.at) }}

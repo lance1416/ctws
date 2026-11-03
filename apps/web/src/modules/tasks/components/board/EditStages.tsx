@@ -209,7 +209,7 @@ function StageRow({
         </button>
         <i
           aria-hidden="true"
-          className={`size-2 shrink-0 rounded-full ${stage.collapsed ? 'bg-subtle' : 'bg-muted'}`}
+          className={`size-2 shrink-0 rounded-full ${stage.collapsed ? 'border-[1.5px] border-muted' : 'bg-muted'}`}
         />
         {naming === null ? (
           <button
@@ -239,7 +239,7 @@ function StageRow({
             className={`min-w-0 flex-1 ${boxed}`}
           />
         )}
-        <span className="shrink-0 text-meta text-subtle tabular-nums">
+        <span className="shrink-0 text-meta text-muted tabular-nums">
           {tasksWord(stage.count)}
         </span>
         {/* Nothing at it, on the board or in the tree: it can go (FR-040). */}

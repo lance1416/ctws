@@ -214,7 +214,7 @@ export function MigrationReport() {
 function SideGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section aria-label={title} className="flex flex-col pb-2">
-      <h3 className="px-4 pt-2.5 pb-1 text-meta font-medium text-subtle">{title}</h3>
+      <h3 className="px-4 pt-2.5 pb-1 text-meta font-medium text-muted">{title}</h3>
       <ul className="flex flex-col">{children}</ul>
     </section>
   )
@@ -729,7 +729,7 @@ function Else({ counts }: { counts: Record<string, number> }) {
   return (
     <Part id="else" icon={MovedIcon} title="Everything else">
       {rows.length === 0 ? (
-        <p className="px-3.5 py-3 text-ui text-subtle">Nothing else was moved.</p>
+        <p className="px-3.5 py-3 text-ui text-muted">Nothing else was moved.</p>
       ) : (
         <ul>
           {rows.map(([key, label]) => (

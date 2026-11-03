@@ -81,7 +81,7 @@ export default function MermaidDiagram({ source }: { source: string }) {
 
   return (
     <>
-      {state === 'drawing' && <p className="my-3 text-ui text-subtle">Drawing…</p>}
+      {state === 'drawing' && <p className="my-3 text-ui text-muted">Drawing…</p>}
       {state === 'failed' && (
         <div className="my-3">
           <p className="text-ui text-stop-t">Couldn't draw the diagram: {failure}</p>

@@ -36,7 +36,7 @@ export function MeetingDetail({
       pane={pane}
       label="Meetings"
       back="/meetings"
-      note={meeting.overridden && <span className="text-meta text-subtle">Edited</span>}
+      note={meeting.overridden && <span className="text-meta text-muted">Edited</span>}
       recent={{
         type: 'meeting',
         id: meeting.meetingId,

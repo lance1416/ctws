@@ -147,7 +147,7 @@ export function DayPanel({
         </Section>
       )}
       {empty && (
-        <p className="border-t border-line px-4 py-3 text-ui text-subtle">Nothing on this day</p>
+        <p className="border-t border-line px-4 py-3 text-ui text-muted">Nothing on this day</p>
       )}
 
       {make.length > 0 && (
@@ -212,7 +212,7 @@ function Row({
   const project = entry.projectId ? projects.data?.find((p) => p.id === entry.projectId) : null
   // A deadline met stays on its day, struck through.
   const name = `min-w-0 truncate text-left text-ui hover:underline ${
-    entry.done ? 'text-subtle line-through' : 'text-ink'
+    entry.done ? 'text-muted line-through' : 'text-ink'
   }`
   return (
     <li className="grid min-h-7 grid-cols-[48px_20px_minmax(0,1fr)_auto_auto] items-center gap-x-2.5">

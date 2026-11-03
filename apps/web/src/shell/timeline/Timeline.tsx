@@ -182,7 +182,7 @@ export function Timeline({
               >
                 {/* By month on a full page (FR-015 "时间线"); a narrow page's five need no head. */}
                 {!last && (
-                  <h4 className="text-meta font-medium tracking-[0.06em] text-subtle uppercase">
+                  <h4 className="text-meta font-medium tracking-[0.06em] text-muted uppercase">
                     {section.title}
                   </h4>
                 )}

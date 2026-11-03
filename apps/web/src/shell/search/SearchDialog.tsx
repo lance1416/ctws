@@ -22,7 +22,7 @@ import { useMe } from '../auth/useMe'
 import { NewContext } from '../creates'
 import { useInspector } from '../layout/inspectorAddress'
 import { PLACES } from '../layout/places'
-import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
+import { KIND_ON_TINT, KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 import type { SearchHit } from '../contract'
 import { useRegistry } from '../registry'
 import { everythingQuery, kindQuery } from './api'
@@ -472,7 +472,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
           )}
           {scope && (
             <span
-              className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${KIND_TINT[scope]} ${KIND_TEXT[scope]}`}
+              className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-control px-2 text-meta font-medium ${KIND_TINT[scope]} ${KIND_ON_TINT[scope]}`}
             >
               <ScopeIcon type={scope} />
               {KIND_WORDS[scope].many}
@@ -546,7 +546,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             }
             aria-label="Search"
             data-bare
-            className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-subtle max-lg:h-11 ${pick ? 'text-ui' : 'text-prose'}`}
+            className={`h-9 min-w-0 flex-1 bg-transparent text-ink placeholder:text-muted max-lg:h-11 ${pick ? 'text-ui' : 'text-prose'}`}
           />
           {!pick && <kbd className={`${KEY} max-lg:hidden`}>Esc</kbd>}
           {/* A phone has no Esc: the full screen closes here (FR-088). */}
@@ -584,14 +584,14 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                 >
                   {t !== 'all' && <ScopeIcon type={t} size={14} />}
                   {t === 'all' ? 'All' : KIND_WORDS[t].many}
-                  <span className="font-normal text-subtle tabular-nums">
+                  <span className="font-normal text-muted tabular-nums">
                     {n > 999 ? '999+' : n}
                   </span>
                 </button>
               )
             })}
             {8 - (tabs.length - 1) > 0 && (
-              <span className="inline-flex h-7 items-center px-2.5 text-meta text-subtle whitespace-nowrap">
+              <span className="inline-flex h-7 items-center px-2.5 text-meta text-muted whitespace-nowrap">
                 {8 - (tabs.length - 1)} more kinds with nothing
               </span>
             )}
@@ -683,7 +683,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               <li key={run.key} role="presentation">
                 <div
                   id={heading}
-                  className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-subtle uppercase"
+                  className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-muted uppercase"
                 >
                   {label}
                 </div>
@@ -718,7 +718,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
                 aria-label="Why"
                 placeholder="Why, in a line (optional)"
                 data-bare
-                className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+                className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted"
               />
               <kbd className={KEY}>Enter</kbd>
             </label>
@@ -737,7 +737,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
               </p>
             )}
             {legends.length > 0 && (
-              <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle max-lg:hidden">
+              <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-muted max-lg:hidden">
                 {legends.map(([k, does]) => (
                   <Legend key={`${k}:${does}`} keys={k}>
                     {does}
@@ -950,7 +950,7 @@ function SearchRow({
         <span className="truncate">
           <Matched text={row.title} words={words} />
         </span>
-        <span className="text-meta text-subtle">{KIND_WORDS[row.type].one}</span>
+        <span className="text-meta text-muted">{KIND_WORDS[row.type].one}</span>
       </li>
     )
   return (
@@ -993,7 +993,7 @@ function SearchRow({
           {row.word}
         </span>
       ) : (
-        <span data-said className="text-meta text-subtle">
+        <span data-said className="text-meta text-muted">
           {row.word}
         </span>
       )}

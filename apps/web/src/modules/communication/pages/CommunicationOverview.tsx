@@ -170,7 +170,7 @@ function With({ row }: { row: AwaitingRow }) {
   const people = usePeople()
   const person = row.parties.find((p) => p.type === 'person')
   const org = row.parties.find((p) => p.type === 'organisation')
-  if (!person && !org) return <span className="text-ui text-subtle">No one</span>
+  if (!person && !org) return <span className="text-ui text-muted">No one</span>
   if (!person)
     return (
       <span className="flex min-w-0 items-center gap-2.5">

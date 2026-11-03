@@ -177,7 +177,7 @@ function PersonHead({ person }: { person: PersonResponse }) {
         </div>
       </div>
       {projects.length > 0 && (
-        <span className="flex items-center gap-1 text-meta text-subtle">
+        <span className="flex items-center gap-1 text-meta text-muted">
           In
           {/* Five, the one that moved last first; the rest are "+N" (FR-061). */}
           {projects.slice(0, SHOWN_PROJECTS).map((p) => (
@@ -316,7 +316,7 @@ function Role({ role, when }: { role: PersonResponse['roles'][number]; when: str
   return (
     <span className="flex flex-col">
       <span>{role.title ? `${role.title}, ${role.organisationName}` : role.organisationName}</span>
-      {when && <span className="text-meta text-subtle">{when}</span>}
+      {when && <span className="text-meta text-muted">{when}</span>}
     </span>
   )
 }
@@ -368,7 +368,7 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
           {b.calendar === 'lunar' && b.lunarDate && (
             <span className="text-muted">Lunar {b.lunarDate.replace(/^农历/, '')}</span>
           )}
-          <span className="flex flex-wrap items-center gap-x-3 text-meta text-subtle">
+          <span className="flex flex-wrap items-center gap-x-3 text-meta text-muted">
             <span>{b.next.turns === null ? 'Year not known' : `Turns ${b.next.turns}`}</span>
             <span className="inline-flex items-center gap-1">
               <RemindIcon size={12} aria-hidden="true" />

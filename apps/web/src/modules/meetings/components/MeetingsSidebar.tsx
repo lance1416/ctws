@@ -138,7 +138,7 @@ function Series({ id }: { id: string }) {
           <BackIcon size={16} aria-hidden="true" />
         </Link>
         <span className="flex-1 truncate text-ui font-medium text-ink">{title}</span>
-        <span className="pr-1.5 text-meta text-subtle tabular-nums">{rows.length}</span>
+        <span className="pr-1.5 text-meta text-muted tabular-nums">{rows.length}</span>
       </div>
       {[...months].map(([month, list]) => (
         <section key={month} aria-label={MONTH_NAMES[Number(month.slice(5, 7)) - 1]}>

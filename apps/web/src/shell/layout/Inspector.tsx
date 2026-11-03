@@ -127,7 +127,7 @@ export function Inspector() {
   }
   const where =
     last?.among && place >= 0 ? (
-      <span className="shrink-0 text-subtle tabular-nums">
+      <span className="shrink-0 text-muted tabular-nums">
         {place + 1} of {last.among.length}
       </span>
     ) : null

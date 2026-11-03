@@ -128,7 +128,7 @@ function PinALink() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex flex-1 items-center justify-center gap-1.5 rounded-container border border-dashed border-line text-meta text-subtle hover:border-line-strong hover:text-ink max-lg:tap"
+        className="flex flex-1 items-center justify-center gap-1.5 rounded-container border border-dashed border-line text-meta text-muted hover:border-line-strong hover:text-ink max-lg:tap"
       >
         <NewIcon size={14} aria-hidden="true" />
         Pin a link

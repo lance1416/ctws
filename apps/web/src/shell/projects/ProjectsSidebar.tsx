@@ -88,7 +88,7 @@ export function ProjectsSidebar() {
               type="button"
               aria-expanded={archivedShown}
               onClick={() => showArchived(!archivedShown)}
-              className={`${row({ isActive: false })} mt-2 text-subtle`}
+              className={`${row({ isActive: false })} mt-2 text-muted`}
             >
               <CollapseIcon
                 size={14}
@@ -116,7 +116,7 @@ export function ProjectsSidebar() {
 function Waiting({ n }: { n: number }) {
   if (n === 0) return null
   return (
-    <span data-count className="text-meta text-subtle tabular-nums">
+    <span data-count className="text-meta text-muted tabular-nums">
       {n}
     </span>
   )

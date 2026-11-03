@@ -34,7 +34,7 @@ export function PersonTaskRow({ thing }: { thing: LinkCandidate }) {
       </span>
       {due && due.tone !== 'waiting' ? (
         due.tone === 'quiet' ? (
-          <span className="text-meta text-subtle">{due.text}</span>
+          <span className="text-meta text-muted">{due.text}</span>
         ) : (
           <span className={`${CHIP} ${DUE_TONE[due.tone]}`}>
             <span className="sr-only">Due </span>
@@ -43,7 +43,7 @@ export function PersonTaskRow({ thing }: { thing: LinkCandidate }) {
           </span>
         )
       ) : (
-        <span className="text-meta text-subtle">{planned ?? ''}</span>
+        <span className="text-meta text-muted">{planned ?? ''}</span>
       )}
     </span>
   )

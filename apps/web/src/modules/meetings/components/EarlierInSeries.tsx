@@ -99,7 +99,7 @@ export function EarlierInSeries({ meeting: m }: { meeting: MeetingOccurrence }) 
             )
           })}
           {words && found.length === 0 && (
-            <li className="px-4 py-2 text-ui text-subtle">No notes in this series say that.</li>
+            <li className="px-4 py-2 text-ui text-muted">No notes in this series say that.</li>
           )}
         </ol>
       )}

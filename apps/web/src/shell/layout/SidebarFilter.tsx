@@ -25,7 +25,7 @@ export function SidebarFilter({
     <label
       data-field
       // 44 high where a finger presses it (the phone's notes list).
-      className="mx-1.5 mb-1.5 flex h-7.5 shrink-0 items-center max-lg:h-11 gap-2 rounded-control border border-line bg-panel px-2 text-subtle"
+      className="mx-1.5 mb-1.5 flex h-7.5 shrink-0 items-center max-lg:h-11 gap-2 rounded-control border border-line bg-panel px-2 text-muted"
     >
       <PLACE_ICON.search size={14} aria-hidden="true" />
       <input
@@ -40,7 +40,7 @@ export function SidebarFilter({
         }}
         placeholder="Filter"
         aria-label={`Filter ${what}`}
-        className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle [&::-webkit-search-cancel-button]:hidden"
+        className="min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button

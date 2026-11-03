@@ -1,6 +1,6 @@
 /* THE EDITOR WRITES AS THE NOTE READS (REQ-002 §5, artboard 34): the reader's steps and spacing
    (notes.css), the text in Inter 15/24 whatever is around it. Only what the cursor's line shows of
-   the Markdown is mono, 13 and subtle, inside the same line height, so nothing moves as the cursor
+   the Markdown is mono, 13 and muted, inside the same line height, so nothing moves as the cursor
    does. Plain CSS like notes.css: CodeMirror draws its own markup. */
 
 /* The editor fills its box, however little is written: a press anywhere in it writes. */
@@ -52,7 +52,7 @@
 }
 
 [data-markdown-editor] .cm-placeholder {
-  color: var(--color-subtle);
+  color: var(--color-muted);
 }
 
 [data-markdown-editor] .cm-selectionBackground,
@@ -65,7 +65,7 @@
   font-family: var(--font-mono);
   font-variant-ligatures: none;
   font-size: 0.8125rem;
-  color: var(--color-subtle);
+  color: var(--color-muted);
 }
 
 /* A mention's name on its line: the text's own face, only its `@` a mark. */
@@ -230,7 +230,7 @@
   border-bottom: 1px solid var(--color-line);
   justify-content: space-between;
   font-size: 0.75rem;
-  color: var(--color-subtle);
+  color: var(--color-muted);
 }
 
 .cm-md-copy {
@@ -397,7 +397,7 @@
 }
 
 .cm-src-mark {
-  color: var(--color-subtle);
+  color: var(--color-muted);
 }
 
 .cm-src-heading {

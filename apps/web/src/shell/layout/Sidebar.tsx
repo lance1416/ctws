@@ -79,7 +79,7 @@ export function SidebarHead({
   return (
     <div className="flex h-11 shrink-0 items-center gap-2 pr-2 pl-3.5">
       <h2 className="flex-1 truncate text-ui font-medium text-ink">{label}</h2>
-      <span data-sidebar-count className="text-meta text-subtle tabular-nums">
+      <span data-sidebar-count className="text-meta text-muted tabular-nums">
         {children}
       </span>
       {action}

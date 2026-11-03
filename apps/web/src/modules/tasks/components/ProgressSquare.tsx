@@ -48,7 +48,7 @@ export function ProgressSquare({
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`shrink-0 ${TONE[status] ?? 'text-subtle'}`}
+      className={`shrink-0 ${TONE[status] ?? 'text-muted'}`}
     >
       <title>{done}</title>
       <rect

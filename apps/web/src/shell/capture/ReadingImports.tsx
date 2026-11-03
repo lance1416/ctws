@@ -16,7 +16,7 @@ export function ReadingImports() {
         <button
           type="button"
           onClick={later}
-          className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-subtle max-lg:h-11"
+          className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-muted max-lg:h-11"
         >
           <PLACE_ICON.search size={16} aria-hidden="true" className="shrink-0" />
           <span className="truncate">Search books by title</span>
@@ -34,7 +34,7 @@ export function ReadingImports() {
         <ShareInIcon size={16} aria-hidden="true" className="shrink-0 text-muted" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-ui text-ink">Share to CTWS</span>
-          <span className="truncate text-meta text-subtle">From Safari, WeChat, Douban</span>
+          <span className="truncate text-meta text-muted">From Safari, WeChat, Douban</span>
         </span>
         <button
           type="button"

@@ -313,12 +313,12 @@ function StageColumnView({
         {/* A stage folded by default stays quiet when it is opened (S-07). */}
         <i
           aria-hidden="true"
-          className={`size-2 shrink-0 rounded-full ${stage.collapsed ? 'bg-subtle' : 'bg-muted'}`}
+          className={`size-2 shrink-0 rounded-full ${stage.collapsed ? 'border-[1.5px] border-muted' : 'bg-muted'}`}
         />
         <span id={`stage-${stage.id}`} className="min-w-0 truncate font-medium text-ink">
           {stage.name}
         </span>
-        <span data-count className="text-meta text-subtle tabular-nums">
+        <span data-count className="text-meta text-muted tabular-nums">
           {count}
         </span>
         <span aria-hidden="true" className="flex-1" />
@@ -380,7 +380,7 @@ function NewAtStage({
       aria-label={`New in ${stage.name}`}
       aria-invalid={create.isError ? true : undefined}
       placeholder="Name"
-      className={`h-8 shrink-0 rounded-container border bg-panel px-2.5 text-ui text-ink placeholder:text-subtle ${
+      className={`h-8 shrink-0 rounded-container border bg-panel px-2.5 text-ui text-ink placeholder:text-muted ${
         create.isError ? 'border-stop' : 'border-line-strong'
       }`}
     />
@@ -410,8 +410,8 @@ function StageStrip({
         isOver ? OVER : ''
       }`}
     >
-      <i aria-hidden="true" className="size-2 shrink-0 rounded-full bg-subtle" />
-      <span className="text-meta text-subtle tabular-nums">{count}</span>
+      <i aria-hidden="true" className="size-2 shrink-0 rounded-full border-[1.5px] border-muted" />
+      <span className="text-meta text-muted tabular-nums">{count}</span>
       <span className="text-ui font-medium text-ink md:[writing-mode:vertical-rl]">
         {stage.name}
       </span>
@@ -489,7 +489,7 @@ function CardFace({ card, counts, organisations, now, today, timeZone }: CardPro
   const progress = counts ? (
     <span className="flex shrink-0 items-center gap-1.5">
       <ProgressSquare status={task.status} children={counts} />
-      <span className="text-meta text-subtle tabular-nums">
+      <span className="text-meta text-muted tabular-nums">
         {counts.done}/{counts.counted}
       </span>
     </span>
@@ -504,7 +504,7 @@ function CardFace({ card, counts, organisations, now, today, timeZone }: CardPro
         data-stage-days={days >= STALE_DAYS ? 'stale' : 'fresh'}
         title={`In this stage for ${days} day${days === 1 ? '' : 's'}`}
         className={`inline-flex shrink-0 items-center gap-1 text-meta tabular-nums ${
-          days >= STALE_DAYS ? 'text-warn-t' : 'text-subtle'
+          days >= STALE_DAYS ? 'text-warn-t' : 'text-muted'
         }`}
       >
         <InStageIcon size={12} aria-hidden="true" />

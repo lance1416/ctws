@@ -256,7 +256,7 @@ function PlanAgain({
   const [month, setMonth] = useState(monthOf(today))
   return (
     <div className="col-span-full flex items-center gap-2 pt-1">
-      {named && <span className="text-meta text-subtle">Plan</span>}
+      {named && <span className="text-meta text-muted">Plan</span>}
       <button
         type="button"
         disabled={busy}

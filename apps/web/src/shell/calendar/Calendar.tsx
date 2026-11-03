@@ -265,7 +265,7 @@ function DeskCalendar() {
           {WEEKDAYS.map((w, i) => (
             <span
               key={w}
-              className={`flex items-center border-b border-line px-3 text-meta font-medium text-subtle ${
+              className={`flex items-center border-b border-line px-3 text-meta font-medium text-muted ${
                 i < 6 ? 'border-r' : ''
               }`}
             >
@@ -378,7 +378,7 @@ function Square({
                 ? 'font-medium text-person-t'
                 : lunar.is === 'month'
                   ? 'font-medium text-ink'
-                  : 'text-subtle'
+                  : 'text-muted'
             }`}
           >
             {lunar.text}
@@ -389,10 +389,10 @@ function Square({
         <Line key={entry.key} entry={entry} today={today} open={opener(entry)} />
       ))}
       {lines.length > PER_SQUARE && (
-        <span className="pl-1.5 text-meta text-subtle">{`+${lines.length - PER_SQUARE} more`}</span>
+        <span className="pl-1.5 text-meta text-muted">{`+${lines.length - PER_SQUARE} more`}</span>
       )}
       {parts.planned.length > 0 && (
-        <span data-planned className="pl-1.5 text-meta text-subtle">
+        <span data-planned className="pl-1.5 text-meta text-muted">
           {`${parts.planned.length} planned`}
         </span>
       )}
@@ -421,7 +421,7 @@ function lineLook(entry: Placed, today: string): { tone: string; icon: ReactNode
         icon: icon(KIND_ICON.communication),
       }
     case 'due':
-      if (entry.done) return { tone: 'text-subtle line-through', icon: icon(DoneIcon) }
+      if (entry.done) return { tone: 'text-muted line-through', icon: icon(DoneIcon) }
       return {
         tone: late
           ? 'bg-stop-bg text-stop-t'

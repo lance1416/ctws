@@ -99,9 +99,9 @@ function Block({
         </span>
         <h2 className="text-ui font-medium text-ink">{title}</h2>
         {empty ? (
-          <span className="text-meta text-subtle">{empty}</span>
+          <span className="text-meta text-muted">{empty}</span>
         ) : (
-          count !== undefined && <span className="text-meta text-subtle tabular-nums">{count}</span>
+          count !== undefined && <span className="text-meta text-muted tabular-nums">{count}</span>
         )}
         <span className="flex-1" />
         {action}
@@ -168,7 +168,7 @@ function Birthdays() {
             initials={r.initials}
             strong={r.inDays <= 7}
           >
-            <span className="w-24 text-meta text-subtle">{weekdayDay(r.day, today)}</span>
+            <span className="w-24 text-meta text-muted">{weekdayDay(r.day, today)}</span>
             <span
               className={`w-10 text-right text-ui tabular-nums ${
                 r.inDays <= 7 ? 'font-medium text-person-t' : 'text-muted'
@@ -239,7 +239,7 @@ function OutOfTouch() {
             name={t.person.name}
             initials={avatarInitials(t.person)}
           >
-            <span className="text-meta text-subtle">{day.since(t.at)}</span>
+            <span className="text-meta text-muted">{day.since(t.at)}</span>
           </PersonRow>
         ))}
       </ul>

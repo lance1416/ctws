@@ -21,7 +21,7 @@ export function LinkList({ of, types }: Linked) {
           aria-label={registry.relationFor(group.type).plural}
           className="flex flex-col gap-1"
         >
-          <h3 className="flex items-baseline gap-2 px-2 text-meta font-medium text-subtle">
+          <h3 className="flex items-baseline gap-2 px-2 text-meta font-medium text-muted">
             {registry.relationFor(group.type).plural}
             <span className="tabular-nums font-normal">{group.items.length}</span>
           </h3>
@@ -36,7 +36,7 @@ export function LinkList({ of, types }: Linked) {
                     disabled={unlink.isPending}
                     onClick={() => unlink.mutate(item.relationId)}
                     aria-label={`Unlink ${item.title}`}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-hover hover:text-ink disabled:opacity-50 [@media(hover:none)]:opacity-100"
                   >
                     <CloseIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
                   </button>
@@ -81,7 +81,7 @@ export function LinkedChips({ of, types }: Linked) {
           Linked
         </h3>
         {!links.isError && !links.isLoading && items.length === 0 && (
-          <span className="text-meta text-subtle">None yet</span>
+          <span className="text-meta text-muted">None yet</span>
         )}
         <span aria-hidden="true" className="flex-1" />
         <button
@@ -172,7 +172,7 @@ function LinkedLine({ item }: { item: Item }) {
           <Fact thing={item} />
         </span>
       )}
-      {why && <span className="min-w-0 shrink truncate text-meta text-subtle">{why}</span>}
+      {why && <span className="min-w-0 shrink truncate text-meta text-muted">{why}</span>}
     </Link>
   )
 }

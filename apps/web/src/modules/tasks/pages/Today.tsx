@@ -304,7 +304,7 @@ function PlannedBlock({
             t.scheduledOn !== null && t.scheduledOn < day ? (
               <span
                 data-date-hint="carried"
-                className="inline-flex items-center gap-1 text-meta whitespace-nowrap text-subtle"
+                className="inline-flex items-center gap-1 text-meta whitespace-nowrap text-muted"
               >
                 <CarriedIcon size={12} aria-hidden="true" />
                 {carriedFrom(t.scheduledOn, day)}

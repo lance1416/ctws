@@ -30,7 +30,7 @@ export function Resources({
         </h3>
         {/* None, said after the head as a block says it (DES-001 "Empty values"). */}
         {all.isSuccess && rows.length === 0 && (
-          <span className="text-meta text-subtle">None yet</span>
+          <span className="text-meta text-muted">None yet</span>
         )}
         <span aria-hidden="true" className="flex-1" />
         <ResourceAdd

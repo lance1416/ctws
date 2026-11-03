@@ -234,7 +234,7 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
             {before.map((r) => (
               <Fact key={`${r.organisationId}-${r.to}`} name="Before">
                 <span>{r.title ? `${r.title}, ${r.organisationName}` : r.organisationName}</span>
-                <span className="text-ui text-subtle">
+                <span className="text-ui text-muted">
                   {r.from ? `${monthYear(r.from)} to ` : 'To '}
                   {monthYear(r.to!)}
                 </span>
@@ -285,7 +285,7 @@ function Reach({
       {label}
     </a>
   ) : (
-    <span aria-disabled="true" className={`${look} text-subtle opacity-60`}>
+    <span aria-disabled="true" className={`${look} text-muted opacity-60`}>
       <Icon size={22} aria-hidden="true" />
       {label}
     </span>

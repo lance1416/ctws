@@ -170,7 +170,7 @@ export function BirthdayPicker({
       {picked && (
         <div className="grid grid-cols-[16px_6.5rem_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 rounded-control bg-person-bg px-2.5 py-2 text-ui">
           <KIND_ICON.person size={16} aria-hidden="true" className="text-person-t" />
-          <span className="text-meta text-subtle">Every year on</span>
+          <span className="text-meta text-muted">Every year on</span>
           <span className="font-medium text-person-t">
             {value.calendar === 'lunar'
               ? `${value.leapMonth ? '闰' : ''}${LUNAR_MONTHS[value.month - 1]}${LUNAR_DAYS[value.day - 1]}`

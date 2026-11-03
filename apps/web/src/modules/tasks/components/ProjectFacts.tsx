@@ -33,7 +33,7 @@ export function ProjectMoved({ project: p }: { project: ProjectResponse }) {
       </span>
     )
   return (
-    <span data-project-moved className="shrink-0 text-meta text-subtle">
+    <span data-project-moved className="shrink-0 text-meta text-muted">
       {movedOn(m, today)}
     </span>
   )
@@ -57,7 +57,7 @@ export function ProjectCardFacts({ project: p }: { project: ProjectResponse }) {
             style={{ width: `${counted === 0 ? 0 : Math.round((done / counted) * 100)}%` }}
           />
         </span>
-        <span data-project-progress className="shrink-0 text-meta text-subtle tabular-nums">
+        <span data-project-progress className="shrink-0 text-meta text-muted tabular-nums">
           {done} of {counted}
         </span>
       </div>
@@ -76,7 +76,7 @@ export function ProjectCardFacts({ project: p }: { project: ProjectResponse }) {
               {nearDay(m.nextDueOn, today) ?? shortDay(m.nextDueOn, today)}
             </span>
           ) : (
-            <span className="text-meta text-subtle">None</span>
+            <span className="text-meta text-muted">None</span>
           )}
         </Fact>
       </dl>
@@ -98,7 +98,7 @@ function Fact({ name, icon, children }: { name: string; icon: ReactNode; childre
 
 /** A count, grey when it is nothing; `tone` when it is something to act on. */
 function Count({ n, tone = 'text-ink' }: { n: number; tone?: string }) {
-  return <span className={`tabular-nums ${n === 0 ? 'text-subtle' : tone}`}>{n}</span>
+  return <span className={`tabular-nums ${n === 0 ? 'text-muted' : tone}`}>{n}</span>
 }
 
 /** The overview's order, the latest moved first and the quiet last (FR-051); a hook, once a page. */

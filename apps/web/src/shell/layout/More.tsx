@@ -37,7 +37,7 @@ export function More() {
       <button
         type="button"
         onClick={() => setSearching(true)}
-        className="flex h-11 items-center gap-2.5 rounded-container bg-hover px-3 text-left text-prose text-subtle"
+        className="flex h-11 items-center gap-2.5 rounded-container bg-hover px-3 text-left text-prose text-muted"
       >
         <PLACE_ICON.search size={18} aria-hidden="true" />
         Search everything
@@ -87,7 +87,7 @@ export function More() {
                     {registry.projectCount(p)}
                   </span>
                 )}
-                <ForwardIcon size={16} aria-hidden="true" className="text-subtle" />
+                <ForwardIcon size={16} aria-hidden="true" className="text-muted" />
               </Link>
             </li>
           ))}
@@ -99,12 +99,12 @@ export function More() {
           <Link to="/account" className={ROW}>
             <Avatar initials={me?.email.slice(0, 1).toUpperCase() ?? null} />
             <span className="min-w-0 flex-1 truncate">Account and time zone</span>
-            <ForwardIcon size={16} aria-hidden="true" className="text-subtle" />
+            <ForwardIcon size={16} aria-hidden="true" className="text-muted" />
           </Link>
         </li>
       </Group>
 
-      <p className="py-4 text-center text-meta text-subtle tabular-nums">
+      <p className="py-4 text-center text-meta text-muted tabular-nums">
         <BuildVersion />
       </p>
 
@@ -150,7 +150,7 @@ function Row({
             <Count />
           </span>
         )}
-        <ForwardIcon size={16} aria-hidden="true" className="text-subtle" />
+        <ForwardIcon size={16} aria-hidden="true" className="text-muted" />
       </Link>
     </li>
   )

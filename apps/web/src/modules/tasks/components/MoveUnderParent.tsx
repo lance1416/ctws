@@ -118,7 +118,7 @@ export function MoveUnderParent({
           placeholder="Filter parents"
           aria-label={`Parents in ${project.name}`}
           data-bare
-          className="h-9 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle max-lg:h-11"
+          className="h-9 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted max-lg:h-11"
         />
       </div>
       {tasks.isPending ? (
@@ -160,7 +160,7 @@ export function MoveUnderParent({
               </span>
               <span className="min-w-0 truncate">{task.title}</span>
               {typed !== '' && above && (
-                <span className="min-w-0 flex-1 truncate text-right text-meta text-subtle">
+                <span className="min-w-0 flex-1 truncate text-right text-meta text-muted">
                   {above.title}
                 </span>
               )}
@@ -173,7 +173,7 @@ export function MoveUnderParent({
           {error}
         </p>
       ) : (
-        <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-subtle max-lg:hidden">
+        <div className="flex h-10 items-center gap-4 border-t border-line px-4 text-meta text-muted max-lg:hidden">
           {rows.length > 0 && (
             <span className="inline-flex items-center gap-1.5">
               <kbd className={KEY}>Enter</kbd>Choose

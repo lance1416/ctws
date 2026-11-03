@@ -43,7 +43,7 @@ export function AddReading({
         <p className="mt-1 text-meta text-muted">Recommended by {recommendedBy.name}</p>
       )}
       {trimmed !== '' && (
-        <p className="mt-1 text-meta text-subtle">
+        <p className="mt-1 text-meta text-muted">
           {isLink ? 'Enter saves it as a link' : 'Enter saves it as a book'}
         </p>
       )}

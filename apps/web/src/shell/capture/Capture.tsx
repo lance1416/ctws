@@ -243,7 +243,7 @@ export function Capture() {
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         className={`flex h-7.5 w-full items-center gap-2 rounded-control border bg-panel px-2.5 text-ui hover:bg-hover ${
-          open ? 'border-task text-ink' : 'border-line-strong text-subtle'
+          open ? 'border-task text-ink' : 'border-line-strong text-muted'
         }`}
       >
         <NewIcon size={16} aria-hidden="true" className={open ? 'text-task' : ''} />
@@ -271,7 +271,7 @@ export function Capture() {
             aria-label="Capture"
             placeholder="A thought, or a link"
             disabled={!fallback?.target}
-            className="mx-3 min-h-16 resize-none rounded-container border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-subtle disabled:opacity-50"
+            className="mx-3 min-h-16 resize-none rounded-container border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-muted disabled:opacity-50"
           />
           <div
             role="radiogroup"
@@ -296,7 +296,7 @@ export function Capture() {
               </span>
             </Segment>
           </div>
-          <p className="mx-3 mt-1.5 flex items-center gap-1.5 text-meta text-subtle">
+          <p className="mx-3 mt-1.5 flex items-center gap-1.5 text-meta text-muted">
             <WhyIcon size={12} aria-hidden="true" />
             {why}
           </p>
@@ -306,7 +306,7 @@ export function Capture() {
             </div>
           )}
           <div className="mt-2.5 flex items-center gap-2 border-t border-line px-3 py-2.5">
-            <span className="text-meta whitespace-nowrap text-subtle">Lands in</span>
+            <span className="text-meta whitespace-nowrap text-muted">Lands in</span>
             <DropdownMenu.Root>
               <DropdownMenu.Trigger
                 aria-label="Lands in"

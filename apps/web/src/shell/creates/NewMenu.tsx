@@ -126,7 +126,7 @@ export function NewMenu({
             />
           </label>
           {!typed && shown.length > 0 && (
-            <div className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-subtle uppercase">
+            <div className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-muted uppercase">
               Recent
             </div>
           )}
@@ -153,7 +153,7 @@ export function NewMenu({
             <p className="px-4 py-2 text-ui text-muted">Nothing called “{typed.trim()}”.</p>
           )}
           {hidden.length > 0 && (
-            <p className="px-4 pt-2 pb-1 text-meta text-subtle">
+            <p className="px-4 pt-2 pb-1 text-meta text-muted">
               Type to find the rest: {hidden.map((c) => c.label.toLocaleLowerCase()).join(', ')}
             </p>
           )}

@@ -64,7 +64,7 @@ function Listed({ kind, of }: { kind: ObjectType; of: { type: ObjectType; id: st
         count={typeof block.count === 'number' ? block.count : 0}
       />
       <div className="px-4 py-3">
-        {block.empty ? <p className="text-meta text-subtle">{block.empty}</p> : block.body}
+        {block.empty ? <p className="text-meta text-muted">{block.empty}</p> : block.body}
       </div>
     </>
   )

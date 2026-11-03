@@ -189,7 +189,7 @@ function RecommendedBy({
       >
         {/* The person as a tag, their avatar and name, as on the item's page (E-02). */}
         {value && <Avatar initials={initialsOf(value.name)} />}
-        <span className={`ml-1.5 truncate ${value ? '' : 'text-subtle'}`}>
+        <span className={`ml-1.5 truncate ${value ? '' : 'text-muted'}`}>
           {value?.name ?? 'Nobody'}
         </span>
       </button>

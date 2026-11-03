@@ -227,7 +227,7 @@ export function TaskRow({
           <DueLabel due={due} />
         ) : (
           age && (
-            <span data-row-age className="truncate text-meta text-subtle">
+            <span data-row-age className="truncate text-meta text-muted">
               {age}
             </span>
           )

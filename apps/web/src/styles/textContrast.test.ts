@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { contrast } from '@ctws/palette'
-import { KINDS, STATES, SURFACES, color, css, over, type Scheme } from './tokens'
+import { KINDS, STATES, SURFACES, color, over, type Scheme } from './tokens'
 
 /**
  * EVERY COLOURED WORD READS AT 4.5:1 WHEREVER IT CAN LAND (FR-005).
@@ -9,10 +9,8 @@ import { KINDS, STATES, SURFACES, color, css, over, type Scheme } from './tokens
  * float. So each text token is measured against every surface, bare and under each layer, in
  * both schemes -- read off the real `styles.css`, so changing a colour or a layer re-runs it.
  *
- * Two exceptions, both deliberate:
- * - `subtle` is held bare and hovered only; on a selection it is lifted to `muted` by a rule in
- *   `styles.css` (checked below). Asking it to pass there on its own would make it the second
- *   grey, and the three greys would be two.
+ * The two greys are held everywhere, a selected row that is also hovered included. One exception,
+ * deliberate:
  * - A kind's or a state's `-t` is held bare, hovered, and on its own tint laid over each surface
  *   bare and hovered (a badge sits in a hovered row); not under `select`.
  * That is tokens.md's "对比度怎么量" (DES-001 v1.4), rule for rule.
@@ -40,12 +38,16 @@ describe.each(['light', 'dark'] as const)('text in %s', (scheme) => {
         .map(([at, r]) => `${t} on ${at}: ${r.toFixed(2)}`),
     )
 
-  it('ink and muted pass on every surface, bare, hovered and selected', () => {
+  it('ink and muted pass on every surface, bare, hovered, selected, and selected and hovered', () => {
     expect(failing(['ink', 'muted'], grounds(['hover', 'select']))).toEqual([])
-  })
-
-  it('the third grey passes bare and hovered', () => {
-    expect(failing(['subtle'], grounds(['hover']))).toEqual([])
+    const both = SURFACES.map((s) => {
+      const surface = read(s, scheme)
+      return [
+        `${s} + select + hover`,
+        over(read('hover', scheme), over(read('select', scheme), surface)),
+      ] as [string, string]
+    })
+    expect(failing(['ink', 'muted'], both)).toEqual([])
   })
 
   it("a kind's and a state's text passes bare, hovered, and on its own tint", () => {
@@ -87,13 +89,4 @@ describe.each(['light', 'dark'] as const)('text in %s', (scheme) => {
   it('the edge of a field shows (3:1) on every surface', () => {
     expect(failing(['line-strong'], grounds([]), 3)).toEqual([])
   })
-})
-
-it('lifts the third grey to the second on whatever is selected', () => {
-  const rule =
-    /((?:\[aria-[a-z]+='[a-z]+'\] \.text-subtle,?\s*)+)\{\s*color:\s*var\(--color-muted\)/
-  const m = rule.exec(css)
-  expect(m, 'the rule that lifts subtle on a selected surface').not.toBeNull()
-  for (const state of ["aria-current='page'", "aria-pressed='true'", "aria-selected='true'"])
-    expect(m![1]).toContain(`[${state}] .text-subtle`)
 })

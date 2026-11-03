@@ -32,7 +32,7 @@ export function ListHead({
         <Icon size={14} />
       </span>
       <h2 className="text-ui font-medium whitespace-nowrap text-ink">{title}</h2>
-      <span className="text-meta text-subtle tabular-nums">{count}</span>
+      <span className="text-meta text-muted tabular-nums">{count}</span>
       <span aria-hidden="true" className="flex-1" />
       {action}
       <button

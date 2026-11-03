@@ -285,7 +285,7 @@ function PhoneTaskRow({
             {carried && (
               <span
                 data-date-hint="carried"
-                className="inline-flex shrink-0 items-center gap-1 text-subtle"
+                className="inline-flex shrink-0 items-center gap-1 text-muted"
               >
                 <CarriedIcon size={12} aria-hidden="true" />
                 {carriedFrom(t.scheduledOn!, day)}

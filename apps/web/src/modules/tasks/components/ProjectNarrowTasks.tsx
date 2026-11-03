@@ -33,7 +33,7 @@ export function ProjectNarrowTasks({ projectId }: { projectId: ProjectId }) {
         <span className="text-meta font-normal text-muted tabular-nums">{open} open</span>
       </h3>
       {top.length === 0 ? (
-        <p className="text-meta text-subtle">Nothing open</p>
+        <p className="text-meta text-muted">Nothing open</p>
       ) : (
         <ul className="flex flex-col">
           {top.slice(0, SHOWN).map((t) => (

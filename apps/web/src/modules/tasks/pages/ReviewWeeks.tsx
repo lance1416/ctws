@@ -38,7 +38,7 @@ export function ReviewWeeks() {
     <nav aria-label="Weeks" className="flex min-h-0 flex-col overflow-y-auto pb-3">
       {weeksByMonth(weeks.data).map(({ month, weeks: inMonth }) => (
         <section key={month} aria-label={monthName(month)}>
-          <h3 className="px-4 pt-2.5 pb-1 text-meta font-medium text-subtle">{monthName(month)}</h3>
+          <h3 className="px-4 pt-2.5 pb-1 text-meta font-medium text-muted">{monthName(month)}</h3>
           <ul className="flex flex-col">
             {inMonth.map((w) => {
               const on = w.from === monday

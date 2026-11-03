@@ -214,7 +214,7 @@ function CircleRow({
             className={`min-w-0 flex-1 ${boxed}`}
           />
         )}
-        <span className="shrink-0 text-meta text-subtle tabular-nums">
+        <span className="shrink-0 text-meta text-muted tabular-nums">
           {peopleWord(circle.count)}
         </span>
         <button

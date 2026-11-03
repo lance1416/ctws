@@ -179,7 +179,7 @@ export function MentionArea({
         >
           {groups.map((g) => (
             <li key={g.type} role="presentation">
-              <div className="px-3 pt-1.5 pb-0.5 text-meta text-subtle">
+              <div className="px-3 pt-1.5 pb-0.5 text-meta text-muted">
                 {KIND_WORDS[g.type].many}
               </div>
               <ul role="presentation">

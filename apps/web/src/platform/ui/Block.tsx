@@ -64,7 +64,7 @@ export function Block({
           {emptyInHead && (
             // One line beside the name, cut short rather than wrapped (M-07); on a phone, where a
             // long name leaves it no room, it goes under the name whole (P4-08).
-            <span className="min-w-0 truncate text-meta text-subtle max-lg:whitespace-normal">
+            <span className="min-w-0 truncate text-meta text-muted max-lg:whitespace-normal">
               {empty}
             </span>
           )}
@@ -72,14 +72,14 @@ export function Block({
         {emptyInHead
           ? null
           : count !== undefined && (
-              <span data-count className="text-meta text-subtle tabular-nums">
+              <span data-count className="text-meta text-muted tabular-nums">
                 {count}
               </span>
             )}
         <span aria-hidden="true" className="flex-1" />
         {actions}
       </div>
-      {empty && keepsSize && <p className="px-4 py-3 text-ui text-subtle">{empty}</p>}
+      {empty && keepsSize && <p className="px-4 py-3 text-ui text-muted">{empty}</p>}
       {!empty && children}
     </section>
   )

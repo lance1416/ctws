@@ -30,7 +30,7 @@ export function BottomSheet({
   head?: boolean
   /** The ×; a confirmation leaves it out, its own Cancel full width under it (P4-24). */
   close?: boolean
-  /** A line under the title, subtle and cut to fit: what the sheet is about ("Move to" what). */
+  /** A line under the title, muted and cut to fit: what the sheet is about ("Move to" what). */
   about?: string
   children: ReactNode
 }) {
@@ -71,7 +71,7 @@ export function BottomSheet({
             <div {...grab} className="flex min-h-11 shrink-0 touch-none items-center gap-2 px-4">
               <span className="flex min-w-0 flex-1 flex-col">
                 <Dialog.Title className="line-clamp-2 text-subject text-ink">{title}</Dialog.Title>
-                {about && <span className="truncate text-ui text-subtle">{about}</span>}
+                {about && <span className="truncate text-ui text-muted">{about}</span>}
               </span>
               {close && (
                 <Dialog.Close aria-label="Close" className={ICON_BUTTON}>

@@ -17,7 +17,7 @@ export function LinkedRow({ item }: { item: Item }) {
     >
       <span className="flex min-w-0 flex-col">
         <span className="truncate">{item.title}</span>
-        {why && <span className="truncate text-meta text-subtle">{why}</span>}
+        {why && <span className="truncate text-meta text-muted">{why}</span>}
       </span>
       {Fact && (
         <span className="min-w-0 truncate text-meta text-muted">

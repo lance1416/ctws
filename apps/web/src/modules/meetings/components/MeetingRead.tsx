@@ -90,7 +90,7 @@ export function MeetingRead({
                 </span>
               </span>
             ) : (
-              <span className="text-ui text-subtle">Not on any project</span>
+              <span className="text-ui text-muted">Not on any project</span>
             )}
           </Field>
         </div>
@@ -112,7 +112,7 @@ export function MeetingRead({
               <span className="min-w-0 flex-1 truncate text-ui text-ink">{meeting.location}</span>
             )
           ) : (
-            <span className="text-ui text-subtle">Not set</span>
+            <span className="text-ui text-muted">Not set</span>
           )}
         </span>
       </Field>
@@ -120,7 +120,7 @@ export function MeetingRead({
       <Field label="Attendees">
         <div data-attendees className="flex flex-wrap gap-1.5">
           {meeting.attendees.length === 0 ? (
-            <span className="text-ui text-subtle">Nobody yet</span>
+            <span className="text-ui text-muted">Nobody yet</span>
           ) : (
             meeting.attendees.map((p) => (
               <span key={p.id} className={CHIP}>
@@ -135,7 +135,7 @@ export function MeetingRead({
         {meeting.note ? (
           <p className="max-w-reading text-ui whitespace-pre-wrap text-ink">{meeting.note}</p>
         ) : (
-          <p className="text-ui text-subtle">No notes yet</p>
+          <p className="text-ui text-muted">No notes yet</p>
         )}
       </Field>
     </>

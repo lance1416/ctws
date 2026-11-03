@@ -184,7 +184,7 @@ export function NarrowBlocks({ blocks }: { blocks: readonly (NarrowBlockOf | nul
           className="flex items-center gap-2 border-t border-line px-4 py-2.5 text-ui"
         >
           <h3 className="font-medium text-ink">{b.title}</h3>
-          <span className="text-meta text-subtle">{b.empty}</span>
+          <span className="text-meta text-muted">{b.empty}</span>
         </section>
       ))}
       {last.map(block)}

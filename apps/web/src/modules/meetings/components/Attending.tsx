@@ -54,7 +54,7 @@ export function Attending({ meeting: m }: { meeting: MeetingOccurrence }) {
       <h2 className="flex items-center gap-2 text-ui font-medium text-ink">
         <KIND_ICON.person size={16} aria-hidden="true" className="text-muted" />
         Attending
-        <span className="text-meta font-normal text-subtle tabular-nums">{count}</span>
+        <span className="text-meta font-normal text-muted tabular-nums">{count}</span>
       </h2>
       {attendees.length <= LISTED ? (
         <ul className="flex flex-col gap-2 pl-6">
@@ -135,7 +135,7 @@ function EveryAttendee({
         <div className="flex items-center gap-2">
           <KIND_ICON.person size={16} aria-hidden="true" className="text-muted" />
           <h2 className="flex-1 text-ui font-medium text-ink">Attending</h2>
-          <span className="text-meta text-subtle tabular-nums">{attendees.length + 1}</span>
+          <span className="text-meta text-muted tabular-nums">{attendees.length + 1}</span>
           <button type="button" onClick={onClose} aria-label="Close" className={ICON_BUTTON}>
             <CloseIcon size={16} aria-hidden="true" />
           </button>

@@ -147,11 +147,10 @@
   /* THE INK AT 5% AND 9%, LAID OVER WHATEVER SURFACE IT IS ON (see the note at the top). */
   --color-hover: light-dark(rgb(30 31 34 / 0.05), rgb(223 225 229 / 0.06));
   --color-select: light-dark(rgb(30 31 34 / 0.09), rgb(223 225 229 / 0.1));
-  /* Three greys of text. On a selection `subtle` reads as `muted` (the rule near the end of
-     this file). */
+  /* Two greys of text: ink, and muted for all that is said quieter, which reads at 4.5:1 on
+     every surface, bare, hovered, selected and both at once. */
   --color-ink: light-dark(#1e1f22, #dfe1e5);
-  --color-muted: light-dark(#5a5f6b, #b4b8bf);
-  --color-subtle: light-dark(#636775, #a4a8b2);
+  --color-muted: light-dark(#575c68, #bbbfc5);
   --color-on-ink: light-dark(#ffffff, #1e1f22);
   /* What a phone's row shows when swiped (DES-001 "滑动只是快捷方式", BUG-068): a fill each, the
      words and icon on it in on-ink, 6:1 and over both ways. */
@@ -307,18 +306,6 @@ time,
 kbd,
 [data-count] {
   font-variant-numeric: tabular-nums;
-}
-
-/* TERTIARY TEXT ON A SELECTED SURFACE READS ONE STEP UP. A selection is a state that stays, so its
-   text is held to 4.5:1 like any other, and `subtle` clears that on every plane but not under the
-   `select` layer. Making it pass there by itself would make it `muted`, and three greys would be
-   two. One rule for every selected thing -- the current page in the icon bar, the open row, a
-   picked filter -- so a new one is covered by saying it is selected, which it has to say for a
-   screen reader anyway. `textContrast.test.ts` checks this rule is here. */
-[aria-current='page'] .text-subtle,
-[aria-pressed='true'] .text-subtle,
-[aria-selected='true'] .text-subtle {
-  color: var(--color-muted);
 }
 
 /* A key cap is set in the mono face (tokens.md); `KEY` in buttonStyles.ts draws its box. */

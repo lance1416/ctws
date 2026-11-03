@@ -128,7 +128,7 @@ export function CardFace({
         {!settled && <DateChip task={task} today={today} timeZone={timeZone} />}
       </span>
       {path && (
-        <span data-board-path className="truncate pl-6 text-meta text-subtle">
+        <span data-board-path className="truncate pl-6 text-meta text-muted">
           {path}
         </span>
       )}

@@ -96,7 +96,7 @@ function Chip({
       }`}
     >
       {children}
-      <span className="font-normal text-subtle tabular-nums">{count}</span>
+      <span className="font-normal text-muted tabular-nums">{count}</span>
     </Link>
   )
 }

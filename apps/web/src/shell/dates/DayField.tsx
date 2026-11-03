@@ -151,7 +151,7 @@ export function DayField({
           aria-label={label}
           aria-invalid={refused || undefined}
           placeholder={placeholder ?? (mode === 'month' ? 'Mar 2023' : 'Oct 29')}
-          className="min-w-0 flex-1 self-stretch bg-transparent placeholder:text-subtle max-lg:-my-px"
+          className="min-w-0 flex-1 self-stretch bg-transparent placeholder:text-muted max-lg:-my-px"
         />
         {!bare && clearable && value !== null && (
           <button

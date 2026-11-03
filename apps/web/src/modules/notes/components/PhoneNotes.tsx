@@ -68,10 +68,10 @@ export function PhoneNotes() {
             <li key={folder.id}>
               <Link to={`/${NOTES_ID}?folder=${folder.id}`} className={ROW}>
                 <span className="flex-1 truncate">{folder.name}</span>
-                <span data-count className="text-meta text-subtle tabular-nums">
+                <span data-count className="text-meta text-muted tabular-nums">
                   {inside.length}
                 </span>
-                <CollapseIcon size={16} aria-hidden="true" className="text-subtle" />
+                <CollapseIcon size={16} aria-hidden="true" className="text-muted" />
               </Link>
             </li>
           ))}
@@ -130,7 +130,7 @@ function NoteRow({ note }: { note: NoteResponse }) {
       <Link to={`/${NOTES_ID}/${note.id}`} className={ROW}>
         <Icon size={20} aria-hidden="true" className={`shrink-0 ${KIND_TEXT[type]}`} />
         <span className="flex-1 truncate">{noteTitle(note)}</span>
-        <CollapseIcon size={16} aria-hidden="true" className="text-subtle" />
+        <CollapseIcon size={16} aria-hidden="true" className="text-muted" />
       </Link>
     </li>
   )

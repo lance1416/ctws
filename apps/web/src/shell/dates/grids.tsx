@@ -60,7 +60,7 @@ function Cell({
       } ${out ? 'opacity-40' : ''}`}
     >
       <span className="text-prose">{big}</span>
-      <span className={`text-meta tabular-nums ${selected ? 'text-on-project/85' : 'text-subtle'}`}>
+      <span className={`text-meta tabular-nums ${selected ? 'text-on-project/85' : 'text-muted'}`}>
         {small ?? ' '}
       </span>
     </button>
@@ -151,7 +151,7 @@ function WeekdayRow() {
   return (
     <div className="grid grid-cols-7 gap-0.5">
       {WEEKDAYS.map((d) => (
-        <span key={d} className="py-1 text-center text-meta font-medium text-subtle">
+        <span key={d} className="py-1 text-center text-meta font-medium text-muted">
           {d}
         </span>
       ))}
@@ -285,7 +285,7 @@ export function LunarGrid({
   const month = found ?? last.current
   if (!month)
     return (
-      <div className="flex h-56 items-center justify-center text-ui text-subtle">
+      <div className="flex h-56 items-center justify-center text-ui text-muted">
         {window.isError ? 'Couldn’t load the lunar month.' : ''}
       </div>
     )

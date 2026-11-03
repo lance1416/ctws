@@ -55,7 +55,7 @@ const components: Components = {
           .map((child) => (child.type === 'text' ? child.value : ''))
           .join('')
         return (
-          <Suspense fallback={<p className="my-3 text-ui text-subtle">Drawing…</p>}>
+          <Suspense fallback={<p className="my-3 text-ui text-muted">Drawing…</p>}>
             <MermaidDiagram source={source} />
           </Suspense>
         )

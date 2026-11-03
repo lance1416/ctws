@@ -114,7 +114,7 @@ export function OccurrenceNotes({
         ) : note ? (
           <Folded note={note} body={body} />
         ) : (
-          <p className="px-4 py-3 text-ui text-subtle">Nothing written for this one yet.</p>
+          <p className="px-4 py-3 text-ui text-muted">Nothing written for this one yet.</p>
         )}
       </Block>
     </div>
@@ -236,7 +236,7 @@ function Writer({
         fallback={{ rows: 10, className: area }}
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-meta text-subtle" aria-live="polite">
+        <span className="text-meta text-muted" aria-live="polite">
           {save.isPending ? 'Saving…' : save.isError ? '' : made.current ? 'Saved' : ''}
         </span>
         <button type="button" onClick={finish} className={BUTTON.secondary}>

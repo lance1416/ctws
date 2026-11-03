@@ -641,7 +641,7 @@ function Block({
       <h2 className="flex h-10 items-center gap-2 px-3 text-ui font-medium text-ink">
         <Icon size={16} aria-hidden="true" className={tint} />
         {title}
-        {note && <span className="text-meta font-normal text-subtle">{note}</span>}
+        {note && <span className="text-meta font-normal text-muted">{note}</span>}
       </h2>
       <div className="flex flex-col gap-3 px-3 pb-3">{children}</div>
     </section>
@@ -948,7 +948,7 @@ function ZoneLine({
         <span className="flex min-w-0 items-center gap-2">
           {/* A zone's name is words; the time beside it is mono. */}
           <span className="truncate text-ink">{zone ?? 'Not known'}</span>
-          {fromCity && <span className="text-meta text-subtle">From Lives in</span>}
+          {fromCity && <span className="text-meta text-muted">From Lives in</span>}
         </span>
       )}
       <button

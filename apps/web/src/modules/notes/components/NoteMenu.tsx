@@ -61,7 +61,7 @@ export function NoteMenu({
           )}
           <DropdownMenu.Item onSelect={onSource} className={MENU_ITEM}>
             {sourceWords(source)}
-            <span className="ml-auto pl-4 text-meta text-subtle">{SOURCE_KEYS}</span>
+            <span className="ml-auto pl-4 text-meta text-muted">{SOURCE_KEYS}</span>
           </DropdownMenu.Item>
           <DropdownMenu.Item onSelect={() => downloadNote(title, body)} className={MENU_ITEM}>
             Download .md

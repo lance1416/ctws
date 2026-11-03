@@ -128,7 +128,7 @@ export function PartyPicker({
           }}
           placeholder={value.length === 0 ? 'A person or an organisation' : ''}
           data-bare
-          className="min-w-24 flex-1 bg-transparent text-ui text-ink placeholder:text-subtle"
+          className="min-w-24 flex-1 bg-transparent text-ui text-ink placeholder:text-muted"
         />
       </div>
       {matches.length > 0 && (

@@ -120,7 +120,7 @@ export function PhoneCalendar() {
       />
       <div role="grid" aria-label={title} className="grid grid-cols-7">
         {WEEKDAYS.map((w) => (
-          <span key={w} role="columnheader" className="pb-1 text-center text-meta text-subtle">
+          <span key={w} role="columnheader" className="pb-1 text-center text-meta text-muted">
             {w}
           </span>
         ))}
@@ -151,7 +151,7 @@ export function PhoneCalendar() {
                 {Number(day.slice(8))}
               </span>
               <span
-                className={`max-w-full truncate text-meta ${name && name.is !== 'day' ? 'text-stop-t' : 'text-subtle'}`}
+                className={`max-w-full truncate text-meta ${name && name.is !== 'day' ? 'text-stop-t' : 'text-muted'}`}
               >
                 {name?.text ?? ''}
               </span>
@@ -213,7 +213,7 @@ function DayList({ parts }: { parts: ReturnType<typeof dayParts> }) {
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span
-                  className={`truncate text-row ${e.done ? 'text-subtle line-through' : 'text-ink'}`}
+                  className={`truncate text-row ${e.done ? 'text-muted line-through' : 'text-ink'}`}
                 >
                   {e.title}
                 </span>

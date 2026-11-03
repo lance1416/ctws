@@ -77,7 +77,7 @@ export function CaptureSheet({
           rows={3}
           aria-label="Capture"
           placeholder="A thought, or a link"
-          className="min-h-24 resize-none rounded-container border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-subtle"
+          className="min-h-24 resize-none rounded-container border border-line-strong bg-panel px-3 py-2.5 text-prose text-ink placeholder:text-muted"
         />
         <div
           role="radiogroup"
@@ -107,7 +107,7 @@ export function CaptureSheet({
         )}
         {kind === 'reading' && <ReadingImports />}
         <div className="flex min-w-0 items-center gap-2">
-          <span className="text-ui whitespace-nowrap text-subtle">Lands in</span>
+          <span className="text-ui whitespace-nowrap text-muted">Lands in</span>
           <button
             type="button"
             onClick={() => setWhere(true)}
@@ -223,7 +223,7 @@ function Segment({
       tabIndex={on ? 0 : -1}
       onClick={onClick}
       className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-control text-ui font-medium ${
-        on ? 'bg-panel text-ink ring-1 ring-line' : soon ? 'text-subtle opacity-60' : 'text-muted'
+        on ? 'bg-panel text-ink ring-1 ring-line' : soon ? 'text-muted opacity-60' : 'text-muted'
       }`}
     >
       <Icon size={16} aria-hidden="true" />

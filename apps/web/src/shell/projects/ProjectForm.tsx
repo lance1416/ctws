@@ -270,7 +270,7 @@ function ProjectForm({
                 aria-describedby={`${ids}-initials-from`}
                 className={`${boxed} w-16 font-medium uppercase`}
               />
-              <span id={`${ids}-initials-from`} className="text-meta text-subtle">
+              <span id={`${ids}-initials-from`} className="text-meta text-muted">
                 {draft.own ? 'One or two characters' : 'From the name'}
               </span>
             </div>

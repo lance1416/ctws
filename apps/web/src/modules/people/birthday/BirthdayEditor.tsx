@@ -108,7 +108,7 @@ export function BirthdayEditor({
           />
         </div>
         {/* When the reminder comes, and by whose clock (FR-062). */}
-        <span className="text-meta text-subtle">At 00:00 their time</span>
+        <span className="text-meta text-muted">At 00:00 their time</span>
       </div>
     </div>
   )
@@ -121,7 +121,7 @@ function PreviewLine({ facts, today }: { facts: BirthdayPreviewResponse; today: 
       {facts.bornSolar && (
         <>
           <span aria-hidden="true" />
-          <span className="text-meta text-subtle">Born</span>
+          <span className="text-meta text-muted">Born</span>
           <span className="text-ink tabular-nums">
             {fullDay(facts.bornSolar)}
             {facts.bornLunar ? `, ${facts.bornLunar}` : ''}
@@ -130,7 +130,7 @@ function PreviewLine({ facts, today }: { facts: BirthdayPreviewResponse; today: 
       )}
       <span aria-hidden="true" />
       {/* Once this year's has passed the next is next year's, and says so (FR-062, BUG-078). */}
-      <span className="text-meta text-subtle">
+      <span className="text-meta text-muted">
         {facts.next.day.slice(0, 4) > today.slice(0, 4) ? 'Next year' : 'This year'}
       </span>
       <span className="text-ink">
@@ -139,7 +139,7 @@ function PreviewLine({ facts, today }: { facts: BirthdayPreviewResponse; today: 
       {(facts.zodiac || facts.sign || facts.hour) && (
         <>
           <span aria-hidden="true" />
-          <span className="text-meta text-subtle">Signs</span>
+          <span className="text-meta text-muted">Signs</span>
           <span className="text-ink">
             {[facts.zodiac, facts.sign, facts.hour].filter(Boolean).join(' ')}
           </span>

@@ -43,7 +43,7 @@ export function TopBar({
         <button
           type="button"
           onClick={onSearch}
-          className="flex h-7.5 w-90 shrink items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-subtle hover:bg-hover"
+          className="flex h-7.5 w-90 shrink items-center gap-2 rounded-control border border-line-strong bg-panel px-2.5 text-ui text-muted hover:bg-hover"
         >
           <PLACE_ICON.search size={16} aria-hidden="true" />
           <span className="flex-1 text-left">Search everything</span>

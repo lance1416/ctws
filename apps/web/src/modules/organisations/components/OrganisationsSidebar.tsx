@@ -50,7 +50,7 @@ export function OrganisationsSidebar() {
       </div>
       {letters.map((letter) => (
         <section key={letter} aria-label={letter}>
-          <h3 className="px-3.5 pt-2.5 pb-1 text-meta text-subtle">{letter}</h3>
+          <h3 className="px-3.5 pt-2.5 pb-1 text-meta text-muted">{letter}</h3>
           <ul className="flex flex-col gap-px">
             {groups
               .get(letter)!

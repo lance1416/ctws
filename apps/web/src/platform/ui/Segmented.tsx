@@ -63,7 +63,7 @@ export function Segmented({
             id === current
               ? 'bg-panel text-ink ring-1 ring-line'
               : unavailable
-                ? 'cursor-default text-subtle opacity-55'
+                ? 'cursor-default text-muted opacity-55'
                 : 'text-muted hover:text-ink'
           }`}
         >

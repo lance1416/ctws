@@ -86,7 +86,7 @@ export function TaskBoard({ projectId, add }: { projectId: ProjectId; add: React
   const byStage = hasStages && params.get('columns') === 'stage'
   const columnsSwitch = (
     <span className="flex items-center gap-2.5">
-      <span className="text-meta text-subtle">Columns</span>
+      <span className="text-meta text-muted">Columns</span>
       <Segmented
         label="Columns"
         segments={[
@@ -289,7 +289,7 @@ function Board({
         {columnsSwitch}
         <span aria-hidden="true" className="flex-1" />
         <span className="flex items-center gap-2.5">
-          <span className="text-meta text-subtle">Done shows</span>
+          <span className="text-meta text-muted">Done shows</span>
           <Segmented
             label="Done shows"
             segments={[

@@ -42,14 +42,14 @@ function Here({ place, useCrumbs }: { place: Place | null; useCrumbs: () => Crum
     <>
       {steps.map((step, i) => (
         <span key={step.to} className="flex shrink-0 items-center gap-1.5">
-          {i > 0 && <CollapseIcon size={12} aria-hidden="true" className="shrink-0 text-subtle" />}
+          {i > 0 && <CollapseIcon size={12} aria-hidden="true" className="shrink-0 text-muted" />}
           <Link to={step.to} className="hover:text-ink">
             {step.label}
           </Link>
         </span>
       ))}
       {(place || steps.length > 0) && (
-        <CollapseIcon size={12} aria-hidden="true" className="shrink-0 text-subtle" />
+        <CollapseIcon size={12} aria-hidden="true" className="shrink-0 text-muted" />
       )}
       <span aria-current="page" className="truncate font-medium text-ink">
         {here.label}

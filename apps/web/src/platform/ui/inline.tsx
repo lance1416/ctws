@@ -42,10 +42,10 @@ export function PickOne<T extends string | null>({
             {current.mark}
           </span>
         )}
-        <span className={`truncate ${current ? '' : 'text-subtle'}`}>
+        <span className={`truncate ${current ? '' : 'text-muted'}`}>
           {current?.label ?? placeholder}
         </span>
-        <ExpandIcon size={16} className="h-3 w-3 shrink-0 text-subtle" />
+        <ExpandIcon size={16} className="h-3 w-3 shrink-0 text-muted" />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="start" sideOffset={4} className={MENU_SURFACE}>
@@ -67,7 +67,7 @@ export function PickOne<T extends string | null>({
                 )}
                 <span className="truncate">{c.label}</span>
                 {c.value === value && (
-                  <span aria-hidden="true" className="ml-auto text-meta text-subtle">
+                  <span aria-hidden="true" className="ml-auto text-meta text-muted">
                     Current
                   </span>
                 )}
@@ -111,18 +111,18 @@ export function PickMany<T extends string>({
             type="button"
             aria-label={`Remove ${label} “${c.label}”`}
             onClick={() => onChange(live.filter((v) => v !== c.value))}
-            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-control text-subtle hover:text-ink max-lg:tap"
+            className="-mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink max-lg:tap"
           >
             <CloseIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
           </button>
         </span>
       ))}
-      {chosen.length === 0 && <span className="text-ui text-subtle">{empty}</span>}
+      {chosen.length === 0 && <span className="text-ui text-muted">{empty}</span>}
       {rest.length > 0 && (
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger
             aria-label={`Add ${label}`}
-            className="flex h-7 w-7 items-center justify-center rounded-control border border-dashed border-line-strong text-subtle hover:bg-hover hover:text-ink max-lg:tap"
+            className="flex h-7 w-7 items-center justify-center rounded-control border border-dashed border-line-strong text-muted hover:bg-hover hover:text-ink max-lg:tap"
           >
             <NewIcon size={16} className="h-3 w-3" strokeWidth={1.8} />
           </DropdownMenu.Trigger>
