@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Whether the browser has a connection (FR-033). The browser's own word for it: it turns false
- * when the network goes, and back when it returns; a server that is down is not "offline".
+ * Whether the browser has a connection. The browser's own word for it: it turns false when the
+ * network goes, and back when it returns; a server that is down is not "offline".
  */
 export function useOnline(): boolean {
   const [online, setOnline] = useState(() =>
@@ -21,13 +21,13 @@ export function useOnline(): boolean {
   return online
 }
 
-/** Why a save does nothing while offline (FR-033), said where it is hovered. */
+/** Why a save does nothing while offline, said where it is hovered. */
 export const OFFLINE_WHY = 'Offline. Nothing can be saved until the connection is back.'
 
 /**
- * A button that saves, greyed while offline (FR-033, U-27): `aria-disabled` rather than
- * `disabled`, so hovering it still says why, and its press does nothing. Spread `props` on the
- * button, wrap its handler in `gate`, and give it `aria-disabled:` styles.
+ * A button that saves, greyed while offline: `aria-disabled` rather than `disabled`, so hovering
+ * it still says why, and its press does nothing. Spread `props` on the button, wrap its handler in
+ * `gate`, and give it `aria-disabled:` styles.
  */
 export function useSaveGate() {
   const online = useOnline()

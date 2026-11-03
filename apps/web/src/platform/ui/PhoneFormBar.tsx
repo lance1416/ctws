@@ -5,7 +5,7 @@ import { BUTTON, GATED } from './buttonStyles'
 /**
  * How far the visible part of the page has moved down from the layout's top. iOS Safari brings
  * the keyboard up by moving what is seen, not by making the layout shorter, so a bar fixed at the
- * layout's top is carried off the screen (BUG-086); held this far down, it stays in sight.
+ * layout's top is carried off the screen; held this far down, it stays in sight.
  */
 function useVisibleTop(): number {
   const [top, setTop] = useState(0)
@@ -25,9 +25,9 @@ function useVisibleTop(): number {
 }
 
 /**
- * A FORM'S BAR ON A PHONE (DES-001 "表单"): Cancel on the left, the form's name, its press on the
- * right, held at the top of the screen so it is still there with the keyboard up. Put inside the
- * form: the press is its submit. The page and a dialog make room for it (`data-phone-form-bar`).
+ * A form's bar on a phone, held at the top of the screen so it is still there with the keyboard up.
+ * Put inside the form: the press is its submit. The page and a dialog make room for it
+ * (`data-phone-form-bar`).
  */
 export function PhoneFormBar({
   title,
@@ -47,7 +47,6 @@ export function PhoneFormBar({
   onCancel?: () => void
 }) {
   const top = useVisibleTop()
-  // Its words at the bar's 16, the press at the other 16 (DES-001 "表单页").
   const cancel = '-ml-2 flex min-h-11 items-center px-2 text-prose text-muted'
   let back: ReactNode = null
   if (cancelTo)

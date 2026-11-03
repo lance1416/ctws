@@ -4,7 +4,7 @@ import { EditorView, type KeyBinding } from '@codemirror/view'
 
 /**
  * Wraps each selection in `marker`, or takes it off where it is already there: Ctrl B is `**`,
- * Ctrl I `*` (REQ-002 FR-107). An empty selection gets the pair with the cursor between.
+ * Ctrl I `*`. An empty selection gets the pair with the cursor between.
  */
 const toggleWrap =
   (marker: string): StateCommand =>
@@ -34,7 +34,7 @@ const toggleWrap =
   }
 
 /**
- * Ctrl Shift K (FR-029, REQ-002 §5): the selection becomes a link's words, the cursor where the
+ * Ctrl Shift K: the selection becomes a link's words, the cursor where the
  * address goes; with nothing selected, `[]()` with the cursor in the words.
  */
 export const insertLink: StateCommand = ({ state, dispatch }) => {
@@ -55,7 +55,7 @@ export const insertLink: StateCommand = ({ state, dispatch }) => {
 const LINE_MARK = /^(#{1,6} |[-*+] \[[ xX]\] |[-*+] )/
 
 /**
- * The phone's buttons over the keyboard (REQ-002 FR-113): the lines the cursor is on become
+ * The phone's buttons over the keyboard: the lines the cursor is on become
  * headings, list items or tasks, their old mark replaced; pressed again, the mark comes off.
  */
 export const toggleLineMark =
@@ -98,7 +98,7 @@ const nextCell: StateCommand = ({ state, dispatch }) => {
   return true
 }
 
-/** A web address pasted over selected words makes them its link (REQ-002 FR-107). */
+/** A web address pasted over selected words makes them its link. */
 export const pasteLink = EditorView.domEventHandlers({
   paste(event, view) {
     const text = event.clipboardData?.getData('text/plain').trim() ?? ''
@@ -119,7 +119,7 @@ export const pasteLink = EditorView.domEventHandlers({
 
 /**
  * The editor's keys. CodeMirror's own, less Shift-Mod-k (delete the line), which is the link key
- * here; Ctrl K is never bound, so it stays the app's search (FR-029).
+ * here; Ctrl K is never bound, so it stays the app's search.
  */
 export const editorKeys: readonly KeyBinding[] = [
   { key: 'Mod-b', run: toggleWrap('**') },

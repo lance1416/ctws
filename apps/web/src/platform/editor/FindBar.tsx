@@ -6,10 +6,8 @@ const STEP =
   'grid size-7 place-items-center rounded-control text-muted hover:bg-hover hover:text-ink disabled:opacity-40'
 
 /**
- * CTRL F IN A NOTE (REQ-002 FR-109, artboard 34): the words, which place of how many the bar is
- * on, the one before and the next, and ×. Enter is the next, Shift Enter the one before, Esc
- * closes it and goes back to the text, the place it was on selected. `nonce` grows with each
- * Ctrl F, which takes the bar's words again whole.
+ * Ctrl F in a note. Esc closes it and goes back to the text, the place it was on selected. `nonce`
+ * grows with each Ctrl F, which takes the bar's words again whole.
  */
 export function FindBar({
   editor,
@@ -35,7 +33,7 @@ export function FindBar({
     <div
       role="search"
       aria-label="Find in this note"
-      // A box round a bare input: the app's ring is the box's (DES-001 section 4).
+      // A box round a bare input: the app's ring is the box's.
       data-field
       className="flex h-10 w-[420px] max-w-full items-center gap-1 rounded-control border border-line bg-float pr-1 pl-3"
     >

@@ -19,7 +19,7 @@ import type { UnsavedGuard } from './unsavedGuard'
 /**
  * The control last pressed with a pointer. Safari on macOS does not focus a button that is
  * clicked, so a layer opened by a click would find <body> focused and have nothing to give focus
- * back to (BUG-026); the press itself says where it came from.
+ * back to; the press itself says where it came from.
  */
 let pressed: { el: Element; at: number } | null = null
 if (typeof document !== 'undefined')
@@ -68,7 +68,7 @@ export function Modal({
   /**
    * Something typed in would be lost by the footer's Cancel, which asks first (`useCancel`).
    * Escape, the scrim and the header's dismiss close without asking: the form keeps what was
-   * typed for when it opens again (FR-029, `drafts`).
+   * typed for when it opens again (`drafts`).
    */
   unsaved?: boolean
   /** A palette (search, the key list): no title row, and wide enough for columns. */
@@ -77,7 +77,7 @@ export function Modal({
   wide?: boolean
   /** One question and two buttons (a delete's). */
   narrow?: boolean
-  /** A palette at a picker's 380 (Link, artboard 9): no title row, one column of rows. */
+  /** A palette at a picker's 380: no title row, one column of rows. */
   picker?: boolean
   children: ReactNode
 }) {
@@ -93,7 +93,7 @@ export function Modal({
   }, [])
 
   const guard = useCloseGuard(unsaved, onClose)
-  // On a phone a picker or search takes the whole screen (FR-088), over a sheet it came from.
+  // On a phone a picker or search takes the whole screen, over a sheet it came from.
   const full = usePhone() && (picker || (palette && !narrow))
 
   return (
@@ -120,12 +120,12 @@ export function Modal({
         >
           <Dialog.Content
             aria-describedby={undefined}
-            // Firefox does not bring a focused control in a tall layer into view (BUG-027).
+            // Firefox does not bring a focused control in a tall layer into view.
             onFocus={(e) => {
               if (e.target instanceof HTMLElement) e.target.scrollIntoView({ block: 'nearest' })
             }}
             // Radix keeps plain Tab inside the layer; Safari's Option+Tab walks every control, and
-            // it must wrap at the ends too (BUG-026).
+            // it must wrap at the ends too.
             onKeyDown={(e) => {
               if (e.key !== 'Tab' || !e.altKey || e.ctrlKey || e.metaKey) return
               const all = [...e.currentTarget.querySelectorAll<HTMLElement>(TABBABLE)].filter(
@@ -143,7 +143,7 @@ export function Modal({
               }
             }}
             // Escape on the question is "Keep editing", as it is on a pane's. An editor's own Esc
-            // (its `@` list, vim back to NORMAL) is done for it, and the layer stays (FR-112).
+            // (its `@` list, vim back to NORMAL) is done for it, and the layer stays.
             onEscapeKeyDown={(e) => {
               if (escapeInEditor()) return e.preventDefault()
               if (!guard.asking) return
@@ -184,7 +184,7 @@ export function Modal({
             {palette || picker ? (
               <Dialog.Title className="sr-only">{title}</Dialog.Title>
             ) : (
-              // A form on a phone is a page: its bar says what it is (DES-001 "表单页").
+              // A form on a phone is a page: its bar says what it is.
               <div className="flex items-center justify-between border-b border-line px-5 py-3 max-lg:group-has-[[data-phone-form-bar]]/modal:sr-only">
                 <Dialog.Title className="font-medium text-ink">{title}</Dialog.Title>
                 {dismissLabel !== null && (

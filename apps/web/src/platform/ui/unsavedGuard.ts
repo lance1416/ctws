@@ -18,7 +18,7 @@ export type UnsavedGuard = {
   keep: () => void
   /** "Discard": lets go of whichever way out was asked about. */
   discard: () => void
-  /** Takes a way out without asking: what was typed is kept elsewhere (Esc, FR-029). */
+  /** Takes a way out without asking: what was typed is kept elsewhere (Esc). */
   release: (go: () => void) => void
 }
 

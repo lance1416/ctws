@@ -88,7 +88,6 @@ describe('jump chords', () => {
   const chords = registry.chords
 
   it('resolves each destination, in the order the help list teaches them', () => {
-    // FR-029's table, top to bottom.
     expect(chords.map((c) => c.key).join('')).toBe('wtcvpeomxrn')
     expect(chords.map((c) => c.id)).toEqual([
       'workbench',
@@ -118,5 +117,5 @@ describe('jump chords', () => {
   })
 
   // A chord's key may be a shortcut of its own elsewhere (`G C` and `c`, `G X` and `x`): the
-  // prefix claims the next press before anything else sees it (FR-029).
+  // prefix claims the next press before anything else sees it.
 })

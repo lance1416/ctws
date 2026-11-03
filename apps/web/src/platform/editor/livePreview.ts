@@ -22,10 +22,9 @@ import {
 } from './widgets'
 
 /**
- * THE LIVE PREVIEW (REQ-002 FR-106, artboard 34): Markdown drawn as it will read, except where the
- * cursor is. On the lines the selection touches every mark shows, in the marks' own small mono;
- * a table, a fenced block or a formula shows its whole source once the cursor is anywhere in it.
- * The text itself never changes size, so nothing jumps as the cursor moves.
+ * Markdown drawn as it will read, except where the cursor is: on the lines the selection touches
+ * every mark shows, and a table, a fenced block or a formula shows its whole source once the cursor
+ * is anywhere in it. The text itself never changes size, so nothing jumps as the cursor moves.
  *
  * Built from the document and the selection alone (`previewDecorations`), so what is hidden where
  * can be checked without a browser. A state field, not a view plugin: a table or a formula drawn
@@ -78,9 +77,9 @@ export function previewDecorations(state: EditorState): Range<Decoration>[] {
   // Ranges already drawn as a block: nothing inside them is decorated again.
   const blocks: { from: number; to: number }[] = []
   const inBlock = (pos: number) => blocks.some((b) => pos >= b.from && pos <= b.to)
-  // The cursor's own line, on its hover ground (artboard 34).
-  // Only a bare cursor's: a line's ground is drawn over the selection, which is behind the text,
-  // and would hide what is selected, vim's VISUAL among them.
+  // The cursor's own line, on its hover ground. Only a bare cursor's: a line's ground is drawn over
+  // the selection, which is behind the text, and would hide what is selected, vim's VISUAL among
+  // them.
   if (state.selection.ranges.every((r) => r.empty))
     for (const n of active) out.push(line('cm-md-active').range(doc.line(n).from))
 
@@ -318,7 +317,7 @@ function preview(state: EditorState): Preview {
     all: RangeSet.of(ranges, true),
     // Only what is drawn in place of text is one thing to the cursor: styled words stay words. A
     // block (a table, a formula, a fence's end) is not: the arrows go into it, and it shows its
-    // source (BUG-096).
+    // source.
     atomic: RangeSet.of(
       ranges.filter((r) => r.value.point && r.from < r.to && !r.value.spec.block),
       true,
@@ -376,7 +375,7 @@ export const livePreview = StateField.define<Preview>({
     // A chip or a box is one thing to the cursor: it steps over it and deletes it whole.
     EditorView.atomicRanges.of((view) => view.state.field(field).atomic),
     // Up and down step over a drawn block, as CodeMirror moves by what is on screen: into it
-    // instead, which shows its source (BUG-096).
+    // instead, which shows its source.
     Prec.high(
       keymap.of([
         { key: 'ArrowDown', run: (view) => intoBlock(view, field, 1) },

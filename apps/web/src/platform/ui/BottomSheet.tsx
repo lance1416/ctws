@@ -8,9 +8,8 @@ import { ICON_BUTTON } from './buttonStyles'
 const CLOSE_AFTER_PX = 80
 
 /**
- * A SHEET FROM THE FOOT (DES-001 "从底部弹出的面板"), the phone's way to show what the desk
- * shows beside or over a page: a day picked, a choice, the capture box. `full` takes the whole
- * screen but the status bar. Its head is the title and ×; pulling the head down also closes it.
+ * A sheet from the foot, the phone's way to show what the desk shows beside or over a page.
+ * `full` takes the whole screen but the status bar. Pulling the head down closes it.
  */
 export function BottomSheet({
   title,
@@ -28,7 +27,7 @@ export function BottomSheet({
   initialFocus?: RefObject<HTMLElement | null>
   /** The title row; a sheet whose body draws its own head (a picker's box) leaves it out. */
   head?: boolean
-  /** The ×; a confirmation leaves it out, its own Cancel full width under it (P4-24). */
+  /** The ×; a confirmation leaves it out, its own Cancel full width under it. */
   close?: boolean
   /** A line under the title, muted and cut to fit: what the sheet is about ("Move to" what). */
   about?: string

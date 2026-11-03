@@ -1,33 +1,18 @@
 @import 'tailwindcss';
 
 /* Semantic tokens only: components never use a literal palette class such as `bg-slate-*`, so
-   the colour scheme lives in this file. The values are the design's (`docs/design/2026-10-redesign/
-   tokens.md` and artboard 1), written ONCE each with `light-dark()`: the root's `color-scheme`
-   picks the side, so a chosen theme (`data-theme`) and the system's preference both resolve
-   every token without a second copy. `static` makes Tailwind emit every token, used or not.
+   the colour scheme lives in this file. Each token is written once with `light-dark()`: the root's
+   `color-scheme` picks the side, so a chosen theme and the system's preference both resolve every
+   token without a second copy. `static` makes Tailwind emit every token, used or not.
 
-   COLOUR ANSWERS TWO QUESTIONS (FR-001): what kind of thing this is, and what state it is in.
-   - The frame (top bar, icon bar, sidebar, borders, plain buttons) is grey. The primary button
-     is `ink`; one per screen.
-   - Eight KINDS, each with a main colour (icons, swatches), a text colour `-t` (words on a tint
-     or a surface) and a tint `-bg` (chips, badges) (FR-002).
-   - Three STATES borrowed from an IDE: `go` (running, progress), `warn` (due soon, waiting),
-     `stop` (overdue, destroys data). Never for a kind (FR-003). Task status itself is a SHAPE.
-   - Eight PROJECT colours, a solid square with white initials, the same hex in both schemes
-     (FR-004). Always beside the project's name.
-   - No other hue anywhere.
+   Colour says only what kind of thing this is and what state it is in. The frame is grey; a
+   kind's colour is never a state's; task status is told by shape; no other hue anywhere.
 
-   FOUR SURFACES, stacked by lightness (FR-005): `ground` (the page, behind blocks), `chrome`
-   (top bar, icon bar, sidebar), `panel` (blocks and pages), `float` (menus, the inspector,
-   popovers). Light lifts a float with `shadow-float`; dark lifts it by being lighter.
+   States are ink layers over whatever plane they sit on, because an opaque state colour would
+   equal one of the planes somewhere.
 
-   STATES ARE INK LAYERS over whatever plane they sit on: `hover` at 5%, `select` at 9%
-   (FR-009). An opaque state colour would equal one of the planes somewhere.
-
-   CONTRAST IS MEASURED, not inferred from hue: `textContrast.test.ts` reads this file and holds
-   every text token to 4.5:1 on every surface, bare and under each layer. Where the design's
-   value fell short on one of its own surfaces, the nearest value on the same hue that passes is
-   used and the design's is noted beside it; design can move either. */
+   Contrast is measured, not inferred from hue: `textContrast.test.ts` reads this file and holds
+   every text token to 4.5:1 on every surface, bare and under each layer. */
 
 /* The CJK face, self-hosted: one variable woff2 (wght 400-700) holding all of GB2312, one request,
    content-hashed into /assets and served immutable, so it is paid once. Regenerate it with
@@ -54,37 +39,24 @@
 @theme static {
   /* The two faces this app self-hosts first, then Semi Design's stack from `-apple-system` on.
      Latin is Inter (variable, 400 to 600 in use); CJK is the subset declared above, with the system
-     CJK faces behind it in case it fails to load. LATIN FIRST: Apple's zh-CN order puts CJK first,
+     CJK faces behind it in case it fails to load. Latin first: Apple's zh-CN order puts CJK first,
      which would hand Latin to Noto and lose Inter's figures. */
   --font-sans:
     'Inter Variable', 'CTWS Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial,
     sans-serif;
 
-  /* Times, keys and phone numbers: JetBrains Mono, self-hosted; Ant Design 5's `fontFamilyCode`
-     stack behind it. */
   --font-mono:
     'JetBrains Mono Variable', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
     monospace;
 
-  /* THE TYPE SCALE IS SIX STEPS, ONE EXCEPTION AND A PHONE'S ROWS (FR-008, FR-082), and
-     Tailwind's own sizes are removed so an off-scale size has no class to reach for.
-       hero     40/48  500  the one big number on a screen
-       title    26/34  600  a page's title (tracking -0.01em)
-       subject  18/26  600  a subheading; the inspector's title
-       prose    15/24  400  what you wrote: notes, body text
-       ui       13/20  400 or 500  rows, buttons, fields, block names -- the body's default
-       meta     12/16  400  counts, dates, second lines; mono text is this size too
-       initials 11/16  600  a project square's or an avatar's letters (tracking 0.02em), the only
-                            text under 12px
-       row      15/22  400 or 500  a phone's list row
-       row-sub  13/18  400  that row's second line
-     Weights: 400 and 500 everywhere; 600 only on `subject` and `title` (FR-007), never 700.
-     The lint holds `font-semibold` to those two steps.
+  /* Tailwind's own sizes are removed so an off-scale size has no class to reach for. `initials` is
+     the only text under 12px. 600 only on the steps that carry it; the lint forbids the weight
+     classes.
 
-     REM, NOT PX, so a reader who raised the browser's default size gets a larger page; at the
-     16px default every value is exactly the design's px. Line-heights are lengths, never
-     unitless, so a descendant that sets its own size does not re-multiply the leading. */
+     Rem, not px, so a reader who raised the browser's default size gets a larger page. Line-heights
+     are lengths, never unitless, so a descendant that sets its own size does not re-multiply the
+     leading. */
   --text-*: initial;
   --text-hero: 2.5rem;
   --text-hero--line-height: 3rem;
@@ -111,20 +83,14 @@
   --text-row-sub: 0.8125rem;
   --text-row-sub--line-height: 1.125rem;
 
-  /* RADIUS BY ROLE (FR-009), three steps and round, Tailwind's own removed: `small` 4 for a key
-     cap, a tick box, a find, the cursor's line, a 20 project square; `control` 6 for controls,
-     chips, menu items, the sidebar's and the icon bar's rows; `container` 8 for blocks, cards and
-     everything that floats; `phone` 12 for the phone's cards and sheets. Round is
-     `rounded-full`. What runs edge to edge of its container (a block's head, a full-width row's
-     hover, a table's cells, the frame's bars) has no radius: the container's own clips it. */
+  /* Radius by role, Tailwind's own removed. What runs edge to edge of its container has no
+     radius: the container's own clips it. */
   --radius-*: initial;
   --radius-small: 4px;
   --radius-control: 6px;
   --radius-container: 8px;
   --radius-phone: 12px;
 
-  /* WIDTHS WITH A NAME (tokens.md): the icon bar, the module sidebar, the inspector, the
-     narrowest a content column may be, and the measure of running text. */
   --width-icon-bar: 52px;
   --width-sidebar: 250px;
   --width-sidebar-wide: 280px;
@@ -135,16 +101,16 @@
   /* Tailwind's own palette is removed: every colour on a page is a token below. */
   --color-*: initial;
 
-  /* THE FOUR SURFACES, stacked by lightness in each scheme. */
+  /* The four surfaces, stacked by lightness in each scheme. Light lifts a float with
+     `shadow-float`; dark lifts it by being lighter. */
   --color-ground: light-dark(#eef0f3, #1b1c1f);
   --color-chrome: light-dark(#f7f8fa, #232427);
   --color-panel: light-dark(#ffffff, #2b2d30);
   --color-float: light-dark(#ffffff, #323438);
   /* The hairline, and the edge that identifies a field or a plain button: 3:1 on all four
-     surfaces (DES-001 v1.4). */
+     surfaces. */
   --color-line: light-dark(#e2e4e9, #393b40);
   --color-line-strong: light-dark(#858b96, #797d85);
-  /* THE INK AT 5% AND 9%, LAID OVER WHATEVER SURFACE IT IS ON (see the note at the top). */
   --color-hover: light-dark(rgb(30 31 34 / 0.05), rgb(223 225 229 / 0.06));
   --color-select: light-dark(rgb(30 31 34 / 0.09), rgb(223 225 229 / 0.1));
   /* Two greys of text: ink, and muted for all that is said quieter, which reads at 4.5:1 on
@@ -152,18 +118,14 @@
   --color-ink: light-dark(#1e1f22, #dfe1e5);
   --color-muted: light-dark(#575c68, #bbbfc5);
   --color-on-ink: light-dark(#ffffff, #1e1f22);
-  /* What a phone's row shows when swiped (DES-001 "滑动只是快捷方式", BUG-068): a fill each, the
-     words and icon on it in on-ink, 6:1 and over both ways. */
+  /* What a phone's row shows when swiped: a fill each, the words and icon on it in on-ink. */
   --color-swipe-later: light-dark(#885504, #e8a33d);
   --color-swipe-pick: light-dark(#5a5f6b, #b4b8bf);
   --color-swipe-done: light-dark(#166d2f, #5fb865);
   --color-swipe-remove: light-dark(#b22b2c, #f06a6a);
 
-  /* THE EIGHT KINDS (FR-002): main / `-t` text / `-bg` tint. Every value is the design's
-     (tokens.md, DES-001 v1.4), measured as tokens.md "对比度怎么量" says and as
-     `textContrast.test.ts` does: a text colour clears 4.5:1 on each surface, hovered, and on its
-     own tint laid over each surface hovered. Where a value had to move, only its lightness did, so
-     a word keeps its kind's hue. */
+  /* The eight kinds: main / `-t` text / `-bg` tint. Where a value had to move to pass
+     `textContrast.test.ts`, only its lightness did, so a word keeps its kind's hue. */
   --color-task: light-dark(#3574f0, #568dfa);
   --color-task-t: light-dark(#2457c5, #96b9ff);
   --color-task-bg: light-dark(rgb(53 116 240 / 0.11), rgb(84 138 247 / 0.16));
@@ -189,7 +151,7 @@
   --color-note-t: light-dark(#566401, #b8c85f);
   --color-note-bg: light-dark(rgb(107 122 31 / 0.13), rgb(169 184 79 / 0.15));
 
-  /* THE THREE STATES (FR-003). `on-stop` is the text of a filled destructive button. */
+  /* `on-stop` is the text of a filled destructive button. */
   --color-go: light-dark(#208a3c, #5fb865);
   --color-go-t: light-dark(#166d2f, #80ce87);
   --color-go-bg: light-dark(rgb(32 138 60 / 0.11), rgb(95 184 101 / 0.15));
@@ -201,11 +163,8 @@
   --color-stop-bg: light-dark(rgb(209 61 61 / 0.1), rgb(240 106 106 / 0.15));
   --color-on-stop: light-dark(#ffffff, #1e1f22);
 
-  /* THE EIGHT PROJECT COLOURS (FR-004, DES-001 v1.3): a solid square with white initials, one
-     hex for both schemes, always beside the project's name. `projectColors.test.ts` holds them to
-     the square's own rules: white initials at 4.5:1, chroma at least 0.10, lightness 0.49 to
-     0.58, and any two at least 12 apart. Colour-blind distance and 3:1 on the ground are not
-     asked: the initials and the name carry what the colour cannot. */
+  /* The project colours: a solid square with white initials, one hex for both schemes, always
+     beside the project's name. `projectColors.test.ts` holds them to the square's own rules. */
   --color-project-blue: #2663c9;
   --color-project-amber: #b35f00;
   --color-project-green: #008734;
@@ -214,11 +173,10 @@
   --color-project-olive: #6f6500;
   --color-project-teal: #00809a;
   --color-project-pink: #b53c8b;
-  /* The initials on a project square: white in both schemes (FR-004). */
   --color-on-project: #ffffff;
 
-  /* SYNTAX COLOURS, for highlighted code fences only. Their own family rather than borrowed
-     from the kinds or states: those MEAN something here, and a keyword in `warn`'s colour would be
+  /* Syntax colours, for highlighted code fences only. Their own family rather than borrowed
+     from the kinds or states: those mean something here, and a keyword in `warn`'s colour would be
      the one thing this file forbids. Body text at 12px, so held to 4.5:1 on `panel` and
      `ground`, bare and hovered. Not a highlight.js theme: importing one would bring a whole second
      palette with its own notion of light and dark. */
@@ -231,10 +189,10 @@
   --color-code-punct: light-dark(#4a515c, #a7aeb9);
 
   /* The wash behind a dialog. A token of its own rather than `ink` at an opacity: `ink` is
-     near-white in dark, so `bg-ink/20` would LIGHTEN the page it is meant to dim. */
+     near-white in dark, so `bg-ink/20` would lighten the page it is meant to dim. */
   --color-scrim: light-dark(rgb(30 31 34 / 0.32), rgb(5 6 8 / 0.62));
 
-  /* The lift under a float (tokens.md "shadow"): a hairline ring and one soft fall in light; in
+  /* The lift under a float: a hairline ring and one soft fall in light; in
      dark a visible ring and a deeper fall, since the surfaces are close in lightness. Two
      colour tokens, because `light-dark()` is only valid where a colour is. */
   --color-float-ring: light-dark(rgb(30 31 34 / 0.08), #45474d);
@@ -242,9 +200,9 @@
   --shadow-float: 0 0 0 1px var(--color-float-ring), 0 8px 28px var(--color-float-fall);
 }
 
-/* WHICH SIDE OF `light-dark()` IS SHOWN. The system's preference unless a theme was chosen by
-   hand; `index.html` sets `data-theme` before the first paint, so a reload never flashes the
-   other scheme. Native controls (date pickers, scrollbars) follow the same declaration. */
+/* Which side of `light-dark()` is shown. `index.html` sets `data-theme` before the first paint, so
+   a reload never flashes the other scheme. Native controls (date pickers, scrollbars) follow the
+   same declaration. */
 :root {
   color-scheme: light dark;
 }
@@ -256,9 +214,9 @@
 }
 
 /*
- * THE HANG: the date margin's width, past which a list's rows and a page's headings hang. One
- * value, so every indent that lines up with it (a row's text, a control's words) is computed from
- * it rather than added up by hand. `sm` is 40rem.
+ * The date margin's width, past which a list's rows and a page's headings hang. One value, so every
+ * indent that lines up with it (a row's text, a control's words) is computed from it rather than
+ * added up by hand. `sm` is 40rem.
  */
 :root {
   --hang: calc(var(--spacing) * 15);
@@ -270,12 +228,11 @@
 }
 
 /*
- * THE MENU LAYER, on the one element no component can reach.
- *
- * Radix positions every floating layer inside a wrapper it owns, and the `transform` it puts
- * there makes that wrapper a stacking context: `z-50` on the menu content is then compared only
- * with the menu's own children, never with the dialog scrim outside it, so a menu in a dialog
- * would paint under the scrim. The wrapper itself takes the layer.
+ * The menu layer, on the one element no component can reach. Radix positions every floating layer
+ * inside a wrapper it owns, and the `transform` it puts there makes that wrapper a stacking
+ * context: `z-50` on the menu content is then compared only with the menu's own children, never
+ * with the dialog scrim outside it, so a menu in a dialog would paint under the scrim. The wrapper
+ * itself takes the layer.
  *
  * `50` is `LAYER.menu`, which `layers.test.ts` pins to this value.
  */
@@ -283,14 +240,12 @@
   z-index: 50;
 }
 
-/* The body is the `ui` step on `ground`; prose opts in where something was written. There is no
-   `line-height` here or on the headings: every heading names a step, and a rule outside the scale
-   is exactly the unitless leading a published pair exists to replace.
+/* No `line-height` here or on the headings: every heading names a step, which carries its own.
 
-   `text-autospace` IS THE HAN/LATIN SPACING, AND THE ONLY ONE. W3C CLREQ asks for no more than a
+   `text-autospace` is the Han/Latin spacing, and the only one: W3C CLREQ asks for no more than a
    quarter of a Han character's width between Han and Latin letters or digits; Chromium spends
    1/8 em at each join and nothing where the author typed a space. `normal` is not the initial
-   value in Chromium, so it has to be asked for. NO LETTER-SPACING ON HAN, ever. */
+   value in Chromium, so it has to be asked for. No letter-spacing on Han. */
 body {
   @apply bg-ground text-ui text-ink;
   font-family: var(--font-sans);
@@ -298,8 +253,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Tabular figures wherever digits sit in a column and have to line up: counts in block heads,
-   dates and times in rows, the day-counts on Today. Inter ships `tnum`. Prose keeps proportional
+/* Tabular figures wherever digits sit in a column and have to line up. Prose keeps proportional
    figures. */
 .tabular-nums,
 time,
@@ -308,14 +262,12 @@ kbd,
   font-variant-numeric: tabular-nums;
 }
 
-/* A key cap is set in the mono face (tokens.md); `KEY` in buttonStyles.ts draws its box. */
+/* `KEY` in buttonStyles.ts draws a key cap's box. */
 kbd {
   font-family: var(--font-mono);
 }
 
-/* ONE FOCUS RING FOR EVERYTHING FOCUSABLE: 2px in the task colour, outside the edge (handoff §4;
-   the board's selected card wears the same). The browser's own ring is replaced, never removed.
-   3.75:1 on the light ground at its worst. */
+/* One focus ring for everything focusable. The browser's own ring is replaced, never removed. */
 :focus-visible {
   outline: 2px solid var(--color-task);
   outline-offset: 2px;
@@ -332,9 +284,9 @@ kbd {
   }
 }
 
-/* A FIELD THAT IS A BOX ROUND A BARE INPUT (a date field, the key filter): the ring goes round the
-   box, at its outer edge, and the input inside draws no second one (DES-001 section 4). An input
-   that is a panel's own head (search, the New menu) draws none: the panel is where focus is. */
+/* A field that is a box round a bare input: the ring goes round the box, and the input inside draws
+   no second one. An input that is a panel's own head (search, the New menu) draws none: the panel
+   is where focus is. */
 [data-field]:has(:is(input, textarea):focus-visible) {
   outline: 2px solid var(--color-task);
   outline-offset: 2px;
@@ -351,16 +303,16 @@ kbd {
   outline: none;
 }
 
-/* A MENU'S ROWS: under the pointer the hover ground says which one; the ring is for the keys.
+/* A menu's rows: under the pointer the hover ground says which one; the ring is for the keys.
    The pointer focuses the row it is over, and the browser would ring that too. */
 :root[data-input='pointer']
   :is([role='menuitem'], [role='menuitemradio'], [role='menuitemcheckbox']):focus-visible {
   outline: none;
 }
 
-/* A TARGET THAT LOOKS SMALLER THAN IT IS PRESSED (DES-001 "44 和看起来的大小"): a tag, a filter,
-   a row's small × or Later keeps its 28 to 32, and an unseen square of at least 44 centred on it
-   takes the finger. Used as `max-lg:tap`; `phone-targets.spec.ts` measures this square. */
+/* A target that looks smaller than it is pressed: it keeps its size, and an unseen square of at
+   least 44 centred on it takes the finger. Used as `max-lg:tap`; `phone-targets.spec.ts` measures
+   this square. */
 @utility tap {
   position: relative;
   &::before {
@@ -374,16 +326,15 @@ kbd {
   }
 }
 
-/* A FORM ON A PHONE IS A PAGE OF ITS OWN (DES-001 "表单页"): while its bar is up the tab bar stands
-   down, so a half-done edit is not tapped away, and the page's own head does too, its name being
-   in the bar. */
+/* A form on a phone is a page of its own: while its bar is up the tab bar stands down, so a
+   half-done edit is not tapped away, and the page's own head does too, its name being in the bar. */
 @media (width < 64rem) {
   body:has([data-phone-form-bar]) :is([data-bottom-bar], [data-form-head]) {
     display: none;
   }
 }
 
-/* A FIELD ON A PHONE IS AT LEAST 16PX: Safari on an iPhone zooms the page into any field set
+/* A field on a phone is at least 16px: Safari on an iPhone zooms the page into any field set
    smaller when it takes focus, and leaves it zoomed. Unlayered, so it outranks the type scale's
    utilities on every field, whatever size the desk gives it. */
 @media (width < 64rem) {

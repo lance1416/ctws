@@ -23,7 +23,7 @@ export function DialogFooter({
   onCancel: () => void
   /** A line on the left, opposite the buttons -- the new task dialog's keyboard chord. */
   hint?: ReactNode
-  /** The dialog's name in a phone's bar, where its buttons go (DES-001 "表单"). */
+  /** The dialog's name in a phone's bar, where its buttons go. */
   title?: string
 }) {
   const cancel = useCancel()

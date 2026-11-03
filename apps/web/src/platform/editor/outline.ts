@@ -12,9 +12,8 @@ const ATX = /^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/
 const FENCE = /^ {0,3}(`{3,}|~{3,})/
 
 /**
- * A NOTE'S OUTLINE (REQ-002 FR-109, artboard 34): its `#` headings in order, those inside a code
- * fence left out. The editor draws `#` and `##` alike, at the note's biggest step, so they are one
- * depth here too.
+ * A note's `#` headings in order, those inside a code fence left out. The editor draws `#` and `##`
+ * alike, at the note's biggest step, so they are one depth here too.
  */
 export function outlineOf(text: string): Heading[] {
   const out: Heading[] = []
@@ -36,7 +35,7 @@ export function outlineOf(text: string): Heading[] {
 }
 
 /**
- * The section in sight (artboard 37): the first heading at or below where the top of what shows
+ * The section in sight: the first heading at or below where the top of what shows
  * of the note is, so a note scrolled to its top marks its first; past the last, the last.
  */
 export function sectionInSight(headings: readonly Heading[], top: number): Heading | null {

@@ -1,9 +1,8 @@
 import { KIND_ICON } from './icons'
 
 /**
- * A person's avatar (FR-049, artboards 5 and 9): a round person-tinted disc with their initials;
- * with no name yet, the person icon (U-28, G-04). At least 24px, so the 11px letters are legible
- * (FR-008).
+ * A person's initials, or the person icon when there is no name yet. At least 24px, so the
+ * letters stay legible.
  */
 export function Avatar({
   initials,

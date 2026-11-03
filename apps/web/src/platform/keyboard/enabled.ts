@@ -7,7 +7,7 @@ const EVENT = 'ctws:shortcuts-changed'
 let inThisTab = true
 
 /**
- * Whether single-key shortcuts act (FR-029): they can steal a screen reader's keys. The account
+ * Whether single-key shortcuts act: they can steal a screen reader's keys. The account
  * keeps the choice; this is the page's copy of it, also kept in the browser so a reload starts
  * the way the account was left. Every access is wrapped, because `localStorage` throws in a
  * private window or with site data blocked.

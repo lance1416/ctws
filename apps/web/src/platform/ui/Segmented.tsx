@@ -10,9 +10,8 @@ type Segment = {
 }
 
 /**
- * A SEGMENTED SWITCH between a few views of one thing (artboard 8: Tree and Board): the views sit
- * on one grey track, the current one raised on the panel. Tabs to a screen reader, as it is,
- * each naming what it shows (`controls`); one Tab stop, the arrows switching (DES-001 section 4).
+ * A segmented switch between a few views of one thing. Tabs to a screen reader, each naming what
+ * it shows (`controls`); one Tab stop, the arrows switching.
  */
 export function Segmented({
   label,
@@ -28,7 +27,7 @@ export function Segmented({
   onPick: (id: string) => void
   /**
    * It picks a setting that is kept (a theme), not a view of what is under it: a radiogroup, one
-   * Tab stop, the arrows picking as they move (DES-001 section 4).
+   * Tab stop, the arrows picking as they move.
    */
   picks?: boolean
   /** The id of what the tabs switch, for a switch of views. */

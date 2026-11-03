@@ -20,7 +20,7 @@ const MermaidDiagram = lazy(() => import('./MermaidDiagram'))
 const BASE_REHYPE: PluggableList = [[rehypeSanitize, noteSchema]]
 const REMARK: PluggableList = [remarkGfm, remarkMath]
 
-/** The library's own URL check, letting a mention's address through to `NoteLink` (FR-042). */
+/** The library's own URL check, letting a mention's address through to `NoteLink`. */
 const keepMentions = (url: string) => (mentionOf(url) ? url : defaultUrlTransform(url))
 
 /** A link in a note: a mention drawn as the reader draws them, else a way out of the app. */
@@ -89,7 +89,7 @@ const components: Components = {
     )
   },
   /**
-   * A mention (FR-042) is drawn by whoever reads the note, a chip in the app; any other link
+   * A mention is drawn by whoever reads the note, a chip in the app; any other link
    * leaves the app, so it opens in a new tab with no referrer.
    */
   a({ href, children }) {

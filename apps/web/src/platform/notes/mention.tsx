@@ -5,7 +5,7 @@ import { createContext, type ReactNode } from 'react'
 export type Mention = { type: ObjectType; id: string; words: string }
 
 /**
- * How a mention is drawn where notes are read (FR-042): the shell gives one, a chip that opens the
+ * How a mention is drawn where notes are read: the shell gives one, a chip that opens the
  * thing. With none, a mention is its words, never a link: its address goes nowhere outside the app.
  */
 export const MentionContext = createContext<((mention: Mention) => ReactNode) | null>(null)
@@ -24,7 +24,7 @@ export function mentionOf(href: string | undefined): Omit<Mention, 'words'> | nu
 const STORED = /\[(@[^\]\n]+)\]\((ctws:\/\/[a-z]+\/[0-9a-f-]{36})\)/gi
 
 /**
- * Notes as they are typed (I-09): each mention is its words, `@Mira Chen`, never its address, which
+ * Notes as they are typed: each mention is its words, `@Mira Chen`, never its address, which
  * nobody can read and a slip of the cursor breaks. `links` remembers where each set of words goes.
  */
 export function mentionsAsWords(source: string): { text: string; links: Map<string, string> } {

@@ -20,8 +20,8 @@
   margin-block: 0.75rem;
 }
 
-/* The scale's own steps (20/28, 16/24), never a size of their own: a note's headings are headings
-   of a BLOCK inside a panel, so the panel-title step is the biggest one that can appear. */
+/* A note's headings are headings of a block inside a panel, so the panel-title step is the
+   biggest one that can appear. */
 [data-note-md] h1,
 [data-note-md] h2 {
   font-size: var(--text-subject);
@@ -92,16 +92,8 @@
   color: var(--color-muted);
 }
 
-/* CODE IS `--font-mono` (Ant Design 5's `fontFamilyCode` verbatim).
-   NO MONO WEBFONT IS SHIPPED: the stack already names a face that exists on every platform this
-   app runs on, and a second self-hosted family would be a second subsetting pipeline and another
-   megabyte for a feature that appears in a minority of notes. The CJK subset is behind it in the
-   stack so a Chinese identifier inside a fence still has a face.
-
-   LIGATURES OFF, EVERYWHERE MONO IS USED. `--font-mono`'s own entries have none, but the final
-   `monospace` fallback is whatever the reader's browser is set to, and a coding face maps `=>`,
-   `!=` and `<=` to single glyphs. A note quotes shell commands and comparisons; a renderer that
-   silently redraws `!=` as an unequal sign is showing something other than what was typed. */
+/* Ligatures off wherever mono is used: the final `monospace` fallback is the reader's own face,
+   and a coding face would redraw `!=` as an unequal sign, which is not what was typed. */
 [data-note-md] code,
 [data-note-md] pre,
 .font-mono {
@@ -109,11 +101,8 @@
   font-variant-ligatures: none;
 }
 
-/* THE HAIRLINE IS WHAT MAKES CODE A BLOCK IN DARK, not the fill. `desk` is a step DOWN from the
-   sheet, which reads clearly on white paper and almost not at all on a near-black one -- the first
-   dark screenshot showed a fence that was a rectangle of nothing. A `rule` steps the other way in
-   dark (it is lighter than both) and is a hairline on the tint in light, so one rule is right in
-   both schemes. The same reason the hover is an ink layer: in dark a plane has to go up. */
+/* The hairline, not the fill, is what makes code a block in dark: a darker fill barely shows on
+   a near-black sheet. */
 [data-note-md] code {
   font-size: 0.875em;
   background: var(--color-ground);
@@ -164,10 +153,8 @@
   overflow-y: hidden;
 }
 
-/* HIGHLIGHT.JS'S CLASSES, MAPPED ONTO THE SEVEN TOKENS ABOVE.
-   highlight.js emits ~40 class names; they collapse into these seven buckets, and a class that is
-   not listed simply inherits the block's own colour -- which is the right default, because an
-   unlisted token is one this app has no opinion about. */
+/* highlight.js's classes, collapsed into seven code colours; an unlisted class keeps the block's
+   own colour. */
 [data-note-md] .hljs-comment,
 [data-note-md] .hljs-quote {
   color: var(--color-code-comment);

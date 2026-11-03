@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 /**
- * ONE OF A PHONE PAGE'S SECTIONS (artboard 25): its name and count above, the rows in a card under
+ * One of a phone page's sections: its name and count above, the rows in a card under
  * it. `tone` colours the head where the section is a warning (Overdue).
  */
 export function PhoneSection({
@@ -20,7 +20,7 @@ export function PhoneSection({
   tone?: string
   /** Its name for a screen reader, when the title alone is not it. */
   label?: string
-  /** Under the rows, inside the card: a block's "All N" (FR-015). */
+  /** Under the rows, inside the card: a block's "All N". */
   foot?: ReactNode
   children: ReactNode
 }) {

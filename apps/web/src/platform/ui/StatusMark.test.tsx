@@ -23,7 +23,7 @@ describe('the status mark', () => {
     expect(s.html).toContain('d="M10 2.2a7.8 7.8 0 0 1 0 15.6z"')
   })
 
-  it('draws done as the ring and the check, and no half (U-24)', () => {
+  it('draws done as the ring and the check, and no half', () => {
     const s = shown('done')
     expect([s.half, s.check]).toEqual([false, true])
   })

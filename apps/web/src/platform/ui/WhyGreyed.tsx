@@ -3,9 +3,8 @@ import { BottomSheet } from './BottomSheet'
 import { usePhone } from './phone'
 
 /**
- * WHY A BUTTON IS GREY, ON A PHONE (DES-001 "灰按钮"): a finger has no hover to read the `title`
- * a greyed button carries, so a tap on one says it in a sheet from the foot. Any button that is
- * `aria-disabled` and has a `title` takes part; mount once, in the frame.
+ * On a phone a finger has no hover to read the `title` a greyed button carries, so a tap on one
+ * says it in a sheet. Any button that is `aria-disabled` and has a `title` takes part; mount once.
  */
 export function WhyGreyed() {
   const phone = usePhone()

@@ -5,10 +5,7 @@ import { AlertIcon, KIND_ICON, RetryIcon, type IconComponent, type Kind } from '
 import { KIND_TEXT, KIND_TINT } from './kinds'
 
 /**
- * THE BLOCK (artboard 3, FR-011): the one container every page is built from. A panel with a
- * hairline and an 8px corner; a 40px head that names the kind with its icon and colour, says how
- * many, and holds the block's own views and actions. An empty block is its head alone, saying so,
- * with its own New kept (rule 4).
+ * The container every page is built from. An empty block shrinks to its head and keeps its New.
  */
 export function Block({
   kind,
@@ -55,8 +52,8 @@ export function Block({
         ruled={!emptyInHead}
         aside={
           emptyInHead && (
-            // One line beside the name, cut short rather than wrapped (M-07); on a phone, where a
-            // long name leaves it no room, it goes under the name whole (P4-08).
+            // Cut short rather than wrapped; on a phone a long name leaves no room, so it goes
+            // under the name.
             <span className="min-w-0 truncate text-meta text-muted max-lg:whitespace-normal">
               {empty}
             </span>
@@ -72,9 +69,8 @@ export function Block({
 }
 
 /**
- * A BLOCK'S HEAD (tokens.md "块"): 40 high, 12 in, its 24 badge, then the name 45 from the edge,
- * what it counts and its actions at the end. A section of a panel that reads as a block takes
- * the same head, so every name sits on the same line from its edge.
+ * A section of a panel that reads as a block takes the same head, so every name sits on the same
+ * line from its edge.
  */
 export function BlockHead({
   icon: Icon,
@@ -127,7 +123,7 @@ export function BlockHead({
   )
 }
 
-/** Grey rows in a block's own shape, after the first 300 ms (FR-031). */
+/** Grey rows in a block's own shape, after the first 300 ms. */
 export function SkeletonRows({ rows = 3 }: { rows?: number }) {
   const shown = useDelayed()
   if (!shown) return <div className="h-10" />
@@ -153,7 +149,7 @@ export function SkeletonRows({ rows = 3 }: { rows?: number }) {
   )
 }
 
-/** One block's failure stays in the block (FR-032): what could not load, and the way to try again. */
+/** One block's failure stays in the block, with the way to try again. */
 export function BlockFailed({ what, onRetry }: { what: string; onRetry: () => void }) {
   return (
     <div className="flex items-center gap-2.5 px-3.5 py-4">

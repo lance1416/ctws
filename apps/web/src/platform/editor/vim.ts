@@ -2,10 +2,10 @@ import type { EditorView } from '@codemirror/view'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
 /**
- * VIM'S KEYS IN THE EDITOR (REQ-002 FR-112, artboard 36): off unless the account turns them on,
- * never on a phone. The account keeps the choice; this is the page's copy, kept in the browser too
- * so a reload starts as the account was left, every access wrapped as `localStorage` throws in a
- * private window. The keys themselves are fetched the first time an editor needs them.
+ * Vim's keys in the editor: off unless the account turns them on, never on a phone. The account
+ * keeps the choice; this is the page's copy, kept in the browser too so a reload starts as the
+ * account was left, every access wrapped as `localStorage` throws in a private window. The keys
+ * themselves are fetched the first time an editor needs them.
  */
 const KEY = 'ctws.editor.vim'
 const EVENT = 'ctws:vim-changed'
@@ -59,8 +59,8 @@ function vimOf(view: EditorView) {
 }
 
 /**
- * Where the cursor is in the editor with the focus, as the status bar writes it (artboard 37), with
- * vim's mode when it has vim's keys, and whether it shows the source (FR-116).
+ * Where the cursor is in the editor with the focus, as the status bar writes it, with vim's mode
+ * when it has vim's keys, and whether it shows the source.
  */
 export type EditorMode = {
   mode: 'NORMAL' | 'INSERT' | 'VISUAL' | 'REPLACE' | null
@@ -115,7 +115,7 @@ export function reportMode(view: EditorView, hasFocus: boolean): void {
   }
 }
 
-/** The mode of the editor with the focus, for the status bar; null when none has it (FR-105). */
+/** The mode of the editor with the focus, for the status bar; null when none has it. */
 export function useEditorMode(): EditorMode | null {
   return useSyncExternalStore(
     (h) => {
@@ -127,9 +127,9 @@ export function useEditorMode(): EditorMode | null {
 }
 
 /**
- * Whether Esc is vim's own just now: out of INSERT or VISUAL, or a command half typed. Then it
- * goes back to NORMAL and nothing closes; in NORMAL, with nothing typed, it is the page's (FR-029,
- * FR-112). A layer that hears Esc before the editor does (a dialog) asks this first.
+ * Whether Esc is vim's own just now: out of INSERT or VISUAL, or a command half typed. Then it goes
+ * back to NORMAL and nothing closes; in NORMAL, with nothing typed, it is the page's. A layer that
+ * hears Esc before the editor does (a dialog) asks this first.
  */
 export function vimHoldsEscape(view: EditorView | null = focused): boolean {
   const vim = view && vimOf(view)

@@ -1,20 +1,20 @@
 import { useSyncExternalStore } from 'react'
 
-/** What the phone's row over the keyboard does: four marks, `@`, and undo (FR-113). */
+/** What the phone's row over the keyboard does: four marks, `@`, and undo. */
 export type EditorAction = 'heading' | 'list' | 'task' | 'mention' | 'link' | 'undo'
 
 /** The editor with the focus, as the page around it reaches it. */
 export type FocusedEditor = {
   /** Its Esc, done: true when it was the editor's (its `@` list, vim back to NORMAL). */
   escape: () => boolean
-  /** The phone's buttons, on the text where its cursor is (FR-113). */
+  /** The phone's buttons, on the text where its cursor is. */
   act: (action: EditorAction) => void
 }
 
 /**
- * THE EDITOR WITH THE FOCUS (FR-029, REQ-002 FR-112, FR-113). A layer that hears Esc before the
- * editor does (a dialog listens on the whole document first) asks it here, rather than swallowing
- * the key: a key a layer has marked done, the editor no longer acts on (BUG-098). The phone's row
+ * The editor with the focus. A layer that hears Esc before the editor does (a dialog listens on the
+ * whole document first) asks it here, rather than swallowing the key: a key a layer has marked
+ * done, the editor no longer acts on. The phone's row
  * over the keyboard is drawn while there is one. No CodeMirror here: layers import this, and the
  * editor's code is fetched only where writing starts.
  */

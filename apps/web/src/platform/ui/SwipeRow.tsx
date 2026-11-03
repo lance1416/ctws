@@ -1,14 +1,12 @@
 import { Children, useRef, useState, type ReactNode } from 'react'
 import { usePhone } from './phone'
 
-/** Each action uncovered, 84 across (artboard 25). */
 const ACTION_PX = 84
 
 /**
- * A ROW THAT SWIPES LEFT ON A PHONE (DES-001 "只有悬停才出现的东西"): what the desk shows on hover
- * (a row's ×) is under the row, uncovered by a swipe. The swipe is only a shortcut: the actions
- * are reached as they are by a screen reader and a keyboard, and reaching one slides the row open.
- * From 1024 up it is the row alone.
+ * On a phone, what the desk shows on hover is under the row, uncovered by a swipe left. The swipe
+ * is only a shortcut: a screen reader and a keyboard reach the actions as they are, and reaching
+ * one slides the row open.
  */
 export function SwipeRow({ actions, children }: { actions: ReactNode; children: ReactNode }) {
   const phone = usePhone()

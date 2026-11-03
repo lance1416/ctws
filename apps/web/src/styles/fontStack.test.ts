@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * THE FONT STACKS, entry by entry and in order: `toContain('PingFang SC')` would pass on a stack
+ * The font stacks, entry by entry and in order: `toContain('PingFang SC')` would pass on a stack
  * that had lost `-apple-system`, or that had put the CJK face in front of the Latin one.
  */
 const css = readFileSync(resolve(import.meta.dirname, 'styles.css'), 'utf8')

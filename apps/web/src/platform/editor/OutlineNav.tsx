@@ -18,7 +18,7 @@ export type Outline = {
 }
 
 /**
- * The outline's panel shown or hidden (REQ-002 FR-109, artboard 37). Wide, it is the account's
+ * The outline's panel shown or hidden. Wide, it is the account's
  * choice, the same on every note and in full screen. Narrow it starts hidden whatever the account
  * says, and shown it floats over the text until it is put away.
  */
@@ -89,9 +89,8 @@ export function OutlineButton({ outline, keys }: { outline: Outline; keys: strin
 }
 
 /**
- * A NOTE'S OUTLINE (REQ-002 FR-109, artboard 37): its headings in a panel down the right of the
- * page, as a code editor's side bar, the section in sight marked; a press jumps there. A note with
- * no headings has none.
+ * A note's headings in a panel down the right of the page, the section in sight marked; a press
+ * jumps there.
  */
 export function OutlineNav({
   outline,

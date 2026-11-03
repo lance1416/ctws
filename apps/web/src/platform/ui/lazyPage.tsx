@@ -1,9 +1,8 @@
 import { lazy, Suspense, type ComponentType } from 'react'
 
 /**
- * A part loaded when first drawn, not with the app: a page or a dialog the first page of a visit
- * does not need, kept out of the bundle every page parses before it can ask for its data
- * (baseline.md §8). Nothing is shown while it arrives, as before its data does.
+ * A part loaded when first drawn, kept out of the bundle every page parses before it can ask for
+ * its data. Nothing is shown while it arrives.
  */
 export function lazyPage<P extends object>(
   load: () => Promise<ComponentType<P>>,

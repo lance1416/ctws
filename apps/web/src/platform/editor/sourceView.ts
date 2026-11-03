@@ -61,9 +61,8 @@ const sourceMarks = StateField.define<DecorationSet>({
 })
 
 /**
- * THE SOURCE (REQ-002 FR-116, artboard 39): the note as it is kept, every mark shown and nothing
- * drawn, in mono, the whole note at once so no line moves on its own. Written in the same way;
- * what the live preview would draw (a chip, a box, a table) is its own text here.
+ * The note as it is kept, every mark shown and nothing drawn, the whole note at once so no line
+ * moves on its own.
  */
 export const sourceView = [
   sourceMarks,

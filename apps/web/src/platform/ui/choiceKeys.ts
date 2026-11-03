@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react'
 const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }
 
 /**
- * A group of choices as DES-001 section 4 has them: one Tab stop, the chosen one's (give each
+ * A group of choices is one Tab stop, the chosen one's (give each
  * `tabIndex={chosen ? 0 : -1}`); the arrows move to the next and choose it there and then. Give
  * it to the group's `onKeyDown`: `radioKeys` for a radiogroup, `tabKeys` for a tablist.
  */

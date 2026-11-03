@@ -3,8 +3,7 @@ import { BUTTON } from './buttonStyles'
 import { DeleteConfirm } from './DeleteConfirm'
 
 /**
- * WHERE A THING IS DESTROYED FROM (FR-035): last on its surface, under a rule, apart from the
- * rest, red, naming what goes; and it always asks, once.
+ * Where a thing is destroyed from: last on its surface, apart from the rest; it always asks, once.
  */
 export function DangerZone({ children }: { children: ReactNode }) {
   return (

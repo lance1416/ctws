@@ -1,5 +1,5 @@
 /**
- * THE SERVER'S PRESENT (BUG-020): the server says what time it is with the account (`me.now`), and
+ * The server says what time it is with the account (`me.now`), and
  * may be pinned to a moment for acceptance and UAT. The page keeps the browser's clock running
  * from there: the offset between the two, applied to every reading of the time.
  */

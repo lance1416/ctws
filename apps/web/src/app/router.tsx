@@ -18,7 +18,7 @@ import { lazyPage } from '../platform/ui/lazyPage'
 import { asLoader, landed, queryClient } from './queryClient'
 import { registry } from './registry'
 
-// Pages the first page of a visit seldom is, loaded when drawn (baseline.md §8).
+// Pages the first page of a visit seldom is, loaded when drawn.
 const Account = lazyPage(() => import('../shell/account/Account').then((m) => m.Account))
 const MigrationReport = lazyPage(() =>
   import('../shell/account/MigrationReport').then((m) => m.MigrationReport),
@@ -33,8 +33,8 @@ const EditProject = lazyPage(() =>
 /**
  * A page that says what it will ask for gets a loader that starts it once the session is known:
  * the frame's project lists, then the page's own. It returns at once, so nothing waits on it but
- * the session, which the frame waits on anyway (baseline.md §8: the first request a page made
- * used to wait for the whole frame to be drawn).
+ * the session, which the frame waits on anyway. Otherwise a page's first request would wait for the
+ * whole frame to be drawn.
  */
 function prefetched(routes: RouteObject[]): RouteObject[] {
   return routes.map((route) => {
@@ -124,7 +124,7 @@ export const router = createBrowserRouter(
                   } satisfies PageHandle,
                 },
                 ...registry.routes,
-                // The addresses the redesign retired (FR-023, FR-029): each goes where its page went.
+                // Retired addresses: each goes where its page went.
                 { path: '/things', element: <Navigate to={WORKBENCH_PATH} replace /> },
                 { path: '/tasks/today', element: <Navigate to="/today" replace /> },
                 { path: '/tasks/review', element: <Navigate to="/review" replace /> },

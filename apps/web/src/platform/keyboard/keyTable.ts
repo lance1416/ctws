@@ -15,7 +15,7 @@ type KeyRow<A extends string = string> = {
   keys: string
   /** What the help says they do. */
   does: string
-  /** The key this replaced in the redesign (FR-029), shown for the first release after it. */
+  /** The key this replaced in the redesign, shown for the first release after it. */
   was?: string
   /** Each press and its action. Empty for a key told here but handled by the browser or a layer. */
   presses: Partial<Record<string, A>>
@@ -110,7 +110,7 @@ export function useKeyTable<A extends string>(
 
 /**
  * The page-wide keys of a table, bound while the caller is mounted. Every press stands down while
- * an overlay is open. A SINGLE KEY (`c`, `?`, `[`) also obeys the off switch and never fires while
+ * an overlay is open. A single key (`c`, `?`, `[`) also obeys the off switch and never fires while
  * typing; a press with a modifier (Ctrl K) is a command and works from inside a field too.
  * `claim` sees a single key that passed before any other listener does, and a press it claims goes
  * no further; `skipped` hears a single key that did not pass.

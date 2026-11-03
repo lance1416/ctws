@@ -5,7 +5,7 @@ import { columnsIn, inColumns, splitColumns } from './columns'
 const MAIN = (screen: number) => screen - 52 - 40
 
 describe('columnsIn', () => {
-  it('gives the three screens the columns DES-001 names for them', () => {
+  it('gives the 1440, 1920 and 2560 screens three, four and six columns', () => {
     expect(columnsIn(MAIN(1440))).toBe(3)
     expect(columnsIn(MAIN(1920))).toBe(4)
     expect(columnsIn(MAIN(2560))).toBe(6)
@@ -24,7 +24,7 @@ describe('columnsIn', () => {
 })
 
 describe('splitColumns', () => {
-  it('gives the main blocks half the columns and the rest beside them (DES-001 section 4)', () => {
+  it('gives the main blocks half the columns and the rest beside them', () => {
     // 1440, 1920 and 2560.
     expect(splitColumns(3)).toEqual({ main: 2, side: 1 })
     expect(splitColumns(4)).toEqual({ main: 2, side: 2 })
@@ -41,7 +41,7 @@ describe('splitColumns', () => {
 describe('inColumns', () => {
   const FOUR = ['Follow up', 'Ready', 'This week', 'Birthdays']
 
-  it('lays the four side blocks out as artboard 31 does: the last two share a column', () => {
+  it('lays four side blocks across three columns, the last two sharing one', () => {
     expect(inColumns(FOUR, 3)).toEqual([['Follow up'], ['Ready'], ['This week', 'Birthdays']])
   })
 

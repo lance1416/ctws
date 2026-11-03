@@ -3,17 +3,13 @@ import { contrast } from '@ctws/palette'
 import { KINDS, STATES, SURFACES, color, over, type Scheme } from './tokens'
 
 /**
- * EVERY COLOURED WORD READS AT 4.5:1 WHEREVER IT CAN LAND (FR-005).
- *
- * A token that passes on the page can fail on a hovered row, a selected one, the chrome or a
- * float. So each text token is measured against every surface, bare and under each layer, in
- * both schemes -- read off the real `styles.css`, so changing a colour or a layer re-runs it.
+ * Every coloured word reads at 4.5:1 wherever it can land. A token that passes on the page can
+ * fail on a hovered row, a selected one, the chrome or a float, so each text token is measured
+ * against every surface, bare and under each layer, in both schemes.
  *
  * The two greys are held everywhere, a selected row that is also hovered included. One exception,
- * deliberate:
- * - A kind's or a state's `-t` is held bare, hovered, and on its own tint laid over each surface
- *   bare and hovered (a badge sits in a hovered row); not under `select`.
- * That is tokens.md's "对比度怎么量" (DES-001 v1.4), rule for rule.
+ * deliberate: a kind's or a state's `-t` is held bare, hovered, and on its own tint laid over each
+ * surface bare and hovered (a badge sits in a hovered row); not under `select`.
  */
 const read = (name: string, scheme: Scheme) => {
   const v = color(name, scheme)
@@ -73,10 +69,10 @@ describe.each(['light', 'dark'] as const)('text in %s', (scheme) => {
     expect(contrast(read('on-stop', scheme), read('stop', scheme))).toBeGreaterThanOrEqual(4.5)
   })
 
-  it("a swiped row's buttons read at 6:1, their words on their fills (BUG-068)", () => {
+  it("a swiped row's buttons read at 6:1, their words on their fills", () => {
     for (const fill of ['swipe-later', 'swipe-pick', 'swipe-done'])
       expect(contrast(read('on-ink', scheme), read(fill, scheme)), fill).toBeGreaterThanOrEqual(6)
-    // Remove is the design's red (P4-13): 6.4:1 light, 5.5:1 dark, over AA's 4.5.
+    // Remove is the design's red, held only to AA's 4.5.
     expect(contrast(read('on-ink', scheme), read('swipe-remove', scheme))).toBeGreaterThanOrEqual(
       4.5,
     )

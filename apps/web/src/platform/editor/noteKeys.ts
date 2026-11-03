@@ -4,7 +4,7 @@ import { isTypingTarget } from '../keyboard/keys'
 import { isOverlayOpen } from '../keyboard/overlayState'
 import { keyDone } from './focused'
 
-/** How the help and the switches' hovers write the keys (REQ-002 FR-109, FR-116, FR-029). */
+/** How the help and the switches' hovers write the keys. */
 export const OUTLINE_KEYS = '] or Ctrl+Alt+B'
 export const SOURCE_KEYS = 'Ctrl+Shift+V'
 

@@ -4,10 +4,8 @@ import { useEffect, useState } from 'react'
 const SHOWN_AFTER_MS = 400
 
 /**
- * A THING'S PAGE WHILE THE THING ITSELF IS STILL BEING READ: nothing at first, then, past 400ms,
- * its head's place, the 56 badge or avatar beside two bars, the title's line and the line under
- * it, each as high as the head's own so the badge sits where it will. What is under the head waits
- * with it.
+ * A thing's page head while the thing is still being read. Each bar is as high as the head's own
+ * line, so the badge sits where it will.
  */
 export function PageHeadWaiting({
   round = false,

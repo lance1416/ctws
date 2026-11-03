@@ -20,9 +20,8 @@ function placesOf(state: EditorState, query: string): number[] {
 }
 
 /**
- * FIND IN THIS NOTE (REQ-002 FR-109, artboard 34): every place the words are, marked, the one the
- * bar is on marked darker. Its own marks, not the selection's: the bar keeps the focus, and an
- * editor without it draws no selection.
+ * Every place the words are, marked, the one the bar is on marked darker. Its own marks, not the
+ * selection's: the bar keeps the focus, and an editor without it draws no selection.
  */
 export const findInNote = StateField.define<Finding>({
   create: () => NONE,

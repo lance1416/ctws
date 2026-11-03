@@ -22,10 +22,7 @@ export function zoneFrom(words: string): string | null | undefined {
   return ZONES.find((z) => z.toLowerCase() === asked) ?? zonesMatching(words)[0]
 }
 
-/**
- * A zone typed and picked from the browser's list, the names in mono as zones are written: a
- * person's Lives in (FR-063) and the account's own zone (artboard 30). Esc backs out.
- */
+/** A zone typed and picked from the browser's list, the names in mono as zones are written. */
 export function ZoneBox({
   zone,
   typed,

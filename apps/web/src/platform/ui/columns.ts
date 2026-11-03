@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState, type RefObject } from 'react'
 
-/** The narrowest a content column may be, and the most a page has (FR-014, DES-001 section 4). */
+/** The narrowest a content column may be, and the most a page has. */
 const COLUMN_MIN = 360
 const COLUMNS_MAX = 6
 /** Between two columns: `gap-3`. */
@@ -34,10 +34,9 @@ export function useColumns(ref: RefObject<HTMLElement | null>): number {
 }
 
 /**
- * A page's columns between its main blocks and the ones beside them (DES-001 section 4, Today's
- * tasks and a project's tree): the main ones take half, two at least; the others take the rest.
- * With two columns or fewer the main ones take the whole row and the others go under them, as many
- * across.
+ * A page's columns between its main blocks and the ones beside them: the main ones take half, two
+ * at least; the others take the rest. With two columns or fewer the main ones take the whole row
+ * and the others go under them, as many across.
  */
 export function splitColumns(columns: number): { main: number; side: number } {
   const main = Math.min(columns, Math.max(2, Math.ceil(columns / 2)))
@@ -46,7 +45,7 @@ export function splitColumns(columns: number): { main: number; side: number } {
 
 /**
  * The blocks beside the main ones, in order, across `columns`: one a column while they last, and
- * any left over under the last columns' (artboard 31: This week and Birthdays share the last). A
+ * any left over under the last column's. A
  * column left without a block is not returned.
  */
 export function inColumns<T>(blocks: readonly T[], columns: number): T[][] {

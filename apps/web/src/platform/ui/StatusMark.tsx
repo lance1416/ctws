@@ -15,7 +15,7 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
  */
 export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 14 | 16 | 20 }) {
   const half = status === 'in_progress'
-  // Artboard 1: what is being worked on is green; the rest muted, its shape saying which it is.
+  // Only what is being worked on is coloured; the rest is told apart by shape.
   const tone = half ? 'text-go' : 'text-muted'
   return (
     <svg
@@ -45,8 +45,6 @@ export function StatusMark({ status, size = 20 }: { status: TaskStatus; size?: 1
         stroke="none"
         className={`transition-opacity duration-120 ${half ? 'opacity-100' : 'opacity-0'}`}
       />
-      {/* Done is the ring and a check, in the settled tone: lighter than what is still to do
-          (artboards 1, 3 and 21, U-24). */}
       <path
         data-part="check"
         d="M6.6 10.2l2.3 2.3 4.5-4.8"

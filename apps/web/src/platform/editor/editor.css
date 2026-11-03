@@ -1,7 +1,6 @@
-/* THE EDITOR WRITES AS THE NOTE READS (REQ-002 §5, artboard 34): the reader's steps and spacing
-   (notes.css), the text in Inter 15/24 whatever is around it. Only what the cursor's line shows of
-   the Markdown is mono, 13 and muted, inside the same line height, so nothing moves as the cursor
-   does. Plain CSS like notes.css: CodeMirror draws its own markup. */
+/* The editor writes as the note reads: the reader's steps and spacing (notes.css). What the
+   cursor's line shows of the Markdown stays inside the same line height, so nothing moves as the
+   cursor does. Plain CSS like notes.css: CodeMirror draws its own markup. */
 
 /* The editor fills its box, however little is written: a press anywhere in it writes. */
 [data-markdown-editor] {
@@ -28,8 +27,8 @@
   overflow-wrap: break-word;
 }
 
-/* An editor in a field's box: the box's edge is the focus ring, 2px in the task colour at its
-   outer edge, with no grey line left inside it (DES-001 "输入框的焦点"); the editor draws none. */
+/* An editor in a field's box: the box's edge is the focus ring, with no grey line left inside it;
+   the editor draws none. */
 [data-markdown-editor][data-boxed]:has(.cm-focused) {
   border-color: var(--color-task);
   outline: 1px solid var(--color-task);
@@ -322,7 +321,7 @@
   line-height: var(--text-ui--line-height);
 }
 
-/* CodeMirror's own theme sets the list in monospace; it is the app's type, as every menu (BUG-099). */
+/* CodeMirror's own theme sets the list in monospace; it is the app's type, as every menu. */
 [data-markdown-editor] .cm-tooltip.cm-tooltip-autocomplete > ul {
   font-family: var(--font-sans);
 }
@@ -347,8 +346,8 @@
   color: var(--color-muted);
 }
 
-/* Ctrl F's places in the note (artboard 34): each on the amber ground, the bar's one solid: on
-   light the deeper amber, as white on warn itself is under 4.5:1 (DES-001 "Find"). */
+/* Ctrl F's places in the note. The bar's one is solid: on light the deeper amber, as white on warn
+   itself is under 4.5:1. */
 .cm-md-found {
   background: var(--color-warn-bg);
   border-radius: var(--radius-small);
@@ -360,8 +359,8 @@
   border-radius: var(--radius-small);
 }
 
-/* ON A PHONE (DES-001 "笔记编辑器", artboard 35): the text 16/24, as Safari zooms the whole page
-   onto a field set smaller when it takes the focus; ## 20/28 and ### 16/24 with it. */
+/* On a phone the text is 16px, as Safari zooms the whole page onto a field set smaller when it
+   takes the focus; the headings grow with it. */
 @media (max-width: 1023.98px) {
   [data-markdown-editor] .cm-scroller {
     font-size: 1rem;
@@ -374,9 +373,7 @@
   }
 }
 
-/* VIM'S BLOCK CURSOR: the task colour at 35% over the letter it sits on, which
-   keeps its own colour; away from the focus, the block's outline. The package themes it pink at a
-   higher rank, hence `!important`. */
+/* Vim's block cursor. The package themes it pink at a higher rank, hence `!important`. */
 [data-markdown-editor] .cm-fat-cursor {
   background: color-mix(in srgb, var(--color-task) 35%, transparent) !important;
   color: inherit !important;
@@ -387,8 +384,7 @@
   outline: 1px solid var(--color-task) !important;
 }
 
-/* The source (REQ-002 FR-116, artboard 39): the note as it is kept, in mono 14/24, the same
-   24 a line as drawn, so switching moves nothing up or down; on a phone 16/24. */
+/* The source keeps the drawn note's line height, so switching moves nothing up or down. */
 [data-markdown-editor] .cm-src .cm-scroller {
   font-family: var(--font-mono);
   font-variant-ligatures: none;

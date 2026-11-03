@@ -5,9 +5,8 @@ import { Button } from './Button'
 import { Modal } from './Modal'
 
 /**
- * THE ONE QUESTION BEFORE DESTROYING (FR-035, handoff §7): a small dialog on the float, whose
- * title says what goes and what stays. Cancel takes focus, so a held or repeated Enter backs out
- * instead of destroying; Esc closes.
+ * The one question before destroying, naming what goes and what stays. Cancel takes focus, so a
+ * held or repeated Enter backs out instead of destroying; Esc closes.
  */
 export function DeleteConfirm({
   label,
@@ -33,8 +32,8 @@ export function DeleteConfirm({
 }) {
   const phone = usePhone()
   const cancel = useRef<HTMLButtonElement>(null)
-  // On a phone the question rises from the foot, its answers across it, the one that acts first
-  // (DES-001 "会议页、机构页…"): the thumb finds them, and Cancel is never the one under it.
+  // On a phone the answers sit low where the thumb finds them, the one that acts first, so Cancel
+  // is never the one under it.
   if (phone)
     return (
       <BottomSheet title={label} onClose={onCancel} initialFocus={cancel} head={false}>

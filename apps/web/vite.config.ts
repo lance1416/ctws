@@ -23,7 +23,7 @@ const dropLegacyFontFormats = {
 }
 
 /**
- * WHAT THIS BUILD IS, for the status bar: the image's build sets CTWS_VERSION to the release's tag
+ * What this build is, for the status bar: the image's build sets CTWS_VERSION to the release's tag
  * and CTWS_COMMIT to its commit; a build from a working tree is `dev`, with the commit git gives,
  * when there is a git to ask. Vite hands VITE_ variables to the page.
  */

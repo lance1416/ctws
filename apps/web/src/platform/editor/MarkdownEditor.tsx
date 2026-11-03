@@ -32,7 +32,7 @@ import './editor.css'
 export type MentionOption = { type: ObjectType; id: string; title: string; section: string }
 
 export type EditorMentions = MentionDisplay & {
-  /** What `@query` finds, in the order the app ranks it (FR-024). */
+  /** What `@query` finds, in the order the app ranks it. */
   search: (query: string) => Promise<readonly MentionOption[]>
   /** A row's mark in the list: the kind's icon, a person's initials. */
   mark: (option: MentionOption) => HTMLElement
@@ -42,11 +42,11 @@ export type EditorMentions = MentionDisplay & {
 export type EditorHandle = {
   /** The cursor to `offset` in the text, scrolled to near the top, the editor focused. */
   goTo: (offset: number) => void
-  /** Ctrl F's bar (FR-109): finds the words, steps through them, and is done. */
+  /** Ctrl F's bar: finds the words, steps through them, and is done. */
   find: (query: string) => Found
   findStep: (step: 1 | -1) => Found
   findDone: () => void
-  /** The phone's buttons over the keyboard (FR-113), on the text where the cursor is. */
+  /** The phone's buttons over the keyboard, on the text where the cursor is. */
   act: (action: EditorAction) => void
   /** Where in the text the top of what shows of the editor is: the outline's section in sight. */
   inSight: () => number
@@ -81,7 +81,7 @@ const MENTION_QUERY = /(?:^|[\s([{（，。,;；:：])@[^\s@]{1,40}$/u
 const optionOf = new WeakMap<Completion, MentionOption>()
 
 /**
- * The `@` whose list Esc put away (FR-042): it stays away for those words, as in the text box; a
+ * The `@` whose list Esc put away: it stays away for those words, as in the text box; a
  * new `@` asks again. Its place moves with the text written before it.
  */
 const putAway = StateEffect.define<number>()
@@ -137,8 +137,8 @@ async function offered(
 ): Promise<CompletionResult | null> {
   const found = await mentions.search(context.state.sliceDoc(from + 1, context.pos))
   if (context.aborted) return null
-  // Each kind's heading ranked where search puts it (FR-024): a name alone, CodeMirror would
-  // sort them by their letters, Communications before People (BUG-097).
+  // Each kind's heading ranked where search puts it: by name alone, CodeMirror would sort them by
+  // their letters, Communications before People.
   const sections = new Map<string, { name: string; rank: number }>()
   for (const o of found)
     if (!sections.has(o.section)) sections.set(o.section, { name: o.section, rank: sections.size })
@@ -161,9 +161,9 @@ async function offered(
 }
 
 /**
- * THE ONE MARKDOWN EDITOR (REQ-002 FR-106): CodeMirror 6 with the live preview, the app's keys and
- * `@`. The value is the note as stored, mentions and all: nothing is translated on the way in or
- * out. Loaded only where writing starts (`LazyMarkdownEditor`), never where a note is read.
+ * The one Markdown editor. The value is the note as stored, mentions and all: nothing is translated
+ * on the way in or out. Loaded only where writing starts (`LazyMarkdownEditor`), never where a note
+ * is read.
  */
 export default function MarkdownEditor({
   value,
@@ -201,7 +201,7 @@ export default function MarkdownEditor({
   onEscape?: () => void
   /** Where the box it replaces had its caret, when it had the focus: the editor takes over there. */
   takeOver?: RefObject<number | null>
-  /** The note as it is kept, every mark shown, nothing drawn (FR-116); else the live preview. */
+  /** The note as it is kept, every mark shown, nothing drawn; else the live preview. */
   source?: boolean
 }) {
   const host = useRef<HTMLDivElement>(null)
@@ -217,12 +217,11 @@ export default function MarkdownEditor({
   finds.current = onFind
   const escapes = useRef(onEscape)
   escapes.current = onEscape
-  // Vim's keys, when the account has them and this is not a phone (FR-112): in their own slot.
+  // Vim's keys, when the account has them and this is not a phone: in their own slot.
   const vimKeys = useVimKeys()
   const phone = usePhone()
   const vimOn = vimKeys && !phone
   const [vimSlot] = useState(() => new Compartment())
-  // The live preview, or the source in its place (FR-116).
   const [lookSlot] = useState(() => new Compartment())
   const sourceAt = useRef(source)
 
@@ -254,7 +253,7 @@ export default function MarkdownEditor({
     act: function act(action) {
       const v = view.current
       if (!v) return
-      // An IME still composing: the words chosen first, then the button, after them (BUG-102).
+      // An IME still composing: the words chosen first, then the button, after them.
       if (v.composing) {
         v.contentDOM.addEventListener('compositionend', () => setTimeout(() => act(action)), {
           once: true,
@@ -286,7 +285,7 @@ export default function MarkdownEditor({
         findKey,
         {
           key: 'Escape',
-          // Not while vim holds it: its Esc is back to NORMAL first (FR-112).
+          // Not while vim holds it: its Esc is back to NORMAL first.
           run: (v) => {
             if (!escapes.current || vimHoldsEscape(v)) return false
             escapes.current()
@@ -420,11 +419,11 @@ export default function MarkdownEditor({
       at.dispatch({
         effects: vimSlot.reconfigure([
           // Ahead of vim's own: Esc in NORMAL is the page's, and Ctrl F and Ctrl Shift K stay
-          // the editor's, not vim's paging (artboard 34, "Vim, when it is on").
+          // the editor's, not vim's paging.
           Prec.highest([
             EditorView.domEventHandlers({
               keydown: (e, editor) => {
-                // Ctrl K is search everywhere (FR-029), never vim's: passed on untouched.
+                // Ctrl K is search everywhere, never vim's: passed on untouched.
                 const mod = e.ctrlKey || e.metaKey
                 // So are the note page's own (the outline, the source): never vim's Ctrl V.
                 if (isNoteKey(e)) {

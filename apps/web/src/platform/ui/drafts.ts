@@ -1,5 +1,5 @@
 /**
- * WHAT A CLOSED FORM HAD IN IT (FR-029): Esc closes a form without asking and keeps what was
+ * Esc closes a form without asking and keeps what was
  * typed, so opening the same form again brings it back. Only Cancel lets it go, asking first.
  * Kept for the tab, by the form's key, until saved, discarded or signed out; a reload keeps it.
  */

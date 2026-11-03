@@ -7,7 +7,7 @@ describe('the button vocabulary', () => {
     for (const [tone, cls] of Object.entries(BUTTON)) expect(cls, tone).toContain('text-ui')
   })
 
-  it('gives the standalone tones the control height, radius and weight (tokens.md)', () => {
+  it('gives the standalone tones the control height, radius and weight', () => {
     for (const tone of ['primary', 'secondary', 'quiet', 'destructive'] as const) {
       expect(BUTTON[tone], tone).toContain('h-8')
       expect(BUTTON[tone], tone).toContain('rounded-control')
@@ -15,7 +15,7 @@ describe('the button vocabulary', () => {
     }
   })
 
-  it('frames a destructive button in red rather than filling it (artboard 3)', () => {
+  it('frames a destructive button in red rather than filling it', () => {
     expect(BUTTON.destructive).toContain('border-stop')
     expect(BUTTON.destructive).not.toContain('bg-stop ')
   })

@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react'
 const SHOWN_AFTER_MS = 400
 
 /**
- * A REGION STILL BEING READ, WHOSE LAYOUT ITS DATA DECIDES (DES-001 "加载"): nothing at first, then,
- * past 400ms, one neutral bar across every column at a block head's 40. No skeleton and no guess
- * at the columns or the order the data will choose; it comes in at once when all is read.
+ * For a region whose layout depends on its data: one plain bar after 400ms, not a skeleton, which
+ * would guess the columns and order the data will choose.
  */
 export function Waiting() {
   const [shown, setShown] = useState(false)

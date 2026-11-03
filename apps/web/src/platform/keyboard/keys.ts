@@ -13,7 +13,7 @@ export function isBareKey(e: { ctrlKey: boolean; metaKey: boolean; altKey: boole
   return !e.ctrlKey && !e.metaKey && !e.altKey
 }
 
-/** Apple keyboards have no Ctrl or Alt in those places: the help and the hints say ⌘ and ⌥ (FR-029). */
+/** Apple keyboards have no Ctrl or Alt in those places: the help and the hints say ⌘ and ⌥. */
 const isMac: boolean =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 

@@ -1,9 +1,8 @@
 import { createContext, useEffect, useState } from 'react'
 
 /**
- * Below this width the app wears the phone's frame (DES-001 "宽度和断点"): five tabs at the foot,
- * one column, a title bar a page. A tablet from 768 too, on purpose. Tailwind's `lg` is the same
- * line, so `max-lg:` and this agree.
+ * Below this width the app wears the phone's frame; a tablet from 768 too, on purpose. Tailwind's
+ * `lg` is the same line, so `max-lg:` and this agree.
  */
 const PHONE_QUERY = '(max-width: 1023px)'
 

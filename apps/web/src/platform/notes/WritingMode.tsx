@@ -26,8 +26,8 @@ export type WritingField = {
 }
 
 /**
- * The account's choices for a whole page of writing (REQ-002 FR-109, FR-116), the same here as on
- * a note's page: the outline shown, the readable line length, the source.
+ * The account's choices for a whole page of writing, the same here as on a note's page: the outline
+ * shown, the readable line length, the source.
  */
 export type PageChoices = {
   outlineShown: boolean
@@ -38,12 +38,10 @@ export type PageChoices = {
 }
 
 /**
- * FULL SCREEN (REQ-002 FR-106, artboards 34 and 37, DES-001): the one editor over the whole window,
- * laid out as a note's page is, its outline a panel on the right that can be put away and Ctrl F's
- * bar over it; it draws the note as it will read, or shows its source, so there is no preview.
- * Esc or Leave full screen goes back. Every keystroke reports upward, so the unsaved-edit guard
- * sees edits made here. The editor is the caller's (`field`): this layer is the platform's, the
- * editor the shell's; so are the account's choices (`choices`).
+ * Full screen: the one editor over the whole window, laid out as a note's page is. Every keystroke
+ * reports upward, so the unsaved-edit guard sees edits made here. The editor is the caller's
+ * (`field`): this layer is the platform's, the editor the shell's; so are the account's choices
+ * (`choices`).
  */
 export function WritingMode({
   heading,

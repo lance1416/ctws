@@ -92,8 +92,8 @@ export function DetailPane({
         aria-label={label}
         data-detail-mode={wide ? 'pane' : 'overlay'}
         onKeyDown={onKeyDown}
-        // As a column it is the page's right edge, top to the status bar (artboard 8, I-08,
-        // DES-001 "底部状态栏"); as an overlay, a sheet 12px in from the edges and above the bar.
+        // As a column it is the page's right edge, down to the status bar; as an overlay, a sheet
+        // 12px in from the edges and above the bar.
         style={{ top: wide ? top : top + 12 }}
         // A flex column so `DangerZone` (`mt-auto`) sits on the pane's floor.
         className={`fixed ${LAYER.pane} flex flex-col overflow-y-auto bg-float p-5 text-ink shadow-float focus:outline-none ${

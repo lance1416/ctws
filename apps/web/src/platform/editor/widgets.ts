@@ -90,8 +90,7 @@ export class EllipsisWidget extends WidgetType {
 }
 
 /**
- * KaTeX, fetched the first time a formula is drawn: a note with no maths never loads it, as the
- * reading side does not (notes.spec, "no chunk a plain note loads contains KaTeX").
+ * KaTeX, fetched the first time a formula is drawn: a note with no maths never loads it.
  */
 let katexLoaded: Promise<typeof import('katex').default> | null = null
 const loadKatex = () =>
@@ -209,7 +208,7 @@ type Cell = { words: string; at: number }
 
 /**
  * A table drawn as its grid, its figures lined up. A press on a cell puts the cursor at that
- * cell's text, which shows the table's source (BUG-096).
+ * cell's text, which shows the table's source.
  */
 export class TableWidget extends WidgetType {
   constructor(readonly rows: readonly (readonly Cell[])[]) {

@@ -6,7 +6,7 @@ import { defaultSchema, type Options as SanitizeSchema } from 'rehype-sanitize'
  */
 export const noteSchema: SanitizeSchema = {
   ...defaultSchema,
-  // A mention's address (FR-042) survives, to be drawn as a chip: `NoteMarkdown` never makes it a
+  // A mention's address survives, to be drawn as a chip: `NoteMarkdown` never makes it a
   // link, so it cannot be followed.
   protocols: {
     ...defaultSchema.protocols,

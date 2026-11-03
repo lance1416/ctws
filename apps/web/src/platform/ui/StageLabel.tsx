@@ -1,6 +1,5 @@
 /**
- * A node's stage (FR-040, DES-001 section 4): a muted dot and the name on a grey label; a stage
- * folded by default has a hollow dot, its ring muted, and a muted word.
+ * A node's stage. A stage folded by default has a hollow dot and a muted word.
  */
 export function StageLabel({ name, quiet }: { name: string; quiet: boolean }) {
   return (

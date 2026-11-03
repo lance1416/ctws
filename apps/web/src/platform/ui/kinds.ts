@@ -1,6 +1,6 @@
 import type { Kind } from './icons'
 
-/** The text colour of a kind's icon or word, a lookup so Tailwind sees every class (FR-002). */
+/** The text colour of a kind's icon or word, a lookup so Tailwind sees every class. */
 export const KIND_TEXT: Record<Kind, string> = {
   task: 'text-task',
   meeting: 'text-meeting',

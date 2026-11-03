@@ -3,11 +3,10 @@ import { MENU_SURFACE } from '../platform/ui/menuSurface'
 import { SURFACES, color, css, rgba } from './tokens'
 
 /**
- * A STATE GOES ONE STEP FROM THE PLANE IT IS ON, AND NEVER TO ANOTHER PLANE.
- *
- * Both states are ink LAYERS (`hover`, `select`), so they show on every plane: an opaque hover
- * equal to a plane changes nothing on that plane. That no transient state names a surface is
- * the lint's (`ctws/class-names`).
+ * A state goes one step from the plane it is on, and never to another plane. Both states are ink
+ * layers (`hover`, `select`), so they show on every plane: an opaque hover equal to a plane changes
+ * nothing on that plane. That no transient state names a surface is the lint's
+ * (`ctws/class-names`).
  */
 describe('surfaces', () => {
   for (const layer of ['hover', 'select'])
@@ -19,7 +18,7 @@ describe('surfaces', () => {
       }
     })
 
-  it('stacks the four surfaces by lightness in dark, so a float needs no shadow there (FR-005)', () => {
+  it('stacks the four surfaces by lightness in dark, so a float needs no shadow there', () => {
     const lum = (hex: string) =>
       rgba(hex)
         .slice(0, 3)

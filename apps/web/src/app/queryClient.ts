@@ -34,10 +34,9 @@ export function landed(): void {
 /** The one query cache: the providers hand it to the pages, the router's loaders fill it early. */
 export const queryClient: QueryClient = new QueryClient({
   // At most one retry: the default three hide a down server behind a spinner for seconds.
-  // A page's loader asks for its data before the page is drawn (baseline.md §8); the parts that
-  // mount a moment later take that answer rather than ask again (it is this navigation's, so it
-  // is new). Anything else read before is asked for again on mounting, as ever; so is an answer
-  // a write has marked stale since.
+  // A page's loader asks for its data before the page is drawn; the parts that mount a moment later
+  // take that answer rather than ask again. Anything else read before is asked for again on
+  // mounting, as is an answer a write has marked stale since.
   defaultOptions: {
     queries: {
       retry: retryOnce,

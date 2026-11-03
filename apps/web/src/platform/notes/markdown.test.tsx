@@ -90,7 +90,7 @@ describe("a note's own Markdown", () => {
     expect(html).toContain('rel="noreferrer noopener"')
   })
 
-  // FR-042, I-03: a mention is the reader's to draw, and never a link that leaves.
+  // A mention is the reader's to draw, and never a link that leaves.
   const MIRA = '0199f1a2-0000-7000-8000-000000000001'
   const mention = `Ask [@Mira Chen](ctws://person/${MIRA}) which questions came up.`
 
