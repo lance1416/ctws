@@ -38,6 +38,38 @@ test('the list is the places as cards; a folder opens to its notes, ‹ Notes ba
   await expect(page.getByRole('heading', { level: 1, name: 'Notes' })).toBeVisible()
 })
 
+test('folders in folders on a phone: each opens to its own, counted whole; ‹ to the one it is in', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  type Kept = { id: string }
+  const a = await apiPost<Kept>(page, '/notes/folders', { name: 'AAA' })
+  const b = await apiPost<Kept>(page, '/notes/folders', { name: 'BBB', parentId: a.id })
+  const c = await apiPost<Kept>(page, '/notes/folders', { name: 'CCC', parentId: b.id })
+  for (const [title, folderId] of [
+    ['In A', a.id],
+    ['In B', b.id],
+    ['In C', c.id],
+  ] as const)
+    await apiPost(page, '/notes', { title, body: 'x', folderId })
+  await page.goto('/notes')
+  const folders = page.getByRole('region', { name: 'Folders' })
+  // Only the top level here, each counting every note under it.
+  await expect(folders.getByRole('link')).toHaveText([/AAA\s*3/])
+  await folders.getByRole('link', { name: /AAA/ }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'AAA' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /BBB\s*2/ })).toBeVisible()
+  await expect(page.locator('[data-note-row]')).toHaveText(['In A'])
+  await page.getByRole('link', { name: /BBB/ }).click()
+  await page.getByRole('link', { name: /CCC\s*1/ }).click()
+  await expect(page.locator('[data-note-row]')).toHaveText(['In C'])
+  // Its own address opens it too; back is the folder it is in.
+  await page.goto(`/notes?folder=${c.id}`)
+  await expect(page.getByRole('heading', { level: 1, name: 'CCC' })).toBeVisible()
+  await page.getByRole('link', { name: 'BBB' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'BBB' })).toBeVisible()
+})
+
 test('a note is the one editor at 16/24, and the row over the keyboard writes its marks', async ({
   page,
 }) => {

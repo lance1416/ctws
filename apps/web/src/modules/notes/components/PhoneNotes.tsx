@@ -8,7 +8,7 @@ import { KIND_TEXT } from '../../../platform/ui/kinds'
 import { FilteredEmpty, MORE_PATH, PhoneHead, SidebarFilter } from '../../../shell/layout'
 import { foldersQuery, notesQuery } from '../api'
 import { NOTES_ID } from '../logic/id'
-import { shelvesOf } from '../logic/shelves'
+import { everyShelf, shelvesOf, type Shelf } from '../logic/shelves'
 import { noteTitle } from '../logic/title'
 
 const ROW = 'flex min-h-12 items-center gap-3 px-4 text-prose text-ink active:bg-hover'
@@ -16,8 +16,9 @@ const CARD = 'overflow-hidden rounded-phone border border-line bg-panel'
 
 /**
  * NOTES ON A PHONE (REQ-002 FR-110, artboard 35): the filter, then the pinned, the folders, the
- * notes in none and those on other things, each place a card. A folder opens to its notes, on
- * the same page (`?folder=`), "‹ Notes" back.
+ * notes in none and those on other things, each place a card. A folder, at any of its three
+ * levels (FR-117), opens on the same page (`?folder=`) to its pinned notes, the folders in it and
+ * then its other notes, "‹" back to the folder it is in, or to Notes.
  */
 export function PhoneNotes() {
   const notes = useQuery(notesQuery())
@@ -25,7 +26,9 @@ export function PhoneNotes() {
   const [params] = useSearchParams()
   const [typed, setTyped] = useState('')
   const s = shelvesOf(notes.data ?? [], folders.data ?? [], typed)
-  const open = s.folders.find((f) => f.folder.id === params.get('folder'))
+  const shelves = everyShelf(s.folders)
+  const open = shelves.find((f) => f.folder.id === params.get('folder'))
+  const over = open && shelves.find((f) => f.folder.id === open.folder.parentId)
   const newNote = (
     <Link to={`/${NOTES_ID}/new`} aria-label="New note" className={ICON_BUTTON}>
       <NewIcon size={20} aria-hidden="true" />
@@ -37,10 +40,20 @@ export function PhoneNotes() {
       <div className="flex flex-col gap-3">
         <PhoneHead
           title={open.folder.name}
-          back={{ to: `/${NOTES_ID}`, label: 'Notes' }}
+          back={
+            over
+              ? { to: `/${NOTES_ID}?folder=${over.folder.id}`, label: over.folder.name }
+              : { to: `/${NOTES_ID}`, label: 'Notes' }
+          }
           actions={newNote}
         />
         <Place title={null}>
+          {open.pinned.map((n) => (
+            <NoteRow key={n.id} note={n} />
+          ))}
+          {open.folders.map((f) => (
+            <FolderRow key={f.folder.id} shelf={f} />
+          ))}
           {open.notes.map((n) => (
             <NoteRow key={n.id} note={n} />
           ))}
@@ -50,7 +63,7 @@ export function PhoneNotes() {
 
   const nothing =
     s.pinned.length + s.loose.length + s.onThings.length === 0 &&
-    s.folders.every((f) => f.notes.length === 0)
+    s.folders.every((f) => f.count === 0)
   return (
     <div className="flex flex-col gap-3">
       <PhoneHead title="Notes" back={{ to: MORE_PATH, label: 'More' }} actions={newNote} />
@@ -64,16 +77,8 @@ export function PhoneNotes() {
       )}
       {s.folders.length > 0 && (
         <Place title="Folders">
-          {s.folders.map(({ folder, notes: inside }) => (
-            <li key={folder.id}>
-              <Link to={`/${NOTES_ID}?folder=${folder.id}`} className={ROW}>
-                <span className="flex-1 truncate">{folder.name}</span>
-                <span data-count className="text-meta text-muted tabular-nums">
-                  {inside.length}
-                </span>
-                <CollapseIcon size={16} aria-hidden="true" className="text-muted" />
-              </Link>
-            </li>
+          {s.folders.map((f) => (
+            <FolderRow key={f.folder.id} shelf={f} />
           ))}
         </Place>
       )}
@@ -118,6 +123,21 @@ function Place({
       )}
       <ul className={`${CARD} divide-y divide-line`}>{children}</ul>
     </section>
+  )
+}
+
+/** A folder, by name, with every note in it and in the folders under it. */
+function FolderRow({ shelf: { folder, count } }: { shelf: Shelf }) {
+  return (
+    <li>
+      <Link to={`/${NOTES_ID}?folder=${folder.id}`} className={ROW}>
+        <span className="flex-1 truncate">{folder.name}</span>
+        <span data-count className="text-meta text-muted tabular-nums">
+          {count}
+        </span>
+        <CollapseIcon size={16} aria-hidden="true" className="text-muted" />
+      </Link>
+    </li>
   )
 }
 
