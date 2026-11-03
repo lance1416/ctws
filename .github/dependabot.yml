@@ -11,6 +11,8 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # A ceiling on version-update PRs open at once; security updates are not counted against it.
+    open-pull-requests-limit: 5
     commit-message:
       prefix: chore
       prefix-development: chore
@@ -21,7 +23,7 @@ updates:
         update-types: [version-update:semver-major]
     # A dependency joins the FIRST group it matches. The named groups come first: each is a set of
     # packages that only work at matching versions, so they move together, majors included.
-    # Everything else shares one weekly minor/patch PR, and any other major gets a PR of its own.
+    # Everything else shares one weekly minor/patch PR, and the other majors share one more.
     groups:
       react:
         patterns: [react, react-dom, '@types/react', '@types/react-dom']
@@ -51,6 +53,9 @@ updates:
       minor-and-patch:
         patterns: ['*']
         update-types: [minor, patch]
+      major:
+        patterns: ['*']
+        update-types: [major]
       security:
         applies-to: security-updates
         patterns: ['*']
