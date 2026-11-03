@@ -319,7 +319,7 @@ test('Move to a folder… keeps No folder and New folder… in sight, the folder
   expect(await move.evaluate(outline)).toBe('none')
   await page.keyboard.press('ArrowLeft')
   await page.keyboard.press('ArrowDown')
-  expect(await page.getByRole('menuitem', { name: 'Download as .md' }).evaluate(outline)).toBe(
-    'solid',
-  )
+  const next = page.getByRole('menuitem', { name: 'Download as .md' })
+  await expect(next).toBeFocused()
+  await expect.poll(() => next.evaluate(outline)).toBe('solid')
 })
