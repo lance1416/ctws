@@ -10,13 +10,12 @@ const Note = lazyPage(() => import('./pages/Note').then((m) => m.Note))
 const NotesOverview = lazyPage(() => import('./pages/NotesOverview').then((m) => m.NotesOverview))
 
 const PAGE = topPage('Notes')
-/** One of them, under its kind in the breadcrumbs (FR-018). */
+/** One of them, under its kind in the breadcrumbs. */
 const THING = thingPage('Notes', '/notes')
 
 /**
- * Notes (FR-050, FR-074): a kind of its own, standing alone or hung on a meeting, a project, a
- * person or an organisation, in the Markdown editor the app has today. Folders, pinning and the
- * new editor come with the Notes batch (FR-103).
+ * Notes: a kind of its own, standing alone or hung on a meeting, a project, a person or an
+ * organisation.
  */
 export const notesModule: WorkspaceModule = {
   id: NOTES_ID,
@@ -39,7 +38,7 @@ export const notesModule: WorkspaceModule = {
       kind: 'note',
       key: 'n',
       label: 'Note',
-      // From a note, the new one goes where that one is (FR-115): the page reads its folder.
+      // From a note, the new one goes where that one is: the page reads its folder.
       to: (about) => `/${NOTES_ID}/new${about?.type === 'note' ? `?from=${about.id}` : ''}`,
     },
   ],

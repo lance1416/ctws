@@ -27,11 +27,10 @@ import { PhoneNoteBar } from './PhoneNoteBar'
 const SAVE_AFTER_MS = 800
 
 /**
- * A NOTE, WRITTEN (FR-050, FR-074, REQ-002 artboards 34 and 37): its title and its Markdown, saved
- * as they rest, in the one editor, which draws the note as it will read except on the cursor's
- * line, or shows its source. The whole main area is the note's, as a code editor's is, its outline
- * a panel on the right that can be put away. A note not yet made is made by its first words, and
- * `onMade` says where it now lives. `above` and `below` are the page's, on either side of it.
+ * A note, written: its title and its Markdown, saved as they rest, in the one editor, which draws
+ * the note as it will read except on the cursor's line, or shows its source. A note not yet made is
+ * made by its first words, and `onMade` says where it now lives. `above` and `below` are the
+ * page's, on either side of it.
  */
 export function NoteEditor({
   note,
@@ -42,7 +41,7 @@ export function NoteEditor({
 }: {
   note: NoteResponse | null
   onMade?: (made: NoteResponse) => void
-  /** The folder a note not yet made is made in (FR-115). */
+  /** The folder a note not yet made is made in. */
   folderId?: NoteFolderId | null
   above?: ReactNode
   below?: ReactNode
@@ -51,7 +50,7 @@ export function NoteEditor({
   const [title, setTitle] = useState(note?.title ?? '')
   const [body, setBody] = useState(note?.body ?? '')
   // Untitled, it is called as lists call it (a meeting's and its day, else its first line); the
-  // box says so (R-05, FR-050).
+  // box says so.
   const named =
     body.trim() || note?.anchor
       ? noteTitle({ title: null, body, anchor: note?.anchor ?? null })
@@ -83,7 +82,7 @@ export function NoteEditor({
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a save per pause in the typing.
   }, [title, body])
-  // Renamed in the sidebar while it is open (FR-114): the title takes the new name, unless what
+  // Renamed in the sidebar while it is open: the title takes the new name, unless what
   // is in the box is still being written.
   useEffect(() => {
     const was = made.current
@@ -157,7 +156,7 @@ export function NoteEditor({
                 named ? 'placeholder:text-ink' : ''
               }`}
             />
-            {/* On a phone the bar above has them (artboard 35). */}
+            {/* On a phone the bar above has them. */}
             <span className="flex items-start gap-2 max-lg:hidden">
               {note && note.anchor === null && <PinButton note={note} />}
               {made.current && (

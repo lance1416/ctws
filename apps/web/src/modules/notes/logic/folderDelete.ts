@@ -2,7 +2,7 @@ import type { NoteFolderResponse, NoteResponse } from '@ctws/contracts'
 import { freeName } from '@ctws/core'
 
 /**
- * What deleting a folder asks first (FR-035, FR-117): what goes, what stays, and where; a folder
+ * What deleting a folder asks first: what goes, what stays, and where; a folder
  * moving up whose name is taken there says what it becomes, as the server will name it. An empty
  * folder goes unasked: null.
  */

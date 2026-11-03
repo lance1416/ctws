@@ -20,9 +20,8 @@ import { noteTitle } from '../logic/title'
 const SHOWN = 5
 
 /**
- * THE NOTES OVERVIEW (FR-074, artboard 18): the latest notes, each with what it hangs on and its
- * day; the sidebar beside it has the pinned and the folders. A phone has no sidebar: its list is
- * the places themselves (artboard 35).
+ * The notes overview: the latest notes; the sidebar beside it has the pinned and the folders. A
+ * phone has no sidebar: its list is the places themselves.
  */
 export function NotesOverview() {
   const notes = useQuery(notesQuery())
@@ -54,7 +53,7 @@ export function NotesOverview() {
                 <Link
                   to={`/${NOTES_ID}/${n.id}`}
                   data-note-row={n.id}
-                  // On a phone two lines: the note, then what it hangs on and when (P4-22).
+                  // On a phone two lines: the note, then what it hangs on and when.
                   className="grid min-h-9 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_3.5rem] items-center gap-x-3 px-3 text-ui hover:bg-hover max-lg:min-h-14 max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:gap-y-0.5 max-lg:py-2"
                 >
                   <span className="truncate text-ink max-lg:col-span-2">{noteTitle(n)}</span>

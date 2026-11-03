@@ -15,11 +15,8 @@ const ROW = 'flex min-h-12 items-center gap-3 px-4 text-prose text-ink active:bg
 const CARD = 'overflow-hidden rounded-phone border border-line bg-panel'
 
 /**
- * NOTES ON A PHONE (REQ-002 FR-110, artboard 35): the filter, then the pinned, the folders, the
- * notes in none and those on other things, each place a card. A folder, at any of its three
- * levels (FR-117), opens on the same page (`?folder=`) to its pinned notes, the folders in it and
- * its other notes, a card each as the list's own places, "‹" back to the folder it is in, or to
- * Notes.
+ * Notes on a phone, each place a card. A folder, at any of its three levels, opens on the same page
+ * (`?folder=`), its "‹" back to the folder it is in, or to Notes.
  */
 export function PhoneNotes() {
   const notes = useQuery(notesQuery())

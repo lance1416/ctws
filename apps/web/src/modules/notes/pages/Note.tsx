@@ -18,8 +18,8 @@ import { NOTES_ID } from '../logic/id'
 import { noteTitle } from '../logic/title'
 
 /**
- * `/notes/:id`: one note, written in place (FR-050, FR-074), or what happened to it; `/notes/new`
- * (N N): one on its own, made by its first words, in `?folder=` when a folder made it (FR-115), or
+ * `/notes/:id`: one note, written in place, or what happened to it; `/notes/new`
+ * (N N): one on its own, made by its first words, in `?folder=` when a folder made it, or
  * in the folder of the note `?from=` when N N was pressed on one. One route for both, so the
  * editor the first words were typed in stays as the address turns into the note's own.
  */
@@ -56,12 +56,12 @@ export function Note() {
   if (gone) return <DeletedNotice type="note" id={id} />
   if (!fresh && !note) return null
   return (
-    // On a phone the note is written on the panel's white (artboard 35: the page under it takes
+    // On a phone the note is written on the panel's white (the page under it takes
     // it, `data-paper`), and its foot leaves room for the row over the keyboard, which sits on the
     // tab bar when there is no keyboard.
     <div data-paper className="flex min-h-full shrink-0 flex-col max-lg:pb-14">
       <h1 className="sr-only">{note ? noteTitle(note) : 'New note'}</h1>
-      {/* The one editor, on a phone too (REQ-002 FR-106, artboard 35). */}
+      {/* The one editor, on a phone too. */}
       <NoteEditor
         key={note && note.id !== born ? note.id : 'new'}
         note={note ?? null}
@@ -89,7 +89,7 @@ export function Note() {
   )
 }
 
-/** What the note hangs on, and its day when that is a meeting's (FR-050). */
+/** What the note hangs on, and its day when that is a meeting's. */
 function HungOn({ note }: { note: Pick<NoteResponse, 'anchor' | 'heldAt'> }) {
   const registry = useRegistry()
   const today = useAccountToday()

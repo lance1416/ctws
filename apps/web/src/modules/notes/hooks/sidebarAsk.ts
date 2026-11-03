@@ -2,7 +2,7 @@ import type { NoteId } from '@ctws/contracts'
 import { useSyncExternalStore } from 'react'
 
 /**
- * WHAT THE NOTE'S PAGE ASKS OF THE SIDEBAR (FR-110): a new folder, made in the sidebar's own row
+ * What the note's page asks of the sidebar: a new folder, made in the sidebar's own row
  * and, when a note asked for it, that note put in it ("New folder…" in Move to folder); and a note
  * shown where it is kept (the head's folder tag), its folder opened. One ask at a time.
  */

@@ -21,8 +21,8 @@ const ROW =
   'flex min-h-12 w-full items-center gap-3 px-4 text-left text-prose text-ink active:bg-hover'
 
 /**
- * A NOTE'S BAR ON A PHONE (REQ-002 FR-109 to FR-111, artboard 35): "‹ Notes", then the outline
- * and "…", which open one sheet: the outline, a heading a tap away, then the note's own actions.
+ * A note's bar on a phone: "‹ Notes", then the outline and "…", which open one sheet: the outline,
+ * a heading a tap away, then the note's own actions.
  */
 export function PhoneNoteBar({
   note,
@@ -38,7 +38,7 @@ export function PhoneNoteBar({
   editor: RefObject<EditorHandle | null>
   title: string
   body: string
-  /** The note shown as its source (FR-116), and the switch, here only in the sheet. */
+  /** The note shown as its source, and the switch, here only in the sheet. */
   source: boolean
   onSource: () => void
 }) {
@@ -170,7 +170,7 @@ function FolderSheet({ note, onClose }: { note: NoteResponse; onClose: () => voi
               type="button"
               aria-pressed={note.folderId === f.id}
               onClick={() => put(f.id)}
-              // Each level 16 further in (artboard 40).
+              // Each level 16 further in.
               style={{ paddingLeft: `${1 + (depth - 1)}rem` }}
               className={ROW}
             >

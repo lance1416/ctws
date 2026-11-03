@@ -4,7 +4,7 @@ import { noteTitle } from './title'
 /**
  * One folder: its pinned notes, newest pin first, then the folders in it, by name, then its other
  * notes, the latest edited first; `count` is every note in it and in the folders under it, the
- * pinned too (FR-117).
+ * pinned too.
  */
 export type Shelf = {
   folder: NoteFolderResponse
@@ -15,12 +15,10 @@ export type Shelf = {
 }
 
 /**
- * THE NOTES SIDEBAR'S PLACES (REQ-002 FR-110, FR-117, artboards 34 and 40): the pinned, newest pin
- * first; the folders as a tree, each with its pinned notes, the folders in it by name and then its
- * other notes; the notes on their own in none; and those hung on other things. A pinned note in a
- * folder is listed twice, under Pinned and first in its folder; one in none, under Pinned only.
- * `filter` keeps the notes whose name has its words; a folder with none of them left under it
- * goes too.
+ * The notes sidebar's places: the pinned, the folders as a tree, the notes in none, and those hung
+ * on other things. A pinned note in a folder is listed twice, under Pinned and first in its folder;
+ * one in none, under Pinned only. `filter` keeps the notes whose name has its words; a folder with
+ * none of them left under it goes too.
  */
 export function shelvesOf(
   notes: readonly NoteResponse[],

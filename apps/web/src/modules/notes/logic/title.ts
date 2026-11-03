@@ -3,7 +3,7 @@ import { monthDay } from '../../../platform/time/dates'
 
 /**
  * What a note is called in a list: its title; on one meeting, the meeting and that day ("Atlas
- * weekly, Oct 19", FR-050), so a series' notes are told apart; else its first line without its
+ * weekly, Oct 19"), so a series' notes are told apart; else its first line without its
  * Markdown, else what it hangs on; an empty one says so. A title of its own always wins.
  */
 export function noteTitle(note: Pick<NoteResponse, 'title' | 'body' | 'anchor'>): string {

@@ -9,10 +9,7 @@ import { useRegistry } from '../../../shell/registry'
 import { notesQuery } from '../api'
 import { noteTitle } from '../logic/title'
 
-/**
- * A NOTE IN THE INSPECTOR (FR-022, artboard 33): its name and what it hangs on, then the note
- * itself, rendered and read only; Edit opens its page to write.
- */
+/** A note in the inspector, read only; Edit opens its page to write. */
 export function NoteNarrow({ id }: { id: string }) {
   const notes = useQuery(notesQuery())
   const zone = useTimeZone()

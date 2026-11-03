@@ -40,12 +40,10 @@ const OPEN_AFTER_MS = 600
 type Dragged = { note: NoteResponse } | { folder: NoteFolderResponse }
 
 /**
- * THE NOTES SIDEBAR (REQ-002 FR-110, FR-117, artboards 34 and 40): the pinned, then the folders
- * as a tree three deep, each opened or closed as it was left, then the notes in none, then those
- * on other things, the first few and their "All N". Every folder over the note on the page is
- * open. A note on its own, or a folder, is dragged onto a folder to go in, onto Not in a folder to
- * come out; a folder only where it and all it holds stay three deep. Move to a folder does the
- * same by keys.
+ * The notes sidebar. Each folder stays opened or closed as it was left, and every folder over the
+ * note on the page is open. A note on its own, or a folder, is dragged onto a folder to go in, onto
+ * Not in a folder to come out; a folder only where it and all it holds stay three deep. Move to a
+ * folder does the same by keys.
  */
 export function NotesSidebar() {
   const notes = useQuery(notesQuery())
@@ -67,7 +65,7 @@ export function NotesSidebar() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const here = useMatch(`/${NOTES_ID}/:id`)?.params.id
   const navigate = useNavigate()
-  // A note being made in a folder (FR-115): it sits at the top of it until it is written in.
+  // A note being made in a folder: it sits at the top of it until it is written in.
   const [search] = useSearchParams()
   const newIn = here === 'new' ? (search.get('folder') as NoteFolderId | null) : null
   const all = notes.data ?? []
@@ -148,7 +146,7 @@ export function NotesSidebar() {
 
   const onThings = allOnThings || filtering ? s.onThings : s.onThings.slice(0, ON_THINGS_SHOWN)
   const shelves = everyShelf(s.folders)
-  // The notes as they are listed, for the one after a note deleted from the list (FR-114).
+  // The notes as they are listed, for the one after a note deleted from the list.
   const order = [
     ...s.pinned,
     ...shelves.flatMap((f) => [...f.pinned, ...f.notes]),
@@ -336,7 +334,7 @@ export function NotesSidebar() {
         <DragOverlay>
           {dragged && (
             // Off the pointer, under and to its right, and only as wide as its name: the row it is
-            // over stays in sight, lit or not (artboard 40).
+            // over stays in sight, lit or not.
             <div
               className={`mt-4 ml-14 w-fit max-w-56 ${refused ? 'cursor-not-allowed' : 'cursor-grabbing'}`}
             >

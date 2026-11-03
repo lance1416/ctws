@@ -23,11 +23,9 @@ export const NOTE_ROW = ({ isActive }: { isActive: boolean }) =>
   }`
 
 /**
- * A NOTE IN THE SIDEBAR (FR-110, FR-114, artboard 38): its name, with its kind's mark, a note's
- * own or what it hangs on. On hover its "…", and the same menu on a right press: Rename, in its
- * row; Pin; Move to a folder…; Download as .md; Delete…, asked once, the next in the list shown
- * after it. One on its own is dragged to a folder; one on a thing goes where the thing is, so it
- * has no pin and no folder.
+ * A note in the sidebar. On hover its "…", the same menu as a right press; once deleted, the next
+ * in the list is shown. One on its own is dragged to a folder; one on a thing goes where the thing
+ * is, so it has no pin and no folder.
  */
 export function NoteRow({
   note,
@@ -160,7 +158,7 @@ export function NoteRow({
   )
 }
 
-/** A note's title, written in its row (FR-114): the list and the page take it at once. */
+/** A note's title, written in its row: the list and the page take it at once. */
 function useRenameNote() {
   const qc = useQueryClient()
   return useMutation({

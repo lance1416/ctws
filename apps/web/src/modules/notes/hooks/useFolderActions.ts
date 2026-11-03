@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFolder, deleteFolder, foldersQuery, noteKeys, patchFolder, patchNote } from '../api'
 
 /**
- * A folder made (at the top or in another), renamed, moved, opened or deleted (FR-110, FR-117).
+ * A folder made (at the top or in another), renamed, moved, opened or deleted.
  * Made for a note ("New folder…"), the note goes in it. Deleted, what was in it moves up a level:
  * the list is read again for it. Opened or closed, the sidebar shows it at once.
  */

@@ -3,8 +3,8 @@ import { useComposing } from '../../../platform/keyboard/composition'
 import { inlineEditProps } from '../../../platform/ui/useInlineEdit'
 
 /**
- * A name written in its own row of the sidebar: a new folder's, a folder's or a note's rename
- * (FR-110, FR-114). Enter or leaving it keeps it, Esc or leaving it empty backs out; a name
+ * A name written in its own row of the sidebar: a new folder's, a folder's or a note's rename.
+ * Enter or leaving it keeps it, Esc or leaving it empty backs out; a name
  * already taken says so under it and stays to be changed.
  */
 export function RowNameField({
@@ -23,7 +23,7 @@ export function RowNameField({
   onCancel: () => void
   /**
    * What stays in front of the name while it is written (a note's mark): the row keeps its height
-   * and its look, the name alone becomes the field (FR-114).
+   * and its look, the name alone becomes the field.
    */
   lead?: ReactNode
 }) {

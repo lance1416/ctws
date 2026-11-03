@@ -9,18 +9,16 @@ import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { useFolderActions } from '../hooks/useFolderActions'
 import { RowNameField } from './RowNameField'
 
-/** What a note or a folder dragged in the sidebar is dropped on: a folder, or none (FR-110). */
+/** What a note or a folder dragged in the sidebar is dropped on: a folder, or none. */
 export const dropOn = (folder: NoteFolderResponse | null) => `folder:${folder?.id ?? 'none'}`
 
 /** A folder being dragged, told apart from a note's id. */
 export const dragOf = (folder: NoteFolderResponse) => `move:${folder.id}`
 
 /**
- * A FOLDER IN THE SIDEBAR (FR-110, FR-115, FR-117, artboards 38 and 40): its name and the count of
- * every note under it, opened to the folders in it and its notes, each level 16 further in. On
- * hover its count gives way to "+", a new note in it, and "…", the same menu as a right press:
- * New note; New folder, but on the third level; Rename, in its row; Delete…, asked first unless it
- * is empty. A note or a folder dragged onto it goes in, where it may (`refuses` otherwise).
+ * A folder in the sidebar, counting every note under it. On hover its count gives way to "+", a new
+ * note in it, and "…", the same menu as a right press. A note or a folder dragged onto it goes in,
+ * where it may (`refuses` otherwise).
  */
 export function FolderRow({
   folder,

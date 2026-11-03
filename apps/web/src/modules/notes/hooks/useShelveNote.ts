@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { notesQuery, patchNote } from '../api'
 
 /**
- * Where a note is kept: its folder, its pin (FR-110). The list shows the answer at once, the note
+ * Where a note is kept: its folder, its pin. The list shows the answer at once, the note
  * moved where it now belongs; nothing of what it says is sent.
  */
 export function useShelveNote() {

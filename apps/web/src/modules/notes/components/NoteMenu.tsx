@@ -12,7 +12,7 @@ import { foldersInTree } from '../logic/shelves'
 import { askNewFolder, askReveal } from '../hooks/sidebarAsk'
 import { useShelveNote } from '../hooks/useShelveNote'
 
-/** Hands the browser the note's text as a `.md` file named for it (FR-111). */
+/** Hands the browser the note's text as a `.md` file named for it. */
 export function downloadNote(title: string, body: string) {
   const url = URL.createObjectURL(new Blob([body], { type: 'text/markdown;charset=utf-8' }))
   const a = document.createElement('a')
@@ -25,10 +25,7 @@ export function downloadNote(title: string, body: string) {
 /** What "No folder" stands for in the radio group, which takes strings only. */
 const NONE = ''
 
-/**
- * A note's "…" (artboard 34): Move to folder, for a note on its own, ending with New folder…
- * (FR-110); Download .md, the text as it is written (FR-111).
- */
+/** A note's "…": Move to folder, for a note on its own; Download .md, the text as it is written. */
 export function NoteMenu({
   note,
   title,
@@ -39,7 +36,7 @@ export function NoteMenu({
   note: NoteResponse | null
   title: string
   body: string
-  /** The note shown as its source (FR-116), and the switch. */
+  /** The note shown as its source, and the switch. */
   source: boolean
   onSource: () => void
 }) {
@@ -75,7 +72,7 @@ export function NoteMenu({
 
 /**
  * The folders a note on its own can go in, the one it is in ticked, then none, then a new one
- * made in the sidebar's own row with this note put in it (FR-110, DES-001): the note page's "…"
+ * made in the sidebar's own row with this note put in it: the note page's "…"
  * lists them under its label, the sidebar's under "Move to a folder…".
  */
 export function MoveToFolder({ note }: { note: NoteResponse }) {
@@ -90,7 +87,7 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
           shelve.mutate({ id: note.id, folderId: v === NONE ? null : (v as NoteFolderId) })
         }
       >
-        {/* None first, then the tree, then a new one (artboard 40). */}
+        {/* None first, then the tree, then a new one. */}
         <DropdownMenu.RadioItem value={NONE} className={MENU_ITEM}>
           <span className="flex-1">No folder</span>
           <DropdownMenu.ItemIndicator className="text-meta text-muted">
@@ -117,7 +114,7 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
         </div>
       </DropdownMenu.RadioGroup>
       <DropdownMenu.Separator className="my-1 h-px bg-line" />
-      {/* Made in the sidebar's own row, and this note put in it (DES-001). */}
+      {/* Made in the sidebar's own row, and this note put in it. */}
       <DropdownMenu.Item onSelect={() => askNewFolder(note.id)} className={MENU_ITEM}>
         New folder…
       </DropdownMenu.Item>
@@ -126,7 +123,7 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
 }
 
 /**
- * The pin beside a note on its own's title, one switch (FR-110, DES-001): ink while the note is
+ * The pin beside a note on its own's title, one switch: ink while the note is
  * pinned, muted while it is not; its hover says what a press does.
  */
 export function PinButton({ note }: { note: NoteResponse }) {
@@ -149,14 +146,14 @@ export function PinButton({ note }: { note: NoteResponse }) {
 
 /**
  * The head's tag for the folder a note is in, its name alone: a folder is no kind, and the folder
- * glyph is a project's. A press shows the note in the sidebar (DES-001).
+ * glyph is a project's. A press shows the note in the sidebar.
  */
 export function FolderTag({
   folderId,
   noteId,
 }: {
   folderId: NoteFolderId | null
-  /** The note it is on; none for one not yet made, in a folder from the start (FR-115). */
+  /** The note it is on; none for one not yet made, in a folder from the start. */
   noteId: NoteId | null
 }) {
   const folder = useQuery(foldersQuery()).data?.find((f) => f.id === folderId)

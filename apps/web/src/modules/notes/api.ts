@@ -40,7 +40,7 @@ export function deleteNote(id: NoteId): Promise<void> {
   return call(api.notes.remove, { params: { id } })
 }
 
-/** Every folder, by name (FR-110). */
+/** Every folder, by name. */
 export const foldersQuery = () =>
   queryOptions({
     queryKey: noteKeys.folders,
