@@ -1,8 +1,12 @@
 import { LAYER } from './layers'
 
-/** The look of every menu, its layer included: a float, 10 radius, the float's shadow. */
-export const MENU_SURFACE =
-  `${LAYER.menu} max-h-80 min-w-36 overflow-y-auto rounded-container ` + 'bg-float p-1 shadow-float'
+const LOOK = `${LAYER.menu} max-h-80 min-w-36 rounded-container bg-float p-1 shadow-float`
+
+/** The look of every menu, its layer included: a float, 8 radius, the float's shadow. */
+export const MENU_SURFACE = `${LOOK} overflow-y-auto`
+
+/** The same, for a menu that keeps its first and last rows in place and scrolls what is between. */
+export const MENU_SURFACE_HELD = `${LOOK} flex flex-col`
 
 /** A menu's row: 32 high like any control, highlighted by the hover layer. */
 export const MENU_ITEM =

@@ -351,6 +351,13 @@ kbd {
   outline: none;
 }
 
+/* A MENU'S ROWS: under the pointer the hover ground says which one; the ring is for the keys.
+   The pointer focuses the row it is over, and the browser would ring that too. */
+:root[data-input='pointer']
+  :is([role='menuitem'], [role='menuitemradio'], [role='menuitemcheckbox']):focus-visible {
+  outline: none;
+}
+
 /* A TARGET THAT LOOKS SMALLER THAN IT IS PRESSED (DES-001 "44 和看起来的大小"): a tag, a filter,
    a row's small × or Later keeps its 28 to 32, and an unseen square of at least 44 centred on it
    takes the finger. Used as `max-lg:tap`; `phone-targets.spec.ts` measures this square. */

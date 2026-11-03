@@ -8,7 +8,7 @@ import { problemText } from '../../../platform/http/api'
 import { DeleteConfirm } from '../../../platform/ui/DeleteConfirm'
 import { KIND_ICON, MoreIcon } from '../../../platform/ui/icons'
 import { KIND_TEXT } from '../../../platform/ui/kinds'
-import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
+import { MENU_ITEM, MENU_SURFACE, MENU_SURFACE_HELD } from '../../../platform/ui/menuSurface'
 import { useDestroy } from '../../../shell/detail'
 import { deleteNote, noteKeys, notesQuery, patchNote } from '../api'
 import { useShelveNote } from '../hooks/useShelveNote'
@@ -116,11 +116,11 @@ export function NoteRow({
               )}
               {own && (
                 <DropdownMenu.Sub>
-                  <DropdownMenu.SubTrigger className={MENU_ITEM}>
+                  <DropdownMenu.SubTrigger className={`${MENU_ITEM} data-[state=open]:bg-hover`}>
                     Move to a folder…
                   </DropdownMenu.SubTrigger>
                   <DropdownMenu.Portal>
-                    <DropdownMenu.SubContent sideOffset={4} className={MENU_SURFACE}>
+                    <DropdownMenu.SubContent sideOffset={4} className={MENU_SURFACE_HELD}>
                       <MoveToFolder note={note} />
                     </DropdownMenu.SubContent>
                   </DropdownMenu.Portal>

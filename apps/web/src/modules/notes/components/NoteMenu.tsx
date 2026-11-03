@@ -84,6 +84,7 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
   return (
     <>
       <DropdownMenu.RadioGroup
+        className="flex min-h-0 flex-col"
         value={note.folderId ?? NONE}
         onValueChange={(v) =>
           shelve.mutate({ id: note.id, folderId: v === NONE ? null : (v as NoteFolderId) })
@@ -97,20 +98,23 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
           </DropdownMenu.ItemIndicator>
         </DropdownMenu.RadioItem>
         <DropdownMenu.Separator className="my-1 h-px bg-line" />
-        {foldersInTree(folders).map(({ folder: f, depth }) => (
-          <DropdownMenu.RadioItem
-            key={f.id}
-            value={f.id}
-            // Each level 16 further in; the one it is in already muted.
-            style={{ paddingLeft: `${0.5 + (depth - 1)}rem` }}
-            className={`${MENU_ITEM} ${f.id === note.folderId ? 'text-muted' : ''}`}
-          >
-            <span className="flex-1 truncate">{f.name}</span>
-            <DropdownMenu.ItemIndicator className="text-meta text-muted">
-              ✓
-            </DropdownMenu.ItemIndicator>
-          </DropdownMenu.RadioItem>
-        ))}
+        {/* Only the folders scroll: none and a new one stay in sight however many there are. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {foldersInTree(folders).map(({ folder: f, depth }) => (
+            <DropdownMenu.RadioItem
+              key={f.id}
+              value={f.id}
+              // Each level 16 further in; the one it is in already muted.
+              style={{ paddingLeft: `${0.5 + (depth - 1)}rem` }}
+              className={`${MENU_ITEM} ${f.id === note.folderId ? 'text-muted' : ''}`}
+            >
+              <span className="flex-1 truncate">{f.name}</span>
+              <DropdownMenu.ItemIndicator className="text-meta text-muted">
+                ✓
+              </DropdownMenu.ItemIndicator>
+            </DropdownMenu.RadioItem>
+          ))}
+        </div>
       </DropdownMenu.RadioGroup>
       <DropdownMenu.Separator className="my-1 h-px bg-line" />
       {/* Made in the sidebar's own row, and this note put in it (DES-001). */}

@@ -295,3 +295,31 @@ test('each folder stays open or closed as it was left, and opens over the note s
     .poll(async () => (await serverFolders(page)).find((f) => f.id === a.id)?.open)
     .toBe(false)
 })
+
+test('Move to a folder… keeps No folder and New folder… in sight, the folders between scrolling', async ({
+  page,
+}) => {
+  await registerFreshUser(page)
+  for (let i = 1; i <= 14; i++) await apiPost(page, '/notes/folders', { name: `Folder ${i}` })
+  await apiPost(page, '/notes', { title: 'What I know', body: 'x' })
+  await page.goto('/notes')
+  await sidebar(page).getByText('What I know', { exact: true }).hover()
+  await page.getByRole('button', { name: 'More for What I know' }).click()
+  const move = page.getByRole('menuitem', { name: 'Move to a folder…' })
+  await move.hover()
+  const none = page.getByRole('menuitemradio', { name: 'No folder' })
+  const make = page.getByRole('menuitem', { name: 'New folder…' })
+  await expect(none).toBeInViewport()
+  await expect(make).toBeInViewport()
+  await expect(
+    page.getByRole('menuitemradio', { name: 'Folder 9', exact: true }),
+  ).not.toBeInViewport()
+  // Opened by the pointer, the row it opened from wears the hover ground, not the keys' ring.
+  const outline = (el: Element) => getComputedStyle(el).outlineStyle
+  expect(await move.evaluate(outline)).toBe('none')
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.press('ArrowDown')
+  expect(await page.getByRole('menuitem', { name: 'Download as .md' }).evaluate(outline)).toBe(
+    'solid',
+  )
+})
