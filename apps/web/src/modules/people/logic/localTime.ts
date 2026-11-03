@@ -11,7 +11,7 @@ function offsetMinutes(timeZone: string, at: Date): number {
 }
 
 /**
- * Their local time beside yours (FR-061): the same, or their clock and how far ahead or behind
+ * Their local time beside yours: the same, or their clock and how far ahead or behind
  * ("17:24, 7 hours ahead"), by both zones' rules at `at`.
  */
 export function theirTime(at: Date, theirs: string, mine: string): string {
@@ -23,7 +23,7 @@ export function theirTime(at: Date, theirs: string, mine: string): string {
 }
 
 /**
- * Their clock and how far it is from yours, apart (a phone's profile card, FR-087): null when it
+ * Their clock and how far it is from yours, apart (a phone's profile card): null when it
  * is your time too, where the card leaves the line out.
  */
 export function timeApart(

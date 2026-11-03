@@ -6,16 +6,13 @@ import { ListHead, NarrowRow, useShowInInspector } from '../../../shell/inspecto
 import { ProjectSquare, useEveryProject } from '../../../shell/projects'
 import { peopleQuery } from '../api'
 
-/** How many project squares a person's head shows before the rest fold into "+N" (FR-061). */
+/** How many project squares a person's head shows before the rest fold into "+N". */
 export const SHOWN_PROJECTS = 5
 
 /** The full list's name in the inspector's address: `?inspect=list:person-projects.<id>`. */
 const PERSON_PROJECTS = 'person-projects'
 
-/**
- * "+4" after a person's five project squares (FR-061, DES-001 "人物页"): a square's size and
- * corners, muted, its count in even figures; pressed, every project in the inspector.
- */
+/** "+4" after a person's project squares; pressed, every project in the inspector. */
 export function MoreProjects({ person, more }: { person: PersonResponse; more: number }) {
   const show = useShowInInspector()
   const words = `${more} more ${more === 1 ? 'project' : 'projects'}`

@@ -94,7 +94,7 @@ export function useChannelRows(initial: () => ChannelRow[]) {
         saved: false,
       })),
     leave: (at: number) => edit(at, (row) => ({ ...row, touched: true })),
-    /** "Personal", "WeChat": said beside the value on their page (FR-062). */
+    /** "Personal", "WeChat": said beside the value on their page. */
     setLabel: (at: number, label: string) => edit(at, (row) => ({ ...row, label })),
     add: () => setRows((all) => [...all, { kind: 'email', value: '', label: null }]),
     remove: (at: number) => setRows((all) => all.filter((_, i) => i !== at)),
@@ -110,12 +110,11 @@ export function useChannelRows(initial: () => ChannelRow[]) {
 }
 
 /**
- * The ways to reach someone, as artboard 11 has them (N-02): each row its kind's icon, which picks
- * another kind, the value, and a label of its own; "Another way" adds a row, as Another name and
- * Another role do.
+ * The ways to reach someone: each row its kind's icon, which picks another kind, the value, and a
+ * label of its own; "Another way" adds a row, as Another name and Another role do.
  */
 export function ChannelsEditor({ channels }: { channels: ReturnType<typeof useChannelRows> }) {
-  // The row Another way just added: its box takes the typing (BUG-085).
+  // The row Another way just added: its box takes the typing.
   const [added, setAdded] = useState<number | null>(null)
   return (
     <>

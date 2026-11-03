@@ -30,7 +30,7 @@ export { usePeople } from './hooks/usePeople'
  * No project-page block: people reach a project as edges, which the shell draws for every kind.
  */
 const PAGE = topPage('People')
-/** One of them, under its kind in the breadcrumbs (FR-018). */
+/** One of them, under its kind in the breadcrumbs. */
 const THING = thingPage('People', '/people')
 
 export const peopleModule: WorkspaceModule = {
@@ -48,7 +48,7 @@ export const peopleModule: WorkspaceModule = {
   },
   routes: [
     { index: true, element: <People />, handle: PAGE },
-    // Birthdays is the sidebar's list now (FR-060), not a page: an old address lands there.
+    // Birthdays is the sidebar's list now, not a page: an old address lands there.
     { path: 'birthdays', element: <Navigate to="/people?list=birthdays" replace /> },
     // Before `:id`, which would take `new` for an id.
     { path: 'new', element: <PersonNew />, handle: PAGE },
@@ -59,7 +59,7 @@ export const peopleModule: WorkspaceModule = {
     label: 'Birthdays',
     useEntries: useBirthdayEntries,
     prefetch: (qc, range) => void qc.prefetchQuery(birthdayCalendarQuery(range)),
-    // The name only (CA-02); the day itself says the age it turns, when the year is known.
+    // The name only; the day itself says the age it turns, when the year is known.
     show: (e) => ({ to: `/people/${e.id}`, label: 'Birthday' }),
   },
   widgets: [{ place: 'birthdays', Component: UpcomingBirthdays }],
@@ -85,7 +85,7 @@ export const peopleModule: WorkspaceModule = {
       key: () => birthdaysQuery().queryKey,
     },
   ],
-  // A project's page lists the people on it (FR-055).
+  // A project's page lists the people on it.
   project: {
     Things: {
       kind: 'person',

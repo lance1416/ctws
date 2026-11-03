@@ -9,9 +9,8 @@ import { birthdaysQuery } from '../api'
 import { PEOPLE_ID } from '../logic/id'
 
 /**
- * BIRTHDAYS ON TODAY (FR-079, artboard 12): the people whose reminder lead has come round, as the
- * server decides; with none, the block is its head saying so. Each row is the people overview's
- * (artboard 18): who, then the day, then how far off, each in a column of its own.
+ * Today's birthdays: the people whose reminder lead has come round, as the server decides. Each row
+ * is the people overview's.
  */
 export function BirthdaysToday() {
   const view = useQuery(birthdaysQuery())
@@ -57,7 +56,7 @@ export function BirthdaysToday() {
   )
 }
 
-/** BIRTHDAYS ON A PHONE'S TODAY (FR-083): those whose reminder has come round, when any has. */
+/** A phone's Today: those whose birthday reminder has come round, when any has. */
 export function BirthdaysPhone() {
   const view = useQuery(birthdaysQuery())
   const rows = view.data?.card ?? []

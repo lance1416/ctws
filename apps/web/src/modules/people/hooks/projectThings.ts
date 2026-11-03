@@ -7,9 +7,8 @@ import { patchPerson, peopleKeys, peopleQuery } from '../api'
 import { PEOPLE_ID } from '../logic/id'
 
 /**
- * The people on a project (FR-055): each by their avatar and name, with where they work now. Who
- * is on a project is changed here only: someone already written down is put on it or taken off,
- * and someone new is written down on it.
+ * The people on a project. Who is on a project is changed here only: someone already written down
+ * is put on it or taken off, and someone new is written down on it.
  */
 export function useProjectPeople(projectId: ProjectId): OwnThings {
   const navigate = useNavigate()
@@ -39,7 +38,7 @@ export function useProjectPeople(projectId: ProjectId): OwnThings {
     join: {
       add: (id) => move.mutate({ id, onIt: true }),
       remove: (id) => move.mutate({ id, onIt: false }),
-      // Written down in full on their own page, then back to the project (FR-026).
+      // Written down in full on their own page, then back to the project.
       make: (name) => navigate(`/${PEOPLE_ID}/new?project=${projectId}`, { state: { name } }),
       busy: move.isPending,
       error: move.isError

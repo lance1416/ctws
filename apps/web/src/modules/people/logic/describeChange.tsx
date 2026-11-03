@@ -21,14 +21,14 @@ const span = (role: unknown): string =>
 const PLACE_WORDS: Record<string, string> = { city: 'Lives in', hometown: 'Hometown' }
 
 /**
- * A person's changes on their timeline (FR-045, FR-061): "Added", "Renamed from …", "Lives in
- * London", and the roles they took and left. Gender says nothing here: it is not news.
+ * A person's changes on their timeline: "Added", "Renamed from …", "Lives in London", and the
+ * roles they took and left. Gender says nothing here: it is not news.
  */
 export function describePersonChange(event: { type: string; payload: unknown }): ChangeLine | null {
   const was = field(event.payload, 'from')
   const now = field(event.payload, 'to')
   const Work = KIND_ICON.organisation
-  // A role is its title at its organisation, as far as the log knows them (FR-044, BUG-083).
+  // A role is its title at its organisation, as far as the log knows them.
   const org = text(field(event.payload, 'organisationName'))
   const role = (title: string | null) =>
     title && org ? `${title} at ${org}` : (title ?? (org ? `a role at ${org}` : null))

@@ -34,12 +34,7 @@ import { cityAndCountry } from '../logic/places'
 
 const monthYear = (month: string) => `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
 
-/**
- * A PERSON ON A PHONE (FR-087, artboard 26): back to People, Edit and "…" above; who they are and
- * where they work; Call, Message and Email a tap each; a card of what matters now (their clock,
- * their birthday, their number, their circles); then what was said lately, the rest of their
- * profile under "More about", and what they are in.
- */
+/** A person on a phone. */
 export function PhonePerson({ person }: { person: PersonResponse }) {
   const registry = useRegistry()
   const navigate = useNavigate()
@@ -267,7 +262,7 @@ export function PhonePerson({ person }: { person: PersonResponse }) {
   )
 }
 
-/** Call, Message, Email: a big tap each; without that way to reach them, greyed (FR-087). */
+/** Call, Message, Email: a big tap each; without that way to reach them, greyed. */
 function Reach({
   icon: Icon,
   label,

@@ -32,7 +32,7 @@ function useAddressed(): {
   return { person, id, gone: people.isSuccess && !person, reading: people.isPending }
 }
 
-/** `/people/:id`: their page (FR-061), or what happened to them (artboard 23). */
+/** `/people/:id`: their page, or what happened to them. */
 export function Person() {
   const { person, id, gone, reading } = useAddressed()
   useForgetWhenGone('person', id ?? null, gone)
@@ -54,8 +54,8 @@ export function Person() {
 }
 
 /**
- * Writes a person, then their roles as a list of their own (FR-047), then opens their page; or,
- * written down from a project, goes back to it (FR-026, FR-055).
+ * Writes a person, then their roles as a list of their own, then opens their page; or, written
+ * down from a project, goes back to it.
  */
 function useWritePerson(person: PersonResponse | null, back: string | null = null) {
   const navigate = useNavigate()
@@ -72,7 +72,7 @@ function useWritePerson(person: PersonResponse | null, back: string | null = nul
   })
 }
 
-/** `/people/new`: someone written down in full, in the main area (FR-062). */
+/** `/people/new`: someone written down in full, in the main area. */
 export function PersonNew() {
   const [params] = useSearchParams()
   const project = params.get('project')
@@ -92,7 +92,7 @@ export function PersonNew() {
   )
 }
 
-/** `/people/:id/edit`: the same form, filled, and delete at its foot (FR-063). */
+/** `/people/:id/edit`: the same form, filled, and delete at its foot. */
 export function PersonEdit() {
   const { person, id, gone } = useAddressed()
   const navigate = useNavigate()

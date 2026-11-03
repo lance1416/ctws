@@ -4,7 +4,7 @@ import { DangerAction } from '../../../platform/ui/DangerZone'
 import { useDestroy } from '../../../shell/detail'
 import { deletePerson, peopleKeys } from '../api'
 
-/** Deletes a person, saying first what goes with them and what stays (FR-035). */
+/** Deletes a person, saying first what goes with them and what stays. */
 export function DeletePerson({
   person,
   onDeleted,
@@ -24,7 +24,6 @@ export function DeletePerson({
       <DangerAction
         label={`Delete ${person.name}`}
         confirmLabel={`Delete ${person.name}`}
-        // First what goes, then what stays (FR-035).
         message={`Delete ${person.name}? Their contact details, birthday and profile notes go. Notes about them, messages with them, and the meetings and tasks linked to them stay.`}
         confirm={`Delete ${person.name}`}
         busy={drop.isPending}

@@ -20,7 +20,7 @@ describe('describePersonChange', () => {
     expect(said('role_removed', { title: null })).toBe('A role removed')
   })
 
-  it('says which role changed, from what to what (FR-044, BUG-083)', () => {
+  it('says which role changed, from what to what', () => {
     const at = { organisationName: 'Stripe' }
     expect(said('role_added', { ...at, title: 'Engineer' })).toBe('Took a role: Engineer at Stripe')
     expect(

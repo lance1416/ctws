@@ -18,7 +18,7 @@ import { ListHead, NarrowRow } from '../../../shell/inspector'
 import { peopleQuery, touchQuery } from '../api'
 import { sinceWords } from '../logic/since'
 
-/** The People overview's blocks name their full lists by these (FR-011 rule 3). */
+/** The People overview's blocks name their full lists by these. */
 export const PEOPLE_LISTS = { inTouch: 'people-in-touch', quiet: 'people-quiet' } as const
 
 /** How you were last in touch, as a tinted mark: a message either way, or a meeting. */

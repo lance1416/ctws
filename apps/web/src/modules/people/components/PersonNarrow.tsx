@@ -31,11 +31,7 @@ import { cityAndCountry } from '../logic/places'
 const SOON_DAYS = 30
 const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-small px-2 font-medium'
 
-/**
- * A PERSON IN THE INSPECTOR (FR-022, artboard 33): their face and name, where they work and a
- * birthday that is near; how to reach them, where they live and their time; then what they are
- * in, a block each, and the latest of their timeline.
- */
+/** A person in the inspector. */
 export function PersonNarrow({ id }: { id: string }) {
   const people = usePeople()
   const registry = useRegistry()
@@ -125,7 +121,7 @@ export function PersonNarrow({ id }: { id: string }) {
           },
         ]}
       />
-      {/* What the block it was opened from offers: Remove from Job hunt (DES-001). */}
+      {/* What the block it was opened from offers, such as Remove from Job hunt. */}
       {act && <div className="px-4 pt-2 pb-4">{act}</div>}
     </>
   )

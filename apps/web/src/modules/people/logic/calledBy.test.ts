@@ -6,7 +6,7 @@ describe('what a page calls a person', () => {
     expect(calledBy({ name: 'Mira Chen', givenName: 'Mira' })).toBe('Mira')
   })
 
-  it('says a Chinese name whole (P4-07)', () => {
+  it('says a Chinese name whole', () => {
     expect(calledBy({ name: '王磊', givenName: '磊' })).toBe('王磊')
   })
 })

@@ -35,7 +35,7 @@ import { LEAD_LABELS } from '../logic/labels'
 import { theirTime } from '../logic/localTime'
 import { cityAndCountry } from '../logic/places'
 
-/** A birthday this near shows on the head, as the overview's block counts near (FR-060). */
+/** A birthday this near shows on the head, as the overview's block counts near. */
 const SOON_DAYS = 30
 
 const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-control px-2 text-meta font-medium'
@@ -44,8 +44,8 @@ const TAG = 'inline-flex h-5.5 items-center gap-1 rounded-control px-2 text-meta
 const monthYear = (month: string) => `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
 
 /**
- * A PERSON'S PAGE (FR-061, artboards 5 and 6): who they are and where they work at the head, their
- * profile down the left, and beside it what they are in, a block each, then their timeline.
+ * A person's page: who they are and where they work at the head, their profile down the left, and
+ * beside it what they are in, a block each, then their timeline.
  */
 export function PersonPage({ person }: { person: PersonResponse }) {
   return usePhoneFrame() ? <PhonePerson person={person} /> : <DeskPerson person={person} />
@@ -58,9 +58,9 @@ const personLinkKinds = (registry: Registry): ObjectType[] =>
   )
 
 /**
- * What a person's page reads, started as soon as the session is known (baseline.md §8): them
- * among everyone, the circles, their blocks' links and each module's things with them, and their
- * timeline, all at once rather than each after the last.
+ * What a person's page reads, started as soon as the session is known: them among everyone, the
+ * circles, their blocks' links and each module's things with them, and their timeline, all at once
+ * rather than each after the last.
  */
 export function prefetchPerson({ qc, params, today, registry }: PrefetchAt): void {
   const parsed = personId.safeParse(params.id)
@@ -85,32 +85,31 @@ function DeskPerson({ person }: { person: PersonResponse }) {
     titles: { reading: 'Recommended reading' },
     linkedRows: registry.personLinked,
     // Each is made new from here: a meeting with them in it, a task related to them, a book as
-    // theirs to recommend (M-02, N-05).
+    // theirs to recommend.
     creatorFor: (kind) => registry.creates.find((c) => c.kind === kind) ?? null,
     sayAdd: true,
   })
   const profiled = hasProfile(person)
-  // Across as many columns of at least 360 as the blocks' own width holds, three at most, empty
-  // blocks too: one with the inspector open beside a 1440 page, more on a wide screen (U-07,
-  // DES-001 "宽度和断点"). Still being read, the blocks are one bar across.
+  // As many columns as the blocks' own width holds, three at most, empty blocks counted too. Still
+  // being read, the blocks are one bar across.
   const holder = useRef<HTMLDivElement>(null)
   const columns = useColumns(holder)
   const across = ready ? Math.max(1, Math.min(3, columns, blocks.length)) : 1
-  // A last full row with a hole in it: its last block takes the rest of the row (FR-011 rule 2).
+  // A last full row with a hole in it: its last block takes the rest of the row.
   const rest = full % across === 0 ? 1 : across - (full % across) + 1
   return (
     <div className="flex flex-col gap-4">
       <PersonHead person={person} />
-      {/* With nothing to profile, the panel is not drawn and the blocks take the width (M-03).
+      {/* With nothing to profile, the panel is not drawn and the blocks take the width.
           The widths are ranges that do not overlap: which of two overlapping ones wins is the
-          stylesheet's order, not the screen's (U-15). */}
+          stylesheet's order, not the screen's. */}
       <div
         className={`grid items-start gap-4 ${profiled ? 'lg:max-[1799px]:grid-cols-[20rem_minmax(0,1fr)] min-[1800px]:max-[2199px]:grid-cols-[24rem_minmax(0,1fr)] min-[2200px]:grid-cols-[28rem_minmax(0,1fr)]' : ''}`}
       >
         {profiled && <Profile person={person} />}
         <div className="flex min-w-0 flex-col gap-4">
           {/* The full blocks first, the empty ones after them. Full blocks side by side are as tall
-              as each other (FR-011 rule 1, BUG-047); an empty one keeps the height of its head. */}
+              as each other; an empty one keeps the height of its head. */}
           <div
             ref={holder}
             className="grid gap-3"
@@ -179,7 +178,7 @@ function PersonHead({ person }: { person: PersonResponse }) {
       {projects.length > 0 && (
         <span className="flex items-center gap-1 text-meta text-muted">
           In
-          {/* Five, the one that moved last first; the rest are "+N" (FR-061). */}
+          {/* The one that moved last first; the rest are "+N". */}
           {projects.slice(0, SHOWN_PROJECTS).map((p) => (
             <Link key={p.id} to={`/projects/${p.id}`} title={p.name}>
               <ProjectSquare project={p} />
@@ -199,7 +198,7 @@ function PersonHead({ person }: { person: PersonResponse }) {
 }
 
 /**
- * The profile (FR-061): contact, work, places, birthday and notes, sections parted by space and a
+ * The profile: contact, work, places, birthday and notes, sections parted by space and a
  * small heading, never a rule. A section with nothing to say is left out.
  */
 function Profile({ person }: { person: PersonResponse }) {
@@ -334,7 +333,7 @@ function Places({ person }: { person: PersonResponse }) {
   )
 }
 
-/** A birthday as artboard 5 has it: the day on a tile, when it falls, and what it is. */
+/** A birthday: the day on a tile, when it falls, and what it is. */
 function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birthday']> }) {
   const day = b.next.day
   const when =
@@ -381,7 +380,7 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
   )
 }
 
-/** Whether there is anything for the profile panel to say (M-03). */
+/** Whether there is anything for the profile panel to say. */
 function hasProfile(p: PersonResponse): boolean {
   return (
     p.channels.length > 0 ||

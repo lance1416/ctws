@@ -83,7 +83,7 @@ type Draft = {
   cityZone: string | null
   hometown: string
   hometownKey: string | null
-  /** Set by hand; otherwise the zone is the city's (FR-063). */
+  /** Set by hand; otherwise the zone is the city's. */
   manualZone: string | null
   circleIds: CircleId[]
   gender: Gender | null
@@ -144,9 +144,8 @@ export type PersonWrite = {
 }
 
 /**
- * WRITING A PERSON DOWN (FR-062, FR-063, artboard 11): every field at once, grouped, the name's
- * preview and the person's time as they are typed; Tab runs from the first field to Create, and
- * Ctrl Enter sends it from any field. Only the name is needed. The same form edits them, filled.
+ * New person, and the same form filled to edit them. Tab runs from the first field to Create, and
+ * Ctrl Enter sends it from any field. Only the name is needed.
  */
 export function PersonEditor({
   person,
@@ -160,7 +159,7 @@ export function PersonEditor({
 }: {
   /** Null on New person. */
   person: PersonResponse | null
-  /** The project New person was asked for from, kept on them (FR-055). */
+  /** The project New person was asked for from, kept on them. */
   projectId?: ProjectId | null
   /** The words New person was asked for under (a project's picker): split into the name's parts. */
   typedName?: string | null
@@ -193,7 +192,7 @@ export function PersonEditor({
   // Bumped to start the birthday controls afresh, after a day picked on New person is cleared.
   const [dayKey, setDayKey] = useState(0)
   const [unnamed, setUnnamed] = useState(false)
-  // The row Another name or Another role just added: its first box takes the typing (BUG-085).
+  // The row Another name or Another role just added: its first box takes the typing.
   const [added, setAdded] = useState<number | null>(null)
 
   const parts = {
@@ -217,7 +216,7 @@ export function PersonEditor({
       )
     : null
 
-  // The sidebar holds a place for them, marked New, while they are written down (FR-062).
+  // The sidebar holds a place for them, marked New, while they are written down.
   useEffect(() => {
     if (person) return
     setNewPersonDraft(named && filed && initials ? { name: shown, sortKey: filed, initials } : null)
@@ -300,7 +299,7 @@ export function PersonEditor({
         if (!busy) e.currentTarget.requestSubmit()
       }}
       // The actions come last in the document, so Tab reaches them after the last field, and sit
-      // in the head on screen (FR-062).
+      // in the head on screen.
       className="grid min-h-full shrink-0 grid-cols-[minmax(0,1fr)_auto] content-start gap-x-3 gap-y-4"
     >
       <div data-form-head className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
@@ -534,7 +533,7 @@ export function PersonEditor({
           </Block>
 
           <Block title="Birthday" icon={CakeIcon} tint="text-person">
-            {/* Out from the start, nothing chosen until a day is picked (FR-062, N-01). */}
+            {/* Out from the start, nothing chosen until a day is picked. */}
             {birthday === null ? (
               <p className="flex items-center gap-2 text-ui text-muted">
                 No birthday.
@@ -619,7 +618,7 @@ export function PersonEditor({
   )
 }
 
-/** One group of the form, a block with its icon and title (artboard 11). */
+/** One group of the form, a block with its icon and title. */
 function Block({
   title,
   icon: Icon,
@@ -709,7 +708,7 @@ function Remove({ what, onRemove }: { what: string; onRemove: () => void }) {
   )
 }
 
-/** One role: where, as what, from when, to when or Now (FR-047, FR-062). */
+/** One role: where, as what, from when, to when or Now. */
 function RoleRow({
   at,
   role,
@@ -728,7 +727,7 @@ function RoleRow({
 }) {
   return (
     // On a phone, two lines a role: where and as what, then from and to; its × at the end of the
-    // first (DES-001 "表单").
+    // first.
     <div className="contents max-lg:grid max-lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] max-lg:items-center max-lg:gap-2">
       <OrganisationBox at={at} role={role} fresh={fresh} onChange={onChange} />
       <input
@@ -788,7 +787,7 @@ function OrganisationBox({
   onChange: (patch: Partial<Role>) => void
 }) {
   const [typing, setTyping] = useState(false)
-  // One picked from the list is its tag until it is pressed to change it (N-03).
+  // One picked from the list is its tag until it is pressed to change it.
   const [changing, setChanging] = useState(false)
   const listId = useId()
   const asked = useDebouncedValue(role.organisationName.trim())
@@ -805,7 +804,7 @@ function OrganisationBox({
   // The rows the arrows walk: those found, then adding the name as a new one.
   const rows = [...found, ...(exact ? [] : [null])]
   const active = Math.min(pointed, Math.max(rows.length - 1, 0))
-  // Until the list has caught up with the words, Enter has nothing to choose yet (BUG-082).
+  // Until the list has caught up with the words, Enter has nothing to choose yet.
   const behind = role.organisationName.trim() !== asked || hits.isFetching
   const choose = (o: (typeof rows)[number]) => {
     if (o) onChange({ organisationId: o.id, organisationName: o.name })
@@ -922,7 +921,7 @@ function ZoneLine({
 }) {
   const [changing, setChanging] = useState(false)
   const [typed, setTyped] = useState('')
-  // Done, Enter and leaving the box all keep what was typed (BUG-048): a zone it names, or the
+  // Done, Enter and leaving the box all keep what was typed: a zone it names, or the
   // first it matches; nothing typed means "from the city"; words matching no zone change nothing.
   const commit = (words: string) => {
     const next = zoneFrom(words)
@@ -970,7 +969,7 @@ function ZoneLine({
   )
 }
 
-/** The circles, any number picked, and a new one named in place (FR-062). */
+/** The circles, any number picked, and a new one named in place. */
 function Circles({
   picked,
   onPick,

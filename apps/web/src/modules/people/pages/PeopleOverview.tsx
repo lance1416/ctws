@@ -24,18 +24,18 @@ import { useRegistry } from '../../../shell/registry'
 import { birthdaysQuery, circlesQuery, peopleQuery } from '../api'
 import { HOW, Mark, PEOPLE_LISTS, useTouchDay, useTouchRows } from '../components/TouchLists'
 
-/** The birthday block's window (FR-060). */
+/** The birthday block's window. */
 const SOON_DAYS = 30
 
 /**
- * THE PEOPLE OVERVIEW (FR-060, artboard 18): whose birthday is coming, who you were in touch with
- * lately and with whom it has been a while, and the circles, each a way into the sidebar's list.
+ * The People overview: whose birthday is coming, who you were in touch with lately and with whom it
+ * has been a while, and the circles, each a way into the sidebar's list.
  */
 export function PeopleOverview() {
   const people = useQuery(peopleQuery())
   const openNew = useContext(NewContext)
   const creator = useRegistry().creates.find((c) => c.kind === 'person')
-  // Nobody yet: the badge, a line and New person, nothing else (FR-030, artboard 23).
+  // Nobody yet: the badge, a line and New person, nothing else.
   if (people.isSuccess && people.data.length === 0) return <ModuleEmpty kind="person" />
   return (
     <div className="flex flex-col gap-3.5">
@@ -54,7 +54,7 @@ export function PeopleOverview() {
           </button>
         )}
       </div>
-      {/* Side by side, a row's two blocks are as tall as each other (FR-011 rule 1). */}
+      {/* Side by side, a row's two blocks are as tall as each other. */}
       <div className="grid gap-3 lg:grid-cols-2">
         <Birthdays />
         <InTouch />
@@ -79,7 +79,7 @@ function Block({
   tint: string
   count?: number
   action?: ReactNode
-  /** Nothing to list: the block is its head, saying this after its title (DES-001 v1.24). */
+  /** Nothing to list: the block is its head, saying this after its title. */
   empty?: string | null
   children: ReactNode
 }) {
@@ -183,7 +183,7 @@ function Birthdays() {
   )
 }
 
-/** A block's rows before its "All N", which opens the rest in the inspector (FR-011 rule 3). */
+/** A block's rows before its "All N", which opens the rest in the inspector. */
 const SHOWN = 5
 
 /** A block's "All N", a row at its foot. */
@@ -252,7 +252,7 @@ function OutOfTouch() {
 
 function Circles() {
   const circles = useQuery(circlesQuery())
-  // Edit opens the list beside the page, to reorder, rename, add and delete (artboard 29).
+  // Edit opens the list beside the page, to reorder, rename, add and delete.
   const [editing, setEditing] = useState(false)
   return (
     <>

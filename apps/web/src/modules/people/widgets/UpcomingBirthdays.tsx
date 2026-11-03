@@ -11,11 +11,7 @@ import { PEOPLE_ID } from '../logic/id'
 /** A row: two lines and its gap. */
 const ROW_PX = 44
 
-/**
- * BIRTHDAYS ON THE WORKBENCH (FR-076, artboards 10 and 22): the next birthdays, each with the
- * person's avatar and name, the day, and how many days off; the nearest in the person colour. As
- * many as the place holds; the rest are on the birthdays page.
- */
+/** The next birthdays on the workbench, as many as the place holds. */
 export function UpcomingBirthdays() {
   const view = useQuery(birthdaysQuery())
   const [list, fits] = useRowsThatFit(ROW_PX, 5)

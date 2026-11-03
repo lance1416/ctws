@@ -29,9 +29,8 @@ function birthdayDraftOf(birthday: BirthdayResponse | null): BirthdayDraft {
 }
 
 /**
- * The birthday controls, without buttons, shared by the person form and New person: the shared
- * picker (FR-034) and the notice. What a day means is the server's answer, so the lunar rules
- * live in one place.
+ * The birthday controls, without buttons, shared by the person form and New person. What a day
+ * means is the server's answer, so the lunar rules live in one place.
  */
 export function BirthdayEditor({
   birthday,
@@ -43,8 +42,8 @@ export function BirthdayEditor({
 }) {
   const today = useAccountToday()
   const [draft, setDraft] = useState<BirthdayDraft>(() => birthdayDraftOf(birthday))
-  // Someone with no birthday yet has none until a day is picked: the controls are out from the
-  // start (N-01), but a calendar or a year alone is not a birthday.
+  // Someone with no birthday yet has none until a day is picked: a calendar or a year alone is not
+  // a birthday.
   const [picked, setPicked] = useState(birthday !== null)
   const yearOk =
     draft.year === null || (draft.year >= BIRTH_YEARS.min && draft.year <= BIRTH_YEARS.max)
@@ -107,14 +106,14 @@ export function BirthdayEditor({
             onPick={(next) => setDraft({ ...draft, remindLead: Number(next) as RemindLead })}
           />
         </div>
-        {/* When the reminder comes, and by whose clock (FR-062). */}
+        {/* When the reminder comes, and by whose clock. */}
         <span className="text-meta text-muted">At 00:00 their time</span>
       </div>
     </div>
   )
 }
 
-/** The pick in the other calendar and this year, each fact in its own cell (FR-010). */
+/** The pick in the other calendar and this year, each fact in its own cell. */
 function PreviewLine({ facts, today }: { facts: BirthdayPreviewResponse; today: string }) {
   return (
     <>
@@ -129,7 +128,7 @@ function PreviewLine({ facts, today }: { facts: BirthdayPreviewResponse; today: 
         </>
       )}
       <span aria-hidden="true" />
-      {/* Once this year's has passed the next is next year's, and says so (FR-062, BUG-078). */}
+      {/* Once this year's has passed the next is next year's, and says so. */}
       <span className="text-meta text-muted">
         {facts.next.day.slice(0, 4) > today.slice(0, 4) ? 'Next year' : 'This year'}
       </span>

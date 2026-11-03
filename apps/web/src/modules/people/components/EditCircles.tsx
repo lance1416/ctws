@@ -23,10 +23,8 @@ const peopleWord = (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`
 const same = (a: string, b: string) => a.toLocaleLowerCase() === b.toLocaleLowerCase()
 
 /**
- * EDIT CIRCLES (FR-049, artboard 29), from Edit on the Circles block: your circles in your order
- * (the New person form's), each dragged to its place, renamed in place, and deleted after a
- * question that says how many people leave it; nobody is deleted. Every change is written at
- * once, as the whole list.
+ * Your circles, from Edit on the Circles block. A delete asks first, saying how many people leave
+ * the circle; nobody is deleted. Every change is written at once, as the whole list.
  */
 export function EditCircles({
   circles,
@@ -241,7 +239,7 @@ function CircleRow({
           className="mx-1 mb-2 rounded-control border border-line-strong p-3 text-ui"
         >
           <p className="text-ink">
-            Delete {circle.name}?{/* Nobody in it: the question alone (FR-049). */}
+            Delete {circle.name}?{/* Nobody in it: the question alone. */}
             {circle.count > 0 &&
               ` The ${peopleWord(circle.count)} in it ${circle.count === 1 ? 'stays' : 'stay'}; they just leave this circle.`}
           </p>

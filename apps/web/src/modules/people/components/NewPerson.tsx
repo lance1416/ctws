@@ -5,7 +5,7 @@ import { PEOPLE_ID } from '../logic/id'
 
 /**
  * `N P`, a block's `+`, the sidebar's: New person is a page of its own in the main area, not a
- * dialog (FR-062); made from a project, they are kept on it.
+ * dialog; made from a project, they are kept on it.
  */
 export function NewPerson({
   projectId,

@@ -8,8 +8,8 @@ export function PersonMark({ thing }: { thing: LinkCandidate }) {
 }
 
 /**
- * Where a person works now (DES-001 section 4, artboard 9): the building and the organisation of
- * their current role; nothing with no current role. Email, phone and projects stay on their page.
+ * Where a person works now: the organisation of their current role; nothing with no current role.
+ * Email, phone and projects stay on their page.
  */
 export function PersonFact({ thing }: { thing: LinkCandidate }) {
   if (thing.type !== 'person' || !thing.org) return null

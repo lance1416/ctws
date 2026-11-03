@@ -86,7 +86,7 @@ export const birthdaysQuery = () =>
       call(api.people.birthdays, { query: { view: 'birthdays' } }, { signal }),
   })
 
-/** Who you were in touch with lately, and with whom it has been a while (FR-060). */
+/** Who you were in touch with lately, and with whom it has been a while. */
 export const touchQuery = () =>
   queryOptions({
     queryKey: peopleKeys.touch,
@@ -126,7 +126,7 @@ export function deletePerson(id: PersonId): Promise<void> {
   return call(api.people.remove, { params: { id } })
 }
 
-/** A person's roles as a whole list; the server replaces the set (FR-047). */
+/** A person's roles as a whole list; the server replaces the set. */
 export function putRoles(id: PersonId, roles: PersonRoleInput[]): Promise<PersonResponse> {
   return call(api.people.putRoles, { params: { id }, body: { roles } })
 }

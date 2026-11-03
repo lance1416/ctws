@@ -17,9 +17,9 @@ const ROW = ({ isActive }: { isActive: boolean }) =>
   }`
 
 /**
- * The People sidebar's list (FR-020, D2-04): everyone, grouped A to Z by the letter they are filed
- * under. The overview narrows it: a circle (`?circle=`) to its people, and "All N" of the
- * birthdays (`?list=birthdays`) to everyone with one, the nearest first (FR-060).
+ * The People sidebar's list: everyone, grouped A to Z by the letter they are filed under. The
+ * overview narrows it: a circle (`?circle=`) to its people, and "All N" of the birthdays
+ * (`?list=birthdays`) to everyone with one, the nearest first.
  */
 export function PeopleSidebar() {
   const [params] = useSearchParams()
@@ -28,7 +28,7 @@ export function PeopleSidebar() {
   return <Everyone circle={circle} />
 }
 
-/** Past this many, A to Z down the sidebar's edge (FR-015). */
+/** Past this many, A to Z down the sidebar's edge. */
 const RAIL_FROM = 40
 
 /** Keeps the narrowing when a person is opened from the list. */
@@ -39,7 +39,7 @@ function Everyone({ circle }: { circle: string | null }) {
   const circles = useQuery(circlesQuery())
   const [params] = useSearchParams()
   const picked = circle ? circles.data?.find((c) => c.id === circle) : undefined
-  // Past a dozen, a box at the top narrows them by name or another name (U-16).
+  // A box at the top narrows them by name or another name.
   const [typed, setTyped] = useState('')
   const inCircle = (people.data ?? []).filter(
     (p) => !circle || p.circleIds.some((c) => c === circle),
@@ -52,14 +52,13 @@ function Everyone({ circle }: { circle: string | null }) {
     const letter = /^[A-Z]$/.test(p.sortKey) ? p.sortKey : '#'
     groups.set(letter, [...(groups.get(letter) ?? []), p])
   }
-  // Someone being written down on New person has their place already, marked New (FR-062).
+  // Someone being written down on New person has their place already, marked New.
   const draft = useNewPersonDraft()
   const draftLetter = draft ? (/^[A-Z]$/.test(draft.sortKey) ? draft.sortKey : '#') : null
   if (draftLetter && !groups.has(draftLetter)) groups.set(draftLetter, [])
   const letters = [...groups.keys()].sort((a, b) =>
     a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b),
   )
-  // Hundreds of them: A to Z down the right edge, a press to each letter (FR-015, U-16).
   const rail = shown.length > RAIL_FROM && letters.length > 1
   return (
     <>
