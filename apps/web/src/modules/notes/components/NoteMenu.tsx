@@ -96,13 +96,14 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
             ✓
           </DropdownMenu.ItemIndicator>
         </DropdownMenu.RadioItem>
+        <DropdownMenu.Separator className="my-1 h-px bg-line" />
         {foldersInTree(folders).map(({ folder: f, depth }) => (
           <DropdownMenu.RadioItem
             key={f.id}
             value={f.id}
-            // Each level 16 further in; the one it is in already in the quieter grey.
+            // Each level 16 further in; the one it is in already muted.
             style={{ paddingLeft: `${0.5 + (depth - 1)}rem` }}
-            className={`${MENU_ITEM} ${f.id === note.folderId ? 'text-subtle' : ''}`}
+            className={`${MENU_ITEM} ${f.id === note.folderId ? 'text-muted' : ''}`}
           >
             <span className="flex-1 truncate">{f.name}</span>
             <DropdownMenu.ItemIndicator className="text-meta text-muted">
@@ -111,6 +112,7 @@ export function MoveToFolder({ note }: { note: NoteResponse }) {
           </DropdownMenu.RadioItem>
         ))}
       </DropdownMenu.RadioGroup>
+      <DropdownMenu.Separator className="my-1 h-px bg-line" />
       {/* Made in the sidebar's own row, and this note put in it (DES-001). */}
       <DropdownMenu.Item onSelect={() => askNewFolder(note.id)} className={MENU_ITEM}>
         New folder…

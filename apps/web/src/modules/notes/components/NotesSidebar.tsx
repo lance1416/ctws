@@ -328,7 +328,11 @@ export function NotesSidebar() {
         </nav>
         <DragOverlay>
           {dragged && (
-            <div className={refused ? 'cursor-not-allowed' : 'cursor-grabbing'}>
+            // Off the pointer, under and to its right, and only as wide as its name: the row it is
+            // over stays in sight, lit or not (artboard 40).
+            <div
+              className={`mt-4 ml-14 w-fit max-w-56 ${refused ? 'cursor-not-allowed' : 'cursor-grabbing'}`}
+            >
               <div className="flex h-7.5 items-center gap-2 rounded-control bg-float px-2 text-ui text-ink shadow-float">
                 {'note' in dragged ? (
                   <>
