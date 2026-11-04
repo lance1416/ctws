@@ -57,6 +57,7 @@ const CALENDAR_KINDS = [
   'occurrence',
   'follow-up',
   'reminder',
+  'day-note',
 ] as const
 
 /**

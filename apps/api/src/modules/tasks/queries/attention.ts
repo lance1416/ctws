@@ -101,3 +101,33 @@ export async function listUntouched(q: Queryable, workspaceId: WorkspaceId, now:
   const rows = rowsOf(result, untouchedRow)
   return { rows, total: rows[0]?.total ?? 0 }
 }
+
+/**
+ * Wrapping up a day: open leaves planned for it that nothing was done to that day, by its log in
+ * the account's zone. A count on the page, and each one's day changed from there.
+ */
+export async function listUntouchedPlan(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  timezone: string,
+  day: string,
+) {
+  const t0 = instantOf(`${day}T00:00`, timezone)
+  const t1 = instantOf(`${addDays(day, 1)}T00:00`, timezone)
+  const result = await q.execute(sql`
+    select ${TASK_COLUMNS}, p.name as "projectName", null as "parentTitle"
+    from tasks t
+    join projects p on p.id = t.project_id
+    where ${visibleTasks(workspaceId, { task: 't', project: 'p' })}
+      and t.scheduled_on = ${day}::date
+      and t.status not in ('done', 'cancelled')
+      and ${isLeafSql('t')}
+      and not exists (
+        select 1 from events ev
+        where ev.object_type = 'task' and ev.object_id = t.id
+          and ev.occurred_at >= ${sqlInstant(t0)} and ev.occurred_at < ${sqlInstant(t1)}
+      )
+    order by p.rank, p.id, t.rank, t.id
+  `)
+  return rowsOf(result, taskRow)
+}

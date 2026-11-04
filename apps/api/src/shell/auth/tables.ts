@@ -59,6 +59,8 @@ export const users = pgTable(
     sourceView: boolean('source_view').notNull().default(false),
     /** Null until chosen: a device then shows its own last choice, or the system's. */
     theme: text('theme').$type<Theme>(),
+    /** When Today offers to wrap up the day, `HH:mm` in the account's zone; null: never. */
+    wrapUpAt: text('wrap_up_at').default('18:00'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

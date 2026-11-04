@@ -35,6 +35,9 @@ import {
 } from './photo'
 import {
   createNoteBody,
+  dayNoteParams,
+  dayNoteResponse,
+  putDayNoteBody,
   noteFolderBody,
   noteFolderParams,
   noteFolderPatch,
@@ -175,6 +178,8 @@ import {
   reviewQuery,
   reviewResponse,
   pushedQuery,
+  untouchedPlanQuery,
+  untouchedPlanResponse,
   pushedResponse,
   untouchedQuery,
   untouchedResponse,
@@ -734,6 +739,15 @@ export const api = {
       ok: 200,
       response: reviewResponse,
     }),
+    untouchedPlan: endpoint({
+      method: 'GET',
+      path: '/tasks',
+      summary:
+        'Open leaves planned for a day that nothing was done to that day (view=untouched-plan).',
+      query: untouchedPlanQuery,
+      ok: 200,
+      response: untouchedPlanResponse,
+    }),
     pushed: endpoint({
       method: 'GET',
       path: '/tasks',
@@ -1284,6 +1298,31 @@ export const api = {
       params: noteParams,
       ok: 204,
       refusals: [404],
+    }),
+    day: endpoint({
+      method: 'GET',
+      path: '/notes/days/:day',
+      summary: "A day's note, written when it was wrapped up; null when none was.",
+      params: dayNoteParams,
+      ok: 200,
+      response: dayNoteResponse,
+    }),
+    putDay: endpoint({
+      method: 'PUT',
+      path: '/notes/days/:day',
+      summary: "Write a day's note; an empty body takes it away.",
+      params: dayNoteParams,
+      body: putDayNoteBody,
+      ok: 200,
+      response: dayNoteResponse,
+    }),
+    calendar: endpoint({
+      method: 'GET',
+      path: '/notes',
+      summary: 'The days with a note of their own, for the calendar (view=calendar).',
+      query: calendarView,
+      ok: 200,
+      response: calendarEntriesResponse,
     }),
   },
 

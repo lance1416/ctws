@@ -20,6 +20,7 @@ const ME = {
   avatarId: null,
   photos: false,
   theme: null,
+  wrapUpAt: '18:00',
   now: '2026-10-01T00:00:00.000Z',
   clockPinned: false,
   migrationReport: null,

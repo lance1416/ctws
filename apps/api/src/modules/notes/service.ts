@@ -4,9 +4,10 @@ import {
   type NoteId,
   noteId,
   type UpdateNoteBody,
+  type WorkspaceId,
 } from '@ctws/contracts'
-import { eq } from 'drizzle-orm'
-import type { Db, Tx } from '../../platform/db/client'
+import { asc, between, eq } from 'drizzle-orm'
+import type { Db, Queryable, Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
 import { DomainError, NotFound } from '../../platform/errors'
 import { type Actor, scoped, within } from '../../platform/db/scope'
@@ -180,4 +181,63 @@ export async function deleteNote(db: Db, ctx: Actor, id: NoteId): Promise<void> 
     ])
     await tx.delete(notes).where(eq(notes.id, id))
   })
+}
+
+/** A day's note, if one was written. */
+export async function dayNote(q: Queryable, workspaceId: WorkspaceId, day: string) {
+  const [row] = await q
+    .select()
+    .from(notes)
+    .where(within(scoped(notes, workspaceId), eq(notes.day, day)))
+  return row ?? null
+}
+
+/**
+ * Writes a day's note: the first words make it, later ones change it, and emptying it takes it
+ * away, so a wrap-up left blank leaves no note behind.
+ */
+export async function putDayNote(
+  registry: LinkRegistry,
+  db: Db,
+  ctx: Actor,
+  day: string,
+  body: string,
+): Promise<Note | null> {
+  const current = await dayNote(db, ctx.workspaceId, day)
+  if (body.trim() === '') {
+    if (current) await deleteNote(db, ctx, current.id)
+    return null
+  }
+  if (current) return updateNote(registry, db, ctx, current.id, { body })
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(notes)
+      .values({
+        id: newId(noteId),
+        workspaceId: ctx.workspaceId,
+        title: null,
+        body,
+        day,
+        createdAt: ctx.now,
+        updatedAt: ctx.now,
+      })
+      .returning()
+    await eventLog(tx, ctx).append(subject(row!.id), 'created', { to: { title: null, day } })
+    await syncMentions(tx, ctx, subject(row!.id), 'body', body)
+    return row!
+  })
+}
+
+/** The days with a note of their own between two days, both included. */
+export async function dayNotesBetween(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  from: string,
+  to: string,
+): Promise<Note[]> {
+  return q
+    .select()
+    .from(notes)
+    .where(within(scoped(notes, workspaceId), between(notes.day, from, to)))
+    .orderBy(asc(notes.day))
 }
