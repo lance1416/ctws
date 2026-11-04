@@ -216,7 +216,6 @@ function Board({
     heading: () => document.querySelector<HTMLElement>('h1'),
   })
 
-  const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions()
   const strips = useRef(new Map<TaskStatus, HTMLButtonElement | null>())
   // A card moved from the keyboard keeps focus once it has been drawn in its new column (the
@@ -239,7 +238,6 @@ function Board({
   /** A new status, from a drop or Alt and an arrow; the card stays in sight where it lands. */
   const move = (task: TaskResponse, to: TaskStatus, { keys }: { keys: boolean }) => {
     if (task.status === to) return
-    setError(null)
     actions.setStatus(task.id, to)
     if (!opened(to)) {
       if (keys) focusNext.current = { strip: to }
@@ -302,11 +300,6 @@ function Board({
           />
         </span>
       </div>
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}

@@ -2,6 +2,7 @@ import { refusalText } from '../../../platform/http/retry'
 import { useUndo } from '../../../platform/ui/undo'
 import {
   type TaskStatus,
+  type TaskResponse,
   type TodayTaskResponse,
   type UpdateTaskBody,
   type TaskId,
@@ -20,6 +21,8 @@ const before = new Map<TaskId, 'todo' | 'in_progress'>()
 
 /** A task's dates as a list holds them, for taking a change of them back. */
 type Dates = { scheduledOn?: string | null; dueAt?: string | null }
+/** What a row shows of a patch at once: its dates, its stage, its title. */
+type Shown = Dates & { stageId?: TaskResponse['stageId']; title?: string }
 
 /**
  * One-click edits from a list row. The row changes at once and the save follows; one that fails
@@ -38,17 +41,21 @@ export function useTaskActions() {
       const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: taskKeys.lists })
       const today = qc.getQueriesData<TodayTasks>({ queryKey: taskKeys.todays })
       const status = body.status
-      const dates: Dates = {}
-      if (body.scheduledOn !== undefined) dates.scheduledOn = body.scheduledOn
-      if (body.dueAt !== undefined) dates.dueAt = body.dueAt
-      if (Object.keys(dates).length > 0) {
+      const shown: Shown = {}
+      if (body.scheduledOn !== undefined) shown.scheduledOn = body.scheduledOn
+      if (body.dueAt !== undefined) shown.dueAt = body.dueAt
+      if (body.stageId !== undefined) shown.stageId = body.stageId
+      if (body.title !== undefined) shown.title = body.title
+      if (Object.keys(shown).length > 0) {
         qc.setQueriesData<ProjectTasks>({ queryKey: taskKeys.lists }, (old) =>
           old
-            ? { ...old, tasks: old.tasks.map((t) => (t.id === id ? { ...t, ...dates } : t)) }
+            ? { ...old, tasks: old.tasks.map((t) => (t.id === id ? { ...t, ...shown } : t)) }
             : old,
         )
+        // Today's rows carry no stage; the title and dates they do.
+        const { stageId: _stage, ...onToday } = shown
         qc.setQueriesData<TodayTasks>({ queryKey: taskKeys.todays }, (old) =>
-          old?.map((t) => (t.id === id ? { ...t, ...dates } : t)),
+          old?.map((t) => (t.id === id ? { ...t, ...onToday } : t)),
         )
       }
       if (status) {

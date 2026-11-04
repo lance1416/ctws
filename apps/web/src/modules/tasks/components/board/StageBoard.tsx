@@ -108,12 +108,10 @@ export function StageBoard({
     heading: () => document.querySelector<HTMLElement>('h1'),
   })
 
-  const [error, setError] = useState<string | null>(null)
   const actions = useTaskActions()
   /** A new stage for one node: logged, and its status left as it is. */
   const move = (id: TaskId, to: StageId) => {
     if (byId.get(id)?.stageId === to) return
-    setError(null)
     actions.patch(id, { stageId: to })
   }
   // A card moved from the keyboard keeps focus once it has been drawn in its new column (the change
@@ -186,11 +184,6 @@ export function StageBoard({
           Edit stages
         </Button>
       </div>
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
