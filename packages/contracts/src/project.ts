@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { projectId, stageId, workspaceId } from './id'
-import { instant, nameText, patchOf } from './common'
+import { calendarDate, instant, nameText, patchOf } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
@@ -96,6 +96,27 @@ export const projectResponse = z.object({
   columns: z.record(z.string(), z.number().int().nonnegative()),
   /** In the project's order; empty when nothing in it has a stage. */
   stages: z.array(stageResponse),
+  /** The latest week's line on how it is going, for the head: "Week of Oct 12". */
+  latestLine: z.object({ week: calendarDate, line: z.string() }).nullable(),
+})
+
+/** A week, by its Monday: the review's weeks start there. */
+const monday = calendarDate.refine((d) => new Date(`${d}T00:00:00Z`).getUTCDay() === 1, {
+  message: 'a week is named by its Monday',
+})
+
+export const projectWeekParams = z.object({ id: projectId, week: monday }).strict()
+
+/** A week's line on how a project is going; null takes it away. */
+export const projectLineBody = z
+  .object({ line: z.string().trim().min(1).max(300).nullable() })
+  .strict()
+
+export const projectLinesQuery = z.object({ week: monday }).strict()
+
+/** Each project's line for a week, where it has one. */
+export const projectLinesResponse = z.object({
+  lines: z.array(z.object({ projectId, line: z.string() })),
 })
 
 export const projectListQuery = z

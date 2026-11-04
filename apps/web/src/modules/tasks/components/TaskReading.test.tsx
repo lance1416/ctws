@@ -27,6 +27,7 @@ const project = (id: string, name: string, archivedAt: string | null): ProjectRe
   createdAt: '2026-10-01T00:00:00Z',
   columns: {},
   stages: [],
+  latestLine: null,
 })
 
 const task: TaskResponse = {

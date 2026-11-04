@@ -91,7 +91,16 @@ export async function lockProject(
 }
 
 /** A project and the columns modules add to it. */
-export type ProjectRow = { project: Project; columns: Record<string, number> }
+export type ProjectRow = {
+  project: Project
+  columns: Record<string, number>
+  latestLine: { week: string; line: string } | null
+}
+
+/** The latest week's line, read with the project: one row from its own key's end. */
+const latestLine = sql<{ week: string; line: string } | null>`(
+  select json_build_object('week', l.week, 'line', l.line) from project_lines l
+  where l.project_id = ${projects.id} order by l.week desc limit 1)`
 
 /** One project, archived or not, with the columns modules add to it. */
 export async function getProjectRow(
@@ -101,7 +110,7 @@ export async function getProjectRow(
   columns: ProjectColumns,
 ): Promise<ProjectRow> {
   const [row] = await q
-    .select({ project: projects, columns })
+    .select({ project: projects, columns, latestLine })
     .from(projects)
     .where(within(scoped(projects, workspaceId), eq(projects.id, id)))
   if (!row) throw new NotFound('Project')
@@ -118,7 +127,7 @@ export async function listProjects(
 ): Promise<Page<ProjectRow>> {
   const span = spanOf(asked)
   const rows = await q
-    .select({ project: projects, columns })
+    .select({ project: projects, columns, latestLine })
     .from(projects)
     .where(
       within(

@@ -48,6 +48,11 @@ export const tasks = pgTable(
     stageId: uuid('stage_id').$type<StageId>(),
     stageSince: timestamp('stage_since', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    /**
+     * When "Keep" was said to it as an untouched leaf: not listed again for eight weeks. Not
+     * progress, so not in the log.
+     */
+    keptAt: timestamp('kept_at', { withTimezone: true }),
     /** How it comes round again; only a leaf repeats. */
     repeat: jsonb('repeat').$type<Repeat>(),
     /** The one made when this one was done or cancelled, so it is made once and undone with it. */

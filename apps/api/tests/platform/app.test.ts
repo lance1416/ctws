@@ -210,10 +210,12 @@ describe('the OpenAPI document', () => {
     expect([...views.enum].sort()).toEqual([
       'calendar',
       'movement',
+      'pushed',
       'ready',
       'review',
       'review-weeks',
       'today',
+      'untouched',
     ])
     expect(tasks.map((p) => p.name)).toEqual(
       expect.arrayContaining(['projectId', 'q', 'from', 'to']),
