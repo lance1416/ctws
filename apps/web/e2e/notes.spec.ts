@@ -117,6 +117,31 @@ test('a mermaid fence renders a diagram', async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(0)
 })
 
+test('a node with a click is drawn whole, in its place, and goes nowhere', async ({ page }) => {
+  await seedNote(
+    page,
+    '```mermaid\nflowchart LR\n  X[click me] --> Y[next]\n  Z[script] --> Y\n  click X "https://example.com" "tip"\n  click Z "javascript:window.__xss=4"\n```',
+  )
+  const svg = notesBlock(page).locator('[data-note-diagram="ready"] svg')
+  await expect(svg).toContainText('click me')
+  // The link is not kept, so it neither opens nor runs anything.
+  await expect(svg.locator('a')).toHaveCount(0)
+  const box = (await svg.boundingBox())!
+  for (const name of ['click me', 'script', 'next']) {
+    const node = svg.locator('g.node', { hasText: name })
+    const at = (await node.boundingBox())!
+    expect(at.x, name).toBeGreaterThanOrEqual(box.x - 1)
+    expect(at.y, name).toBeGreaterThanOrEqual(box.y - 1)
+    expect(at.x + at.width, name).toBeLessThanOrEqual(box.x + box.width + 1)
+    expect(at.y + at.height, name).toBeLessThanOrEqual(box.y + box.height + 1)
+  }
+  const url = page.url()
+  await svg.locator('g.node', { hasText: 'script' }).click()
+  await svg.locator('g.node', { hasText: 'click me' }).click()
+  expect(page.url()).toBe(url)
+  expect(await page.evaluate(() => (window as { __xss?: number }).__xss)).toBeUndefined()
+})
+
 test('a fence written ```Mermaid renders a diagram too', async ({ page }) => {
   await seedNote(page, '```Mermaid\ngraph TD;\n  收到需求 --> 排期;\n```')
   const diagram = notesBlock(page).locator('[data-note-diagram="ready"]')

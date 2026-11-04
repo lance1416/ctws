@@ -17,9 +17,25 @@ const DIAGRAM_PURIFY_CONFIG: Parameters<typeof DOMPurify.sanitize>[1] & {
   RETURN_DOM_FRAGMENT: true,
 }
 
-/** Mermaid's svg string in, a fragment safe to adopt out. */
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
+/**
+ * Mermaid's svg string in, a fragment safe to adopt out. A node with a `click` is wrapped in an
+ * `<a>` that carries the node's place in its `transform`; the link is refused, so the `<a>` becomes
+ * a plain group keeping that `transform` and nothing else, or the node would be drawn at 0,0.
+ * Parsed into an inert template: nothing in it loads or runs before the sanitiser has it.
+ */
 export function purifyDiagram(svg: string): DocumentFragment {
-  return DOMPurify.sanitize(svg, DIAGRAM_PURIFY_CONFIG)
+  const template = document.createElement('template')
+  template.innerHTML = svg
+  for (const link of template.content.querySelectorAll('a')) {
+    const group = document.createElementNS(SVG_NS, 'g')
+    const place = link.getAttribute('transform')
+    if (place) group.setAttribute('transform', place)
+    group.append(...link.childNodes)
+    link.replaceWith(group)
+  }
+  return DOMPurify.sanitize(template.content, DIAGRAM_PURIFY_CONFIG)
 }
 
 /**
