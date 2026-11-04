@@ -436,6 +436,16 @@ const WORDS = {
   'Backend performance': ['Index the events', 'Batch the links', 'Cache the counts', 'Profile'],
   'Bugs from the review': ['Focus after delete', 'Overdue chip', 'Birthday year', 'Board scroll'],
 }
+// Titles as long as real ones get, first under Redesign so a project page opens on them: about
+// 80 and 120 characters in English, 45 and 70 in Chinese.
+for (const title of [
+  'fix(dev): make local ports configurable and point the e2e runner at the new ones',
+  'Investigate why the nightly backup job skips the attachments table when the database is under load and the lock times out',
+  '把会议笔记里没有勾掉的待办自动带到同一系列的下一次会议，并在原来那条笔记里同步勾选的状态',
+  '整理改版以后各个页面的加载顺序：先画页头和占位，数据到齐以后一次画好，不让下面的块往下跳；同时核对手机上的表现，把三处已知的闪动一起修掉',
+]) {
+  await task(CT, title, { parentId: ctParents.Redesign })
+}
 let firstInProgress = true
 for (const [name, counts] of Object.entries(plan)) {
   // Numbered across the parent, not within each status: no two tasks share a name.
