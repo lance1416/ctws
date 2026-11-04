@@ -79,9 +79,11 @@ export function useTodayRows({
   }
   const setStatus = (id: TaskId, status: StatusMove) => {
     const row = rows.find((r) => r.id === id)
-    if (row && status !== REOPEN && isFinished(status) && !isFinished(row.status)) stay(row, status)
+    const stays = row && status !== REOPEN && isFinished(status) && !isFinished(row.status)
+    if (stays) stay(row, status)
     focus.expect(id)
-    actions.setStatus(id, status, () => focus.drop(id))
+    // A row that stays is still there when the save answers; focus moves on when it goes.
+    actions.setStatus(id, status, stays ? undefined : () => focus.drop(id))
   }
   const patch = (id: TaskId, body: DatesPatch) => {
     focus.expect(id)

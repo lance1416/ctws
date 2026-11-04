@@ -88,7 +88,7 @@ export function NowWidget() {
                         title={
                           <Link
                             to={opens(t)}
-                            className="max-w-full truncate text-ui font-medium text-ink max-lg:-my-3 max-lg:py-3"
+                            className="max-w-full truncate text-ui font-medium text-ink max-lg:-my-3 max-lg:min-w-11 max-lg:py-3"
                           >
                             {t.title}
                           </Link>
@@ -121,7 +121,7 @@ export function NowWidget() {
                         title={
                           <Link
                             to={opens(t)}
-                            className="max-w-full truncate text-ui text-ink max-lg:-my-3 max-lg:py-3"
+                            className="max-w-full truncate text-ui text-ink max-lg:-my-3 max-lg:min-w-11 max-lg:py-3"
                           >
                             {t.title}
                           </Link>
