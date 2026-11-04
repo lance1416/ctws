@@ -11,6 +11,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1161.0",
     "@ctws/contracts": "workspace:*",
     "@ctws/core": "workspace:*",
     "@date-fns/tz": "1.5.0",
@@ -32,6 +33,7 @@
     "@types/node": "26.6.3",
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
+    "testcontainers": "12.2.1",
     "tsup": "8.5.1",
     "tsx": "4.23.15",
     "vitest": "5.0.5"

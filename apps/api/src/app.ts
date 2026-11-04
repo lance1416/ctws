@@ -33,6 +33,7 @@ import { documentedQuery, documentRefusals } from './platform/http/openapi'
 import { registerGuards } from './platform/http/guards'
 import { handleError } from './platform/http/errors'
 import { serveWeb } from './platform/http/web'
+import type { ObjectStore } from './platform/storage'
 
 /**
  * The app's clock: the wall clock, or, when the environment pins one (`CLOCK_PINNED_AT`), a clock
@@ -46,12 +47,16 @@ function clockFrom(pinnedAt: Date | undefined): () => Date {
   return () => new Date(pinnedAt.getTime() + (Date.now() - startedAt))
 }
 
-/** The app, built from the modules it is given. `clock` is replaceable for tests. */
+/**
+ * The app, built from the modules it is given. `clock` is replaceable for tests. Without a
+ * `storage` the server has nowhere to keep files, and photos are off.
+ */
 export async function buildApp(opts: {
   env: Env
   db: Db
   modules: readonly ApiModule[]
   clock?: () => Date
+  storage?: ObjectStore | null
 }): Promise<FastifyInstance> {
   // Ready before the first sign-in, so no request pays for hashing it.
   await warmDummyHash()
@@ -64,6 +69,7 @@ export async function buildApp(opts: {
   app.decorate('db', opts.db)
   app.decorate('env', opts.env)
   app.decorate('clock', opts.clock ?? clockFrom(opts.env.clockPinnedAt))
+  app.decorate('storage', opts.storage ?? null)
 
   await app.register(fastifySwagger, {
     openapi: {
@@ -99,11 +105,13 @@ export async function buildApp(opts: {
 
   app.setErrorHandler(handleError)
 
-  // What is running, for the status bar's build and for whoever checks a deploy with curl.
+  // What is running, for the status bar's build and for whoever checks a deploy with curl. A store
+  // that does not answer is said here but is not the api being down: everything but photos works.
   app.get('/api/v1/health', { schema: { hide: true } }, async () => ({
     status: 'ok',
     version: opts.env.version,
     commit: opts.env.commit ?? null,
+    storage: app.storage ? await app.storage.probe() : 'off',
   }))
 
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, async () => app.swagger())
@@ -159,5 +167,7 @@ declare module 'fastify' {
     env: Env
     /** The current instant; tests pin it. */
     clock: () => Date
+    /** Where uploaded files go; `null` when the server has none. */
+    storage: ObjectStore | null
   }
 }

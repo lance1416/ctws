@@ -1,14 +1,15 @@
 import { buildApp } from '../../src/app'
 import { apiModules, type ModuleDeps } from '../../src/modules'
 import { parseEnv, type Env } from '../../src/platform/config'
+import type { ObjectStore } from '../../src/platform/storage'
 import type { EnvSource } from '../../src/shell/module'
 import { withDatabase } from './db'
 
 export async function withApp(
   overrides: Partial<Env> = {},
-  deps: ModuleDeps & { clock?: () => Date; moduleEnv?: EnvSource } = {},
+  deps: ModuleDeps & { clock?: () => Date; moduleEnv?: EnvSource; storage?: ObjectStore } = {},
 ) {
-  const { clock, moduleEnv = {}, ...moduleDeps } = deps
+  const { clock, moduleEnv = {}, storage, ...moduleDeps } = deps
   const database = await withDatabase()
   const env: Env = {
     ...parseEnv({
@@ -18,7 +19,13 @@ export async function withApp(
     ...overrides,
   }
   const modules = apiModules(moduleEnv, moduleDeps)
-  const app = await buildApp({ env, db: database.db, modules, ...(clock ? { clock } : {}) })
+  const app = await buildApp({
+    env,
+    db: database.db,
+    modules,
+    ...(clock ? { clock } : {}),
+    ...(storage ? { storage } : {}),
+  })
   await app.ready()
   return {
     app,
