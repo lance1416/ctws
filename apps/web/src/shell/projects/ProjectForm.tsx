@@ -177,10 +177,7 @@ function ProjectForm({
           }}
           size={34}
         />
-        <h1
-          tabIndex={-1}
-          className="min-w-0 flex-1 text-title tracking-[-0.02em] focus:outline-none"
-        >
+        <h1 tabIndex={-1} className="min-w-0 flex-1 text-title focus:outline-none">
           {title}
         </h1>
         <Link to={cancelTo} className={`${BUTTON.quiet} max-lg:hidden`}>

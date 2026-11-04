@@ -111,7 +111,7 @@ function MeetingHead({ meeting: m }: { meeting: MeetingOccurrence }) {
       <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
         <h1
           tabIndex={-1}
-          className="truncate text-title tracking-[-0.02em] focus:outline-none max-lg:overflow-visible max-lg:whitespace-normal"
+          className="truncate text-title focus:outline-none max-lg:overflow-visible max-lg:whitespace-normal"
         >
           {m.title}
         </h1>

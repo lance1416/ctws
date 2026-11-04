@@ -35,7 +35,7 @@ export function Workbench() {
   return (
     <div ref={page} className="flex min-h-full w-full flex-1 flex-col gap-4">
       <div className="flex items-baseline gap-4">
-        <h1 tabIndex={-1} className="text-title tracking-[-0.01em] text-ink focus:outline-none">
+        <h1 tabIndex={-1} className="text-title text-ink focus:outline-none">
           {longDay(ymd(now, zone))}
         </h1>
         {/* The clock as Today's head has it. */}

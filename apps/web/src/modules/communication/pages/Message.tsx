@@ -86,7 +86,7 @@ function MessagePage({ message: m }: { message: CommunicationResponse }) {
           <Way size={20} aria-hidden="true" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h1 tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
+          <h1 tabIndex={-1} className="text-title focus:outline-none">
             {m.subject ?? 'No subject'}
           </h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted">

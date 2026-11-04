@@ -146,7 +146,7 @@ function PersonHead({ person }: { person: PersonResponse }) {
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <Avatar initials={avatarInitials(person)} size={56} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
+        <h1 tabIndex={-1} className="truncate text-title focus:outline-none">
           {person.name}
         </h1>
         <div className="flex flex-wrap items-center gap-1.5 text-ui text-muted">

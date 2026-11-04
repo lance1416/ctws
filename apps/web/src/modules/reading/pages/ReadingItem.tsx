@@ -125,7 +125,7 @@ function ReadingHead({ item }: { item: ReadingItemResponse }) {
       <div className="flex min-w-0 flex-1 flex-col gap-1 max-lg:basis-[calc(100%-5rem)]">
         <h1
           tabIndex={-1}
-          className="truncate text-title tracking-[-0.02em] focus:outline-none max-lg:overflow-visible max-lg:whitespace-normal"
+          className="truncate text-title focus:outline-none max-lg:overflow-visible max-lg:whitespace-normal"
         >
           {readingLabel(item)}
         </h1>
@@ -288,7 +288,7 @@ function EditPage({ item }: { item: ReadingItemResponse }) {
   })
   return (
     <div className="flex min-h-full max-w-3xl shrink-0 flex-col gap-4">
-      <h1 data-form-head tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
+      <h1 data-form-head tabIndex={-1} className="text-title focus:outline-none">
         Edit {readingLabel(item)}
       </h1>
       <UnsavedAsk guard={guard} />

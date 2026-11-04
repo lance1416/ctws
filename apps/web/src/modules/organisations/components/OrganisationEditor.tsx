@@ -113,7 +113,7 @@ export function OrganisationEditor({
     >
       <div data-form-head className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
         <OrganisationMark name={d.name} size={56} />
-        <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
+        <h1 tabIndex={-1} className="truncate text-title focus:outline-none">
           {organisation ? `Edit ${organisation.name}` : 'New organisation'}
         </h1>
       </div>

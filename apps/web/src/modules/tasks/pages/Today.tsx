@@ -126,11 +126,7 @@ function DeskToday() {
   return (
     <div ref={page} className="flex w-full flex-col gap-3.5">
       <header className="flex items-center gap-3.5">
-        <h1
-          id="today-heading"
-          tabIndex={-1}
-          className="text-title tracking-[-0.01em] text-ink focus:outline-none"
-        >
+        <h1 id="today-heading" tabIndex={-1} className="text-title text-ink focus:outline-none">
           {longDay(day)}
         </h1>
         {lunar && (

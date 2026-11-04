@@ -305,7 +305,7 @@ export function PersonEditor({
       <div data-form-head className="col-start-1 row-start-1 flex min-w-0 items-center gap-3">
         <Avatar initials={initials} size={56} />
         <div className="flex min-w-0 flex-col">
-          <h1 tabIndex={-1} className="truncate text-title tracking-[-0.02em] focus:outline-none">
+          <h1 tabIndex={-1} className="truncate text-title focus:outline-none">
             {person ? `Edit ${person.name}` : 'New person'}
           </h1>
           <p data-name-preview className="text-meta text-muted">

@@ -183,7 +183,7 @@ function EditForm({
     // As tall as the page, so Delete sits at its foot under the last field.
     <div className="flex min-h-full max-w-3xl shrink-0 flex-col gap-4">
       <div data-form-head className="flex flex-col gap-1">
-        <h1 tabIndex={-1} className="text-title tracking-[-0.02em] focus:outline-none">
+        <h1 tabIndex={-1} className="text-title focus:outline-none">
           Edit {m.title}
         </h1>
         {m.rrule && <p className="text-ui text-muted">Changing: {REACH[scope]}</p>}
