@@ -37,6 +37,9 @@ import {
 import {
   createNoteBody,
   dayNoteParams,
+  earlierQuery,
+  earlierResponse,
+  tickItemBody,
   dayNoteResponse,
   putDayNoteBody,
   noteFolderBody,
@@ -1314,6 +1317,26 @@ export const api = {
       params: dayNoteParams,
       ok: 200,
       response: dayNoteResponse,
+    }),
+    earlier: endpoint({
+      method: 'GET',
+      path: '/notes',
+      summary:
+        "What a meeting's earlier occurrences left unticked in their notes, the last 90 days " +
+        '(view=earlier).',
+      query: earlierQuery,
+      ok: 200,
+      response: earlierResponse,
+    }),
+    tickItem: endpoint({
+      method: 'POST',
+      path: '/notes/:id/tick',
+      summary: "Tick one item of a note's checklist, found where it was read or where it moved.",
+      params: noteParams,
+      body: tickItemBody,
+      ok: 200,
+      response: noteResponse,
+      refusals: [404, 409],
     }),
     putDay: endpoint({
       method: 'PUT',

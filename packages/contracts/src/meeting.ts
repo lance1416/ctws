@@ -28,7 +28,7 @@ const joinUrl = z
 const note = noteText
 
 /** A wall clock with no zone, `YYYY-MM-DDTHH:mm`, as a `datetime-local` control produces. */
-const localTime = z
+export const localTime = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'expected a local time like 2026-10-20T09:00')
   .refine((v) => {

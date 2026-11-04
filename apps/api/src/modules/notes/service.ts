@@ -1,13 +1,15 @@
 import {
   type CreateNoteBody,
+  EARLIER_DAYS,
   type NoteAnchor,
   type NoteId,
   noteId,
   type UpdateNoteBody,
   type WorkspaceId,
 } from '@ctws/contracts'
-import { asc, between, eq } from 'drizzle-orm'
+import { asc, between, desc, eq, gte, lt } from 'drizzle-orm'
 import type { Db, Queryable, Tx } from '../../platform/db/client'
+import { addDays, openItems, tickItem, type OpenItem } from '@ctws/core'
 import { newId } from '../../platform/db/ids'
 import { DomainError, NotFound } from '../../platform/errors'
 import { type Actor, scoped, within } from '../../platform/db/scope'
@@ -240,4 +242,65 @@ export async function dayNotesBetween(
     .from(notes)
     .where(within(scoped(notes, workspaceId), between(notes.day, from, to)))
     .orderBy(asc(notes.day))
+}
+
+/** The item to tick is not where it was read, nor anywhere it could only be. */
+class ItemMovedError extends DomainError {
+  constructor() {
+    super('conflict', {
+      type: 'urn:ctws:problem:note-item-moved',
+      title: 'That item has changed since it was read.',
+    })
+  }
+}
+
+/**
+ * What a meeting's earlier occurrences left unticked: the notes on the same series, on an
+ * occurrence before this one and no more than 90 days before it, the latest first. An
+ * occurrence id is its local start in the series' own zone, so they compare as text.
+ */
+export async function earlierItems(
+  q: Queryable,
+  workspaceId: WorkspaceId,
+  meetingId: string,
+  recurrenceId: string,
+) {
+  const floor = addDays(recurrenceId.slice(0, 10), -EARLIER_DAYS)
+  const rows = await q
+    .select()
+    .from(notes)
+    .where(
+      within(
+        scoped(notes, workspaceId),
+        eq(notes.anchorType, 'meeting'),
+        eq(notes.anchorId, meetingId),
+        lt(notes.occurrenceId, recurrenceId),
+        gte(notes.occurrenceId, floor),
+      ),
+    )
+    .orderBy(desc(notes.occurrenceId), desc(notes.createdAt))
+  return rows.flatMap((n) => {
+    const items = openItems(n.body)
+    return items.length > 0
+      ? [{ noteId: n.id, recurrenceId: n.occurrenceId!, heldAt: n.heldAt, items }]
+      : []
+  })
+}
+
+/** Ticks one item of a note, as an edit of its body would; refused when it cannot be found. */
+export async function tickNoteItem(
+  registry: LinkRegistry,
+  db: Db,
+  ctx: Actor,
+  id: NoteId,
+  item: OpenItem,
+): Promise<Note> {
+  const [row] = await db
+    .select({ body: notes.body })
+    .from(notes)
+    .where(within(scoped(notes, ctx.workspaceId), eq(notes.id, id)))
+  if (!row) throw new NotFound('Note')
+  const body = tickItem(row.body, item)
+  if (body === null) throw new ItemMovedError()
+  return updateNote(registry, db, ctx, id, { body })
 }

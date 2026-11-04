@@ -7,7 +7,16 @@ import { actorOf, currentUser } from '../../shell/auth'
 import type { LinkRegistry } from '../../shell/links'
 import { getNote, listNotes, wordCount } from './queries'
 import { createFolder, deleteFolder, listFolders, updateFolder } from './folders'
-import { createNote, dayNote, dayNotesBetween, deleteNote, putDayNote, updateNote } from './service'
+import {
+  createNote,
+  dayNote,
+  dayNotesBetween,
+  deleteNote,
+  earlierItems,
+  putDayNote,
+  tickNoteItem,
+  updateNote,
+} from './service'
 import type { Note, NoteFolder } from './tables'
 
 /** Names each note's anchor through the registry, one lookup per kind. */
@@ -93,6 +102,24 @@ export const noteRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
 
     on(api.notes.remove, async (req) => {
       await deleteNote(app.db, actorOf(req), req.params.id)
+    }),
+
+    on(api.notes.earlier, async (req) => {
+      const groups = await earlierItems(
+        app.db,
+        currentUser(req).workspaceId,
+        req.query.meetingId,
+        req.query.recurrenceId,
+      )
+      return {
+        groups: groups.map((g) => ({ ...g, heldAt: g.heldAt?.toISOString() ?? null })),
+      }
+    }),
+
+    on(api.notes.tickItem, async (req) => {
+      const ctx = actorOf(req)
+      const row = await tickNoteItem(registry, app.db, ctx, req.params.id, req.body)
+      return (await respond(registry, app.db, ctx.workspaceId, [row]))[0]!
     }),
 
     on(api.notes.day, async (req) => {

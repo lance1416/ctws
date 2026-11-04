@@ -1,6 +1,15 @@
 import { z } from 'zod'
-import { calendarDate, documentText, instant, nameText, patchOf, titleText } from './common'
-import { noteFolderId, noteId, objectId } from './id'
+import {
+  calendarDate,
+  documentText,
+  instant,
+  nameText,
+  patchOf,
+  titleText,
+  viewQuery,
+} from './common'
+import { meetingId, noteFolderId, noteId, objectId } from './id'
+import { localTime } from './meeting'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
@@ -141,3 +150,31 @@ export const dayNoteParams = z.object({ day: calendarDate }).strict()
 export const putDayNoteBody = z.object({ body: documentText }).strict()
 
 export const dayNoteResponse = z.object({ note: noteResponse.nullable() })
+
+/** A meeting's earlier occurrences, for what their notes left unticked: "From earlier". */
+export const earlierQuery = viewQuery('earlier', { meetingId, recurrenceId: localTime })
+
+/** How far back "From earlier" looks; what is older has had its chance. */
+export const EARLIER_DAYS = 90
+
+const openItem = z.object({
+  /** Its line in the note, from 0. */
+  line: z.number().int().nonnegative(),
+  /** Its words, after the box. */
+  text: z.string(),
+})
+
+/** By the occurrence whose notes they are in, the latest first. */
+export const earlierResponse = z.object({
+  groups: z.array(
+    z.object({
+      noteId,
+      recurrenceId: z.string(),
+      heldAt: instant.nullable(),
+      items: z.array(openItem),
+    }),
+  ),
+})
+
+/** Tick one item of a note's checklist, as it was read: its line, and its words to be sure. */
+export const tickItemBody = openItem.strict()
