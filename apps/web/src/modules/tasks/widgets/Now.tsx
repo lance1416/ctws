@@ -26,7 +26,7 @@ const GAP_PX = 10
  */
 const ROW =
   'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_190px_96px_56px] items-center gap-x-3 rounded-control px-3 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
-const CAPTION = 'px-3 pb-1.5 text-meta font-medium tracking-[0.06em] text-muted uppercase'
+const CAPTION = 'px-3 pb-1.5 text-overline text-muted uppercase'
 
 const opens = (t: { id: string; projectId: string }) => `/projects/${t.projectId}?task=${t.id}`
 

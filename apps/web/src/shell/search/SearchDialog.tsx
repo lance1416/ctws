@@ -680,10 +680,7 @@ export function SearchDialog({ onClose, pick }: { onClose: () => void; pick?: Pi
             const heading = `${base}-${run.key}`
             return (
               <li key={run.key} role="presentation">
-                <div
-                  id={heading}
-                  className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-muted uppercase"
-                >
+                <div id={heading} className="px-4 pt-2 pb-1 text-overline text-muted uppercase">
                   {label}
                 </div>
                 <ul role="group" aria-labelledby={heading}>

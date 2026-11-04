@@ -179,11 +179,7 @@ export function Timeline({
                 className="flex flex-col gap-3"
               >
                 {/* By month on a full page; a narrow page's five need no head. */}
-                {!last && (
-                  <h4 className="text-meta font-medium tracking-[0.06em] text-muted uppercase">
-                    {section.title}
-                  </h4>
-                )}
+                {!last && <h4 className="text-overline text-muted uppercase">{section.title}</h4>}
                 <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
                   {section.entries.map((entry, i) => {
                     const line = lineOf(entry, describeChange, timeZone)

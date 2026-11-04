@@ -79,6 +79,11 @@
   --text-initials--line-height: 1rem;
   --text-initials--font-weight: 600;
   --text-initials--letter-spacing: 0.02em;
+  /* A small capital label over a group: worn with `uppercase` and a muted colour. */
+  --text-overline: 0.6875rem;
+  --text-overline--line-height: 1rem;
+  --text-overline--font-weight: 600;
+  --text-overline--letter-spacing: 0.06em;
   --text-row: 0.9375rem;
   --text-row--line-height: 1.375rem;
   --text-row-sub: 0.8125rem;
@@ -246,7 +251,7 @@
    `text-autospace` is the Han/Latin spacing, and the only one: W3C CLREQ asks for no more than a
    quarter of a Han character's width between Han and Latin letters or digits; Chromium spends
    1/8 em at each join and nothing where the author typed a space. `normal` is not the initial
-   value in Chromium, so it has to be asked for. No letter-spacing on Han. */
+   value in Chromium, so it has to be asked for. */
 body {
   @apply bg-ground text-ui text-ink;
   font-family: var(--font-sans);

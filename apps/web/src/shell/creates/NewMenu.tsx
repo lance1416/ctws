@@ -125,9 +125,7 @@ export function NewMenu({
             />
           </label>
           {!typed && shown.length > 0 && (
-            <div className="px-4 pt-2 pb-1 text-meta font-medium tracking-[0.06em] text-muted uppercase">
-              Recent
-            </div>
+            <div className="px-4 pt-2 pb-1 text-overline text-muted uppercase">Recent</div>
           )}
           {shown.map((creator, i) => {
             const Icon = KIND_ICON[creator.kind]

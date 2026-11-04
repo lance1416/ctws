@@ -56,7 +56,7 @@ export function ProjectHead({
           <h1
             id="project-heading"
             tabIndex={-1}
-            className="min-w-0 flex-1 truncate text-title tracking-normal text-ink focus:outline-none"
+            className="min-w-0 flex-1 truncate text-title text-ink focus:outline-none"
           >
             {project.name}
           </h1>
