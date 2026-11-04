@@ -59,6 +59,9 @@ export async function bury(tx: Tx, ctx: Actor, graves: readonly Grave[]): Promis
   await tx.execute(sql`delete from resources where (owner_type, owner_id) in (${ends})`)
   await tx.execute(sql`delete from reminders where (object_type, object_id) in (${ends})`)
   await tx.execute(sql`
+    delete from unlinked_dismissed
+    where (target_type, target_id) in (${ends}) or (source_type, source_id) in (${ends})`)
+  await tx.execute(sql`
     update notes set anchor_type = null, anchor_id = null, occurrence_id = null, updated_at = ${ctx.now}
     where (anchor_type, anchor_id) in (${ends})`)
 }

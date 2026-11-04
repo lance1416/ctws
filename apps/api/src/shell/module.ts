@@ -1,6 +1,7 @@
-import type { WorkspaceId } from '@ctws/contracts'
+import type { ObjectType, WorkspaceId } from '@ctws/contracts'
 import type { SQL } from 'drizzle-orm'
-import type { Queryable } from '../platform/db/client'
+import type { Queryable, Tx } from '../platform/db/client'
+import type { Actor } from '../platform/db/scope'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { TimelineSource } from './events'
 import type { Linkable } from './links/linkable'
@@ -22,6 +23,24 @@ export type WeekCounts = (
   workspaceId: WorkspaceId,
   window: { from: Date; to: Date },
 ) => Promise<Record<string, number>>
+
+/**
+ * A module's free text, for finding where things are named without being mentioned: which of its
+ * things have it, read, and written anew. A rewrite is a change of that text like any other: it
+ * is logged and its mentions are kept in step, by the module that owns it.
+ */
+export type TextSource = {
+  type: ObjectType
+  /** Its things whose text has any of `words` in it, whatever their case. */
+  find(
+    q: Queryable,
+    workspaceId: WorkspaceId,
+    words: readonly string[],
+  ): Promise<{ id: string; text: string }[]>
+  read(q: Queryable, workspaceId: WorkspaceId, id: string): Promise<string | null>
+  /** Writes `next` over the text when it is still `was`; false when it changed meanwhile. */
+  rewrite(tx: Tx, ctx: Actor, id: string, was: string, next: string): Promise<boolean>
+}
 
 /** The environment as the process got it: a module reads its own settings from it. */
 export type EnvSource = Readonly<Record<string, string | undefined>>
@@ -53,4 +72,6 @@ export type ApiModule = {
   /** What of this module's goes with a project when the project is deleted: the tasks in it. */
   projectGraves?: ProjectGraves
   weekCounts?: WeekCounts
+  /** Its free text, where other things may be named without an @. */
+  texts?: TextSource
 }

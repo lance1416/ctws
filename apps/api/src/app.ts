@@ -22,6 +22,7 @@ import { linkRoutes, linkRegistry } from './shell/links'
 import { timelineRoutes } from './shell/events'
 import { mentionSource, relatedStageChanges, relationRoutes } from './shell/relations'
 import { reminderRoutes } from './shell/reminders'
+import { unlinkedRoutes } from './shell/unlinked'
 import { previewPending, refetchFor, resourceRoutes, type Previewer } from './shell/resources'
 import { migrationRoutes } from './shell/migration'
 import { tombstoneRoutes } from './shell/tombstones'
@@ -152,6 +153,10 @@ export async function buildApp(opts: {
         await authed.register(relationRoutes, { registry })
         await authed.register(resourceRoutes, { registry })
         await authed.register(reminderRoutes, { registry })
+        await authed.register(unlinkedRoutes, {
+          registry,
+          sources: modules.flatMap((m) => (m.texts ? [m.texts] : [])),
+        })
         await authed.register(tombstoneRoutes)
         await authed.register(migrationRoutes)
         await authed.register(calendarDayRoutes)

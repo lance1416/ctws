@@ -1,3 +1,5 @@
+import { eventLog } from '../../shell/events'
+import { textSourceOf } from '../../shell/unlinked'
 import type { TimelineEntry } from '@ctws/contracts'
 import { inArray } from 'drizzle-orm'
 import type { TimelineSource } from '../../shell/events'
@@ -65,4 +67,19 @@ export const communicationModule = fixedModule({
   linkable: communicationLinkable,
   timelineSources: (registry) => [messages(registry)],
   weekCounts: communicationWeekCounts,
+  texts: textSourceOf({
+    type: 'communication',
+    table: communications,
+    id: communications.id,
+    workspace: communications.workspaceId,
+    text: communications.body,
+    field: 'body',
+    updated: communications.updatedAt,
+    log: (tx, ctx, id, was, next) =>
+      eventLog(tx, ctx).append({ type: 'communication', id }, 'field_changed', {
+        field: 'body',
+        from: was,
+        to: next,
+      }),
+  }),
 })

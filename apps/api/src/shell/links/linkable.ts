@@ -89,6 +89,11 @@ export type Linkable = {
     workspaceId: WorkspaceId,
     about: readonly string[],
   ) => Promise<Map<string, ProjectStanding[]>>
+  /**
+   * The other names one of its things goes by, besides its title: a person's "Mira" beside "Mira
+   * Chen". Text naming it by any of them is found as naming it.
+   */
+  otherNames?: (q: Queryable, workspaceId: WorkspaceId, id: string) => Promise<string[]>
 }
 
 /** When, and from which project, what comes next is asked. */
