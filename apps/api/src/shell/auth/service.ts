@@ -1,5 +1,6 @@
 import {
   type Role,
+  type Theme,
   type UserId,
   type WorkspaceId,
   userId as userIdSchema,
@@ -134,10 +135,11 @@ export async function setTimezone(db: Queryable, userId: UserId, timezone: strin
 }
 
 /**
- * What the account chose for how it works: single keys, vim's keys, and
+ * What the account chose for how it works: its theme, single keys, vim's keys, and
  * how a note is laid out.
  */
 export type Choices = {
+  theme: Theme | null
   singleKeyShortcuts: boolean
   vimKeys: boolean
   outlineShown: boolean
@@ -146,6 +148,7 @@ export type Choices = {
 }
 
 const UNCHOSEN: Choices = {
+  theme: null,
   singleKeyShortcuts: true,
   vimKeys: false,
   outlineShown: true,
@@ -156,6 +159,7 @@ const UNCHOSEN: Choices = {
 export async function choicesOf(db: Queryable, userId: UserId): Promise<Choices> {
   const [row] = await db
     .select({
+      theme: users.theme,
       singleKeyShortcuts: users.singleKeyShortcuts,
       vimKeys: users.vimKeys,
       outlineShown: users.outlineShown,

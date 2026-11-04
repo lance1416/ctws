@@ -1,4 +1,12 @@
-import { ROLES, type Role, type UserId, type WorkspaceId } from '@ctws/contracts'
+import {
+  ROLES,
+  THEMES,
+  type Role,
+  type Theme,
+  type UserId,
+  type WorkspaceId,
+} from '@ctws/contracts'
+import { sql } from 'drizzle-orm'
 import { inList } from '../../platform/db/sql'
 import {
   boolean,
@@ -17,6 +25,12 @@ export const users = pgTable(
   {
     id: uuid('id').$type<UserId>().primaryKey(),
     email: text('email').notNull(),
+    // The account's own name, in a person's three parts; all empty until it is given one.
+    givenName: text('given_name'),
+    middleName: text('middle_name'),
+    familyName: text('family_name'),
+    // Stored lowered, so a plain unique index is the case-insensitive one.
+    username: text('username'),
     passwordHash: text('password_hash').notNull(),
     // IANA zone; every day boundary in the app is decided in it.
     timezone: text('timezone').notNull(),
@@ -37,11 +51,16 @@ export const users = pgTable(
     readableLines: boolean('readable_lines').notNull().default(false),
     /** A note is shown as its Markdown source, not drawn. */
     sourceView: boolean('source_view').notNull().default(false),
+    /** Null until chosen: a device then shows its own last choice, or the system's. */
+    theme: text('theme').$type<Theme>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex('users_email_key').on(t.email),
+    uniqueIndex('users_username_key').on(t.username),
     check('users_role_check', inList(t.role, ROLES)),
+    check('users_theme_check', inList(t.theme, THEMES)),
+    check('users_username_lowered_check', sql`${t.username} = lower(${t.username})`),
   ],
 )
 

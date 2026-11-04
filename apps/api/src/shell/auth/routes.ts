@@ -15,6 +15,7 @@ import {
   registerUser,
   setTimezone,
 } from './service'
+import { profileOf, setProfile } from './profile'
 import { createSession, revokeOtherSessions, revokeSession } from './session'
 import { migrationPending } from '../migration'
 import type { Account } from './service'
@@ -83,6 +84,9 @@ export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
   const passwordLimit = signInLimits(app)
   const me = async (account: Account) => ({
     ...account,
+    ...(await profileOf(app.db, account.id)),
+    avatarId: null,
+    photos: app.storage !== null,
     now: app.clock().toISOString(),
     clockPinned: app.env.clockPinnedAt !== undefined,
     migrationReport: await migrationPending(app.db, account.workspaceId),
@@ -96,7 +100,8 @@ export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
 
     on(api.auth.updateMe, async (req) => {
       const account = currentUser(req)
-      const { timezone, ...choices } = req.body
+      const { timezone, givenName, middleName, familyName, username, ...choices } = req.body
+      await setProfile(app.db, account.id, { givenName, middleName, familyName, username })
       if (timezone !== undefined) await setTimezone(app.db, account.id, timezone)
       await setChoices(app.db, account.id, choices)
       return me({ ...account, timezone: timezone ?? account.timezone })
