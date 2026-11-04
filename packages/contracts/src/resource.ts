@@ -28,11 +28,19 @@ export const createResourceBody = z
   .object({ owner, url: resourceUrl, name: resourceName.nullish() })
   .strict()
 
-/** A resource's own fields; `pinnedRank` is only for a project's, null unpins. */
+/**
+ * A resource's own fields; `pinnedRank` is only for a project's, null unpins. A drag names the
+ * one of its owner's resources it now sits before or after, never both.
+ */
 export const updateResourceBody = patchOf({
   url: resourceUrl,
   name: resourceName.nullable(),
   pinnedRank: pinnedRank.nullable(),
+  beforeId: resourceId,
+  afterId: resourceId,
+}).refine((b) => b.beforeId === undefined || b.afterId === undefined, {
+  message: 'a resource goes before one neighbour or after one, not both',
+  path: ['afterId'],
 })
 
 export type UpdateResourceBody = z.infer<typeof updateResourceBody>

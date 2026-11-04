@@ -168,3 +168,45 @@ describe('a project pins resources in its head', () => {
     expect((theirs.json() as { resources: ResourceResponse[] }).resources).toEqual([])
   })
 })
+
+describe('dragging a resource', () => {
+  const move = (ctx: Harness, id: string, payload: object) =>
+    ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/resources/${id}`,
+      headers: ctx.authed,
+      payload,
+    })
+
+  async function three() {
+    const { ctx, projectId } = await setup()
+    const owner = { type: 'project', id: projectId }
+    const ids: string[] = []
+    for (const n of ['a', 'b', 'c']) {
+      ids.push((await add(ctx, owner, `https://example.com/${n}`, n)).json().id)
+    }
+    const order = async () => (await listed(ctx, 'project', projectId)).map((r) => r.name)
+    return { ctx, projectId, ids: ids as [string, string, string], order }
+  }
+
+  it('puts it before or after the one it was dropped by, and nothing else moves', async () => {
+    const { ctx, ids, order } = await three()
+    expect((await move(ctx, ids[2], { beforeId: ids[0] })).statusCode).toBe(200)
+    expect(await order()).toEqual(['c', 'a', 'b'])
+    expect((await move(ctx, ids[2], { afterId: ids[1] })).statusCode).toBe(200)
+    expect(await order()).toEqual(['a', 'b', 'c'])
+    expect((await move(ctx, ids[0], { afterId: ids[1] })).statusCode).toBe(200)
+    expect(await order()).toEqual(['b', 'a', 'c'])
+  })
+
+  it("refuses a neighbour that is not one of the same thing's, and both at once", async () => {
+    const { ctx, ids, order } = await three()
+    const { projectId: elsewhere } = { projectId: await createProject(ctx, 'Elsewhere') }
+    const theirs = (
+      await add(ctx, { type: 'project', id: elsewhere }, 'https://example.com/x')
+    ).json()
+    expect((await move(ctx, ids[0], { afterId: theirs.id })).statusCode).toBe(422)
+    expect((await move(ctx, ids[0], { beforeId: ids[1], afterId: ids[2] })).statusCode).toBe(400)
+    expect(await order()).toEqual(['a', 'b', 'c'])
+  })
+})
