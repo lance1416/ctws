@@ -13,13 +13,14 @@ import {
   INDENT_PX,
   OrganisationMark,
   SavedMark,
+  TREE_COL,
   TREE_ROW,
-  WIDE_ONLY,
   WaitingBadge,
   opensOnClick,
 } from './TaskRowParts'
 import { Grip } from '../../../platform/ui/Grip'
 import { StageLabel } from '../../../platform/ui/StageLabel'
+import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
 import { ProgressSquare } from './ProgressSquare'
 import { StartButton, StatusButton } from './StatusControls'
 import { useNow } from '../../../platform/time/useNow'
@@ -32,6 +33,8 @@ type Props = {
   aged: boolean
   /** A parent's leaves, for its square and its "1/4"; a leaf has none. */
   counts: ChildCounts | undefined
+  /** A parent at the top that follows others: a gap and a line above it set its group apart. */
+  opensGroup: boolean
   /** The stage it has reached, and whether that stage is one folded away by default. */
   stage: { name: string; quiet: boolean } | null
   /** What is still in the way: the Due column says Waiting while there is any. */
@@ -70,6 +73,7 @@ export function TaskRow({
   task,
   aged,
   counts,
+  opensGroup,
   stage,
   blockedBy,
   organisations,
@@ -117,9 +121,11 @@ export function TaskRow({
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         transition,
       }}
-      className={`group relative cursor-pointer ${TREE_ROW} hover:bg-hover ${
-        isDragging ? 'bg-float opacity-70' : ''
-      } ${
+      // A parent sits on the band with its line under it; a leaf under a faint one. Between top
+      // parents only, a gap and a line: the band is the group's head.
+      className={`group relative cursor-pointer py-2 ${TREE_ROW} hover:bg-hover ${
+        counts ? 'border-b border-line bg-band' : 'border-b border-line/55'
+      } ${opensGroup ? 'mt-2 border-t' : ''} ${isDragging ? 'bg-float opacity-70' : ''} ${
         // A selected row wears the select layer plus an ink edge: a layer alone would be hard to
         // tell from whatever the pointer happens to be over.
         selected ? 'bg-select shadow-[inset_2px_0_0_0_var(--color-ink)]' : ''
@@ -146,7 +152,7 @@ export function TaskRow({
 
       <span
         data-row-cell
-        className="flex min-w-0 items-center gap-1.5"
+        className="flex min-w-0 items-start gap-1.5"
         style={{ paddingLeft: (row.depth - 1) * INDENT_PX }}
       >
         {/* Gated on hasChildren, not on collapsed: a stale collapsed id for a row that has since
@@ -157,7 +163,7 @@ export function TaskRow({
             aria-label={row.collapsed ? 'Expand' : 'Collapse'}
             aria-expanded={!row.collapsed}
             onClick={on.toggle}
-            className="-my-2 -ml-1 flex h-9 w-5 shrink-0 items-center justify-center text-muted hover:text-ink"
+            className="-my-2 -ml-1 flex h-9 w-5 shrink-0 items-center justify-center self-center text-muted hover:text-ink"
           >
             {row.collapsed ? <CollapseIcon size={14} /> : <ExpandIcon size={14} />}
           </button>
@@ -165,11 +171,11 @@ export function TaskRow({
           <span aria-hidden="true" className="-ml-1 w-5 shrink-0" />
         )}
         {counts ? (
-          <span className="flex shrink-0">
+          <span className="flex h-5 shrink-0 items-center">
             <ProgressSquare status={status} children={counts} />
           </span>
         ) : (
-          <span className="relative -m-1.5 flex shrink-0">
+          <span className="relative -mx-1.5 -my-1 flex shrink-0">
             <StatusButton
               status={status}
               title={title}
@@ -179,14 +185,22 @@ export function TaskRow({
             {blocked && !settled && <WaitingBadge />}
           </span>
         )}
-        <span
-          data-row-title
-          title={blocked ?? undefined}
-          className={`ml-1 truncate text-ui ${counts ? 'font-medium' : ''} ${
-            settled ? 'text-muted' : 'text-ink'
-          } ${status === 'cancelled' ? 'line-through' : ''}`}
-        >
-          {title}
+        <span className="ml-1 flex min-w-0 flex-col gap-0.5">
+          <span
+            data-row-title
+            // Two lines at most; the whole of it on hover.
+            title={blocked ? `${title}\n${blocked}` : title}
+            className={`line-clamp-2 break-words ${counts ? 'text-head' : 'text-ui'} ${
+              settled ? 'text-muted' : 'text-ink'
+            } ${status === 'cancelled' ? 'line-through' : ''}`}
+          >
+            {title}
+          </span>
+          {due && (
+            <span className={TREE_COL.dueUnder}>
+              <DueLabel due={due} />
+            </span>
+          )}
         </span>
         {organisations && organisations.length > 0 && (
           <span className="ml-1.5 flex">
@@ -199,14 +213,22 @@ export function TaskRow({
         {blocked && <span className="sr-only">, {blocked}</span>}
       </span>
 
-      <span data-row-stage className={`flex min-w-0 ${WIDE_ONLY}`}>
+      <span data-row-status className={`min-w-0 ${TREE_COL.status}`}>
+        {/* A parent's state is its square; a leaf says its own, To do as well. */}
+        {!counts && <StatusWord status={status} />}
+      </span>
+
+      <span data-row-stage className={`min-w-0 ${TREE_COL.stage}`}>
         {stage && <StageLabel name={stage.name} quiet={stage.quiet} />}
       </span>
 
-      <span data-row-progress className={`flex min-w-0 items-center gap-2 ${WIDE_ONLY}`}>
+      <span data-row-progress className={`h-5 min-w-0 items-center gap-2 ${TREE_COL.progress}`}>
         {counts && (
           <>
-            <span aria-hidden="true" className="h-1 min-w-0 flex-1 rounded-full bg-hover">
+            <span
+              aria-hidden="true"
+              className={`h-1 min-w-0 flex-1 rounded-full bg-hover ${TREE_COL.bar}`}
+            >
               <span
                 className="block h-full rounded-full bg-go"
                 style={{
@@ -214,7 +236,7 @@ export function TaskRow({
                 }}
               />
             </span>
-            <span className="text-meta text-muted tabular-nums">
+            <span className="font-mono text-meta text-ink tabular-nums">
               <span className="sr-only">Done </span>
               {counts.done}/{counts.counted}
             </span>
@@ -222,7 +244,7 @@ export function TaskRow({
         )}
       </span>
 
-      <span data-row-due-cell className="flex min-w-0">
+      <span data-row-due-cell className={`min-w-0 ${TREE_COL.due}`}>
         {due ? (
           <DueLabel due={due} />
         ) : (
@@ -239,7 +261,7 @@ export function TaskRow({
           Without hover they always show. */}
       <span
         data-row-acts
-        className="flex h-9 items-center justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 max-md:absolute max-md:top-0 max-md:right-2 max-md:bg-panel max-md:shadow-[inset_0_0_0_100vmax_var(--color-hover)] [@media(hover:none)]:opacity-100"
+        className="-my-2 flex h-9 items-center justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 max-md:absolute max-md:top-0 max-md:right-2 max-md:bg-panel max-md:shadow-[inset_0_0_0_100vmax_var(--color-hover)] [@media(hover:none)]:opacity-100"
       >
         {on.moveTo && (
           // The pointer's way; the keyboard moves it from the inspector's edit, as any task.
@@ -296,6 +318,27 @@ function DueLabel({ due }: { due: TreeDue }) {
       )}
       {due.tone === 'waiting' && <LockIcon size={12} aria-hidden="true" className="shrink-0" />}
       {due.text}
+    </span>
+  )
+}
+
+/**
+ * A leaf's status in its own column, said in words: what is moving in green, what is shelved in
+ * an outline, the rest plain.
+ */
+function StatusWord({ status }: { status: TaskResponse['status'] }) {
+  const look = {
+    todo: 'bg-hover text-muted',
+    in_progress: 'bg-go-bg font-medium text-go-t',
+    backlog: 'border border-line-strong text-muted',
+    done: 'bg-hover text-muted',
+    cancelled: 'text-muted line-through',
+  }[status]
+  return (
+    <span
+      className={`inline-flex h-5.5 -translate-y-px items-center rounded-control px-2 text-meta whitespace-nowrap ${look}`}
+    >
+      {STATUS_LABEL[status]}
     </span>
   )
 }

@@ -2,7 +2,7 @@ import type { ComponentType, ReactNode } from 'react'
 import { useDelayed } from '../time/useDelayed'
 import { BUTTON } from './buttonStyles'
 import { AlertIcon, KIND_ICON, RetryIcon, type IconComponent, type Kind } from './icons'
-import { KIND_TEXT, KIND_TINT } from './kinds'
+import { KIND_ON_TINT, KIND_TINT } from './kinds'
 
 /**
  * The container every page is built from. An empty block shrinks to its head and keeps its New.
@@ -39,7 +39,8 @@ export function Block({
 }) {
   const Icon = badge?.icon ?? (kind ? KIND_ICON[kind] : null)
   const emptyInHead = empty && !keepsSize
-  const tint = badge?.tint ?? (kind ? `${KIND_TINT[kind]} ${KIND_TEXT[kind]}` : '')
+  // A head's badge is a tag: its icon in the darker `-t` that reads on the tint, in both themes.
+  const tint = badge?.tint ?? (kind ? `${KIND_TINT[kind]} ${KIND_ON_TINT[kind]}` : '')
   return (
     <section
       aria-label={title}
@@ -54,7 +55,7 @@ export function Block({
           emptyInHead && (
             // Cut short rather than wrapped; on a phone a long name leaves no room, so it goes
             // under the name.
-            <span className="min-w-0 truncate text-meta text-muted max-lg:whitespace-normal">
+            <span className="min-w-0 truncate text-meta text-muted italic max-lg:whitespace-normal">
               {empty}
             </span>
           )
@@ -62,7 +63,7 @@ export function Block({
         count={emptyInHead ? undefined : count}
         actions={actions}
       />
-      {empty && keepsSize && <p className="px-4 py-3 text-ui text-muted">{empty}</p>}
+      {empty && keepsSize && <p className="px-4 py-3 text-meta text-muted italic">{empty}</p>}
       {!empty && children}
     </section>
   )
@@ -96,7 +97,7 @@ export function BlockHead({
   const Heading = level
   return (
     <div
-      className={`flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:flex-wrap max-lg:py-1.5 ${ruled ? 'border-b border-line' : ''}`}
+      className={`flex h-10 shrink-0 items-center gap-2 bg-band pr-1.5 pl-3 max-lg:h-auto max-lg:min-h-10 max-lg:flex-wrap max-lg:py-1.5 ${ruled ? 'border-b border-line' : ''}`}
     >
       {Icon && (
         <span
@@ -107,9 +108,7 @@ export function BlockHead({
         </span>
       )}
       <span className="flex min-w-0 items-center gap-2 max-lg:flex-wrap max-lg:gap-y-0">
-        <Heading className="shrink-0 text-ui font-medium whitespace-nowrap text-ink">
-          {title}
-        </Heading>
+        <Heading className="shrink-0 text-head whitespace-nowrap text-ink">{title}</Heading>
         {aside}
       </span>
       {count !== undefined && (

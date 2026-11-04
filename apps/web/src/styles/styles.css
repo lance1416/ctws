@@ -73,6 +73,10 @@
   --text-prose--line-height: 1.5rem;
   --text-ui: 0.8125rem;
   --text-ui--line-height: 1.25rem;
+  /* The UI size at a head's weight: a block's head, a section's, a parent row in the tree. */
+  --text-head: 0.8125rem;
+  --text-head--line-height: 1.25rem;
+  --text-head--font-weight: 600;
   --text-meta: 0.75rem;
   --text-meta--line-height: 1rem;
   --text-initials: 0.6875rem;
@@ -239,6 +243,46 @@
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
+}
+
+/* A tinted tag, badge or avatar wears its kind's ring: none in light, where the tint is see-through,
+   a fine line in dark, where the tint is a solid deep shade. A layer below the utilities, so a
+   shadow or ring set on the element itself still wins. A large tinted area opts out with
+   `shadow-none`. */
+@layer components {
+  .bg-task-bg {
+    box-shadow: inset 0 0 0 1px var(--color-task-line);
+  }
+  .bg-meeting-bg {
+    box-shadow: inset 0 0 0 1px var(--color-meeting-line);
+  }
+  .bg-person-bg {
+    box-shadow: inset 0 0 0 1px var(--color-person-line);
+  }
+  .bg-reading-bg {
+    box-shadow: inset 0 0 0 1px var(--color-reading-line);
+  }
+  .bg-project-bg {
+    box-shadow: inset 0 0 0 1px var(--color-project-line);
+  }
+  .bg-organisation-bg {
+    box-shadow: inset 0 0 0 1px var(--color-organisation-line);
+  }
+  .bg-communication-bg {
+    box-shadow: inset 0 0 0 1px var(--color-communication-line);
+  }
+  .bg-note-bg {
+    box-shadow: inset 0 0 0 1px var(--color-note-line);
+  }
+  .bg-go-bg {
+    box-shadow: inset 0 0 0 1px var(--color-go-line);
+  }
+  .bg-warn-bg {
+    box-shadow: inset 0 0 0 1px var(--color-warn-line);
+  }
+  .bg-stop-bg {
+    box-shadow: inset 0 0 0 1px var(--color-stop-line);
+  }
 }
 
 /* Icons draw a finer line in dark, where a light stroke on a dark ground reads heavier. */

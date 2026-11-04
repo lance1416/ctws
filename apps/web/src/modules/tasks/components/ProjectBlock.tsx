@@ -76,7 +76,8 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
       projectId={projectId}
       last={
         // "New task", typed into where it will land: no dialog.
-        <div data-new-root className={`${TREE_ROW} pb-1`}>
+        // An action, not a row: a line above it, and its words quieter until typed into.
+        <div data-new-root className={`${TREE_ROW} border-t border-line`}>
           <div
             style={{ paddingLeft: markStart(1) }}
             className="col-span-full flex min-w-0 flex-col justify-center"
@@ -92,7 +93,7 @@ export function ProjectTasks({ projectId, view }: { projectId: ProjectId; view: 
                 aria-label="New task"
                 aria-invalid={invalid}
                 aria-describedby={describedBy}
-                className="ml-1 h-7 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-muted"
+                className="ml-1 h-7 min-w-0 flex-1 bg-transparent text-ui text-ink placeholder:text-meta placeholder:font-medium placeholder:text-muted"
               />
             </label>
             {failure}

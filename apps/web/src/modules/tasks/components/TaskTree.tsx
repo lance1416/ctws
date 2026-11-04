@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useDelayed } from '../../../platform/time/useDelayed'
 import { BlockFailed } from '../../../platform/ui/Block'
+import { CollapseIcon } from '../../../platform/ui/icons'
 import { MoveToProject, useProjects } from '../../../shell/projects'
 import { patchTask, projectTasksQuery, taskKeys } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
@@ -16,7 +17,7 @@ import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
 import { TaskRow } from './TaskRow'
-import { titleStart, TREE_ROW, WIDE_ONLY } from './TaskRowParts'
+import { titleStart, TREE_BOX, TREE_COL, TREE_ROW } from './TaskRowParts'
 import { useRowPane, useRowRefs } from './useRowPane'
 import { useSavedFlash } from './useSavedFlash'
 import { useBulkSelection } from './tree/useBulkSelection'
@@ -188,12 +189,18 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
         // Not a row of the list: a way to show some. `none`, so it is not counted among them.
         <li key={`done:${group}`} role="none" data-done-group={group} className={TREE_ROW}>
           <div className="col-span-full" style={{ paddingLeft: titleStart(depth) }}>
+            {/* The app's word about the rows, not one of them: in italics, with a fold to open. */}
             <button
               type="button"
               onClick={() => shown.toggle(group)}
               aria-pressed={open}
-              className="-ml-1.5 h-7 rounded-control px-1.5 text-meta text-muted hover:bg-hover hover:text-ink"
+              className="-ml-1.5 flex h-7 items-center gap-1 rounded-control px-1.5 text-meta text-muted italic hover:bg-hover hover:text-ink"
             >
+              <CollapseIcon
+                size={12}
+                aria-hidden="true"
+                className={`shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
+              />
               {open ? 'Hide done' : `${shown.closed.get(group)!.hidden} done`}
             </button>
           </div>
@@ -263,7 +270,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
       )}
       <div
         // The inbox's rows carry Move to… too: their controls' column is wider.
-        className={`rounded-container border border-line bg-panel ${inInbox ? '[--row-acts:148px]' : ''}`}
+        className={`${TREE_BOX} overflow-hidden rounded-container border border-line bg-panel ${inInbox ? '[--row-acts:148px]' : ''}`}
       >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
@@ -271,14 +278,11 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
               role="presentation"
               aria-hidden="true"
               data-tree-head
-              className={`${TREE_ROW} min-h-7.5 border-b border-line text-meta text-muted`}
+              className={`${TREE_ROW} ${TREE_HEAD}`}
             >
-              <span>Name</span>
-              <span className={WIDE_ONLY}>Stage</span>
-              <span className={WIDE_ONLY}>Progress</span>
-              <span>Due</span>
+              <TreeHeadCells />
             </div>
-            <ul data-task-tree className="flex flex-col py-1">
+            <ul data-task-tree className="flex flex-col">
               {/* One flat list with the input keyed beside the rows, not inside the one it follows:
                 when a created row lands the input moves after it instead of being rebuilt, and an
                 Enter typed into a rebuilt box would be dropped. */}
@@ -289,6 +293,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
                   task={byId.get(row.id)}
                   aged={inInbox}
                   counts={row.hasChildren ? counts.get(row.id) : undefined}
+                  opensGroup={row.hasChildren && row.depth === 1 && i > 0}
                   stage={stageOf(byId.get(row.id)?.stageId ?? null)}
                   blockedBy={tasks.data?.blockers[row.id]}
                   organisations={tasks.data?.organisations[row.id]}
@@ -339,15 +344,12 @@ function TreeLoading() {
   const shown = useDelayed()
   if (!shown) return null
   return (
-    <div aria-busy="true" className="rounded-container border border-line bg-panel">
-      <div
-        aria-hidden="true"
-        className={`${TREE_ROW} min-h-7.5 border-b border-line text-meta text-muted`}
-      >
-        <span>Name</span>
-        <span className={WIDE_ONLY}>Stage</span>
-        <span className={WIDE_ONLY}>Progress</span>
-        <span>Due</span>
+    <div
+      aria-busy="true"
+      className={`${TREE_BOX} overflow-hidden rounded-container border border-line bg-panel`}
+    >
+      <div aria-hidden="true" className={`${TREE_ROW} ${TREE_HEAD}`}>
+        <TreeHeadCells />
       </div>
       <div className="flex flex-col py-1">
         {[62, 48, 55, 40].map((width, i) => (
@@ -356,12 +358,29 @@ function TreeLoading() {
               <span className="size-4 shrink-0 rounded-full bg-line" />
               <span className="h-2.5 rounded-small bg-line" style={{ width: `${width}%` }} />
             </span>
-            <span className={WIDE_ONLY} />
-            <span className={`h-2.5 w-12 rounded-small bg-line opacity-60 ${WIDE_ONLY}`} />
-            <span className="h-2.5 w-10 rounded-small bg-line opacity-60" />
+            <span className={TREE_COL.status} />
+            <span className={TREE_COL.stage} />
+            <span className={`h-2.5 w-12 rounded-small bg-line opacity-60 ${TREE_COL.progress}`} />
+            <span className={`h-2.5 w-10 rounded-small bg-line opacity-60 ${TREE_COL.due}`} />
           </div>
         ))}
       </div>
     </div>
+  )
+}
+
+/** The column names, on the band in small capitals, each where its column shows. */
+const TREE_HEAD = 'border-b border-line bg-band text-overline text-muted uppercase'
+
+function TreeHeadCells() {
+  const cell = 'h-8 items-center'
+  return (
+    <>
+      <span className={`flex ${cell}`}>Name</span>
+      <span className={`${cell} ${TREE_COL.status}`}>Status</span>
+      <span className={`${cell} ${TREE_COL.stage}`}>Stage</span>
+      <span className={`${cell} ${TREE_COL.progress}`}>Progress</span>
+      <span className={`${cell} ${TREE_COL.due}`}>Due</span>
+    </>
   )
 }
