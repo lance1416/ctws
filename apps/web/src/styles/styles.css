@@ -109,77 +109,99 @@
 
   /* The four surfaces, stacked by lightness in each scheme. Light lifts a float with
      `shadow-float`; dark lifts it by being lighter. */
-  --color-ground: light-dark(#eef0f3, #1b1c1f);
-  --color-chrome: light-dark(#f7f8fa, #232427);
-  --color-panel: light-dark(#ffffff, #2b2d30);
-  --color-float: light-dark(#ffffff, #323438);
+  --color-ground: light-dark(#eef0f3, #171717);
+  --color-chrome: light-dark(#f7f8fa, #171717);
+  --color-panel: light-dark(#ffffff, #222222);
+  /* The strip a block's head and a table's head sit on, between panel and ground in both. */
+  --color-band: light-dark(#f7f8fa, #1d1d1d);
+  --color-float: light-dark(#ffffff, #2a2a2a);
   /* The hairline, and the edge that identifies a field or a plain button: 3:1 on all four
      surfaces. */
-  --color-line: light-dark(#e2e4e9, #393b40);
-  --color-line-strong: light-dark(#858b96, #797d85);
-  --color-hover: light-dark(rgb(30 31 34 / 0.05), rgb(223 225 229 / 0.06));
-  --color-select: light-dark(rgb(30 31 34 / 0.09), rgb(223 225 229 / 0.1));
+  --color-line: light-dark(#e2e4e9, #383838);
+  --color-line-strong: light-dark(#858b96, #737373);
+  --color-hover: light-dark(rgb(30 31 34 / 0.05), rgb(255 255 255 / 0.06));
+  --color-select: light-dark(rgb(30 31 34 / 0.09), rgb(255 255 255 / 0.1));
   /* Two greys of text: ink, and muted for all that is said quieter, which reads at 4.5:1 on
      every surface, bare, hovered, selected and both at once. */
-  --color-ink: light-dark(#1e1f22, #dfe1e5);
-  --color-muted: light-dark(#575c68, #bbbfc5);
-  --color-on-ink: light-dark(#ffffff, #1e1f22);
+  --color-ink: light-dark(#1e1f22, #f5f5f5);
+  --color-muted: light-dark(#575c68, #c4c4c4);
+  --color-on-ink: light-dark(#ffffff, #000000);
   /* What a phone's row shows when swiped: a fill each, the words and icon on it in on-ink. */
   --color-swipe-later: light-dark(#885504, #e8a33d);
   --color-swipe-pick: light-dark(#5a5f6b, #b4b8bf);
   --color-swipe-done: light-dark(#166d2f, #5fb865);
   --color-swipe-remove: light-dark(#b22b2c, #f06a6a);
 
-  /* The eight kinds: main / `-t` text / `-bg` tint. Where a value had to move to pass
-     `textContrast.test.ts`, only its lightness did, so a word keeps its kind's hue. */
-  --color-task: light-dark(#3574f0, #568dfa);
-  --color-task-t: light-dark(#2457c5, #96b9ff);
-  --color-task-bg: light-dark(rgb(53 116 240 / 0.11), rgb(84 138 247 / 0.16));
-  --color-meeting: light-dark(#8150e0, #a37cf2);
-  --color-meeting-t: light-dark(#6a3bc4, #ccb6fe);
-  --color-meeting-bg: light-dark(rgb(129 80 224 / 0.11), rgb(163 124 242 / 0.16));
-  --color-person: light-dark(#d6337a, #f06ba8);
-  --color-person-t: light-dark(#af245e, #ff9ac7);
-  --color-person-bg: light-dark(rgb(214 51 122 / 0.1), rgb(240 107 168 / 0.15));
-  --color-reading: light-dark(#138585, #3db8b8);
-  --color-reading-t: light-dark(#066a6a, #57cecd);
-  --color-reading-bg: light-dark(rgb(19 133 133 / 0.11), rgb(61 184 184 / 0.15));
-  --color-project: light-dark(#5e6a82, #8f9bb3);
-  --color-project-t: light-dark(#4a5468, #b3bdd3);
-  --color-project-bg: light-dark(rgb(94 106 130 / 0.12), rgb(143 155 179 / 0.16));
-  --color-organisation: light-dark(#96613a, #c79469);
-  --color-organisation-t: light-dark(#7a4d2b, #e0b48b);
-  --color-organisation-bg: light-dark(rgb(150 97 58 / 0.12), rgb(199 148 105 / 0.15));
-  --color-communication: light-dark(#0e7fa3, #4cb8d8);
-  --color-communication-t: light-dark(#0b6683, #71cae5);
-  --color-communication-bg: light-dark(rgb(14 127 163 / 0.11), rgb(76 184 216 / 0.15));
-  --color-note: light-dark(#6b7a1f, #a9b84f);
-  --color-note-t: light-dark(#566401, #b8c85f);
-  --color-note-bg: light-dark(rgb(107 122 31 / 0.13), rgb(169 184 79 / 0.15));
+  /* The eight kinds: main / `-t` text / `-bg` tint, and `-line`, the ring a coloured tag, badge or
+     avatar wears. Light: a main for icons, a darker `-t` for words, a see-through tint, no ring.
+     Dark: one bright foreground for both, a solid deep tint and a ring, so a tag reads as a shape
+     on a dark card. Where a light value had to move to pass `textContrast.test.ts`, only its
+     lightness did, so a word keeps its kind's hue. */
+  --color-task: light-dark(#3574f0, #89c6ff);
+  --color-task-t: light-dark(#2457c5, #89c6ff);
+  --color-task-bg: light-dark(rgb(53 116 240 / 0.11), #0d2847);
+  --color-task-line: light-dark(transparent, #104d87);
+  --color-meeting: light-dark(#8150e0, #c6b7ff);
+  --color-meeting-t: light-dark(#6a3bc4, #c6b7ff);
+  --color-meeting-bg: light-dark(rgb(129 80 224 / 0.11), #291f43);
+  --color-meeting-line: light-dark(transparent, #473876);
+  --color-person: light-dark(#d6337a, #fea6bf);
+  --color-person-t: light-dark(#af245e, #fea6bf);
+  --color-person-bg: light-dark(rgb(214 51 122 / 0.1), #381525);
+  --color-person-line: light-dark(transparent, #6d2545);
+  --color-reading: light-dark(#138585, #3cdfc2);
+  --color-reading-t: light-dark(#066a6a, #3cdfc2);
+  --color-reading-bg: light-dark(rgb(19 133 133 / 0.11), #0d2d2a);
+  --color-reading-line: light-dark(transparent, #145750);
+  --color-project: light-dark(#5e6a82, #c2c5ca);
+  --color-project-t: light-dark(#4a5468, #c2c5ca);
+  --color-project-bg: light-dark(rgb(94 106 130 / 0.12), #212225);
+  --color-project-line: light-dark(transparent, #363a3f);
+  --color-organisation: light-dark(#96613a, #e2c2a4);
+  --color-organisation-t: light-dark(#7a4d2b, #e2c2a4);
+  --color-organisation-bg: light-dark(rgb(150 97 58 / 0.12), #28211d);
+  --color-organisation-line: light-dark(transparent, #4d3c2f);
+  --color-communication: light-dark(#0e7fa3, #6cd6eb);
+  --color-communication-t: light-dark(#0b6683, #6cd6eb);
+  --color-communication-bg: light-dark(rgb(14 127 163 / 0.11), #082c36);
+  --color-communication-line: light-dark(transparent, #045468);
+  --color-note: light-dark(#6b7a1f, #c8ea83);
+  --color-note-t: light-dark(#566401, #c8ea83);
+  --color-note-bg: light-dark(rgb(107 122 31 / 0.13), #1f2917);
+  --color-note-line: light-dark(transparent, #3d522a);
 
   /* `on-stop` is the text of a filled destructive button. */
-  --color-go: light-dark(#208a3c, #5fb865);
-  --color-go-t: light-dark(#166d2f, #80ce87);
-  --color-go-bg: light-dark(rgb(32 138 60 / 0.11), rgb(95 184 101 / 0.15));
-  --color-warn: light-dark(#b16f00, #e8a33d);
-  --color-warn-t: light-dark(#885504, #f0b860);
-  --color-warn-bg: light-dark(rgb(232 163 61 / 0.18), rgb(232 163 61 / 0.15));
-  --color-stop: light-dark(#d13d3d, #f06a6a);
-  --color-stop-t: light-dark(#b22b2c, #ff9e9d);
-  --color-stop-bg: light-dark(rgb(209 61 61 / 0.1), rgb(240 106 106 / 0.15));
+  --color-go: light-dark(#208a3c, #60de9f);
+  --color-go-t: light-dark(#166d2f, #60de9f);
+  --color-go-bg: light-dark(rgb(32 138 60 / 0.11), #132d21);
+  --color-go-line: light-dark(transparent, #20573e);
+  --color-warn: light-dark(#b16f00, #ffd345);
+  --color-warn-t: light-dark(#885504, #ffd345);
+  --color-warn-bg: light-dark(rgb(232 163 61 / 0.18), #302008);
+  --color-warn-line: light-dark(transparent, #5c3d05);
+  --color-stop: light-dark(#d13d3d, #ffa7a7);
+  --color-stop-t: light-dark(#b22b2c, #ffa7a7);
+  --color-stop-bg: light-dark(rgb(209 61 61 / 0.1), #3b1219);
+  --color-stop-line: light-dark(transparent, #72232d);
+  /* A meeting drawn as a solid block on Today's timeline: in dark the bright foreground would glare. */
+  --color-meet-solid: light-dark(#8150e0, #6e56cf);
+  --color-on-meet: #ffffff;
+  /* Where a search or a find hits in text. */
+  --color-hit: light-dark(rgb(232 163 61 / 0.35), rgb(255 211 69 / 0.28));
   --color-on-stop: light-dark(#ffffff, #1e1f22);
 
-  /* The project colours: a solid square with white initials, one hex for both schemes, always
-     beside the project's name. `projectColors.test.ts` holds them to the square's own rules. */
-  --color-project-blue: #2663c9;
-  --color-project-amber: #b35f00;
-  --color-project-green: #008734;
-  --color-project-violet: #814fc8;
-  --color-project-red: #c02434;
-  --color-project-olive: #6f6500;
-  --color-project-teal: #00809a;
-  --color-project-pink: #b53c8b;
-  --color-on-project: #ffffff;
+  /* The project colours: a solid square with its initials, always beside the project's name.
+     Light, white initials; dark, the same hue lifted to one lightness under near-black initials.
+     `projectColors.test.ts` holds them to the square's own rules. */
+  --color-project-blue: light-dark(#2663c9, #5796ff);
+  --color-project-amber: light-dark(#b35f00, #e17904);
+  --color-project-green: light-dark(#008734, #09b74a);
+  --color-project-violet: light-dark(#814fc8, #b271ff);
+  --color-project-red: light-dark(#c02434, #ff5162);
+  --color-project-olive: light-dark(#6f6500, #a59d08);
+  --color-project-teal: light-dark(#00809a, #0cabbf);
+  --color-project-pink: light-dark(#b53c8b, #f447ba);
+  --color-on-project: light-dark(#ffffff, #0a0a0a);
 
   /* Syntax colours, for highlighted code fences only. Their own family rather than borrowed
      from the kinds or states: those mean something here, and a keyword in `warn`'s colour would be
@@ -201,8 +223,8 @@
   /* The lift under a float: a hairline ring and one soft fall in light; in
      dark a visible ring and a deeper fall, since the surfaces are close in lightness. Two
      colour tokens, because `light-dark()` is only valid where a colour is. */
-  --color-float-ring: light-dark(rgb(30 31 34 / 0.08), #45474d);
-  --color-float-fall: light-dark(rgb(30 31 34 / 0.14), rgb(0 0 0 / 0.4));
+  --color-float-ring: light-dark(rgb(30 31 34 / 0.08), #383838);
+  --color-float-fall: light-dark(rgb(30 31 34 / 0.14), rgb(0 0 0 / 0.5));
   --shadow-float: 0 0 0 1px var(--color-float-ring), 0 8px 28px var(--color-float-fall);
 }
 
@@ -217,6 +239,16 @@
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
+}
+
+/* Icons draw a finer line in dark, where a light stroke on a dark ground reads heavier. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) svg.lucide {
+    stroke-width: 1.75;
+  }
+}
+:root[data-theme='dark'] svg.lucide {
+  stroke-width: 1.75;
 }
 
 /*

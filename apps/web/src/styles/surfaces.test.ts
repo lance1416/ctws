@@ -18,21 +18,30 @@ describe('surfaces', () => {
       }
     })
 
-  it('stacks the four surfaces by lightness in dark, so a float needs no shadow there', () => {
+  it('in dark, a card is one step lighter than the ground, as in light, and a float one more', () => {
     const lum = (hex: string) =>
       rgba(hex)
         .slice(0, 3)
         .reduce((a, b) => a + b, 0)
     const [ground, chrome, panel, float] = SURFACES.map((s) => lum(color(s, 'dark')!))
-    expect(ground).toBeLessThan(chrome!)
-    expect(chrome).toBeLessThan(panel!)
+    // One ground under the page, the sidebar, the bars: chrome is no step of its own in dark.
+    expect(chrome).toBe(ground)
+    expect(ground).toBeLessThan(panel!)
     expect(panel).toBeLessThan(float!)
+    // The band a head sits on lies between the card and the ground, in both schemes.
+    const band = lum(color('band', 'dark')!)
+    expect(band).toBeGreaterThan(ground!)
+    expect(band).toBeLessThan(panel!)
   })
 
   it('writes every colour once, for both schemes', () => {
     // One `light-dark()` per token rather than a dark block repeating the list: a token added to
-    // one block and not the other would paint the wrong scheme.
-    expect(css).not.toMatch(/prefers-color-scheme/)
+    // one block and not the other would paint the wrong scheme. A scheme's block may hold what is
+    // not a colour (the dark icon stroke), never a colour.
+    for (const block of css.match(/@media \(prefers-color-scheme[^{]*\{[\s\S]*?\n\}/g) ?? [])
+      expect(block.slice(block.indexOf('{'))).not.toMatch(
+        /color|background|fill|stroke:|border|shadow|outline/,
+      )
     for (const s of SURFACES) expect(color(s, 'light')).not.toEqual(color(s, 'dark'))
   })
 

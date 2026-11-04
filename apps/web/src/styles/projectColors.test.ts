@@ -3,9 +3,10 @@ import { contrast } from '@ctws/palette'
 import { color } from './tokens'
 
 /**
- * A project is a solid square with white initials and its name beside it, so the rules are the
+ * A project is a solid square with its initials and its name beside it, so the rules are the
  * square's: the initials read, the colour is a colour, the squares weigh the same, and any two can
- * be told apart. Colour-blind distance and 3:1 on the ground are deliberately not asked; the
+ * be told apart. Light has white initials; dark lifts each hue to one lightness under near-black
+ * initials. Colour-blind distance and 3:1 on the ground are deliberately not asked; the
  * initials and the name carry what the colour cannot.
  */
 const NAMES = ['blue', 'amber', 'green', 'violet', 'red', 'olive', 'teal', 'pink'] as const
@@ -79,7 +80,33 @@ describe('the project colours', () => {
     expect(fails).toEqual([])
   })
 
-  it('are the same hex in both schemes, so a project keeps its colour with the theme', () => {
-    expect(palette('dark')).toEqual(pal)
+  describe('in dark', () => {
+    const dark = palette('dark')
+    const initials = color('on-project', 'dark')!
+    const lightness = (hex: string) => oklab(hex)[0]
+
+    it('keep each hue, one step lighter', () => {
+      for (const [i, hex] of dark.entries())
+        expect(lightness(hex)).toBeGreaterThan(lightness(pal[i]!))
+    })
+
+    it('read near-black initials at 4.5:1 on every square', () => {
+      expect(initials).toBe('#0a0a0a')
+      for (const hex of dark) expect(contrast(initials, hex), hex).toBeGreaterThanOrEqual(4.5)
+    })
+
+    it('are colours, not greys: OKLCH chroma at least 0.11', () => {
+      for (const hex of dark) expect(chroma(hex), hex).toBeGreaterThanOrEqual(0.11)
+    })
+
+    it('weigh the same: OKLCH lightness 0.68', () => {
+      for (const hex of dark) expect(lightness(hex), hex).toBeCloseTo(0.68, 2)
+    })
+
+    it('can be told apart: any two at least 12 apart, every pair', () => {
+      for (const [i, a] of dark.entries())
+        for (const b of dark.slice(i + 1))
+          expect(distance(a, b), `${a} ${b}`).toBeGreaterThanOrEqual(12)
+    })
   })
 })

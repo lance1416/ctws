@@ -97,7 +97,7 @@ export function Timeline({
           return (
             <div key={node.key} data-timeline-meeting>
               <div
-                className="absolute top-0 grid h-10 min-w-6 place-items-center rounded-control bg-meeting text-on-project"
+                className="absolute top-0 grid h-10 min-w-6 place-items-center rounded-control bg-meet-solid text-on-meet"
                 style={{ left: pct(node.at), width: pct(node.until - node.at) }}
               >
                 {/* A node of several says how many beside it, not in it. */}
