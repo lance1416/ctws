@@ -1,4 +1,4 @@
-import type { UpdateMeBody, UserId } from '@ctws/contracts'
+import type { FileId, UpdateMeBody, UserId } from '@ctws/contracts'
 import { displayName, type NameParts } from '@ctws/core'
 import { eq } from 'drizzle-orm'
 import type { Db, Queryable } from '../../platform/db/client'
@@ -6,16 +6,17 @@ import { isUniqueViolation } from '../../platform/db/sql'
 import { NameRequiredError, UsernameTakenError } from './errors'
 import { users } from './tables'
 
-/** Who the account says it is: its name in parts, and its handle. */
+/** Who the account says it is: its name in parts, its handle and its photo. */
 export type Profile = {
   name: string | null
   givenName: string | null
   middleName: string | null
   familyName: string | null
   username: string | null
+  avatarId: FileId | null
 }
 
-type Parts = Omit<Profile, 'name' | 'username'>
+type Parts = Pick<Profile, 'givenName' | 'middleName' | 'familyName'>
 
 /** The name as a person's would be shown, or null with no part given. */
 function shown(parts: Parts): string | null {
@@ -35,10 +36,17 @@ export async function profileOf(db: Queryable, userId: UserId): Promise<Profile>
       middleName: users.middleName,
       familyName: users.familyName,
       username: users.username,
+      avatarId: users.avatarId,
     })
     .from(users)
     .where(eq(users.id, userId))
-  const parts = row ?? { givenName: null, middleName: null, familyName: null, username: null }
+  const parts = row ?? {
+    givenName: null,
+    middleName: null,
+    familyName: null,
+    username: null,
+    avatarId: null,
+  }
   return { ...parts, name: shown(parts) }
 }
 

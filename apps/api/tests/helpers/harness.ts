@@ -4,6 +4,7 @@ import { expect } from 'vitest'
 import { lockTaskTree } from '../../src/modules/tasks/tree'
 import type { Unfurl } from '../../src/modules/reading/unfurl/unfurl'
 import type { Env } from '../../src/platform/config'
+import type { ObjectStore } from '../../src/platform/storage'
 import type { Tx } from '../../src/platform/db/client'
 import type { EnvSource } from '../../src/shell/module'
 import { withApp } from './app'
@@ -29,6 +30,7 @@ export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Pro
       ...(opts.unfurl ? { unfurl: opts.unfurl } : {}),
       ...(opts.clock ? { clock: opts.clock } : {}),
       ...(opts.moduleEnv ? { moduleEnv: opts.moduleEnv } : {}),
+      ...(opts.storage ? { storage: opts.storage } : {}),
     },
   )
   const cookie = await register(ctx, email, opts.timezone ?? 'UTC')
@@ -165,6 +167,7 @@ export type Opts = {
   moduleEnv?: EnvSource
   clock?: () => Date
   timezone?: string
+  storage?: ObjectStore
 }
 
 /** `appWithUser`, with its teardown pushed onto the caller's list for `afterEach` to drain. */

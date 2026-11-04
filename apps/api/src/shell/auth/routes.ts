@@ -85,7 +85,6 @@ export const sessionRoutes: FastifyPluginAsyncZod = async (app) => {
   const me = async (account: Account) => ({
     ...account,
     ...(await profileOf(app.db, account.id)),
-    avatarId: null,
     photos: app.storage !== null,
     now: app.clock().toISOString(),
     clockPinned: app.env.clockPinnedAt !== undefined,

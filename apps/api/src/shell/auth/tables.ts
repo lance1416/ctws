@@ -1,6 +1,7 @@
 import {
   ROLES,
   THEMES,
+  type FileId,
   type Role,
   type Theme,
   type UserId,
@@ -8,6 +9,7 @@ import {
 } from '@ctws/contracts'
 import { sql } from 'drizzle-orm'
 import { inList } from '../../platform/db/sql'
+import { files } from '../files/tables'
 import {
   boolean,
   check,
@@ -31,6 +33,10 @@ export const users = pgTable(
     familyName: text('family_name'),
     // Stored lowered, so a plain unique index is the case-insensitive one.
     username: text('username'),
+    // The account's own photo; gone with the file, which only a sweep removes.
+    avatarId: uuid('avatar_id')
+      .$type<FileId>()
+      .references(() => files.id, { onDelete: 'set null' }),
     passwordHash: text('password_hash').notNull(),
     // IANA zone; every day boundary in the app is decided in it.
     timezone: text('timezone').notNull(),

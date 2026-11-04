@@ -56,6 +56,7 @@ export const personLinkable: Linkable = {
         name: people.name,
         givenName: people.givenName,
         familyName: people.familyName,
+        avatarId: people.avatarId,
       })
       .from(people)
       .where(within(scoped(people, workspaceId), where))
@@ -72,6 +73,7 @@ export const personLinkable: Linkable = {
       id: r.id,
       title: r.name,
       initials: avatarInitials(r),
+      avatarId: r.avatarId,
       org:
         currentRole(
           (roles.get(r.id) ?? []).map((x) => ({ ...x, from: x.fromMonth, to: x.toMonth })),

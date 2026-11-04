@@ -10,7 +10,7 @@ type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
  * 401 inside the session scope, 403 for an unsafe method without the client header, 429 when it
  * is rate limited).
  */
-type Refusal = 401 | 403 | 404 | 409 | 422
+type Refusal = 401 | 403 | 404 | 409 | 413 | 422 | 503
 
 /**
  * One operation: how it is called, what it takes, and what it answers. The API registers its

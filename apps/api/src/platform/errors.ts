@@ -1,9 +1,16 @@
 /**
  * What a refusal is, which decides its status: 400 a request in the wrong form, 422 one in the
- * right form that cannot hold, 409 one the current state refuses.
+ * right form that cannot hold, 409 one the current state refuses, 503 one this server is not set
+ * up to do.
  */
 export type ErrorKind =
-  'unauthenticated' | 'forbidden' | 'not-found' | 'conflict' | 'invalid' | 'unprocessable'
+  | 'unauthenticated'
+  | 'forbidden'
+  | 'not-found'
+  | 'conflict'
+  | 'invalid'
+  | 'unprocessable'
+  | 'unavailable'
 
 /**
  * Everything of a refusal the client sees; nothing else of the error is sent. Most refusals are

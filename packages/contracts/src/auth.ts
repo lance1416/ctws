@@ -17,7 +17,7 @@ export type Theme = (typeof THEMES)[number]
  * A handle unique in the instance: lowercase letters, digits and inner hyphens. Capitals are
  * taken as typed and lowered, so `Lance` and `lance` are the same handle.
  */
-export const username = z
+const username = z
   .string()
   .trim()
   .toLowerCase()

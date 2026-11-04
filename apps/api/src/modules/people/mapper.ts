@@ -15,6 +15,7 @@ export function toPersonResponse(p: PersonRow, today: string): PersonResponse {
     middleName: p.middleName,
     familyName: p.familyName,
     sortKey: p.sortKey,
+    avatarId: p.avatarId,
     aliases: p.aliases,
     circleIds: p.circleIds,
     timeZone: p.timeZone,

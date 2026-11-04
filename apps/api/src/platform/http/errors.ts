@@ -12,6 +12,7 @@ const STATUS: Record<ErrorKind, number> = {
   conflict: 409,
   invalid: 400,
   unprocessable: 422,
+  unavailable: 503,
 }
 
 /** Exactly what the error declares it shows, at its kind's status. */

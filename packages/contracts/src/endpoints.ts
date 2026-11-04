@@ -26,6 +26,13 @@ import {
 } from './calendar'
 import { viewQuery } from './common'
 import {
+  avatarParams,
+  photoCrop,
+  photoRemovedResponse,
+  photoResponse,
+  restorePhotoBody,
+} from './photo'
+import {
   createNoteBody,
   noteFolderBody,
   noteFolderParams,
@@ -416,6 +423,44 @@ export const api = {
       ok: 200,
       response: migrationReportResponse,
       refusals: [404],
+    }),
+  },
+  photos: {
+    get: endpoint({
+      method: 'GET',
+      path: '/avatars/:avatarId',
+      summary: "A photo, as WebP: the account's own or one of its people's. Cached for good.",
+      params: avatarParams,
+      ok: 200,
+      refusals: [404, 503],
+    }),
+    setMine: endpoint({
+      method: 'PUT',
+      path: '/me/avatar',
+      summary:
+        "Set the account's photo: the file as the body, cut to the square in the query. JPEG, " +
+        'PNG, WebP or GIF, known by its bytes, up to 10 MB.',
+      query: photoCrop,
+      ok: 200,
+      response: photoResponse,
+      refusals: [413, 503],
+    }),
+    removeMine: endpoint({
+      method: 'DELETE',
+      path: '/me/avatar',
+      summary: "Take the account's photo off; it can be put back for a minute.",
+      ok: 200,
+      response: photoRemovedResponse,
+      refusals: [404, 503],
+    }),
+    restoreMine: endpoint({
+      method: 'POST',
+      path: '/me/avatar/restore',
+      summary: 'Put back the photo a remove took off, while the Undo lasts.',
+      body: restorePhotoBody,
+      ok: 200,
+      response: photoResponse,
+      refusals: [409, 503],
     }),
   },
   tombstones: {
@@ -897,6 +942,37 @@ export const api = {
       params: personParams,
       ok: 204,
       refusals: [404],
+    }),
+    setPhoto: endpoint({
+      method: 'PUT',
+      path: '/people/:id/avatar',
+      summary:
+        "Set a person's photo: the file as the body, cut to the square in the query. JPEG, " +
+        'PNG, WebP or GIF, known by its bytes, up to 10 MB.',
+      params: personParams,
+      query: photoCrop,
+      ok: 200,
+      response: photoResponse,
+      refusals: [404, 413, 503],
+    }),
+    removePhoto: endpoint({
+      method: 'DELETE',
+      path: '/people/:id/avatar',
+      summary: "Take a person's photo off; it can be put back for a minute.",
+      params: personParams,
+      ok: 200,
+      response: photoRemovedResponse,
+      refusals: [404, 503],
+    }),
+    restorePhoto: endpoint({
+      method: 'POST',
+      path: '/people/:id/avatar/restore',
+      summary: 'Put back the photo a remove took off, while the Undo lasts.',
+      params: personParams,
+      body: restorePhotoBody,
+      ok: 200,
+      response: photoResponse,
+      refusals: [404, 409, 503],
     }),
     putRoles: endpoint({
       method: 'PUT',

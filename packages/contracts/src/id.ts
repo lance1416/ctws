@@ -16,6 +16,14 @@ export type ProjectId = z.infer<typeof projectId>
 export const personId = idOf<'PersonId'>()
 export type PersonId = z.infer<typeof personId>
 
+/** A stored file: a photo now, a link's preview image later. */
+export const fileId = idOf<'FileId'>()
+export type FileId = z.infer<typeof fileId>
+
+/** One photo set aside by a delete, while it can still be put back. */
+export const undoToken = idOf<'UndoToken'>()
+export type UndoToken = z.infer<typeof undoToken>
+
 export const meetingId = idOf<'MeetingId'>()
 export type MeetingId = z.infer<typeof meetingId>
 
