@@ -38,6 +38,23 @@ jobs:
           # And the per-connection ceiling is NOT raised in production: it is a security control,
           # and the only place it is loosened is the dev stack the e2e suite runs against.
           ! render | grep -q AUTH_CEILING
+      # An existing deploy that adds nothing to its env file upgrades to no new container and
+      # photos off; the profile brings Garage up keyed with the very values the api signs with.
+      - name: compose.prod.yaml runs storage only when asked
+        env:
+          POSTGRES_PASSWORD: rendering-only
+          IMAGE: ghcr.io/owner/ctws:v0
+        run: |
+          services() { docker compose --env-file /dev/null -f compose.prod.yaml config --services; }
+          # Not `! services | grep`: bash -e does not stop on a negated command that is not the last.
+          if services | grep -qx storage; then echo 'storage runs without the profile'; exit 1; fi
+          export COMPOSE_PROFILES=storage S3_ACCESS_KEY_ID=GKrender S3_SECRET_ACCESS_KEY=render-secret
+          services | grep -qx storage
+          docker compose --env-file /dev/null -f compose.prod.yaml config --format json \
+            | jq -e '.services.storage.environment.GARAGE_DEFAULT_ACCESS_KEY == .services.api.environment.S3_ACCESS_KEY_ID
+                     and .services.storage.environment.GARAGE_DEFAULT_SECRET_KEY == .services.api.environment.S3_SECRET_ACCESS_KEY
+                     and .services.storage.environment.GARAGE_DEFAULT_BUCKET == "ctws"
+                     and .services.api.environment.S3_ENDPOINT == "http://storage:3900"'
 
   e2e:
     runs-on: ubuntu-latest
@@ -71,11 +88,12 @@ jobs:
       # api-pinned is the same image with its clock pinned: the `*.pinned.spec.ts` run against it.
       # Built as dev from this commit, as the status bar and /health say (CTWS_COMMIT).
       - run: CTWS_COMMIT="${GITHUB_SHA::8}" docker compose --profile pinned up -d --build --wait api api-pinned
-      - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000/api/v1/health
-      - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3001/api/v1/health
+      # :3000 has Garage behind it and :3001 has no storage at all; the suite relies on both.
+      - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000/api/v1/health | jq -e '.storage == "ready"'
+      - run: curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3001/api/v1/health | jq -e '.storage == "off"'
       - run: pnpm --filter @ctws/web e2e
       - if: failure()
-        run: docker compose --profile pinned logs api api-pinned
+        run: docker compose --profile pinned logs api api-pinned storage
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
