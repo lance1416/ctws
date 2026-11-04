@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { Block, BlockFailed } from '../../../../platform/ui/Block'
 import { ToDoIcon } from '../../../../platform/ui/icons'
 import { ProjectSquare, useEveryProject } from '../../../../shell/projects'
@@ -22,8 +21,7 @@ export function ReadyBlock({ today }: { today: string }) {
   // What the left column already lists is not offered again here.
   const listed = useQuery(todayQuery(today)).data ?? []
   const projects = useEveryProject()
-  const [error, setError] = useState<string | null>(null)
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   const offered = offeredReady(ready.data ?? [], listed)
   const rows = offered.slice(0, SHOWN)
   const badge = { icon: ToDoIcon, tint: 'bg-task-bg text-task' }
@@ -71,11 +69,6 @@ export function ReadyBlock({ today }: { today: string }) {
       </ul>
       {offered.length > SHOWN && (
         <AllInInspector list={TODAY_LISTS.ready} count={offered.length} className={ALL_ROW} />
-      )}
-      {error && (
-        <p role="alert" className="px-3 pb-2.5 text-ui text-stop-t">
-          {error}
-        </p>
       )}
     </Block>
   )

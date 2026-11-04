@@ -51,8 +51,7 @@ export function PhoneToday() {
   const today = useQuery(todayQuery(day))
   const lunar = useLunarName(day)
   const registry = useRegistry()
-  const [error, setError] = useState<string | null>(null)
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   const [searching, setSearching] = useState(false)
   const [opened, setOpened] = useState<TaskId | null>(null)
   const [picking, setPicking] = useState<TodayTaskResponse | null>(null)
@@ -101,11 +100,6 @@ export function PhoneToday() {
         </p>
       </PhoneHead>
 
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
       {today.isError ? (
         <BlockFailed what="tasks for today" onRetry={() => void today.refetch()} />
       ) : today.isPending ? (

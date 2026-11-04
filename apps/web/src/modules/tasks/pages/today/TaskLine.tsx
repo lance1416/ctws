@@ -8,7 +8,7 @@ import { ProgressSquare } from '../../components/ProgressSquare'
 import { StatusButton } from '../../components/StatusControls'
 import { SavedMark, WaitingBadge } from '../../components/TaskRowParts'
 import { blockedLabel } from '../../logic/blockedLabel'
-import { type StatusMove, toggleDoneTarget } from '../../logic/status'
+import { isFinished, type StatusMove, toggleDoneTarget } from '../../logic/status'
 import { dueMark } from '../../logic/todayMarks'
 
 /**
@@ -137,9 +137,9 @@ export function TaskLine({
             onClick={onOpen}
             onKeyDown={onKeyDown}
             title={blocked ?? undefined}
-            className={`flex max-w-full min-w-0 items-baseline text-left text-ui text-ink ${
+            className={`flex max-w-full min-w-0 items-baseline text-left text-ui ${
               t.status === 'in_progress' ? 'font-medium' : ''
-            }`}
+            } ${isFinished(t.status) ? 'text-muted line-through' : 'text-ink'}`}
           >
             <span data-row-title className="truncate">
               {t.title}

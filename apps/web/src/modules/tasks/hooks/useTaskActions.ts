@@ -1,4 +1,5 @@
-import { problemText } from '../../../platform/http/api'
+import { refusalText } from '../../../platform/http/retry'
+import { useUndo } from '../../../platform/ui/undo'
 import {
   type TaskStatus,
   type TodayTaskResponse,
@@ -17,12 +18,17 @@ type TodayTasks = TodayTaskResponse[]
  */
 const before = new Map<TaskId, 'todo' | 'in_progress'>()
 
+/** A task's dates as a list holds them, for taking a change of them back. */
+type Dates = { scheduledOn?: string | null; dueAt?: string | null }
+
 /**
- * One-click edits from a list row. Status changes are optimistic; date changes wait for the
- * server, which decides the segment a row belongs in.
+ * One-click edits from a list row. The row changes at once and the save follows; one that fails
+ * puts the row back and says so, with Retry. Finishing a task and changing its dates can be
+ * undone; the server still decides the segment a row belongs in, read again after the save.
  */
-export function useTaskActions(onError: (message: string) => void) {
+export function useTaskActions() {
   const qc = useQueryClient()
+  const say = useUndo()
 
   const run = useMutation({
     mutationFn: ({ id, body }: { id: TaskId; body: UpdateTaskBody }) => patchTask(id, body),
@@ -32,6 +38,19 @@ export function useTaskActions(onError: (message: string) => void) {
       const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: taskKeys.lists })
       const today = qc.getQueriesData<TodayTasks>({ queryKey: taskKeys.todays })
       const status = body.status
+      const dates: Dates = {}
+      if (body.scheduledOn !== undefined) dates.scheduledOn = body.scheduledOn
+      if (body.dueAt !== undefined) dates.dueAt = body.dueAt
+      if (Object.keys(dates).length > 0) {
+        qc.setQueriesData<ProjectTasks>({ queryKey: taskKeys.lists }, (old) =>
+          old
+            ? { ...old, tasks: old.tasks.map((t) => (t.id === id ? { ...t, ...dates } : t)) }
+            : old,
+        )
+        qc.setQueriesData<TodayTasks>({ queryKey: taskKeys.todays }, (old) =>
+          old?.map((t) => (t.id === id ? { ...t, ...dates } : t)),
+        )
+      }
       if (status) {
         // The row answers at once; the rollups wait for the refetch.
         qc.setQueriesData<ProjectTasks>({ queryKey: taskKeys.lists }, (old) =>
@@ -46,38 +65,49 @@ export function useTaskActions(onError: (message: string) => void) {
       }
       return { tasks, today }
     },
-    onError: (e, _vars, ctx) => {
+    onError: (e, vars, ctx) => {
       for (const [key, data] of [...(ctx?.tasks ?? []), ...(ctx?.today ?? [])]) {
         qc.setQueryData(key, data)
       }
-      onError(problemText(e) ?? "Couldn't save the change")
+      say.failed(() => run.mutate(vars), refusalText(e))
     },
     scope: ROW_WRITES,
     meta: { changes: ['task'], awaits: [taskKeys.all], ownsError: true },
   })
 
-  /** The status the row has now, from whichever list holds it. */
-  const statusOf = (id: TaskId): TaskStatus | undefined => {
+  /** The task as whichever list holds it has it now. */
+  const held = (
+    id: TaskId,
+  ): { status: TaskStatus; scheduledOn: string | null; dueAt: string | null } | undefined => {
     for (const [, data] of qc.getQueriesData<ProjectTasks>({ queryKey: taskKeys.lists })) {
       const hit = data?.tasks.find((t) => t.id === id)
-      if (hit) return hit.status
+      if (hit) return hit
     }
     for (const key of [taskKeys.todays, ['tasks', 'ready']] as const)
-      for (const [, data] of qc.getQueriesData<{ id: TaskId; status: TaskStatus }[]>({
-        queryKey: key,
-      })) {
+      for (const [, data] of qc.getQueriesData<
+        { id: TaskId; status: TaskStatus; scheduledOn: string | null; dueAt: string | null }[]
+      >({ queryKey: key })) {
         const hit = data?.find((t) => t.id === id)
-        if (hit) return hit.status
+        if (hit) return hit
       }
     return undefined
   }
+  const statusOf = (id: TaskId): TaskStatus | undefined => held(id)?.status
 
   const set = (id: TaskId, status: TaskStatus, after?: () => void) => {
-    if (isFinished(status)) {
-      const was = statusOf(id)
-      if (was && !isFinished(was)) before.set(id, was === 'in_progress' ? 'in_progress' : 'todo')
+    const was = statusOf(id)
+    if (isFinished(status) && was && !isFinished(was)) {
+      before.set(id, was === 'in_progress' ? 'in_progress' : 'todo')
     }
     run.mutate({ id, body: { status } }, { onSettled: () => after?.() })
+    if (isFinished(status) && was && !isFinished(was))
+      say.offer({
+        said: status === 'done' ? 'Done' : 'Cancelled',
+        undo: () => {
+          before.delete(id)
+          return run.mutateAsync({ id, body: { status: was } })
+        },
+      })
   }
 
   return {
@@ -91,7 +121,17 @@ export function useTaskActions(onError: (message: string) => void) {
         .catch(() => [])
         .then((changes) => set(id, reopenedTo(changes), after))
     },
-    patch: (id: TaskId, body: UpdateTaskBody, after?: () => void) =>
-      run.mutate({ id, body }, { onSettled: () => after?.() }),
+    patch: (id: TaskId, body: UpdateTaskBody, after?: () => void) => {
+      const was = held(id)
+      run.mutate({ id, body }, { onSettled: () => after?.() })
+      if (!was || (body.scheduledOn === undefined && body.dueAt === undefined)) return
+      const back: Dates = {}
+      if (body.scheduledOn !== undefined) back.scheduledOn = was.scheduledOn
+      if (body.dueAt !== undefined) back.dueAt = was.dueAt
+      say.offer({
+        said: body.scheduledOn === undefined ? 'Deadline changed' : 'Plan changed',
+        undo: () => run.mutateAsync({ id, body: back }),
+      })
+    },
   }
 }

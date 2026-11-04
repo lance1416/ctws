@@ -57,17 +57,15 @@ function DeskToday() {
   const { openId, setOpenId } = useTaskParam()
   const rows = today.data ?? []
 
-  const [error, setError] = useState<string | null>(null)
   const [savedId, setSavedId] = useSavedFlash()
-  const { titles, pane, setStatus, patch, onRowKeyDown } = useTodayRows({
+  const { titles, pane, setStatus, patch, onRowKeyDown, shown } = useTodayRows({
     rows,
     settled: today.isSuccess,
     openId,
     setOpenId,
-    setError,
   })
   const { openTask } = pane
-  const { inProgress, planned, overdue } = todaySegments(rows)
+  const { inProgress, planned, overdue } = todaySegments(shown(rows))
 
   // Not held to a width: the page's columns are what its width gives.
   const page = useRef<HTMLDivElement>(null)
@@ -149,12 +147,6 @@ function DeskToday() {
         failed={others.failed}
         onRetry={others.retry}
       />
-
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
 
       <div
         data-today-columns={columns}

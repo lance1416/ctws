@@ -1,9 +1,11 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ICON_BUTTON } from './buttonStyles'
 import { CloseIcon } from './icons'
 
 /** How long a line of what was done stays, read and gone. */
 const SHOWN_MS = 4000
+/** Longer with something to press, and held while the pointer is on it. */
+const ACTION_MS = 5000
 
 /**
  * A line of what was done, at the foot of the window. Said once by a screen reader as it comes.
@@ -12,21 +14,29 @@ const SHOWN_MS = 4000
 export function Toast({
   children,
   lines,
+  action,
   onGone,
 }: {
   children: ReactNode
   lines?: readonly string[]
+  /** One thing to do about it, at the end of the line: Undo, Retry. */
+  action?: { label: string; onPress: () => void }
   onGone: () => void
 }) {
   const stays = lines !== undefined && lines.length > 0
+  const [held, setHeld] = useState(false)
+  const ms = action ? ACTION_MS : SHOWN_MS
   useEffect(() => {
-    if (stays) return
-    const timer = setTimeout(onGone, SHOWN_MS)
+    if (stays || held) return
+    const timer = setTimeout(onGone, ms)
     return () => clearTimeout(timer)
-  }, [onGone, stays])
+  }, [onGone, stays, held, ms])
   return (
     <div
       role="status"
+      data-toast
+      onPointerEnter={() => setHeld(action !== undefined)}
+      onPointerLeave={() => setHeld(false)}
       className={`fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 gap-3 rounded-container bg-float px-3.5 py-2.5 text-ui text-ink shadow-float ${
         stays ? 'w-md items-start' : 'items-center'
       }`}
@@ -51,7 +61,18 @@ export function Toast({
           </button>
         </>
       ) : (
-        <span className="truncate">{children}</span>
+        <>
+          <span className="truncate">{children}</span>
+          {action && (
+            <button
+              type="button"
+              onClick={action.onPress}
+              className="-my-1 -mr-1.5 h-7 shrink-0 rounded-control px-2 font-medium text-task-t hover:bg-hover"
+            >
+              {action.label}
+            </button>
+          )}
+        </>
       )}
     </div>
   )

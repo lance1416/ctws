@@ -1,6 +1,6 @@
 import type { ProjectId, TaskId } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useContext, useState } from 'react'
+import { useContext } from 'react'
 import { ymd } from '../../../platform/time/dates'
 import { useNow } from '../../../platform/time/useNow'
 import { BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
@@ -41,8 +41,7 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
   const tasks = useQuery(projectTasksQuery(projectId))
   const all = tasks.data?.tasks ?? []
   const shown = useTreeVisibility(projectId, all)
-  const [error, setError] = useState<string | null>(null)
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   const inspect = useShowInInspector()
   const timeZone = useTimeZone()
   const today = ymd(useNow(), timeZone)
@@ -91,11 +90,6 @@ export function PhoneProjectTree({ projectId }: { projectId: ProjectId }) {
     })
   return (
     <div className="flex flex-col gap-2">
-      {error && (
-        <p role="alert" className="text-ui text-stop-t">
-          {error}
-        </p>
-      )}
       <ul
         aria-label="Tasks"
         data-task-tree

@@ -109,7 +109,7 @@ export function StageBoard({
   })
 
   const [error, setError] = useState<string | null>(null)
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   /** A new stage for one node: logged, and its status left as it is. */
   const move = (id: TaskId, to: StageId) => {
     if (byId.get(id)?.stageId === to) return

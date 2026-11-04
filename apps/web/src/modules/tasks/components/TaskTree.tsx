@@ -1,18 +1,25 @@
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { type ProjectId, type StageId, type TaskId, type TaskResponse } from '@ctws/contracts'
+import {
+  type ProjectId,
+  type StageId,
+  type TaskId,
+  type TaskPosition,
+  type TaskResponse,
+} from '@ctws/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Fragment, useCallback, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { useDelayed } from '../../../platform/time/useDelayed'
 import { BlockFailed } from '../../../platform/ui/Block'
 import { CollapseIcon } from '../../../platform/ui/icons'
 import { MoveToProject, useProjects } from '../../../shell/projects'
-import { patchTask, projectTasksQuery, taskKeys } from '../api'
+import { moveTask, patchTask, projectTasksQuery, taskKeys } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { isFinished, REOPEN, type StatusMove } from '../logic/status'
 import { blockLength, flatten } from '../logic/tree/flatten'
 import { leafCounts } from '../logic/tree/leafCounts'
-import { Toast } from '../../../platform/ui/Toast'
+import { placeOf } from '../logic/tree/applyMove'
+import { useUndo } from '../../../platform/ui/undo'
 import { NewTaskInput } from './NewTaskInput'
 import { SelectionBar } from './SelectionBar'
 import { TaskDetail } from './TaskDetail'
@@ -55,17 +62,21 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
   const [error, setError] = useState<string | null>(null)
   // The inbox's row being moved to a project, and the move itself.
   const [moving, setMoving] = useState<TaskResponse | null>(null)
-  // Where a move under a parent landed, said at the foot for a moment.
-  const [moved, setMoved] = useState<string | null>(null)
-  const unsay = useCallback(() => setMoved(null), [])
+  // Where it landed, said at the foot with the way back to where it was.
+  const say = useUndo()
   const move = useMutation({
-    mutationFn: ({ id, to, under }: { id: TaskId; to: ProjectId; said?: string; under?: TaskId }) =>
+    mutationFn: ({ id, to, under }: { id: TaskId; to: ProjectId; said: string; under?: TaskId }) =>
       patchTask(id, { projectId: to, parentId: under ?? null }),
     meta: { changes: ['task'], awaits: [taskKeys.all], ownsError: true },
-    onSuccess: (_, { said }) => {
+    onMutate: ({ id }) => placeOf(all, id, projectId),
+    onSuccess: (_, { id, said }, back) => {
       setMoving(null)
-      if (said) setMoved(said)
+      if (back) say.offer({ said, undo: () => moveBack.mutateAsync({ id, back }) })
     },
+  })
+  const moveBack = useMutation({
+    mutationFn: ({ id, back }: { id: TaskId; back: TaskPosition }) => moveTask(id, back),
+    meta: { changes: ['task'], awaits: [taskKeys.all], ownsError: true },
   })
   const folds = useCollapsed(projectId)
   const shown = useTreeVisibility(projectId, all)
@@ -105,7 +116,7 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
 
   const [savedId, setSavedId] = useSavedFlash()
 
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   /** Every status change the tree makes: a row finished here stays on screen, however it was. */
   const setStatus = (id: TaskId, status: StatusMove) => {
     setError(null)
@@ -225,7 +236,13 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
       height={rows.find((r) => r.id === moving.id)?.subtreeHeight ?? 1}
       busy={move.isPending}
       error={move.isError ? 'Couldn’t move it. Try again.' : null}
-      onPick={(to) => move.mutate({ id: moving.id, to })}
+      onPick={(to) =>
+        move.mutate({
+          id: moving.id,
+          to,
+          said: `Moved to ${allProjects.data?.find((p) => p.id === to)?.name ?? 'the project'}`,
+        })
+      }
       onPickParent={({ project, parent }) =>
         move.mutate({
           id: moving.id,
@@ -240,7 +257,6 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
       }}
     />
   )
-  const said = moved && <Toast onGone={unsay}>{moved}</Toast>
 
   // Reading or not read: the tree's own block says so, and never draws an empty project with its
   // "New task".
@@ -325,7 +341,6 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
         {last}
       </div>
       {mover}
-      {said}
       {openTask && (
         // A save marks the row and leaves the pane open, reading back what was written.
         <TaskDetail

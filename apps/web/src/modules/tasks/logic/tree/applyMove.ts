@@ -26,3 +26,24 @@ export function applyMove(old: TaskResponse[], id: TaskId, body: TaskPosition): 
         : t,
   )
 }
+
+/**
+ * Where a task stands now, as a move would name it: under its parent, before the sibling after
+ * it, or after the one before it when it is last. A move to here puts it back.
+ */
+export function placeOf(
+  tasks: readonly TaskResponse[],
+  id: TaskId,
+  projectId: TaskPosition['projectId'],
+): TaskPosition | null {
+  const task = tasks.find((t) => t.id === id)
+  if (!task) return null
+  const siblings = tasks.filter((t) => t.parentId === task.parentId).sort(byRank)
+  const at = siblings.findIndex((t) => t.id === id)
+  const place: TaskPosition = { projectId, parentId: task.parentId }
+  const next = siblings[at + 1]
+  const previous = siblings[at - 1]
+  if (next) place.beforeId = next.id
+  else if (previous) place.afterId = previous.id
+  return place
+}

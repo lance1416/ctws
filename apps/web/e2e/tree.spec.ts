@@ -27,6 +27,8 @@ type RouteUrl = Parameters<Page['route']>[0]
 const TASK_LIST: RouteUrl = (url) =>
   url.pathname === '/api/v1/tasks' && url.searchParams.has('projectId')
 
+// The line at the foot; dnd-kit keeps a live region of its own beside it.
+const foot = (page: Page) => page.locator('[data-toast]')
 /** The row's drag handle and keyboard focus carrier; its accessible name is the task title. */
 const handle = (page: Page, title: string) =>
   page.getByRole('button', { name: `Task: ${title}`, exact: true })
@@ -174,12 +176,12 @@ test('a move shows at once, and a rejected one rolls back visibly', async ({ pag
 
   // The server has not answered, yet the row has moved: this is the optimistic update.
   await expect(rows).toHaveText([/one/, /three/, /two/])
-  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(foot(page)).toContainText('Moved')
 
   releaseMove()
-  // The failure is visible rather than silent. Asserted before the order: once the alert shows,
-  // the move has failed and the rollback has had its chance to run.
-  await expect(page.getByRole('alert')).toBeVisible()
+  // The refusal is said rather than silent. Asserted before the order: once it shows, the move
+  // has failed and the rollback has had its chance to run.
+  await expect(foot(page)).toHaveText('Conflict')
   await expect(rows).toHaveText([/one/, /two/, /three/])
 
   await unrouteMoves()
@@ -585,7 +587,7 @@ test('a refused move puts the fold it opened back', async ({ page }) => {
   await page.mouse.down()
   await page.mouse.move(box.x + box.width / 2 + 25, box.y + box.height / 2, { steps: 10 })
   await page.mouse.up()
-  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(foot(page)).toContainText('Couldn’t save. Try again')
 
   // Nothing landed there, so nothing should have been opened: the tree is exactly as it was.
   await expect(rows).toHaveText([/aa/, /bb/])

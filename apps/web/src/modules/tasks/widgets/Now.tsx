@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Block, BlockFailed, SkeletonRows } from '../../../platform/ui/Block'
 import { GoOnIcon, InProgressIcon, ToDoIcon } from '../../../platform/ui/icons'
@@ -40,8 +39,7 @@ export function NowWidget() {
   const timeZone = useTimeZone()
   const listed = useQuery(todayQuery(today))
   const ready = useQuery(readyQuery(today))
-  const [error, setError] = useState<string | null>(null)
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   const inProgress = todaySegments(listed.data ?? []).inProgress.filter((t) => !t.children)
   const startable = offeredReady(ready.data ?? [], listed.data ?? [])
   const lists = (inProgress.length > 0 ? 1 : 0) + (startable.length > 0 ? 1 : 0)
@@ -85,11 +83,12 @@ export function NowWidget() {
                   {working.map((t) => (
                     <li key={t.id} data-now-working={t.id} className={ROW}>
                       <InProgressIcon size={16} className="text-go" />
+                      {/* On a phone the title's press is 44 tall, reaching over the line under it. */}
                       <TitleOver
                         title={
                           <Link
                             to={opens(t)}
-                            className="max-w-full truncate text-ui font-medium text-ink"
+                            className="max-w-full truncate text-ui font-medium text-ink max-lg:-my-3 max-lg:py-3"
                           >
                             {t.title}
                           </Link>
@@ -120,7 +119,10 @@ export function NowWidget() {
                       <ToDoIcon size={16} aria-hidden="true" className="text-muted" />
                       <TitleOver
                         title={
-                          <Link to={opens(t)} className="max-w-full truncate text-ui text-ink">
+                          <Link
+                            to={opens(t)}
+                            className="max-w-full truncate text-ui text-ink max-lg:-my-3 max-lg:py-3"
+                          >
                             {t.title}
                           </Link>
                         }
@@ -142,11 +144,6 @@ export function NowWidget() {
               </section>
             )}
           </div>
-        )}
-        {error && (
-          <p role="alert" className="px-3 text-ui text-stop-t">
-            {error}
-          </p>
         )}
         <Link
           to="/today"

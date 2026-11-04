@@ -217,7 +217,7 @@ function Board({
   })
 
   const [error, setError] = useState<string | null>(null)
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   const strips = useRef(new Map<TaskStatus, HTMLButtonElement | null>())
   // A card moved from the keyboard keeps focus once it has been drawn in its new column (the
   // change reaches the cache a tick after the key), or the strip it went into has it.

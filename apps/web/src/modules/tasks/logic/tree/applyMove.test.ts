@@ -1,6 +1,6 @@
 import { idFrom, projectId, taskId, type TaskResponse } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { applyMove } from './applyMove'
+import { applyMove, placeOf } from './applyMove'
 
 const P = idFrom(projectId, 'project')
 const id = (s: string) => idFrom(taskId, s)
@@ -60,5 +60,24 @@ describe('applyMove', () => {
 
   it('returns the list untouched for an id it does not hold', () => {
     expect(applyMove(TREE, id('zz'), { projectId: P, parentId: null })).toBe(TREE)
+  })
+})
+
+describe('placeOf', () => {
+  it('names the sibling after a row, and moving there undoes a move', () => {
+    expect(placeOf(TREE, id('b'), P)).toEqual({ projectId: P, parentId: 'a', beforeId: 'c' })
+    const moved = applyMove(TREE, id('b'), { projectId: P, parentId: null })
+    const back = applyMove(moved, id('b'), placeOf(TREE, id('b'), P)!)
+    expect(shape(back)).toEqual(shape(TREE))
+  })
+
+  it('names the sibling before a row that is last, and nothing for an only child', () => {
+    expect(placeOf(TREE, id('c'), P)).toEqual({ projectId: P, parentId: 'a', afterId: 'b' })
+    const only = [t('a', null, '1'), t('b', 'a', '1')]
+    expect(placeOf(only, id('b'), P)).toEqual({ projectId: P, parentId: 'a' })
+  })
+
+  it('knows nothing of a task it does not hold', () => {
+    expect(placeOf(TREE, id('z'), P)).toBeNull()
   })
 })

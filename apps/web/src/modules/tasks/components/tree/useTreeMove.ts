@@ -1,17 +1,18 @@
-import { problemText } from '../../../../platform/http/api'
+import { refusalText } from '../../../../platform/http/retry'
+import { useUndo } from '../../../../platform/ui/undo'
 import { type DragEndEvent } from '@dnd-kit/core'
 import { type ProjectId, type TaskId, type TaskPosition } from '@ctws/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { moveTask, type ProjectTasks, projectTasksQuery, ROW_WRITES } from '../../api'
-import { applyMove } from '../../logic/tree/applyMove'
+import { applyMove, placeOf } from '../../logic/tree/applyMove'
 import { planDrop } from '../../logic/tree/drop'
 import { blockLength, type FlatRow } from '../../logic/tree/flatten'
 import { INDENT_PX } from '../TaskRowParts'
 import type { useCollapsed } from './useCollapsed'
 
 /**
- * Moving rows, by drag or by key: the plan is checked here, the cache moves at once, and a
- * refusal puts it back and says why through `onError`.
+ * Moving rows, by drag or by key: the plan is checked here and one it refuses is said through
+ * `onError`. The cache moves at once and the move can be undone; a save that fails puts it back.
  */
 export function useTreeMove({
   projectId,
@@ -23,10 +24,11 @@ export function useTreeMove({
   /** The rows as they are now, which a drop is planned against. */
   rows: () => readonly FlatRow<TaskId>[]
   folds: Pick<ReturnType<typeof useCollapsed>, 'collapsed' | 'fold' | 'unfold'>
-  /** Why a move was refused, or null when one goes ahead. */
+  /** Why a drop was refused, or null when one goes ahead. */
   onError: (message: string | null) => void
 }) {
   const qc = useQueryClient()
+  const say = useUndo()
   const key = projectTasksQuery(projectId).queryKey
   const move = useMutation({
     mutationFn: ({ id, body }: { id: TaskId; body: TaskPosition; unfolded?: TaskId }) =>
@@ -40,11 +42,11 @@ export function useTreeMove({
       )
       return { previous, unfolded }
     },
-    onError: (e, _vars, context) => {
+    onError: (e, vars, context) => {
       // Back to what the database holds, and the parent the drop unfolded folds again.
       if (context?.previous) qc.setQueryData(key, context.previous)
       if (context?.unfolded) folds.fold(context.unfolded)
-      onError(problemText(e) ?? "Couldn't move it")
+      say.failed(() => move.mutate(vars), refusalText(e))
     },
     scope: ROW_WRITES,
     meta: { changes: ['task'], awaits: [key], ownsError: true },
@@ -75,7 +77,10 @@ export function useTreeMove({
     const body: TaskPosition = { projectId, parentId: plan.parentId }
     if (plan.beforeId) body.beforeId = plan.beforeId
     if (plan.afterId) body.afterId = plan.afterId
+    const back = placeOf(qc.getQueryData<ProjectTasks>(key)?.tasks ?? [], draggedId, projectId)
     move.mutate({ id: draggedId, body, ...(unfolded ? { unfolded } : {}) })
+    if (back)
+      say.offer({ said: 'Moved', undo: () => move.mutateAsync({ id: draggedId, body: back }) })
   }
 
   const onDragEnd = ({ active, over, delta }: DragEndEvent) => {

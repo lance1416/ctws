@@ -1,6 +1,6 @@
 import type { ReadyTaskResponse, TaskId, TodayTaskResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import { useEffect, type ComponentType, type ReactNode } from 'react'
 import { FlagIcon, InProgressIcon, PLACE_ICON, ToDoIcon } from '../../../platform/ui/icons'
 import { StatusMark } from '../../../platform/ui/StatusMark'
 import type { InspectorList } from '../../../shell/contract'
@@ -44,7 +44,6 @@ function TaskList({
   headAction,
   marker,
   action,
-  error,
 }: {
   title: string
   badge: { icon: ComponentType<{ size?: number; className?: string }>; tint: string }
@@ -54,7 +53,6 @@ function TaskList({
   marker: (t: Listed) => ReactNode
   /** A row's action; `done`, when it is pressed on the row's own page, goes back to the list. */
   action: (t: Listed, done?: () => void) => ReactNode
-  error: string | null
 }) {
   const close = useCloseInspector()
   const go = useInspectorGo()
@@ -67,11 +65,6 @@ function TaskList({
   return (
     <>
       <ListHead badge={badge} title={title} count={tasks.length} action={headAction} />
-      {error && (
-        <p role="alert" className="px-4 pt-2 text-ui text-stop-t">
-          {error}
-        </p>
-      )}
       <ul className="flex flex-col p-1.5">
         {tasks.map((t) => {
           const project = projects.data?.find((p) => p.id === t.projectId)
@@ -127,7 +120,6 @@ function InProgressList() {
       settled={today.isSuccess}
       marker={(t) => <DueChip dueAt={t.dueAt} today={day} timeZone={timeZone} />}
       action={(t, done) => (t.children ? <span /> : <DoneAct task={t} done={done} />)}
-      error={null}
     />
   )
 }
@@ -136,8 +128,7 @@ function OverdueList() {
   const day = useAccountToday()
   const timeZone = useTimeZone()
   const today = useQuery(todayQuery(day))
-  const [error, setError] = useState<string | null>(null)
-  const actions = useTaskActions(setError)
+  const actions = useTaskActions()
   const overdue = todaySegments(today.data ?? []).overdue
   const onMove = (id: TaskId, to: string) => actions.patch(id, { scheduledOn: to })
   return (
@@ -149,7 +140,6 @@ function OverdueList() {
       headAction={<MoveAllMenu overdue={overdue} day={day} onMove={onMove} />}
       marker={(t) => <DueChip dueAt={t.dueAt} today={day} timeZone={timeZone} />}
       action={(t, done) => (t.children ? <span /> : <PlanAct task={t} day={day} done={done} />)}
-      error={error}
     />
   )
 }
@@ -167,30 +157,14 @@ function ReadyList() {
       settled={ready.isSuccess}
       marker={() => <span />}
       action={(t, done) => <StartAct task={t} done={done} />}
-      error={null}
     />
   )
 }
 
-/**
- * A row's action, its own write: it acts from the row's own page too, after the list is gone from
- * the panel, and then goes back to it (`done`).
- */
-function useActOnTask() {
-  const [error, setError] = useState<string | null>(null)
-  return { actions: useTaskActions(setError), error }
-}
-
-function Failed({ error }: { error: string | null }) {
-  return error ? (
-    <span role="alert" className="text-meta text-stop-t">
-      {error}
-    </span>
-  ) : null
-}
-
+// A row's action is its own write: it acts from the row's own page too, after the list is gone
+// from the panel, and then goes back to it (`done`).
 function DoneAct({ task, done }: { task: Listed; done?: (() => void) | undefined }) {
-  const { actions, error } = useActOnTask()
+  const actions = useTaskActions()
   return (
     <>
       <DoneButton
@@ -198,7 +172,6 @@ function DoneAct({ task, done }: { task: Listed; done?: (() => void) | undefined
         title={task.title}
         onDone={() => actions.setStatus(task.id, 'done', done)}
       />
-      <Failed error={error} />
     </>
   )
 }
@@ -212,7 +185,7 @@ function PlanAct({
   day: string
   done?: (() => void) | undefined
 }) {
-  const { actions, error } = useActOnTask()
+  const actions = useTaskActions()
   return (
     <>
       <PlanButtons
@@ -220,13 +193,12 @@ function PlanAct({
         day={day}
         onMove={(id, to) => actions.patch(id, { scheduledOn: to }, done)}
       />
-      <Failed error={error} />
     </>
   )
 }
 
 function StartAct({ task, done }: { task: Listed; done?: (() => void) | undefined }) {
-  const { actions, error } = useActOnTask()
+  const actions = useTaskActions()
   return (
     <>
       <RowAction
@@ -235,7 +207,6 @@ function StartAct({ task, done }: { task: Listed; done?: (() => void) | undefine
       >
         Start
       </RowAction>
-      <Failed error={error} />
     </>
   )
 }
