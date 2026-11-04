@@ -695,3 +695,11 @@ export async function removeDependency(
     })
   })
 }
+
+/** "Keep" for an untouched leaf: off the list for eight weeks, with nothing logged. */
+export async function keepTask(db: Db, ctx: Actor, id: TaskId): Promise<void> {
+  await db.transaction(async (tx) => {
+    await lockTask(tx, ctx.workspaceId, id)
+    await tx.update(tasks).set({ keptAt: ctx.now }).where(eq(tasks.id, id))
+  })
+}

@@ -3,7 +3,7 @@ import { isoOrNull } from '../../platform/values'
 import type { ProjectRow } from './queries'
 
 export function toProjectResponse(
-  { project: p, columns }: ProjectRow,
+  { project: p, columns, latestLine }: ProjectRow,
   stages: StageResponse[] = [],
 ): ProjectResponse {
   return {
@@ -18,5 +18,6 @@ export function toProjectResponse(
     createdAt: p.createdAt.toISOString(),
     columns,
     stages,
+    latestLine,
   }
 }

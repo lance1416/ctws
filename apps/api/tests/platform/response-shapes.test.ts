@@ -46,6 +46,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       createdAt: AT,
       columns: { openTasks: 0, parentTasks: 0 },
       stages: [],
+      latestLine: null,
     })
   })
 

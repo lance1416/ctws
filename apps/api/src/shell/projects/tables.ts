@@ -2,10 +2,12 @@ import { type ProjectColor, type ProjectId, type StageId, type WorkspaceId } fro
 import { sql } from 'drizzle-orm'
 import {
   boolean,
+  date,
   foreignKey,
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -77,3 +79,25 @@ export const projectKeys = { workspaceId: projects.workspaceId, id: projects.id 
 
 /** What a task points at with a foreign key: a stage in its workspace. */
 export const stageKeys = { workspaceId: projectStages.workspaceId, id: projectStages.id }
+
+/**
+ * A week's line on how a project is going ("Waiting on the landlord; quote by Friday"), one a
+ * project a week, the week by its Monday. It goes with the project.
+ */
+export const projectLines = pgTable(
+  'project_lines',
+  {
+    workspaceId: uuid('workspace_id')
+      .$type<WorkspaceId>()
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .$type<ProjectId>()
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    week: date('week').notNull(),
+    line: text('line').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.week] })],
+)

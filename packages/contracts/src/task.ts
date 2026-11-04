@@ -275,6 +275,32 @@ export const reviewQuery = viewQuery('review', {
   to: calendarDate.optional(),
 }).refine(windowIsBounded, { message: WINDOW_REFUSED, path: ['to'] })
 
+/** A window's deadlines pushed later: the review's "Pushed back". */
+export const pushedQuery = viewQuery('pushed', { from: calendarDate, to: calendarDate }).refine(
+  windowIsBounded,
+  { message: WINDOW_REFUSED, path: ['to'] },
+)
+
+/**
+ * A leaf whose deadline went later in the window, once however many times it moved: from its
+ * deadline before the first move in the window to the one after the last.
+ */
+export const pushedResponse = z.object({
+  tasks: z.array(
+    z.object({ id: taskId, title: z.string(), projectId, from: instant, to: instant }),
+  ),
+})
+
+/** The review's "Untouched": backlog leaves nothing has happened to in eight weeks. */
+export const untouchedQuery = viewQuery('untouched')
+export const UNTOUCHED_WEEKS = 8
+/** How many are listed; the rest are counted, for "N more". */
+export const UNTOUCHED_LISTED = 10
+export const untouchedResponse = z.object({
+  tasks: z.array(taskResponse),
+  total: z.number().int().nonnegative(),
+})
+
 // Display order. Which segment wins for a task matching several is decided in `listToday`'s SQL.
 const TODAY_SEGMENTS = ['overdue', 'today', 'in_progress'] as const
 

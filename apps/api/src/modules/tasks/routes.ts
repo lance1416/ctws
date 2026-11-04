@@ -7,7 +7,14 @@ import { actorOf, currentUser, todayOf } from '../../shell/auth'
 import { nextAbout, type LinkRegistry } from '../../shell/links'
 import { relatedAmong } from '../../shell/relations'
 import { pullRequestsOf } from '../../shell/resources'
-import { addDependency, createTask, removeDependency, deleteTask, updateTask } from './service'
+import {
+  addDependency,
+  createTask,
+  deleteTask,
+  keepTask,
+  removeDependency,
+  updateTask,
+} from './service'
 import {
   toCalendarEntry,
   toReadyResponse,
@@ -27,6 +34,8 @@ import {
   projectBoard,
   searchTasks,
   taskDependencyLists,
+  listPushed,
+  listUntouched,
 } from './queries'
 
 /** The account's day and zone, which a repeat counts from. */
@@ -76,6 +85,20 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     on(api.tasks.review, async (req) => {
       const user = currentUser(req)
       return listReview(app.db, user.workspaceId, user.timezone, req.query, app.clock())
+    }),
+
+    on(api.tasks.pushed, async (req) => {
+      const user = currentUser(req)
+      return { tasks: await listPushed(app.db, user.workspaceId, user.timezone, req.query) }
+    }),
+
+    on(api.tasks.untouched, async (req) => {
+      const { rows, total } = await listUntouched(app.db, currentUser(req).workspaceId, app.clock())
+      return { tasks: rows.map(toTaskResponse), total }
+    }),
+
+    on(api.tasks.keep, async (req) => {
+      await keepTask(app.db, actorOf(req), req.params.id)
     }),
 
     on(api.tasks.movement, async (req) => {

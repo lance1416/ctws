@@ -6,6 +6,7 @@ import type { ProjectColumns } from '../module'
 import { toProjectResponse } from './mapper'
 import { getProjectRow, listProjects } from './queries'
 import { createProject, deleteProject, type ProjectGraves, updateProject } from './service'
+import { linesOf, setLine } from './lines'
 import { listStages, putStages, stagesOf } from './stages'
 
 /** Projects belong to the shell; modules add columns to the list but do not own them. */
@@ -57,6 +58,22 @@ export const projectRoutes: FastifyPluginAsyncZod<{
         return putStages(tx, ctx, req.params.id, req.body)
       })
       return { stages }
+    }),
+
+    on(api.projects.lines, async (req) => ({
+      lines: await linesOf(app.db, currentUser(req).workspaceId, req.query.week),
+    })),
+
+    on(api.projects.setLine, async (req) => {
+      const ctx = actorOf(req)
+      await app.db.transaction(async (tx) => {
+        await getProjectRow(tx, ctx.workspaceId, req.params.id, columns)
+        await setLine(tx, ctx, req.params.id, req.params.week, req.body.line)
+      })
+      return toProjectResponse(
+        await getProjectRow(app.db, ctx.workspaceId, req.params.id, columns),
+        await listStages(app.db, ctx.workspaceId, req.params.id),
+      )
     }),
 
     on(api.projects.remove, async (req) => {
