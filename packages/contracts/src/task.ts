@@ -11,6 +11,7 @@ import {
 } from './id'
 import { WINDOW_REFUSED, windowIsBounded } from './calendar'
 import { calendarDate, documentText, instant, patchOf, titleText, viewQuery } from './common'
+import { repeat } from './repeat'
 import { pageInfo } from './page'
 import { stageResponse } from './project'
 
@@ -58,6 +59,11 @@ const notes = documentText
 
 export const taskParams = z.object({ id: taskId }).strict()
 
+/** Deleting one of a repeating task's: skip it and keep the series going, or end it there. */
+export const deleteTaskQuery = z
+  .object({ series: z.enum(['keep', 'stop']).default('stop') })
+  .strict()
+
 // The server computes rank; neither create nor update accepts one.
 export const createTaskBody = z
   .object({
@@ -70,6 +76,8 @@ export const createTaskBody = z
     dueAt: instant.nullish(),
     /** One of the project's stages. */
     stageId: stageId.nullish(),
+    /** Only a leaf with a planned day or a deadline repeats. */
+    repeat: repeat.nullish(),
   })
   .strict()
 
@@ -93,6 +101,8 @@ export const taskFields = {
   scheduledOn: calendarDate.nullable(),
   dueAt: instant.nullable(),
   stageId: stageId.nullable(),
+  /** Null stops it repeating; this one stays as it is. */
+  repeat: repeat.nullable(),
 }
 
 /**
@@ -122,6 +132,9 @@ export const taskResponse = z.object({
   /** When it reached its stage, for "5d" on the board by stage. */
   stageSince: instant.nullable(),
   completedAt: instant.nullable(),
+  repeat: repeat.nullable(),
+  /** The one made when this one was done or cancelled. */
+  nextId: taskId.nullable(),
   createdAt: instant,
   updatedAt: instant,
 })

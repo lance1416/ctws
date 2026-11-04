@@ -1,8 +1,9 @@
 import { api, type ObjectType } from '@ctws/contracts'
+import type { FastifyRequest } from 'fastify'
 import { stagesOf } from '../../shell/projects'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
-import { actorOf, currentUser } from '../../shell/auth'
+import { actorOf, currentUser, todayOf } from '../../shell/auth'
 import { nextAbout, type LinkRegistry } from '../../shell/links'
 import { relatedAmong } from '../../shell/relations'
 import { pullRequestsOf } from '../../shell/resources'
@@ -27,6 +28,12 @@ import {
   searchTasks,
   taskDependencyLists,
 } from './queries'
+
+/** The account's day and zone, which a repeat counts from. */
+const calendarOf = (req: FastifyRequest) => ({
+  today: todayOf(req),
+  zone: currentUser(req).timezone,
+})
 
 export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = async (
   app,
@@ -157,11 +164,16 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     ),
 
     on(api.tasks.update, async (req) =>
-      toTaskResponse(await updateTask(app.db, actorOf(req), req.params.id, req.body)),
+      toTaskResponse(
+        await updateTask(app.db, actorOf(req), req.params.id, req.body, calendarOf(req)),
+      ),
     ),
 
     on(api.tasks.remove, async (req) => {
-      await deleteTask(app.db, actorOf(req), req.params.id)
+      await deleteTask(app.db, actorOf(req), req.params.id, {
+        series: req.query.series,
+        cal: calendarOf(req),
+      })
     }),
 
     on(api.tasks.dependencies, async (req) =>

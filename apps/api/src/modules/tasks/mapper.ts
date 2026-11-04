@@ -26,6 +26,8 @@ export function toTaskResponse(t: Task): TaskResponse {
     stageId: t.stageId,
     stageSince: isoOrNull(t.stageSince),
     completedAt: isoOrNull(t.completedAt),
+    repeat: t.repeat,
+    nextId: t.nextId,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   }

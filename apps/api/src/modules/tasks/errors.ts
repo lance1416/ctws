@@ -59,3 +59,33 @@ export class InvertedWindowError extends DomainError {
     super('invalid', { detail: WINDOW_REFUSED })
   }
 }
+
+/** A parent takes its status from its children, so it cannot come round on its own. */
+export class RepeatOnParentError extends DomainError {
+  constructor() {
+    super('unprocessable', {
+      type: 'urn:ctws:problem:repeat-on-parent',
+      title: 'A task with subtasks cannot repeat.',
+    })
+  }
+}
+
+/** A repeating task stays a leaf: under it, its next one would have to copy its children too. */
+export class RepeatTakesNoChildrenError extends DomainError {
+  constructor() {
+    super('unprocessable', {
+      type: 'urn:ctws:problem:repeat-takes-no-children',
+      title: 'A repeating task cannot have subtasks.',
+    })
+  }
+}
+
+/** A repeat counts from a day: the planned one, or the deadline's. */
+export class RepeatNeedsADateError extends DomainError {
+  constructor() {
+    super('unprocessable', {
+      type: 'urn:ctws:problem:repeat-needs-a-date',
+      title: 'A repeating task needs a planned day or a deadline.',
+    })
+  }
+}

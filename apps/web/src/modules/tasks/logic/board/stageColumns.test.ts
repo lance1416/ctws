@@ -43,6 +43,8 @@ const task = (
   stageId: null,
   stageSince: null,
   completedAt: null,
+  repeat: null,
+  nextId: null,
   createdAt: '2026-10-01T09:00:00.000Z',
   updatedAt: '2026-10-01T09:00:00.000Z',
   ...over,
