@@ -37,7 +37,7 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   // Named, not merely marked, so nobody has to click to find out.
   await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
     'title',
-    'Blocked by “跑通 CI”',
+    '发 v0.8.0\nBlocked by “跑通 CI”',
   )
   // Still listed, and its Due column says it is waiting: a list that drops tasks cannot be trusted.
   await expect(row(page, '发 v0.8.0')).toBeVisible()
@@ -52,7 +52,11 @@ test('a blocked row names what is in the way, and finishing that frees it', asyn
   await expect(row(page, '跑通 CI')).toHaveCount(0)
 
   await expect(row(page, '发 v0.8.0').locator('[data-row-due="waiting"]')).toHaveCount(0)
-  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).not.toHaveAttribute('title', /./)
+  // The whole title still, with nothing in the way after it.
+  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
+    'title',
+    '发 v0.8.0',
+  )
   await expect(row(page, '发 v0.8.0').locator('[data-waiting-badge]')).toHaveCount(0)
 })
 
@@ -91,7 +95,7 @@ test('a dependency is added by searching, and it reaches into another project', 
   await expect(waitingFor(page).first()).toContainText('rrgen')
   await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
     'title',
-    'Blocked by “跑通 rrgen 的 CI”',
+    '发 v0.8.0\nBlocked by “跑通 rrgen 的 CI”',
   )
 })
 
@@ -131,7 +135,11 @@ test('a dependency is removed from the pane, and the row stops waiting', async (
   await pane(page).getByRole('button', { name: 'Remove dependency “跑通 CI”' }).click()
   await expect(waitingFor(page)).toHaveCount(0)
   await expect(row(page, '发 v0.8.0').locator('[data-row-due="waiting"]')).toHaveCount(0)
-  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).not.toHaveAttribute('title', /./)
+  // The whole title still, with nothing in the way after it.
+  await expect(row(page, '发 v0.8.0').locator('[data-row-title]')).toHaveAttribute(
+    'title',
+    '发 v0.8.0',
+  )
 })
 
 test('a dependency removal that fails says so', async ({ page }) => {

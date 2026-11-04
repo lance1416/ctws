@@ -43,8 +43,8 @@ test('in the tree, depth indents the name and leaves the other columns alone', a
       .locator(`[data-task-tree] li[data-depth="${depth}"] [data-row-title]`)
       .evaluate((el) => Math.round(el.getBoundingClientRect().x))
   const [one, two, three] = [await title(1), await title(2), await title(3)]
-  expect(two - one, 'one indent per level').toBe(22)
-  expect(three - two, 'one indent per level').toBe(22)
+  expect(two - one, 'one indent per level').toBe(24)
+  expect(three - two, 'one indent per level').toBe(24)
 })
 
 /**
@@ -111,7 +111,7 @@ test('a row with a plan and a deadline shows the deadline', async ({ page }) => 
  */
 const LONG_TITLE = '把邮件服务的 Connection timeout 查清楚，顺手给 SMTP 那边加上指数退避重试和告警'
 
-/** The first tree row: how wide its title cell is, whether the title overflows it, and its height. */
+/** The first tree row: how wide its title cell is, its lines, whether any is cut, and its height. */
 const firstRow = (page: Page) =>
   page
     .locator('[data-task-tree] li[data-depth]')
@@ -119,10 +119,20 @@ const firstRow = (page: Page) =>
     .evaluate((li) => {
       const cell = li.querySelector('[data-row-cell]') as HTMLElement
       const title = li.querySelector('[data-row-title]') as HTMLElement
+      // The title wraps, so its own width is the row's; what it needs on one line, a copy says.
+      const probe = document.createElement('span')
+      probe.className = title.className.replace('line-clamp-2', '')
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap'
+      probe.textContent = title.textContent
+      document.body.append(probe)
+      const needs = Math.round(probe.getBoundingClientRect().width)
+      probe.remove()
       return {
         cell: Math.round(cell.clientWidth),
-        fits: title.scrollWidth <= title.clientWidth + 1,
-        needs: Math.round(title.scrollWidth),
+        // Two lines at most, and none of it cut off.
+        lines: Math.round(title.clientHeight / parseFloat(getComputedStyle(title).lineHeight)),
+        cut: title.scrollHeight > title.clientHeight + 1,
+        needs,
         h: Math.round(li.getBoundingClientRect().height),
         list: Math.round(document.querySelector('[data-task-tree]')!.getBoundingClientRect().width),
       }
@@ -139,7 +149,7 @@ async function mixedProject(page: Page, name: string): Promise<string> {
 }
 
 /**
- * A real long title keeps the line at 1440, with the detail closed (Linked beside the tree) and
+ * A real long title is whole within two lines at 1440, with the detail closed (Linked beside the tree) and
  * open (the detail the third column, Linked under the tree): the title has most of the row either
  * way, and the other columns never take more than their own width.
  *
@@ -147,7 +157,7 @@ async function mixedProject(page: Page, name: string): Promise<string> {
  * panel is 1118px and the open one 734px, and a guard that only checked the easy one would pass
  * on a layout that fails the narrow one.
  */
-test('a real long title is not truncated at 1440, detail open or closed', async ({ page }) => {
+test('a real long title is whole in two lines at 1440, detail open or closed', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await registerFreshUser(page)
   const pid = await mixedProject(page, '长标题')
@@ -158,6 +168,7 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
 
   const closed = await firstRow(page)
   expect(closed.needs, 'the title really is a long one').toBeGreaterThan(500)
+  expect(closed.cut, 'the whole title shows').toBe(false)
   // With the detail closed, Linked sits beside the tree: the title keeps the larger share.
   expect(
     closed.cell / closed.list,
@@ -170,14 +181,15 @@ test('a real long title is not truncated at 1440, detail open or closed', async 
   const open = await firstRow(page)
   expect(await page.evaluate(() => window.innerWidth), 'the window did not change').toBe(1440)
   expect(open.list, `list with the detail open: ${open.list}px`).toBeLessThan(800)
-  // Every pixel the list changed by came out of (or went to) the title: the stage, progress and
-  // due columns do not grow or shrink with it. (Opening the detail moves Linked under the tree, so
-  // the list is about as wide either way.)
-  expect(closed.cell - open.cell, 'the title moves with the list').toBe(closed.list - open.list)
-  // The stage, progress and due columns and the row's own controls are a fixed 412px with
-  // their gaps: the title has all the rest, the larger share with the inspector closed, and still
-  // more than a third beside the 400px inspector.
+  // The columns fold by the tree's own width: under 900 the stage goes (the inspector has it), so
+  // the title gives up less than the list does.
+  await expect(page.locator('[data-task-tree] [data-row-stage]').first()).toBeHidden()
+  expect(closed.cell - open.cell, 'the title gives up less than the list').toBeLessThan(
+    closed.list - open.list,
+  )
   expect(open.cell / open.list, `title cell ${open.cell}px of ${open.list}px`).toBeGreaterThan(0.35)
+  expect(open.lines, 'two lines at most').toBeLessThanOrEqual(2)
+  expect(open.cut, 'the whole title shows').toBe(false)
 })
 
 /**

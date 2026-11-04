@@ -124,8 +124,8 @@ export function TaskRow({
       // A parent sits on the band with its line under it; a leaf under a faint one. Between top
       // parents only, a gap and a line: the band is the group's head.
       className={`group relative cursor-pointer py-2 ${TREE_ROW} hover:bg-hover ${
-        counts ? 'border-b border-line bg-band' : 'border-b border-line/55'
-      } ${opensGroup ? 'mt-2 border-t' : ''} ${isDragging ? 'bg-float opacity-70' : ''} ${
+        counts ? `${opensGroup ? RULE.both : RULE.under} bg-band` : RULE.faint
+      } ${opensGroup ? 'mt-2' : ''} ${isDragging ? 'bg-float opacity-70' : ''} ${
         // A selected row wears the select layer plus an ink edge: a layer alone would be hard to
         // tell from whatever the pointer happens to be over.
         selected ? 'bg-select shadow-[inset_2px_0_0_0_var(--color-ink)]' : ''
@@ -198,7 +198,7 @@ export function TaskRow({
           </span>
           {due && (
             <span className={TREE_COL.dueUnder}>
-              <DueLabel due={due} />
+              <DueLabel due={due} under />
             </span>
           )}
         </span>
@@ -295,9 +295,16 @@ export function TaskRow({
   )
 }
 
+// Lines drawn inside the row, so a row is its 36 whatever rules it carries.
+const RULE = {
+  under: 'shadow-[inset_0_-1px_0_var(--color-line)]',
+  both: 'shadow-[inset_0_1px_0_var(--color-line),inset_0_-1px_0_var(--color-line)]',
+  faint: 'shadow-[inset_0_-1px_0_color-mix(in_oklab,var(--color-line)_55%,transparent)]',
+} as const
+
 const DUE_TONE = {
-  soon: 'h-5.5 rounded-control bg-warn-bg px-2 font-medium text-warn-t',
-  late: 'h-5.5 rounded-control bg-stop-bg px-2 font-medium text-stop-t',
+  soon: 'h-5 rounded-control bg-warn-bg px-2 font-medium text-warn-t',
+  late: 'h-5 rounded-control bg-stop-bg px-2 font-medium text-stop-t',
   quiet: 'text-muted',
   waiting: 'font-medium text-warn-t',
 } as const
@@ -306,10 +313,11 @@ const DUE_TONE = {
  * The Due column: within the week a flag on amber, missed one on red, further off grey words;
  * Waiting, behind a lock, for a leaf something unfinished holds up.
  */
-function DueLabel({ due }: { due: TreeDue }) {
+function DueLabel({ due, under = false }: { due: TreeDue; under?: boolean }) {
   return (
     <span
-      data-row-due={due.tone}
+      // The copy under the title, for a tree too narrow for the column, is the column's twin.
+      {...{ [under ? 'data-row-due-under' : 'data-row-due']: due.tone }}
       className={`inline-flex min-w-0 items-center gap-1 text-meta whitespace-nowrap tabular-nums ${DUE_TONE[due.tone]}`}
     >
       <span className="sr-only">{due.tone === 'waiting' ? '' : 'Due '}</span>
@@ -336,7 +344,7 @@ function StatusWord({ status }: { status: TaskResponse['status'] }) {
   }[status]
   return (
     <span
-      className={`inline-flex h-5.5 -translate-y-px items-center rounded-control px-2 text-meta whitespace-nowrap ${look}`}
+      className={`inline-flex h-5 items-center rounded-control px-2 text-meta whitespace-nowrap ${look}`}
     >
       {STATUS_LABEL[status]}
     </span>
