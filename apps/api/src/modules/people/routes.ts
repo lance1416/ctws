@@ -13,11 +13,12 @@ import {
 import type { LinkRegistry } from '../../shell/links'
 import { NotFound } from '../../platform/errors'
 import { birthdayEntries, listBirthdays, previewBirthday } from './birthdays'
-import { listCircles, putCircles } from './circles'
+import { dueForTouch, lastInTouchAt, touchOf } from './cadence'
+import { listCircles, putCircles, setCircleTouch } from './circles'
 import { toPersonResponse } from './mapper'
 import { getPerson, listPeople, searchPeople } from './queries'
 import { personHolder } from './photo'
-import { createPerson, replaceRoles, deletePerson, updatePerson } from './service'
+import { createPerson, replaceRoles, deletePerson, setTouchLater, updatePerson } from './service'
 import { peopleInTouch } from './touch'
 
 export const personRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = async (
@@ -121,6 +122,50 @@ export const personRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = a
       const ctx = actorOf(req)
       const holder = personHolder(ctx.workspaceId, req.params.id)
       return { avatarId: await putBackPhoto(app.db, ctx, holder, req.body.undoToken) }
+    }),
+
+    on(api.people.getInTouch, async (req) => {
+      const user = currentUser(req)
+      return {
+        people: await dueForTouch(registry, app.db, user.workspaceId, app.clock(), user.timezone),
+      }
+    }),
+
+    on(api.people.touchOf, async (req) => {
+      const user = currentUser(req)
+      const touch = await touchOf(
+        registry,
+        app.db,
+        user.workspaceId,
+        req.params.id,
+        app.clock(),
+        user.timezone,
+      )
+      if (!touch) throw new NotFound('Person')
+      return touch
+    }),
+
+    on(api.people.touchLater, async (req) => {
+      const user = currentUser(req)
+      const ctx = actorOf(req)
+      await getPerson(app.db, user.workspaceId, req.params.id)
+      const since = await lastInTouchAt(registry, app.db, user.workspaceId, req.params.id, ctx.now)
+      await setTouchLater(app.db, ctx, req.params.id, { until: req.body.until, since })
+      const touch = await touchOf(
+        registry,
+        app.db,
+        user.workspaceId,
+        req.params.id,
+        ctx.now,
+        user.timezone,
+      )
+      return touch!
+    }),
+
+    on(api.people.setCircleTouch, async (req) => {
+      const ctx = actorOf(req)
+      await setCircleTouch(app.db, ctx, req.params.id, req.body.touchEvery)
+      return { circles: await listCircles(app.db, ctx.workspaceId) }
     }),
 
     on(api.people.putRoles, async (req) => {

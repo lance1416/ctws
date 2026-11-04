@@ -121,6 +121,14 @@ const aliasResponse = z.object({ name: z.string(), label: z.string().nullable() 
 export type PersonAlias = z.infer<typeof personAlias>
 
 /**
+ * How often to be in touch with someone: none, or every week up to every year. A person's own
+ * overrides their circles'; their own `off` silences every circle's.
+ */
+export const TOUCH_EVERY = ['off', '1w', '2w', '1m', '3m', '6m', '1y'] as const
+const touchEvery = z.enum(TOUCH_EVERY)
+export type TouchEvery = z.infer<typeof touchEvery>
+
+/**
  * What can be said about a person; null clears a field. The name comes as its three parts,
  * or as one string that the server splits the way the migration does; one or the other
  * is needed to add someone. `timeZone` null means "from the city they live in".
@@ -145,6 +153,8 @@ const personFields = {
   city: place.nullable(),
   title: jobTitle.nullable(),
   circle: z.enum(CIRCLES).nullable(),
+  /** Their own rhythm; null follows their circles. */
+  touchEvery: touchEvery.nullable(),
 }
 
 export const createPersonBody = z
@@ -171,6 +181,8 @@ export const personResponse = z.object({
   sortKey: z.string(),
   /** Their photo, read at `/avatars/:id`; null shows their initials. */
   avatarId: fileId.nullable(),
+  /** Their own rhythm, as set; what holds for them is at `/people/:id/touch`. */
+  touchEvery: touchEvery.nullable(),
   aliases: z.array(aliasResponse),
   circleIds: z.array(circleId),
   timeZone: z.string().nullable(),
@@ -208,8 +220,55 @@ export const peopleListQuery = z.object(pageQuery(LIST_PAGE)).strict()
 
 /** The circles, in your order, with how many people are in each. */
 export const circlesResponse = z.object({
-  circles: z.array(z.object({ id: circleId, name: z.string(), count: z.number().int() })),
+  circles: z.array(
+    z.object({
+      id: circleId,
+      name: z.string(),
+      count: z.number().int(),
+      /** How often to be in touch with the people in it; null is never. */
+      touchEvery: touchEvery.nullable(),
+    }),
+  ),
 })
+
+export const circleParams = z.object({ id: circleId }).strict()
+
+/** A circle's rhythm; null or `off` is never. */
+export const setCircleTouchBody = z.object({ touchEvery: touchEvery.nullable() }).strict()
+
+/**
+ * Whether someone is due a word: the rhythm that holds for them and where it comes from, the last
+ * time you were in touch (a message either way, or a meeting held together), and the day it falls
+ * due. Days are the account's.
+ */
+export const personTouchResponse = z.object({
+  every: touchEvery.exclude(['off']).nullable(),
+  from: z
+    .discriminatedUnion('kind', [
+      z.object({ kind: z.literal('person') }),
+      z.object({ kind: z.literal('circle'), circleId, name: z.string() }),
+    ])
+    .nullable(),
+  lastInTouch: calendarDate.nullable(),
+  dueOn: calendarDate.nullable(),
+})
+
+/** Today's "Get in touch": everyone due by today, the longest overdue first. */
+export const getInTouchResponse = z.object({
+  people: z.array(
+    z.object({
+      personId,
+      name: z.string(),
+      initials: z.string(),
+      avatarId: fileId.nullable(),
+      lastInTouch: calendarDate.nullable(),
+      dueOn: calendarDate,
+    }),
+  ),
+})
+
+/** "Later": not until this day, unless you are in touch before it. */
+export const touchLaterBody = z.object({ until: calendarDate }).strict()
 
 /**
  * The circles as a whole list, in order: one with an `id` is renamed, one without is new, one

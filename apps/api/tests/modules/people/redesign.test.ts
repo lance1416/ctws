@@ -123,8 +123,8 @@ describe('circles', () => {
       circles: { id: string; name: string; count: number }[]
     }
     expect(again.circles).toEqual([
-      { id: friends, name: 'Friends', count: 1 },
-      { id: family, name: 'Relatives', count: 0 },
+      { id: friends, name: 'Friends', count: 1, touchEvery: null },
+      { id: family, name: 'Relatives', count: 0, touchEvery: null },
     ])
     const read = await ctx.app.inject({
       method: 'GET',

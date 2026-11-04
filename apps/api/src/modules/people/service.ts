@@ -179,6 +179,8 @@ export async function createPerson(
       city: body.city ?? null,
       title: body.title ?? null,
       circle: body.circle ?? null,
+      touchEvery: body.touchEvery ?? null,
+      touchSetAt: body.touchEvery ? now : null,
       ...birthdayColumns(body.birthday ?? undefined),
       createdAt: now,
       updatedAt: now,
@@ -228,6 +230,7 @@ export async function updatePerson(
         ...(nameColumns(patch, current) ?? {}),
         ...zoneColumns(patch, current),
         ...birthdayColumns(birthday),
+        ...(fields.touchEvery !== undefined ? { touchSetAt: now } : {}),
         updatedAt: now,
       })
       .where(within(scoped(people, workspaceId), eq(people.id, id)))
@@ -300,4 +303,17 @@ export async function deletePerson(db: Db, ctx: Actor, id: PersonId): Promise<vo
         and not exists (select 1 from communication_parties p where p.communication_id = communications.id)`)
     await tx.delete(people).where(eq(people.id, id))
   })
+}
+
+/** "Later": not due again before `until`, while the last time in touch stays `since`. */
+export async function setTouchLater(
+  db: Db,
+  ctx: Actor,
+  id: PersonId,
+  later: { until: string; since: Date | null },
+): Promise<void> {
+  await db
+    .update(people)
+    .set({ touchLaterUntil: later.until, touchLaterSince: later.since })
+    .where(within(scoped(people, ctx.workspaceId), eq(people.id, id)))
 }

@@ -1,4 +1,11 @@
-import { type CircleId, circleId, type PutCirclesBody, type WorkspaceId } from '@ctws/contracts'
+import {
+  type CircleId,
+  circleId,
+  type PutCirclesBody,
+  TOUCH_EVERY,
+  type TouchEvery,
+  type WorkspaceId,
+} from '@ctws/contracts'
 import { asc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Queryable, Tx } from '../../platform/db/client'
@@ -8,13 +15,18 @@ import { rowsOf } from '../../platform/db/raw'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { circles } from './tables'
 
-const circleRow = z.object({ id: circleId, name: z.string(), count: z.number() })
+const circleRow = z.object({
+  id: circleId,
+  name: z.string(),
+  count: z.number(),
+  touchEvery: z.enum(TOUCH_EVERY).nullable(),
+})
 export type CircleRow = z.infer<typeof circleRow>
 
 /** The circles in your order, each with how many live people are in it. */
 export async function listCircles(q: Queryable, workspaceId: WorkspaceId): Promise<CircleRow[]> {
   const result = await q.execute(sql`
-    select c.id, c.name,
+    select c.id, c.name, c.touch_every as "touchEvery",
       (select count(*)::int from person_circles pc
          join people p on p.id = pc.person_id
        where pc.circle_id = c.id and p.deleted_at is null) as count
@@ -82,4 +94,19 @@ export async function assertCirclesVisible(
     .from(circles)
     .where(within(scoped(circles, workspaceId), inArray(circles.id, unique)))
   if (rows.length !== unique.length) throw new NotFound('Circle')
+}
+
+/** A circle's rhythm, from now: someone in it never in touch is counted from today. */
+export async function setCircleTouch(
+  q: Queryable,
+  ctx: Actor,
+  id: CircleId,
+  touchEvery: TouchEvery | null,
+): Promise<void> {
+  const done = await q
+    .update(circles)
+    .set({ touchEvery, touchSetAt: ctx.now })
+    .where(within(scoped(circles, ctx.workspaceId), eq(circles.id, id)))
+    .returning({ id: circles.id })
+  if (done.length === 0) throw new NotFound('Circle')
 }

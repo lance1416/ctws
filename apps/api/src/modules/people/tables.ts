@@ -11,6 +11,7 @@ import {
   type CircleId,
   type FileId,
   type PersonId,
+  type TouchEvery,
   type ProjectId,
   type WorkspaceId,
 } from '@ctws/contracts'
@@ -18,6 +19,7 @@ import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
+  date,
   foreignKey,
   index,
   integer,
@@ -53,6 +55,16 @@ export const people = pgTable(
     familyName: text('family_name'),
     /** The letter the person is filed under, A to Z or `#`, from the family name's pinyin or initial. */
     sortKey: text('sort_key').notNull(),
+    /** How often to be in touch: their own, overriding their circles'; null follows those. */
+    touchEvery: text('touch_every').$type<TouchEvery>(),
+    /** When it was set: someone never in touch is counted from then. */
+    touchSetAt: timestamp('touch_set_at', { withTimezone: true }),
+    /**
+     * "Later": not due again before this day, as long as the last time in touch is still
+     * `touchLaterSince` (null: never in touch). Being in touch again ends it.
+     */
+    touchLaterUntil: date('touch_later_until'),
+    touchLaterSince: timestamp('touch_later_since', { withTimezone: true }),
     /** Their photo; gone with the file, which only a sweep removes. */
     avatarId: uuid('avatar_id')
       .$type<FileId>()
@@ -191,6 +203,9 @@ export const circles = pgTable(
       .references(() => workspaceKeys.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     rank: integer('rank').notNull(),
+    /** How often to be in touch with the people in it; null is never. */
+    touchEvery: text('touch_every').$type<TouchEvery>(),
+    touchSetAt: timestamp('touch_set_at', { withTimezone: true }),
   },
   (t) => [unique('circles_workspace_name_key').on(t.workspaceId, t.name)],
 )

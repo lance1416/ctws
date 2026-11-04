@@ -1,91 +1,188 @@
+import type { CircleId, PersonId } from '@ctws/contracts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createMeeting, createPerson } from '../../helpers/builders'
 import { setupWith, type Harness } from '../../helpers/harness'
 
 /**
- * Who you were in touch with: the latest exchange with each person, a message sent or received or a
- * meeting together, split into the last 30 days and 90 days or more ago. The clock is pinned:
- * Thursday 22 October 2026, noon in London.
+ * How often to be in touch: set on a person or on their circles, due a rhythm after the last
+ * message or meeting together, and in Today's "Get in touch" from that day until the next.
  */
-const NOW = new Date('2026-10-22T11:00:00.000Z')
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
-  while (cleanups.length) await cleanups.pop()!()
+  for (const stop of cleanups.splice(0)) await stop()
 })
 
-const setup = () => setupWith(cleanups, undefined, { clock: () => NOW, timezone: 'Europe/London' })
-
-async function message(ctx: Harness, personId: string, direction: string, occurredAt: string) {
-  const res = await ctx.app.inject({
-    method: 'POST',
-    url: '/api/v1/communication',
-    headers: ctx.authed,
-    payload: {
-      direction,
-      channel: 'email',
-      occurredAt,
-      parties: [{ type: 'person', id: personId }],
-    },
+/** An account whose clock the test moves; days are UTC. */
+async function setup(start = '2026-10-02') {
+  const clock = { now: new Date(`${start}T09:00:00Z`) }
+  // A session lasts longer than the months these tests move the clock by.
+  const ctx = await setupWith(cleanups, 'me@example.com', {
+    clock: () => clock.now,
+    env: { sessionTtlDays: 400 },
   })
-  expect(res.statusCode, res.body).toBe(201)
+  const onDay = (day: string) => (clock.now = new Date(`${day}T09:00:00Z`))
+  return { ctx, onDay }
 }
 
-describe('GET /people?view=touch', () => {
-  it('says who was in touch lately, latest first, and with whom it has been a while', async () => {
-    const ctx = await setup()
-    const sarah = await createPerson(ctx, { name: 'Sarah Whitfield' })
-    const priya = await createPerson(ctx, { name: 'Priya Nair' })
-    const mira = await createPerson(ctx, { name: 'Mira Chen' })
-    const tom = await createPerson(ctx, { name: 'Tom Okafor' })
-    const james = await createPerson(ctx, { name: 'James Ward' })
-    const leo = await createPerson(ctx, { name: 'Leo' })
-    await createPerson(ctx, { name: 'Never met' })
+const call = (
+  ctx: Harness,
+  method: 'GET' | 'PUT' | 'PATCH' | 'POST',
+  url: string,
+  payload?: object,
+) =>
+  ctx.app.inject({
+    method,
+    url: `/api/v1${url}`,
+    headers: ctx.authed,
+    ...(payload ? { payload } : {}),
+  })
 
-    await message(ctx, sarah.id, 'sent', '2026-10-22T09:00:00.000Z')
-    await message(ctx, priya.id, 'received', '2026-10-16T08:00:00.000Z')
-    // Mira: an old message, then a meeting together, which is the latest.
-    await message(ctx, mira.id, 'sent', '2026-09-01T08:00:00.000Z')
+/** Circles by name, made as a list. */
+async function circles(ctx: Harness, ...names: string[]): Promise<Record<string, CircleId>> {
+  const res = await call(ctx, 'PUT', '/people/circles', {
+    circles: names.map((name) => ({ name })),
+  })
+  return Object.fromEntries(
+    res.json().circles.map((c: { id: string; name: string }) => [c.name, c.id]),
+  )
+}
+
+const setCircle = (ctx: Harness, id: string, touchEvery: string | null) =>
+  call(ctx, 'PATCH', `/people/circles/${id}`, { touchEvery })
+
+const message = (ctx: Harness, person: PersonId, occurredAt: string, direction = 'sent') =>
+  call(ctx, 'POST', '/communication', {
+    direction,
+    channel: 'message',
+    occurredAt,
+    parties: [{ type: 'person', id: person }],
+  })
+
+const due = async (ctx: Harness) => {
+  const res = await call(ctx, 'GET', '/people?view=get-in-touch')
+  expect(res.statusCode, res.body).toBe(200)
+  return res.json().people as { personId: string }[]
+}
+
+const touch = async (ctx: Harness, id: string) =>
+  (await call(ctx, 'GET', `/people/${id}/touch`)).json()
+
+describe('a circle every month', () => {
+  it('brings Lena up a month after her last message, and takes her away once messaged', async () => {
+    const { ctx, onDay } = await setup()
+    const { Friends } = await circles(ctx, 'Friends')
+    await setCircle(ctx, Friends!, '1m')
+    const lena = await createPerson(ctx, { name: 'Lena Fischer', circleIds: [Friends!] })
+    expect((await message(ctx, lena.id, '2026-10-02T08:00:00Z')).statusCode).toBe(201)
+
+    onDay('2026-11-01')
+    expect(await due(ctx)).toEqual([])
+    onDay('2026-11-02')
+    expect(await due(ctx)).toMatchObject([
+      { personId: lena.id, name: 'Lena Fischer', lastInTouch: '2026-10-02', dueOn: '2026-11-02' },
+    ])
+    expect(await touch(ctx, lena.id)).toMatchObject({
+      every: '1m',
+      from: { kind: 'circle', circleId: Friends, name: 'Friends' },
+      lastInTouch: '2026-10-02',
+      dueOn: '2026-11-02',
+    })
+
+    await message(ctx, lena.id, '2026-11-02T09:00:00Z')
+    expect(await due(ctx)).toEqual([])
+  })
+
+  it('is silenced by her own Off, whatever the circle says', async () => {
+    const { ctx, onDay } = await setup()
+    const { Friends } = await circles(ctx, 'Friends')
+    await setCircle(ctx, Friends!, '1w')
+    const lena = await createPerson(ctx, { name: 'Lena Fischer', circleIds: [Friends!] })
+    await call(ctx, 'PATCH', `/people/${lena.id}`, { touchEvery: 'off' })
+    onDay('2026-12-01')
+    expect(await due(ctx)).toEqual([])
+    expect(await touch(ctx, lena.id)).toMatchObject({ every: null, from: null, dueOn: null })
+  })
+
+  it('gives way to the most frequent of her circles, named on her page', async () => {
+    const { ctx } = await setup()
+    const { Family, Friends } = await circles(ctx, 'Friends', 'Family')
+    await setCircle(ctx, Friends!, '1m')
+    await setCircle(ctx, Family!, '1w')
+    const lena = await createPerson(ctx, { name: 'Lena Fischer', circleIds: [Friends!, Family!] })
+    expect(await touch(ctx, lena.id)).toMatchObject({
+      every: '1w',
+      from: { kind: 'circle', name: 'Family' },
+    })
+  })
+
+  it('gives way to her own rhythm when she has one', async () => {
+    const { ctx } = await setup()
+    const { Friends } = await circles(ctx, 'Friends')
+    await setCircle(ctx, Friends!, '1w')
+    const lena = await createPerson(ctx, { name: 'Lena Fischer', circleIds: [Friends!] })
+    await call(ctx, 'PATCH', `/people/${lena.id}`, { touchEvery: '3m' })
+    expect(await touch(ctx, lena.id)).toMatchObject({ every: '3m', from: { kind: 'person' } })
+  })
+})
+
+describe('the last time in touch', () => {
+  it('is the latest of a message either way and a meeting held together', async () => {
+    const { ctx, onDay } = await setup('2026-10-25')
+    const lena = await createPerson(ctx, { name: 'Lena Fischer', touchEvery: '1m' })
+    await message(ctx, lena.id, '2026-10-02T08:00:00Z', 'received')
     await createMeeting(ctx, {
       title: 'Coffee',
-      startsLocal: '2026-10-16T15:00',
-      timeZone: 'Europe/London',
-      attendeeIds: [mira.id],
+      startsLocal: '2026-10-20T10:00',
+      attendeeIds: [lena.id],
     })
-    // A weekly meeting Tom stopped coming to in June: its last one with him is in June.
-    await createMeeting(ctx, {
-      title: 'Climbing',
-      startsLocal: '2026-05-04T19:00',
-      timeZone: 'Europe/London',
-      rrule: 'FREQ=WEEKLY;UNTIL=20260622T235959Z',
-      attendeeIds: [tom.id],
+    onDay('2026-11-04')
+    expect(await touch(ctx, lena.id)).toMatchObject({
+      lastInTouch: '2026-10-20',
+      dueOn: '2026-11-20',
     })
-    // A meeting still to come is not an exchange yet.
-    await createMeeting(ctx, {
-      title: 'Lunch',
-      startsLocal: '2026-10-29T12:00',
-      timeZone: 'Europe/London',
-      attendeeIds: [leo.id],
-    })
-    await message(ctx, james.id, 'received', '2026-03-10T10:00:00.000Z')
-    // Fifty days ago: neither lately nor a while.
-    await message(ctx, leo.id, 'sent', '2026-09-02T10:00:00.000Z')
+  })
 
-    const res = await ctx.app.inject({
-      method: 'GET',
-      url: '/api/v1/people?view=touch',
-      headers: ctx.authed,
+  it('counts from the day the rhythm was set for someone never in touch', async () => {
+    const { ctx, onDay } = await setup('2026-10-02')
+    const priya = await createPerson(ctx, { name: 'Priya Shah', touchEvery: '1w' })
+    expect(await touch(ctx, priya.id)).toMatchObject({ lastInTouch: null, dueOn: '2026-10-09' })
+    onDay('2026-10-09')
+    expect(await due(ctx)).toMatchObject([{ personId: priya.id, lastInTouch: null }])
+  })
+})
+
+describe('Later', () => {
+  it('puts her off until the day chosen, and is over once you are in touch', async () => {
+    const { ctx, onDay } = await setup()
+    const lena = await createPerson(ctx, { name: 'Lena Fischer', touchEvery: '1m' })
+    await message(ctx, lena.id, '2026-10-02T08:00:00Z')
+    onDay('2026-11-02')
+    const later = await call(ctx, 'POST', `/people/${lena.id}/touch-later`, { until: '2026-11-09' })
+    expect(later.statusCode, later.body).toBe(200)
+    expect(later.json()).toMatchObject({ dueOn: '2026-11-09' })
+    expect(await due(ctx)).toEqual([])
+    onDay('2026-11-09')
+    expect(await due(ctx)).toHaveLength(1)
+
+    // In touch again: the rhythm runs from then, and the old Later is gone.
+    await message(ctx, lena.id, '2026-11-09T08:00:00Z')
+    expect(await touch(ctx, lena.id)).toMatchObject({ dueOn: '2026-12-09' })
+  })
+})
+
+describe('without a rhythm', () => {
+  it('nobody comes up, however long it has been', async () => {
+    const { ctx, onDay } = await setup()
+    const lena = await createPerson(ctx, { name: 'Lena Fischer' })
+    await message(ctx, lena.id, '2026-01-02T08:00:00Z')
+    onDay('2026-12-01')
+    expect(await due(ctx)).toEqual([])
+    expect(await touch(ctx, lena.id)).toEqual({
+      every: null,
+      from: null,
+      lastInTouch: '2026-01-02',
+      dueOn: null,
     })
-    expect(res.statusCode, res.body).toBe(200)
-    const { recent, quiet } = res.json()
-    expect(recent).toEqual([
-      { personId: sarah.id, kind: 'sent', at: '2026-10-22T09:00:00.000Z' },
-      { personId: mira.id, kind: 'meeting', at: '2026-10-16T14:00:00.000Z' },
-      { personId: priya.id, kind: 'received', at: '2026-10-16T08:00:00.000Z' },
-    ])
-    expect(quiet).toEqual([
-      { personId: tom.id, kind: 'meeting', at: '2026-06-22T18:00:00.000Z' },
-      { personId: james.id, kind: 'received', at: '2026-03-10T10:00:00.000Z' },
-    ])
   })
 })
