@@ -8,6 +8,8 @@ import { isFinished } from '../logic/status'
 import { treeDue } from '../logic/tree/treeDue'
 import { CHIP, DUE_TONE } from './board/BoardCard'
 import { StatusMark } from '../../../platform/ui/StatusMark'
+import { TaskPath, TitleOver } from '../pages/today/TaskLine'
+import { idFrom, projectId } from '@ctws/contracts'
 
 /**
  * A task on a person's page: its status, its title, and its deadline as the tree says it, or the
@@ -25,13 +27,20 @@ export function PersonTaskRow({ thing }: { thing: LinkCandidate }) {
         : `Planned ${shortDay(thing.scheduledOn, today)}`
       : null
   return (
-    <span className="grid min-h-9 grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-3 text-ui">
+    <span className="grid min-h-9 grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-3 py-1.5 text-ui">
       <span aria-hidden="true" className="flex">
         <StatusMark status={thing.status} size={16} />
       </span>
-      <span className={`truncate ${isFinished(thing.status) ? 'text-muted' : 'text-ink'}`}>
-        {thing.title}
-      </span>
+      <TitleOver
+        title={
+          <span
+            className={`max-w-full truncate ${isFinished(thing.status) ? 'text-muted' : 'text-ink'}`}
+          >
+            {thing.title}
+          </span>
+        }
+        under={<TaskPath task={{ ...thing, projectId: idFrom(projectId, thing.projectId) }} />}
+      />
       {due && due.tone !== 'waiting' ? (
         due.tone === 'quiet' ? (
           <span className="text-meta text-muted">{due.text}</span>

@@ -198,8 +198,9 @@ function PersonHead({ person }: { person: PersonResponse }) {
 }
 
 /**
- * The profile: contact, work, places, birthday and notes, sections parted by space and a
- * small heading, never a rule. A section with nothing to say is left out.
+ * The profile: contact, work, places, birthday and notes, each section under its own heading and
+ * parted from the next by a line, so they read as separate things, not one list. A section with
+ * nothing to say is left out.
  */
 function Profile({ person }: { person: PersonResponse }) {
   // Numbers grouped as their country writes them, once the phone module is here.
@@ -210,7 +211,7 @@ function Profile({ person }: { person: PersonResponse }) {
   return (
     <aside
       aria-label="Profile"
-      className="flex flex-col gap-5 rounded-container border border-line bg-panel p-4"
+      className="flex flex-col divide-y divide-line rounded-container border border-line bg-panel"
     >
       {person.channels.length > 0 && (
         <Section title="Contact" icon={ContactIcon}>
@@ -285,8 +286,8 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section aria-label={title} className="flex flex-col gap-2.5">
-      <h2 className="flex items-center gap-2 text-ui font-medium text-ink">
+    <section aria-label={title} className="flex flex-col gap-2.5 p-4">
+      <h2 className="flex items-center gap-2 text-head text-ink">
         <Icon size={16} aria-hidden="true" className="text-muted" />
         {title}
       </h2>
@@ -343,8 +344,8 @@ function Birthday({ birthday: b }: { birthday: NonNullable<PersonResponse['birth
         ? 'Tomorrow'
         : `${weekdayOf(day)}, in ${b.next.inDays} days`
   return (
-    <section aria-label="Birthday" className="flex flex-col gap-2.5">
-      <h2 className="flex items-center gap-2 text-ui font-medium text-ink">
+    <section aria-label="Birthday" className="flex flex-col gap-2.5 p-4">
+      <h2 className="flex items-center gap-2 text-head text-ink">
         <CakeIcon size={16} aria-hidden="true" className="text-person" />
         Birthday
       </h2>
