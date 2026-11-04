@@ -12,6 +12,8 @@ automatically):
 ```
 IMAGE=ghcr.io/<owner>/ctws:v1.0.0
 POSTGRES_PASSWORD=<output of: openssl rand -hex 32>
+# optional: where this deploy is reached, for link previews of the front page
+# PUBLIC_ORIGIN=https://ctws.example.com
 # optional, default ctws
 # POSTGRES_USER=ctws
 # POSTGRES_DB=ctws
@@ -19,6 +21,13 @@ POSTGRES_PASSWORD=<output of: openssl rand -hex 32>
 
 `IMAGE` and `POSTGRES_PASSWORD` are required: compose refuses to start without them.
 `<owner>` must be lowercase.
+
+`PUBLIC_ORIGIN` is the address people open, scheme and host only, no path. A link to the front
+page shared on a chat app or social site previews with an image and an address only when the page
+names them in full, and the build cannot know this deploy's address. It is never taken from the
+request's Host header, which anyone can set. Without it the page leaves those two tags out and
+everything else is the same; with a value that is not a bare `http(s)://host[:port]`, the API
+refuses to start and says so.
 
 **Use a URL-safe password — `openssl rand -hex 32`, not `-base64`.** Compose assembles
 `DATABASE_URL` by interpolating the password into a URL, so `/`, `+`, `=`, `#` and `?` make that

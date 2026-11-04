@@ -60,3 +60,26 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...base, AUTH_REGISTRATION: value })).toThrow()
   })
 })
+
+describe('PUBLIC_ORIGIN', () => {
+  const base = { DATABASE_URL: 'postgres://u:p@localhost:5432/d' }
+
+  it('is unset unless given, and kept as a bare origin', () => {
+    expect(parseEnv(base).publicOrigin).toBeUndefined()
+    expect(parseEnv({ ...base, PUBLIC_ORIGIN: 'https://ctws.example.com/' }).publicOrigin).toBe(
+      'https://ctws.example.com',
+    )
+    expect(parseEnv({ ...base, PUBLIC_ORIGIN: 'http://10.0.0.5:3000' }).publicOrigin).toBe(
+      'http://10.0.0.5:3000',
+    )
+  })
+
+  it.each([
+    'ctws.example.com',
+    'ftp://ctws.example.com',
+    'https://ctws.example.com/app',
+    'https://x.example?a=1',
+  ])('refuses %j: an origin and nothing more', (value) => {
+    expect(() => parseEnv({ ...base, PUBLIC_ORIGIN: value })).toThrow(/PUBLIC_ORIGIN/)
+  })
+})

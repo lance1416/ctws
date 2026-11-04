@@ -19,6 +19,9 @@ const raw = z.object({
   COOKIE_SECURE: envFlag(true),
   // Built web app to serve (apps/web/dist). Unset or missing: the API serves no frontend.
   WEB_DIST: z.string().optional(),
+  // Where this deploy is reached, `https://ctws.example.com`: the page's share tags name it in
+  // full, which link previews require. Never taken from a request's Host, which anyone can set.
+  PUBLIC_ORIGIN: z.string().optional(),
   // An ISO instant the whole server treats as now, for a test or acceptance stack whose "today",
   // "overdue" and "birthday in 3 days" must come out the same on every run. Never set in production.
   CLOCK_PINNED_AT: z.iso.datetime({ offset: true }).optional(),
@@ -43,6 +46,8 @@ export type Env = {
   authCeiling: number
   cookieSecure: boolean
   webDist: string | undefined
+  /** The deploy's own origin, without a path or a trailing slash; unset leaves the share tags out. */
+  publicOrigin: string | undefined
   /** The instant the server is pinned to, when it is. */
   clockPinnedAt: Date | undefined
   backupsDir: string | undefined
@@ -51,6 +56,20 @@ export type Env = {
   version: string
   /** The commit it was built from, short, when the build knew it. */
   commit: string | undefined
+}
+
+/** `PUBLIC_ORIGIN` as an origin: http(s), a host, no path, query or fragment. */
+function originOf(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  const url = URL.parse(value)
+  const bare = url && url.pathname === '/' && !url.search && !url.hash && !url.username
+  if (!url || !/^https?:$/.test(url.protocol) || !bare) {
+    throw new Error(
+      `PUBLIC_ORIGIN must be where the app is reached and nothing more, such as ` +
+        `https://ctws.example.com; got ${value}`,
+    )
+  }
+  return url.origin
 }
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
@@ -77,6 +96,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     authCeiling: parsed.AUTH_CEILING,
     cookieSecure: parsed.COOKIE_SECURE,
     webDist: parsed.WEB_DIST || undefined,
+    publicOrigin: originOf(parsed.PUBLIC_ORIGIN),
     backupsDir: parsed.BACKUPS_DIR || undefined,
     migrationFailAt: parsed.MIGRATION_FAIL_AT || undefined,
     version: parsed.CTWS_VERSION,
