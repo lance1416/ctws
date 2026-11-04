@@ -5,6 +5,7 @@ import { lockTaskTree } from '../../src/modules/tasks/tree'
 import type { Unfurl } from '../../src/modules/reading/unfurl/unfurl'
 import type { Env } from '../../src/platform/config'
 import type { ObjectStore } from '../../src/platform/storage'
+import type { Previewer } from '../../src/shell/resources'
 import type { Tx } from '../../src/platform/db/client'
 import type { EnvSource } from '../../src/shell/module'
 import { withApp } from './app'
@@ -31,6 +32,7 @@ export async function appWithUser(email = 'p@example.com', opts: Opts = {}): Pro
       ...(opts.clock ? { clock: opts.clock } : {}),
       ...(opts.moduleEnv ? { moduleEnv: opts.moduleEnv } : {}),
       ...(opts.storage ? { storage: opts.storage } : {}),
+      ...(opts.previews ? { previews: opts.previews } : {}),
     },
   )
   const cookie = await register(ctx, email, opts.timezone ?? 'UTC')
@@ -168,6 +170,7 @@ export type Opts = {
   clock?: () => Date
   timezone?: string
   storage?: ObjectStore
+  previews?: Previewer
 }
 
 /** `appWithUser`, with its teardown pushed onto the caller's list for `afterEach` to drain. */

@@ -48,6 +48,14 @@ export async function bury(tx: Tx, ctx: Actor, graves: readonly Grave[]): Promis
   await tx.execute(sql`
     delete from relations
     where (from_type, from_id) in (${ends}) or (to_type, to_id) in (${ends})`)
+  // A resource's pictures go with it, at the next sweep.
+  await tx.execute(sql`
+    insert into file_deletes (id, file_id, owner_id, due_at)
+    select gen_random_uuid(), f.id, null, ${ctx.now}
+    from resources r
+    cross join lateral (values (r.icon_id), (r.image_id)) as f(id)
+    where (r.owner_type, r.owner_id) in (${ends}) and f.id is not null
+    on conflict (file_id) do nothing`)
   await tx.execute(sql`delete from resources where (owner_type, owner_id) in (${ends})`)
   await tx.execute(sql`delete from reminders where (object_type, object_id) in (${ends})`)
   await tx.execute(sql`

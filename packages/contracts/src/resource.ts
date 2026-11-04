@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { instant, patchOf } from './common'
-import { objectId, resourceId } from './id'
+import { fileId, objectId, resourceId } from './id'
 import { objectType } from './object'
 
 /**
@@ -45,6 +45,10 @@ export const updateResourceBody = patchOf({
 
 export type UpdateResourceBody = z.infer<typeof updateResourceBody>
 
+/** Where a resource's card is: being fetched, there, or not to be had. */
+export const PREVIEW_STATES = ['pending', 'done', 'none'] as const
+export type PreviewState = (typeof PREVIEW_STATES)[number]
+
 export const resourceResponse = z.object({
   id: resourceId,
   owner,
@@ -53,6 +57,16 @@ export const resourceResponse = z.object({
   /** The order among its owner's resources. */
   rank: z.string(),
   pinnedRank: z.number().int().nullable(),
+  /** The card the page describes; its pictures are read at `/files/:id`. */
+  preview: z
+    .object({
+      title: z.string().nullable(),
+      siteName: z.string().nullable(),
+      iconId: fileId.nullable(),
+      imageId: fileId.nullable(),
+    })
+    .nullable(),
+  previewState: z.enum(PREVIEW_STATES),
   createdAt: instant,
 })
 export type ResourceResponse = z.infer<typeof resourceResponse>

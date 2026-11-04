@@ -27,6 +27,7 @@ import {
 import { viewQuery } from './common'
 import {
   avatarParams,
+  fileParams,
   photoCrop,
   photoRemovedResponse,
   photoResponse,
@@ -478,6 +479,16 @@ export const api = {
       ok: 204,
     }),
   },
+  files: {
+    get: endpoint({
+      method: 'GET',
+      path: '/files/:fileId',
+      summary: "A stored picture, as WebP: a link card's icon or image. Cached for good.",
+      params: fileParams,
+      ok: 200,
+      refusals: [404, 503],
+    }),
+  },
   photos: {
     get: endpoint({
       method: 'GET',
@@ -571,6 +582,15 @@ export const api = {
       summary: 'Remove a resource.',
       params: resourceParams,
       ok: 204,
+      refusals: [404],
+    }),
+    refreshPreview: endpoint({
+      method: 'POST',
+      path: '/resources/:id/refresh-preview',
+      summary: "Fetch a resource's card again, from the page it points at.",
+      params: resourceParams,
+      ok: 200,
+      response: resourceResponse,
       refusals: [404],
     }),
   },
