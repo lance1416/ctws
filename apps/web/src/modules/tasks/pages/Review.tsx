@@ -107,7 +107,7 @@ function Week() {
         </button>
         {data && (
           <p data-review-total className="ml-auto flex items-center gap-2">
-            <span className="text-hero tracking-[-0.02em] text-ink tabular-nums">{total}</span>
+            <span className="text-hero text-ink tabular-nums">{total}</span>
             {/* Two lines beside the number, however short the words. */}
             <span className="flex w-[70px] flex-col text-ui text-muted">
               <span>finished</span>
