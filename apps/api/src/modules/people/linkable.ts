@@ -1,10 +1,11 @@
 import { avatarInitials, currentRole } from '@ctws/core'
-import { asc, sql, type SQL } from 'drizzle-orm'
+import type { PersonId } from '@ctws/contracts'
+import { asc, eq, sql, type SQL } from 'drizzle-orm'
 import { startsWith, textMatches } from '../../platform/db/sql'
 import { scoped, within } from '../../platform/db/scope'
 import { countWhere, wanted, type Linkable } from '../../shell/links'
 import { rolesOf } from '../organisations'
-import { people } from './tables'
+import { people, personAliases } from './tables'
 
 /**
  * What a text finds a person by: their name, an alias they go by ("Wendy" finds 李雯), or
@@ -27,6 +28,15 @@ const byText = (text: string): SQL | undefined =>
 
 export const personLinkable: Linkable = {
   type: 'person',
+  // Their aliases ("Mira" beside "Mira Chen"), as text may call them by.
+  otherNames: async (q, workspaceId, id) => {
+    const rows = await q
+      .select({ name: personAliases.name })
+      .from(personAliases)
+      .innerJoin(people, eq(people.id, personAliases.personId))
+      .where(within(scoped(people, workspaceId), eq(people.id, id as PersonId)))
+    return rows.map((r) => r.name)
+  },
   count: (q, workspaceId, text) =>
     countWhere(q, people, within(scoped(people, workspaceId), byText(text))),
   rows: async (q, workspaceId, want) => {

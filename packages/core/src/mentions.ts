@@ -40,6 +40,9 @@ export const linkWords = (text: string): string => text.replace(LINK, '$1').repl
 /** The address of a mention of `thing`, for the editor to insert. */
 export const mentionAddress = (type: ObjectType, id: string): string => `ctws://${type}/${id}`
 
+/** The sentences of `text`, as mentions are excerpted: a full stop in either script, or a line. */
+export const sentencesOf = (text: string): string[] => text.split(SENTENCE_END)
+
 /**
  * Every mention in `text`, in order, each with the sentence it is in. The same thing mentioned in
  * two sentences is two mentions; mentioned twice in one sentence, one.
@@ -48,7 +51,7 @@ export function mentionsIn(text: string | null | undefined): Mention[] {
   if (!text) return []
   const out: Mention[] = []
   const seen = new Set<string>()
-  for (const sentence of text.split(SENTENCE_END)) {
+  for (const sentence of sentencesOf(text)) {
     const excerpt = sentence.trim().slice(0, EXCERPT_MAX)
     for (const m of sentence.matchAll(MENTION)) {
       const type = m[1] as ObjectType

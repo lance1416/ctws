@@ -1,3 +1,6 @@
+import { eventLog } from '../../shell/events'
+import { textSourceOf } from '../../shell/unlinked'
+import { notes } from './tables'
 import type { TimelineEntry } from '@ctws/contracts'
 import type { TimelineSource } from '../../shell/events'
 import { fixedModule } from '../../shell/module'
@@ -32,4 +35,14 @@ export const notesModule = fixedModule({
   linkable: noteLinkable,
   timelineSources: () => [hung],
   weekCounts: noteWeekCounts,
+  texts: textSourceOf({
+    type: 'note',
+    table: notes,
+    id: notes.id,
+    workspace: notes.workspaceId,
+    text: notes.body,
+    field: 'body',
+    updated: notes.updatedAt,
+    log: (tx, ctx, id) => eventLog(tx, ctx).append({ type: 'note', id }, 'edited', {}),
+  }),
 })

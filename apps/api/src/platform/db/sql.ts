@@ -2,7 +2,7 @@ import { sql, type SQL } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 // `!` rather than `\`: a backslash also escapes inside string literals under some server settings.
-const LIKE_ESCAPE = '!'
+export const LIKE_ESCAPE = '!'
 
 /** A case-insensitive containment pattern with LIKE's wildcards escaped. */
 export function likePattern(query: string): string {

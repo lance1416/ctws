@@ -144,6 +144,7 @@ import {
   updateResourceBody,
 } from './resource'
 import { tombstoneParams, tombstoneResponse } from './tombstone'
+import { unlinkedParams, unlinkedPlaceBody, unlinkedResponse } from './unlinked'
 import {
   reminderOfResponse,
   reminderParams,
@@ -479,6 +480,37 @@ export const api = {
       summary: 'Done with the report: its entry and the prompt go away.',
       ok: 200,
       response: migrationReportResponse,
+      refusals: [404],
+    }),
+  },
+  unlinked: {
+    of: endpoint({
+      method: 'GET',
+      path: '/unlinked/:type/:id',
+      summary:
+        'Where a person, project or organisation is named without an @: in notes, meeting ' +
+        'notes, task notes and messages; the first twenty, and how many there are.',
+      params: unlinkedParams,
+      ok: 200,
+      response: unlinkedResponse,
+      refusals: [404],
+    }),
+    link: endpoint({
+      method: 'POST',
+      path: '/unlinked/:type/:id/link',
+      summary: 'Turn one such place into a mention of the thing, in the text it is in.',
+      params: unlinkedParams,
+      body: unlinkedPlaceBody,
+      ok: 204,
+      refusals: [404, 409],
+    }),
+    dismiss: endpoint({
+      method: 'POST',
+      path: '/unlinked/:type/:id/dismiss',
+      summary: '"Not this one": that place is not listed again.',
+      params: unlinkedParams,
+      body: unlinkedPlaceBody,
+      ok: 204,
       refusals: [404],
     }),
   },

@@ -1,4 +1,7 @@
-import { OPEN_TASKS_COLUMN, PARENT_TASKS_COLUMN } from '@ctws/contracts'
+import { OPEN_TASKS_COLUMN, PARENT_TASKS_COLUMN, type TaskId } from '@ctws/contracts'
+import { textSourceOf } from '../../shell/unlinked'
+import { taskLog } from './log'
+import { tasks } from './tables'
 import { fixedModule } from '../../shell/module'
 import { taskLinkable } from './linkable'
 import { openTaskCountSql, parentTaskCountSql } from './queries'
@@ -14,4 +17,16 @@ export const tasksModule = fixedModule({
     [PARENT_TASKS_COLUMN]: parentTaskCountSql(),
   },
   projectGraves,
+  texts: textSourceOf({
+    type: 'task',
+    table: tasks,
+    id: tasks.id,
+    workspace: tasks.workspaceId,
+    text: tasks.notes,
+    field: 'notes',
+    deleted: tasks.deletedAt,
+    updated: tasks.updatedAt,
+    log: (tx, ctx, id, was, next) =>
+      taskLog(tx, ctx).append(id as TaskId, 'notes_changed', { from: was, to: next }),
+  }),
 })
