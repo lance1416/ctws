@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@ctws/contracts": "workspace:*",
+    "@date-fns/tz": "1.5.0",
     "fractional-indexing": "4.0.0",
     "pinyin-pro": "3.29.5",
     "tyme4ts": "1.5.3"
