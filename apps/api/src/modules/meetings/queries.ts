@@ -1,6 +1,7 @@
 import {
   type CalendarEntry,
   DAY_MS,
+  type FileId,
   type MeetingId,
   type PersonId,
   type ProjectId,
@@ -21,7 +22,7 @@ import { windowOf } from './zone'
 import { NotFound } from '../../platform/errors'
 import { type Page, type PageAsked, pageOf, spanOf } from '../../platform/db/page'
 
-type Attendee = { id: PersonId; name: string }
+type Attendee = { id: PersonId; name: string; avatarId: FileId | null }
 
 /** A row is a series: with its rule and exceptions it describes every occurrence. */
 export type SeriesRow = typeof meetings.$inferSelect & {
@@ -30,7 +31,12 @@ export type SeriesRow = typeof meetings.$inferSelect & {
   exceptions: Exception[]
 }
 
-const attendeeRow = z.object({ meetingId: z.string(), id: z.string(), name: z.string() })
+const attendeeRow = z.object({
+  meetingId: z.string(),
+  id: z.string(),
+  name: z.string(),
+  avatarId: z.string().nullable(),
+})
 
 /** The live people in each meeting, by name as a page lists them. */
 export async function attendeesOf(
@@ -39,7 +45,7 @@ export async function attendeesOf(
 ): Promise<Map<string, Attendee[]>> {
   if (meetingIds.length === 0) return new Map()
   const result = await q.execute(sql`
-    select a.meeting_id as "meetingId", p.id, p.name
+    select a.meeting_id as "meetingId", p.id, p.name, p.avatar_id as "avatarId"
     from meeting_attendees a
     join people p on p.id = a.person_id and p.deleted_at is null
     where a.meeting_id in (${sql.join(
@@ -51,7 +57,11 @@ export async function attendeesOf(
   return groupBy(
     rowsOf(result, attendeeRow),
     (r) => r.meetingId,
-    (r): Attendee => ({ id: r.id as PersonId, name: r.name }),
+    (r): Attendee => ({
+      id: r.id as PersonId,
+      name: r.name,
+      avatarId: r.avatarId as FileId | null,
+    }),
   )
 }
 

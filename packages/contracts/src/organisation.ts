@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { instant, nameText, noteText, patchOf } from './common'
-import { organisationId, personId, projectId } from './id'
+import { fileId, organisationId, personId, projectId } from './id'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
 /**
@@ -45,6 +45,8 @@ const roleHolder = z.object({
   name: z.string(),
   /** Their avatar's letters, as their own module works them out. */
   initials: z.string(),
+  /** Their photo, read at `/avatars/:id`; null shows the initials. */
+  avatarId: fileId.nullable(),
   title: z.string().nullable(),
   /** `YYYY-MM`, or null when not known. */
   from: z.string().nullable(),

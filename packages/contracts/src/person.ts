@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { circleId, organisationId, personId, projectId } from './id'
+import { circleId, fileId, organisationId, personId, projectId } from './id'
 import { birthdayInput, birthdayResponse } from './birthday'
 import { calendarDate, eventTimeZone, instant, nameText, noteText, patchOf } from './common'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
@@ -169,6 +169,8 @@ export const personResponse = z.object({
   familyName: z.string().nullable(),
   /** The letter the person is filed under. */
   sortKey: z.string(),
+  /** Their photo, read at `/avatars/:id`; null shows their initials. */
+  avatarId: fileId.nullable(),
   aliases: z.array(aliasResponse),
   circleIds: z.array(circleId),
   timeZone: z.string().nullable(),
@@ -240,6 +242,8 @@ const birthdayListRow = z.object({
   name: z.string(),
   /** What their avatar shows. */
   initials: z.string(),
+  /** Their photo, read at `/avatars/:id`; null shows the initials. */
+  avatarId: fileId.nullable(),
   circle: z.enum(CIRCLES).nullable(),
   day: calendarDate,
   inDays: z.number(),

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { calendarDate, instant } from './common'
-import { objectId } from './id'
+import { fileId, objectId } from './id'
 import { objectType } from './object'
 import { TASK_STATUSES } from './task'
 
@@ -38,8 +38,10 @@ export const thingWith = <S extends z.ZodRawShape>(shape: S) =>
       type: z.literal('person'),
       id: objectId,
       title: z.string(),
-      /** The avatar's letters. */
+      /** The avatar's letters, shown while there is no photo. */
       initials: z.string(),
+      /** Their photo, read at `/avatars/:id`. */
+      avatarId: fileId.nullable(),
       /** Where they work now: the current role that began first; null with no current role. */
       org: z.string().nullable(),
     }),

@@ -2,11 +2,21 @@ import { api } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser, todayOf } from '../../shell/auth'
+import {
+  bytesOf,
+  keepPhoto,
+  PHOTO_BODY,
+  putBackPhoto,
+  storeOf,
+  takeOffPhoto,
+} from '../../shell/files'
 import type { LinkRegistry } from '../../shell/links'
+import { NotFound } from '../../platform/errors'
 import { birthdayEntries, listBirthdays, previewBirthday } from './birthdays'
 import { listCircles, putCircles } from './circles'
 import { toPersonResponse } from './mapper'
 import { getPerson, listPeople, searchPeople } from './queries'
+import { personHolder } from './photo'
 import { createPerson, replaceRoles, deletePerson, updatePerson } from './service'
 import { peopleInTouch } from './touch'
 
@@ -78,6 +88,39 @@ export const personRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = a
 
     on(api.people.remove, async (req) => {
       await deletePerson(app.db, actorOf(req), req.params.id)
+    }),
+
+    on(
+      api.people.setPhoto,
+      async (req) => {
+        const ctx = actorOf(req)
+        const holder = personHolder(ctx.workspaceId, req.params.id)
+        const avatarId = await keepPhoto(
+          app.db,
+          storeOf(app),
+          ctx,
+          holder,
+          bytesOf(req.body),
+          req.query,
+        )
+        return { avatarId }
+      },
+      PHOTO_BODY,
+    ),
+
+    on(api.people.removePhoto, async (req) => {
+      storeOf(app)
+      const ctx = actorOf(req)
+      const token = await takeOffPhoto(app.db, ctx, personHolder(ctx.workspaceId, req.params.id))
+      if (!token) throw new NotFound('Photo')
+      return { undoToken: token }
+    }),
+
+    on(api.people.restorePhoto, async (req) => {
+      storeOf(app)
+      const ctx = actorOf(req)
+      const holder = personHolder(ctx.workspaceId, req.params.id)
+      return { avatarId: await putBackPhoto(app.db, ctx, holder, req.body.undoToken) }
     }),
 
     on(api.people.putRoles, async (req) => {

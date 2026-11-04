@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { idFrom, meetingId, personId, projectId } from './id'
+import { fileId, idFrom, meetingId, personId, projectId } from './id'
 import {
   calendarDate,
   EVENT_YEARS,
@@ -156,7 +156,7 @@ export const meetingSeries = z.object({
   note: z.string().nullable(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
-  attendees: z.array(z.object({ id: personId, name: z.string() })),
+  attendees: z.array(z.object({ id: personId, name: z.string(), avatarId: fileId.nullable() })),
 })
 export type MeetingSeries = z.infer<typeof meetingSeries>
 
@@ -181,7 +181,7 @@ export const meetingOccurrence = z.object({
   note: z.string().nullable(),
   projectId: projectId.nullable(),
   projectName: z.string().nullable(),
-  attendees: z.array(z.object({ id: personId, name: z.string() })),
+  attendees: z.array(z.object({ id: personId, name: z.string(), avatarId: fileId.nullable() })),
 })
 export type MeetingOccurrence = z.infer<typeof meetingOccurrence>
 

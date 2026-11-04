@@ -24,6 +24,7 @@ import { mentionSource, relatedStageChanges, relationRoutes } from './shell/rela
 import { resourceRoutes } from './shell/resources'
 import { migrationRoutes } from './shell/migration'
 import { tombstoneRoutes } from './shell/tombstones'
+import { acceptFileBodies, photoRoutes, sweepFiles } from './shell/files'
 import { type ProjectGraves, projectLinkable, projectRoutes } from './shell/projects'
 import { cityRoutes } from './shell/cities'
 import type { Db } from './platform/db/client'
@@ -34,6 +35,9 @@ import { registerGuards } from './platform/http/guards'
 import { handleError } from './platform/http/errors'
 import { serveWeb } from './platform/http/web'
 import type { ObjectStore } from './platform/storage'
+
+/** How often files on their way out are removed from the store. */
+const SWEEP_EVERY_MS = 60_000
 
 /**
  * The app's clock: the wall clock, or, when the environment pins one (`CLOCK_PINNED_AT`), a clock
@@ -134,7 +138,9 @@ export async function buildApp(opts: {
       await api.register(publicAuthRoutes)
       await api.register(async (authed) => {
         authenticated(authed)
+        acceptFileBodies(authed)
         await authed.register(sessionRoutes)
+        await authed.register(photoRoutes)
         await authed.register(adminRoutes)
         await authed.register(projectRoutes, { columns, graves })
         await authed.register(linkRoutes, { registry })
@@ -157,6 +163,22 @@ export async function buildApp(opts: {
   )
 
   await serveWeb(app, opts.env.webDist)
+
+  // Files let go of are removed a minute at a time. A sweep that fails (the store down) leaves
+  // them for the next; one still running when the next is due is not started twice.
+  const { storage } = app
+  if (storage) {
+    let sweeping = false
+    const timer = setInterval(() => {
+      if (sweeping) return
+      sweeping = true
+      sweepFiles(app.db, storage, app.clock())
+        .catch(() => undefined)
+        .finally(() => (sweeping = false))
+    }, SWEEP_EVERY_MS)
+    timer.unref()
+    app.addHook('onClose', async () => clearInterval(timer))
+  }
 
   return app
 }

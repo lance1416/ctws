@@ -125,6 +125,7 @@ describe('a read answers with exactly the fields its contract names', () => {
     expect(await read(ctx, `/api/v1/people/${id}`)).toEqual({
       id,
       name: 'Ying',
+      avatarId: null,
       org: 'Acme',
       note: null,
       projects: [{ id: projectId, name: 'Work', openTasks: 0, lastActivityAt: null }],
@@ -174,7 +175,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       note: null,
       projectId,
       projectName: 'Work',
-      attendees: [{ id: person.id, name: 'Ying' }],
+      attendees: [{ id: person.id, name: 'Ying', avatarId: null }],
     })
   })
 

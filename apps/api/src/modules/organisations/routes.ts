@@ -29,6 +29,7 @@ import type { Organisation } from './tables'
 
 /** A person's avatar letters, as the people module names them; a fallback that never shows. */
 const initialsOf = (p: LinkCandidate) => (p.type === 'person' ? p.initials : '')
+const avatarOf = (p: LinkCandidate) => (p.type === 'person' ? p.avatarId : null)
 
 /**
  * An organisation with the people who hold or held a role there. The people are named through the
@@ -54,6 +55,7 @@ async function respond(
       personId: r.personId,
       name: named.get(r.personId)!.title,
       initials: initialsOf(named.get(r.personId)!),
+      avatarId: avatarOf(named.get(r.personId)!),
       title: r.title,
       from: monthOf(r.fromMonth),
       to: monthOf(r.toMonth),

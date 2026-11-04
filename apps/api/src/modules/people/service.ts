@@ -18,6 +18,7 @@ import { replaceRows } from '../../platform/db/replace'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { cityTimeZone } from '../../shell/cities'
 import { eventLog } from '../../shell/events'
+import { letGo } from '../../shell/files'
 import { bury } from '../../shell/tombstones'
 import { assertProjectsVisible } from '../../shell/projects'
 import { putRoles, removeRolesOf } from '../organisations'
@@ -281,6 +282,8 @@ export async function deletePerson(db: Db, ctx: Actor, id: PersonId): Promise<vo
   await db.transaction(async (tx) => {
     const current = await lockPerson(tx, workspaceId, id)
     await bury(tx, ctx, [{ type: 'person', id, title: current.name }])
+    // Their photo goes with them, at the next sweep: a deleted person is not put back.
+    await letGo(tx, ctx.now, [current.avatarId])
     // The roles have no foreign key to the person (another module's table): dropped here. So
     // are the exchanges' parties and the items recommended; both read as "nobody" otherwise.
     await removeRolesOf(tx, ctx, id)

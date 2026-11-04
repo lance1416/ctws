@@ -9,6 +9,7 @@ import {
   REMIND_LEADS,
   type RemindLead,
   type CircleId,
+  type FileId,
   type PersonId,
   type ProjectId,
   type WorkspaceId,
@@ -29,6 +30,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
+import { fileKeys } from '../../shell/files'
 import { projectKeys } from '../../shell/projects'
 
 /** A person, after vCard 4.0 (RFC 6350). Projects are links, not a column. */
@@ -51,6 +53,10 @@ export const people = pgTable(
     familyName: text('family_name'),
     /** The letter the person is filed under, A to Z or `#`, from the family name's pinyin or initial. */
     sortKey: text('sort_key').notNull(),
+    /** Their photo; gone with the file, which only a sweep removes. */
+    avatarId: uuid('avatar_id')
+      .$type<FileId>()
+      .references(() => fileKeys.id, { onDelete: 'set null' }),
     /** IANA zone, from the city they live in unless set by hand. */
     timeZone: text('time_zone'),
     timeZoneSource: text('time_zone_source').$type<'city' | 'manual'>(),

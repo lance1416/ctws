@@ -212,6 +212,7 @@ async function hydrate(
     middleName: p.middleName,
     familyName: p.familyName,
     sortKey: p.sortKey,
+    avatarId: p.avatarId,
     timeZone: p.timeZone,
     timeZoneSource: p.timeZoneSource,
     cityKey: p.cityKey,
