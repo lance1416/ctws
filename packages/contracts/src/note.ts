@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { documentText, instant, nameText, patchOf, titleText } from './common'
+import { calendarDate, documentText, instant, nameText, patchOf, titleText } from './common'
 import { noteFolderId, noteId, objectId } from './id'
 import { LIST_PAGE, pageInfo, pageQuery } from './page'
 
@@ -79,6 +79,11 @@ export const noteResponse = z.object({
   words: z.number().int().nonnegative(),
   /** The occurrence a meeting note is about, kept after the meeting is gone. */
   heldAt: instant.nullable(),
+  /**
+   * The day a day's note is about, written at the end of it: one a day, on nothing, in no folder,
+   * with no title of its own ("Notes on Wednesday, November 4" is said from the day).
+   */
+  day: calendarDate.nullable(),
   createdAt: instant,
   updatedAt: instant,
 })
@@ -129,3 +134,10 @@ export type NoteFolderResponse = z.infer<typeof noteFolderResponse>
 
 /** Every folder, by name. */
 export const noteFoldersResponse = z.object({ folders: z.array(noteFolderResponse) })
+
+export const dayNoteParams = z.object({ day: calendarDate }).strict()
+
+/** A day's note as written; an empty body takes the note away, so leaving one blank keeps none. */
+export const putDayNoteBody = z.object({ body: documentText }).strict()
+
+export const dayNoteResponse = z.object({ note: noteResponse.nullable() })

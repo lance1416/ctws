@@ -216,6 +216,7 @@ describe('the OpenAPI document', () => {
       'review-weeks',
       'today',
       'untouched',
+      'untouched-plan',
     ])
     expect(tasks.map((p) => p.name)).toEqual(
       expect.arrayContaining(['projectId', 'q', 'from', 'to']),

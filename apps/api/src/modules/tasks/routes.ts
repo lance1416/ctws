@@ -36,6 +36,7 @@ import {
   taskDependencyLists,
   listPushed,
   listUntouched,
+  listUntouchedPlan,
 } from './queries'
 
 /** The account's day and zone, which a repeat counts from. */
@@ -85,6 +86,12 @@ export const taskRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> = asy
     on(api.tasks.review, async (req) => {
       const user = currentUser(req)
       return listReview(app.db, user.workspaceId, user.timezone, req.query, app.clock())
+    }),
+
+    on(api.tasks.untouchedPlan, async (req) => {
+      const user = currentUser(req)
+      const rows = await listUntouchedPlan(app.db, user.workspaceId, user.timezone, req.query.day)
+      return { tasks: rows.map(toTaskResponse) }
     }),
 
     on(api.tasks.pushed, async (req) => {

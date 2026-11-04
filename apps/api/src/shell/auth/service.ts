@@ -147,6 +147,7 @@ export async function setTimezone(db: Queryable, userId: UserId, timezone: strin
  */
 export type Choices = {
   theme: Theme | null
+  wrapUpAt: string | null
   singleKeyShortcuts: boolean
   vimKeys: boolean
   outlineShown: boolean
@@ -156,6 +157,7 @@ export type Choices = {
 
 const UNCHOSEN: Choices = {
   theme: null,
+  wrapUpAt: '18:00',
   singleKeyShortcuts: true,
   vimKeys: false,
   outlineShown: true,
@@ -167,6 +169,7 @@ export async function choicesOf(db: Queryable, userId: UserId): Promise<Choices>
   const [row] = await db
     .select({
       theme: users.theme,
+      wrapUpAt: users.wrapUpAt,
       singleKeyShortcuts: users.singleKeyShortcuts,
       vimKeys: users.vimKeys,
       outlineShown: users.outlineShown,

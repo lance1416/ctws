@@ -291,6 +291,10 @@ export const pushedResponse = z.object({
   ),
 })
 
+/** Wrapping up a day: what was planned for it and had nothing done to it that day. */
+export const untouchedPlanQuery = viewQuery('untouched-plan', { day: calendarDate })
+export const untouchedPlanResponse = z.object({ tasks: z.array(taskResponse) })
+
 /** The review's "Untouched": backlog leaves nothing has happened to in eight weeks. */
 export const untouchedQuery = viewQuery('untouched')
 export const UNTOUCHED_WEEKS = 8

@@ -16,6 +16,7 @@ function note(title: string, more: Partial<NoteResponse> = {}): NoteResponse {
     pinnedAt: null,
     words: 0,
     heldAt: null,
+    day: null,
     createdAt: AT,
     updatedAt: AT,
     ...more,

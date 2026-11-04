@@ -1,6 +1,6 @@
 /** Tasks' reads, one file per view; the rest of the module reads through here. */
 export { type CalendarRow, listTaskCalendar } from './calendar'
-export { listPushed, listUntouched } from './attention'
+export { listPushed, listUntouched, listUntouchedPlan } from './attention'
 export { blockersFor, taskDependencyLists } from './dependencies'
 export { projectBoard } from './list'
 export { listProjectMovement } from './movement'

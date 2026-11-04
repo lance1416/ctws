@@ -9,11 +9,13 @@ import {
   type AnyPgColumn,
   boolean,
   check,
+  date,
   index,
   pgTable,
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
@@ -74,6 +76,8 @@ export const notes = pgTable(
     folderId: uuid('folder_id')
       .$type<NoteFolderId>()
       .references(() => noteFolders.id, { onDelete: 'set null' }),
+    /** A day's note: the day it is about, written when the day was wrapped up. */
+    day: date('day'),
     /** When it was pinned to the top of the list, a note on its own only. */
     pinnedAt: timestamp('pinned_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -84,6 +88,14 @@ export const notes = pgTable(
     index('notes_anchor_idx').on(t.workspaceId, t.anchorType, t.anchorId),
     index('notes_folder_idx').on(t.folderId),
     check('notes_anchor_type_check', inList(t.anchorType, NOTE_ANCHOR_TYPES)),
+    // One a day, and a day's note is that and nothing else: on nothing, in no folder, untitled.
+    uniqueIndex('notes_workspace_day_key')
+      .on(t.workspaceId, t.day)
+      .where(sql`${t.day} is not null`),
+    check(
+      'notes_day_on_its_own',
+      sql`${t.day} is null or (${t.anchorType} is null and ${t.folderId} is null and ${t.title} is null)`,
+    ),
     check(
       'notes_shelved_on_its_own',
       sql`${t.anchorType} is null or (${t.folderId} is null and ${t.pinnedAt} is null)`,

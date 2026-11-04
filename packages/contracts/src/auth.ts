@@ -30,6 +30,9 @@ const username = z
       ),
   )
 
+/** A time of day, `HH:mm`, 00:00 to 23:59. */
+const wrapUpAt = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'a time of day, as 18:00')
+
 /** One part of the account's own name; the same bounds as a person's. */
 const namePart = z.string().trim().min(1).max(200)
 
@@ -64,6 +67,7 @@ export const updateMeBody = z
     username: username.nullable(),
     timezone: canonicalTimeZone,
     theme: z.enum(THEMES),
+    wrapUpAt: wrapUpAt.nullable(),
     singleKeyShortcuts: z.boolean(),
     vimKeys: z.boolean(),
     outlineShown: z.boolean(),
@@ -117,6 +121,8 @@ export const meResponse = userResponse.extend({
   photos: z.boolean(),
   /** Null until the account has chosen one, and shown as `system` until then. */
   theme: z.enum(THEMES).nullable(),
+  /** When Today offers to wrap up the day, `HH:mm` in the account's zone; null: never. */
+  wrapUpAt: z.string().nullable(),
   now: instant,
   clockPinned: z.boolean(),
   /** The report of the move to the new layout, while it is not Done: how many items wait. */
