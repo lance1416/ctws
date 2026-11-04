@@ -220,10 +220,11 @@ export const api = {
     updateMe: endpoint({
       method: 'PATCH',
       path: '/auth/me',
-      summary: "Change the account's time zone.",
+      summary: "Change the account's name, username, time zone, theme or how it works.",
       body: updateMeBody,
       ok: 200,
       response: meResponse,
+      refusals: [409, 422],
     }),
     changePassword: endpoint({
       method: 'POST',

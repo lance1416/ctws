@@ -9,6 +9,30 @@ export type Role = z.infer<typeof roleSchema>
 
 export const email = z.string().trim().toLowerCase().pipe(z.email().max(254))
 
+/** Light, dark, or whatever the device's system says. */
+export const THEMES = ['system', 'light', 'dark'] as const
+export type Theme = (typeof THEMES)[number]
+
+/**
+ * A handle unique in the instance: lowercase letters, digits and inner hyphens. Capitals are
+ * taken as typed and lowered, so `Lance` and `lance` are the same handle.
+ */
+export const username = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(
+    z
+      .string()
+      .regex(
+        /^[a-z0-9](?:[a-z0-9-]{1,30})[a-z0-9]$/,
+        'Use 3 to 32 characters: lowercase letters, numbers and hyphens.',
+      ),
+  )
+
+/** One part of the account's own name; the same bounds as a person's. */
+const namePart = z.string().trim().min(1).max(200)
+
 /** A password being set: long enough to resist guessing, short enough to hash cheaply. */
 export const newPassword = z.string().min(12).max(1024)
 
@@ -28,12 +52,18 @@ export const loginBody = z
   .strict()
 
 /**
- * What the account changes: its time zone, whether single keys act, whether the editor
- * takes vim's keys, and how a note is laid out.
+ * What the account changes: its own name and handle, its time zone, its theme, whether single
+ * keys act, whether the editor takes vim's keys, and how a note is laid out. A name part or the
+ * handle set to null is cleared; the name as a whole keeps at least one part once it has one.
  */
 export const updateMeBody = z
   .object({
+    givenName: namePart.nullable(),
+    middleName: namePart.nullable(),
+    familyName: namePart.nullable(),
+    username: username.nullable(),
     timezone: canonicalTimeZone,
+    theme: z.enum(THEMES),
     singleKeyShortcuts: z.boolean(),
     vimKeys: z.boolean(),
     outlineShown: z.boolean(),
@@ -45,6 +75,7 @@ export const updateMeBody = z
   .refine((b) => Object.values(b).some((v) => v !== undefined), {
     message: 'nothing to change',
   })
+export type UpdateMeBody = z.infer<typeof updateMeBody>
 
 /** A new password, given with the one it replaces. */
 export const changePasswordBody = z
@@ -71,6 +102,21 @@ export const userResponse = z.object({
  * instant the server does. When `clockPinned` is false the page may use its own clock.
  */
 export const meResponse = userResponse.extend({
+  /** The account's own name as shown, from its parts; null until it has one. */
+  name: z.string().nullable(),
+  givenName: z.string().nullable(),
+  middleName: z.string().nullable(),
+  familyName: z.string().nullable(),
+  username: z.string().nullable(),
+  /** The account's photo, read at `/avatars/:id`; null shows initials. */
+  avatarId: z.string().nullable(),
+  /**
+   * Whether this server can keep photos at all. False: every photo control is disabled, and
+   * everyone shows as initials.
+   */
+  photos: z.boolean(),
+  /** Null until the account has chosen one, and shown as `system` until then. */
+  theme: z.enum(THEMES).nullable(),
   now: instant,
   clockPinned: z.boolean(),
   /** The report of the move to the new layout, while it is not Done: how many items wait. */

@@ -358,6 +358,13 @@
       "when": 1793624027839,
       "tag": "0050_nested_folders",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793757216069,
+      "tag": "0051_account_profile",
+      "breakpoints": true
     }
   ]
 }

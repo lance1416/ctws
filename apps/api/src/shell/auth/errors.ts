@@ -45,3 +45,23 @@ export class SessionRequiredError extends DomainError {
     })
   }
 }
+
+/** The handle is another account's; handles are one per instance, whatever the case. */
+export class UsernameTakenError extends DomainError {
+  constructor() {
+    super('conflict', {
+      type: 'urn:ctws:problem:username-taken',
+      title: 'That username is taken.',
+    })
+  }
+}
+
+/** All three parts of the account's name emptied at once. */
+export class NameRequiredError extends DomainError {
+  constructor() {
+    super('unprocessable', {
+      type: 'urn:ctws:problem:name-required',
+      title: 'A name needs at least one part.',
+    })
+  }
+}
