@@ -22,8 +22,8 @@ const NOWHERE: TombstonePlace = {
 
 /**
  * Buries things: writes each one's tombstone and clears what the shell kept about it, its change
- * log, its relations at either end and its resources. A note hung on it stays, on its own. The
- * caller deletes the rows themselves, in the same transaction, after this.
+ * log, its relations at either end, its resources and its reminder. A note hung on it stays, on
+ * its own. The caller deletes the rows themselves, in the same transaction, after this.
  */
 export async function bury(tx: Tx, ctx: Actor, graves: readonly Grave[]): Promise<void> {
   if (graves.length === 0) return
@@ -49,6 +49,7 @@ export async function bury(tx: Tx, ctx: Actor, graves: readonly Grave[]): Promis
     delete from relations
     where (from_type, from_id) in (${ends}) or (to_type, to_id) in (${ends})`)
   await tx.execute(sql`delete from resources where (owner_type, owner_id) in (${ends})`)
+  await tx.execute(sql`delete from reminders where (object_type, object_id) in (${ends})`)
   await tx.execute(sql`
     update notes set anchor_type = null, anchor_id = null, occurrence_id = null, updated_at = ${ctx.now}
     where (anchor_type, anchor_id) in (${ends})`)
