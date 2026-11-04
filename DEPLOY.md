@@ -60,6 +60,53 @@ The first-run race: while the user table is empty, whoever reaches the instance 
 admin. Do not expose a fresh instance publicly before you have registered. For example, register
 through `http://127.0.0.1:3000` on the host before pointing the tunnel at it (section 4).
 
+### Photos (file storage)
+
+Profile photos and contacts' photos are kept in S3-compatible storage. It is optional: without it
+the app runs as before, everyone shows as initials, and the upload buttons are disabled with a
+note saying why. An existing deploy that adds nothing here upgrades with photos off.
+
+**On this server, with Garage** (one extra container, nothing published): add to `.env`
+
+```
+COMPOSE_PROFILES=storage
+GARAGE_RPC_SECRET=<output of: openssl rand -hex 32>
+S3_BUCKET=ctws
+S3_ACCESS_KEY_ID=GK<output of: openssl rand -hex 12>
+S3_SECRET_ACCESS_KEY=<output of: openssl rand -hex 32>
+```
+
+`COMPOSE_PROFILES=storage` makes the deploy command in section 2 start the `storage` service as
+well. On its first start Garage makes the key and the bucket from these values, and the api signs
+with the same ones, so nothing else needs setting up. Its files live in the `garage-meta` and
+`garage-data` volumes.
+
+**Keep the key and the secret once Garage has started.** Garage remembers the key it made, and
+with a different secret in `.env` it refuses to start ("is associated with a secret key different
+than the one given"). To change them, use the `garage key` commands inside the container.
+
+**Elsewhere, with Cloudflare R2, Backblaze B2 or AWS S3**: leave out `COMPOSE_PROFILES` and
+`GARAGE_RPC_SECRET`, create a private bucket and a key limited to it, and set
+
+```
+S3_ENDPOINT=https://<account id>.r2.cloudflarestorage.com   # R2; B2: https://s3.<region>.backblazeb2.com; AWS: empty
+S3_REGION=auto                                              # R2; B2 and AWS: the bucket's region
+S3_BUCKET=<bucket>
+S3_ACCESS_KEY_ID=<key id>
+S3_SECRET_ACCESS_KEY=<secret>
+```
+
+Set all of `S3_BUCKET`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`, or none: with only some of
+them the api refuses to start and names what is missing. The bucket is never made public. Photos
+are read through the api, which checks who is asking.
+
+**Check it**: `curl -s http://127.0.0.1:3000/api/v1/health` says `"storage":"ready"`. `"off"`
+means the api has no storage settings, and `"unreachable"` means it has them but the store does
+not answer (or refuses the key). While it is unreachable, everything except photos keeps working.
+
+**Backups**: the database dump the `backup` service makes does not include photos. After a
+database restore, anyone whose photo file is missing shows as initials again.
+
 ## 2. Deploy
 
 ```
