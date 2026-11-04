@@ -81,6 +81,8 @@ describe('a read answers with exactly the fields its contract names', () => {
       stageId: null,
       stageSince: null,
       completedAt: null,
+      repeat: null,
+      nextId: null,
       createdAt: AT,
       updatedAt: AT,
     })
@@ -104,6 +106,8 @@ describe('a read answers with exactly the fields its contract names', () => {
         stageId: null,
         stageSince: null,
         completedAt: null,
+        repeat: null,
+        nextId: null,
         createdAt: AT,
         updatedAt: AT,
         projectName: 'Garden',

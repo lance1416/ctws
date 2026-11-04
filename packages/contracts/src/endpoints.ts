@@ -159,6 +159,7 @@ import {
   reviewResponse,
   reviewWeeksResponse,
   searchTasksResponse,
+  deleteTaskQuery,
   taskParams,
   taskResponse,
   todayResponse,
@@ -686,8 +687,11 @@ export const api = {
     remove: endpoint({
       method: 'DELETE',
       path: '/tasks/:id',
-      summary: 'Delete a task and everything under it.',
+      summary:
+        'Delete a task and everything under it. A repeating one with series=keep is skipped: ' +
+        'its next is made first; with series=stop, or none, it is the last.',
       params: taskParams,
+      query: deleteTaskQuery,
       ok: 204,
       refusals: [404],
     }),

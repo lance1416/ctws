@@ -623,11 +623,16 @@ describe('a write refuses a foreign workspace without going through a route', ()
       now: new Date(),
     }
 
-    await expect(updateTask(ctx.db, stranger, id, { title: 'stolen' })).rejects.toThrow(NotFound)
+    const cal = { today: '2026-01-01', zone: 'UTC' }
+    await expect(updateTask(ctx.db, stranger, id, { title: 'stolen' }, cal)).rejects.toThrow(
+      NotFound,
+    )
     await expect(
-      updateTask(ctx.db, stranger, id, { projectId, parentId: sibling }),
+      updateTask(ctx.db, stranger, id, { projectId, parentId: sibling }, cal),
     ).rejects.toThrow(NotFound)
-    await expect(deleteTask(ctx.db, stranger, id)).rejects.toThrow(NotFound)
+    await expect(deleteTask(ctx.db, stranger, id, { series: 'stop', cal })).rejects.toThrow(
+      NotFound,
+    )
 
     // Nothing moved, nothing was flagged, and no event was logged against any of it.
     expect(await rowOf(ctx, id))!.toMatchObject({ parent_id: null, deleted_at: null })

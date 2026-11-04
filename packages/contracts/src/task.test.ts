@@ -165,6 +165,8 @@ describe('searchTaskResponse', () => {
     stageId: null,
     stageSince: null,
     completedAt: null,
+    repeat: null,
+    nextId: null,
     createdAt: '2026-10-04T00:00:00Z',
     updatedAt: '2026-10-04T00:00:00Z',
   }

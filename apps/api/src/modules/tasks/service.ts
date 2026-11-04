@@ -30,7 +30,11 @@ import {
   DerivedFieldError,
   InvalidNeighbourError,
   MoveCycleError,
+  RepeatNeedsADateError,
+  RepeatOnParentError,
+  RepeatTakesNoChildrenError,
 } from './errors'
+import { type Calendar, comeRound } from './repeat'
 import { taskLog } from './log'
 import { getTask, lockTask, visibleTasks } from './queries'
 import { type Task, taskDependencies, tasks } from './tables'
@@ -120,6 +124,7 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
     let scheduledOn = input.scheduledOn ?? null
     if (input.parentId) {
       const parent = await lockTask(tx, ctx.workspaceId, input.parentId)
+      if (parent.repeat) throw new RepeatTakesNoChildrenError()
       if ((await depthOf(tx, parent.id)) + 1 > MAX_TASK_DEPTH) throw new DepthLimitError()
       projectId = parent.projectId
       const handedDown = await becomeParent(tx, ctx, parent)
@@ -139,6 +144,8 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
       .orderBy(desc(tasks.rank), desc(tasks.id))
       .limit(1)
 
+    if (input.repeat && scheduledOn === null && !input.dueAt) throw new RepeatNeedsADateError()
+
     const stage = input.stageId
       ? await getStage(tx, ctx.workspaceId, projectId, input.stageId)
       : null
@@ -157,6 +164,7 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
         stageId: stage?.id ?? null,
         stageSince: stage ? ctx.now : null,
         completedAt: input.status === 'done' ? ctx.now : null,
+        repeat: input.repeat ?? null,
         createdAt: ctx.now,
         updatedAt: ctx.now,
         rank: rankBetween(last?.rank ?? null, null),
@@ -178,7 +186,7 @@ export async function createTask(db: Db, ctx: Actor, input: CreateTaskBody): Pro
 /** A task's own fields: everything a PATCH carries but its position. */
 type Fields = Pick<
   UpdateTaskBody,
-  'title' | 'notes' | 'status' | 'scheduledOn' | 'dueAt' | 'stageId'
+  'title' | 'notes' | 'status' | 'scheduledOn' | 'dueAt' | 'stageId' | 'repeat'
 >
 
 /**
@@ -190,6 +198,7 @@ export async function updateTask(
   ctx: Actor,
   id: TaskId,
   body: UpdateTaskBody,
+  cal: Calendar,
 ): Promise<Task> {
   const { projectId, parentId, beforeId, afterId, ...fields } = body
   return db.transaction(async (tx) => {
@@ -197,16 +206,34 @@ export async function updateTask(
       projectId !== undefined && parentId !== undefined
         ? await moveTask(tx, ctx, id, { projectId, parentId, beforeId, afterId })
         : null
-    return Object.keys(fields).length > 0 || !moved ? editTask(tx, ctx, id, fields) : moved
+    return Object.keys(fields).length > 0 || !moved ? editTask(tx, ctx, id, fields, cal) : moved
   })
 }
 
 /**
  * Patches the task's own fields, one event per field that changed. A patch that changes nothing
- * writes nothing, so it does not count as activity. Status never touches another task.
+ * writes nothing, so it does not count as activity. Status touches another task only to make a
+ * repeating one's next, when it is done or cancelled.
  */
-async function editTask(tx: Tx, ctx: Actor, id: TaskId, patch: Fields): Promise<Task> {
+async function editTask(
+  tx: Tx,
+  ctx: Actor,
+  id: TaskId,
+  patch: Fields,
+  cal: Calendar,
+): Promise<Task> {
   const row = await lockTask(tx, ctx.workspaceId, id)
+
+  // A repeat is a leaf's, and counts from a day: one of the two must stay.
+  const repeat = patch.repeat === undefined ? row.repeat : patch.repeat
+  if (repeat) {
+    if (patch.repeat && (await childStatuses(tx, row.id)).length > 0) {
+      throw new RepeatOnParentError()
+    }
+    const scheduledOn = patch.scheduledOn === undefined ? row.scheduledOn : patch.scheduledOn
+    const dueAt = patch.dueAt === undefined ? row.dueAt : patch.dueAt
+    if (scheduledOn === null && dueAt === null) throw new RepeatNeedsADateError()
+  }
 
   // A parent's status and planned day are its children's to decide.
   if (patch.status !== undefined || patch.scheduledOn !== undefined) {
@@ -249,6 +276,10 @@ async function editTask(tx: Tx, ctx: Actor, id: TaskId, patch: Fields): Promise<
       })
     }
   }
+  // Not logged: how a task repeats is not progress, and the review reads the log as progress.
+  const repeatChanged =
+    patch.repeat !== undefined && JSON.stringify(patch.repeat) !== JSON.stringify(row.repeat)
+  if (repeatChanged) set.repeat = patch.repeat ?? null
   if (patch.stageId !== undefined && patch.stageId !== row.stageId) {
     // One of this task's project's stages, by name in the log so the review can read it.
     const from = row.stageId
@@ -264,15 +295,19 @@ async function editTask(tx: Tx, ctx: Actor, id: TaskId, patch: Fields): Promise<
       payload: { from: from?.name ?? null, to: to?.name ?? null },
     })
   }
-  if (events.length === 0) return row
+  if (events.length === 0 && !repeatChanged) return row
 
   set.updatedAt = ctx.now
-  const [updated] = await tx.update(tasks).set(set).where(eq(tasks.id, id)).returning()
+  let [updated] = await tx.update(tasks).set(set).where(eq(tasks.id, id)).returning()
   const log = taskLog(tx, ctx)
   for (const e of events) await log.append(id, e.type, e.payload)
   if (set.status !== undefined) {
     // A status change is a shape change for the parent: take the tree lock before settling.
     await lockTaskTree(tx, ctx.workspaceId)
+    if (set.status === 'done' || set.status === 'cancelled') {
+      const next = await comeRound(tx, ctx, updated!, cal)
+      if (next) updated = { ...updated!, nextId: next }
+    }
     await settleAncestors(tx, ctx, row.parentId)
   }
   if (set.notes !== undefined) {
@@ -323,6 +358,7 @@ async function moveTask(tx: Tx, ctx: Actor, id: TaskId, input: TaskPosition): Pr
 
   // A deleted parent reads as not found.
   const parent = input.parentId ? await lockTask(tx, ctx.workspaceId, input.parentId) : null
+  if (parent?.repeat && parent.id !== task.parentId) throw new RepeatTakesNoChildrenError()
   const destProjectId = parent ? parent.projectId : projectId
   const destParentId = parent ? parent.id : null
 
@@ -448,12 +484,19 @@ async function rankFor(
 /**
  * Deletes a task and everything under it, for good: each node leaves a tombstone that
  * says where it was, and the rows go with their log, relations and resources. A finished task is
- * history in the review; deleting one takes it out of that history too.
+ * history in the review; deleting one takes it out of that history too. A repeating one deleted
+ * with `series: 'keep'` is skipped rather than ended: its next is made first, as if it were done.
  */
-export async function deleteTask(db: Db, ctx: Actor, id: TaskId): Promise<void> {
+export async function deleteTask(
+  db: Db,
+  ctx: Actor,
+  id: TaskId,
+  opts: { series: 'keep' | 'stop'; cal: Calendar },
+): Promise<void> {
   await db.transaction(async (tx) => {
     await lockTaskTree(tx, ctx.workspaceId)
     const task = await lockTask(tx, ctx.workspaceId, id)
+    if (opts.series === 'keep') await comeRound(tx, ctx, task, opts.cal)
     const graves = await subtreeGraves(tx, ctx.workspaceId, [task.id])
     await bury(tx, ctx, graves)
     await tx.execute(

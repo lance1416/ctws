@@ -42,6 +42,8 @@ const task: TaskResponse = {
   stageId: null,
   stageSince: null,
   completedAt: '2026-10-10T09:00:00Z',
+  repeat: null,
+  nextId: null,
   createdAt: '2026-10-01T00:00:00Z',
   updatedAt: '2026-10-10T09:00:00Z',
 }

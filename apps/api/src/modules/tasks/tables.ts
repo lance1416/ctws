@@ -2,6 +2,7 @@ import {
   TASK_STATUSES,
   type TaskStatus,
   type ProjectId,
+  type Repeat,
   type StageId,
   type TaskId,
   type WorkspaceId,
@@ -12,12 +13,14 @@ import {
   date,
   foreignKey,
   index,
+  jsonb,
   pgTable,
   primaryKey,
   text,
   timestamp,
   unique,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core'
 import { inList } from '../../platform/db/sql'
 import { workspaceKeys } from '../../shell/auth'
@@ -45,6 +48,12 @@ export const tasks = pgTable(
     stageId: uuid('stage_id').$type<StageId>(),
     stageSince: timestamp('stage_since', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    /** How it comes round again; only a leaf repeats. */
+    repeat: jsonb('repeat').$type<Repeat>(),
+    /** The one made when this one was done or cancelled, so it is made once and undone with it. */
+    nextId: uuid('next_id')
+      .$type<TaskId>()
+      .references((): AnyPgColumn => tasks.id, { onDelete: 'set null' }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
