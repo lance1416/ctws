@@ -232,13 +232,14 @@ export default tseslint.config(
     },
   },
   {
-    // A filled button's text is `on-ink` or `on-stop`, and only BUTTON may say so. The top bar's
-    // mark is the one other thing filled with ink.
+    // A filled button's text is `on-ink` or `on-stop`, and only BUTTON may say so. The CT mark, in
+    // the top bar and on the front page, is the one other thing filled with ink.
     files: ['apps/web/src/**/*.{ts,tsx}'],
     ignores: [
       ...TESTS,
       'apps/web/src/platform/ui/buttonStyles.ts',
       'apps/web/src/shell/layout/TopBar.tsx',
+      'apps/web/src/shell/landing/Landing.tsx',
     ],
     plugins: { ctws },
     rules: {

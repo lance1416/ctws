@@ -15,6 +15,13 @@ import { EmailTakenError, RegistrationClosedError } from './errors'
 import { hashPassword, verifyPassword } from './password'
 import { users, workspaceMembers, workspaces } from './tables'
 
+/** Whether `register` would take a new account now: always when open, the first one when closed. */
+export async function registrationOpen(db: Queryable, mode: 'open' | 'closed'): Promise<boolean> {
+  if (mode === 'open') return true
+  const existing = await db.select({ id: users.id }).from(users).limit(1)
+  return existing.length === 0
+}
+
 /**
  * Creates a user with their own workspace and inbox. Without `explicitRole` the first user ever
  * becomes admin and everyone else member; `onlyIfFirst` refuses unless there are no users yet,

@@ -43,7 +43,7 @@ test('a rejected sign-in says so and keeps what was typed', async ({ page }) => 
 })
 
 test('creating an account is a deliberate second press, not what Enter does', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/login')
   await expect(page.getByLabel('Email')).toBeVisible()
 
   // An email nobody has registered. Enter must try to log in with it (and fail), not register it:

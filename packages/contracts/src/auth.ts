@@ -54,6 +54,9 @@ export const changePasswordBody = z
   })
   .strict()
 
+/** Whether this server takes a new account: a closed one still takes its very first. */
+export const registrationResponse = z.object({ open: z.boolean() })
+
 export const userResponse = z.object({
   id: userId,
   email: z.email(),

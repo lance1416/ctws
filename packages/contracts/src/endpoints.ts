@@ -11,6 +11,7 @@ import {
   loginBody,
   meResponse,
   registerBody,
+  registrationResponse,
   updateMeBody,
   userResponse,
 } from './auth'
@@ -176,6 +177,13 @@ const itemAt =
  */
 export const api = {
   auth: {
+    registration: endpoint({
+      method: 'GET',
+      path: '/auth/registration',
+      summary: 'Whether a new account can be created on this server.',
+      ok: 200,
+      response: registrationResponse,
+    }),
     register: endpoint({
       method: 'POST',
       path: '/auth/register',

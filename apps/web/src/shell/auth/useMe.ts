@@ -7,6 +7,20 @@ import { browserZone, ymd } from '../../platform/time/dates'
 import { setServerNow } from '../../platform/time/serverClock'
 import { useNow } from '../../platform/time/useNow'
 
+/**
+ * Whether this server takes a new account, for the front page and the sign-in page. A closed
+ * server says no once it has its first account; until the answer is in, the offer reads as closed
+ * rather than flashing open.
+ */
+export function useRegistrationOpen(): boolean {
+  const asked = useQuery({
+    queryKey: ['auth', 'registration'],
+    queryFn: ({ signal }) => call(api.auth.registration, {}, { signal }),
+    staleTime: 60_000,
+  })
+  return asked.data?.open ?? false
+}
+
 /** The signed-in user's key. No write but signing in or out changes what it reads. */
 export const meKey = ['me'] as const
 

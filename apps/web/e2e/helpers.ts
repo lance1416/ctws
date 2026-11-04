@@ -45,7 +45,7 @@ export async function registerFreshUser(page: Page, at: string = '/today'): Prom
 /** Registers a brand-new user through the sign-up form, for the tests whose subject it is. */
 export async function signUpThroughForm(page: Page): Promise<string> {
   const email = freshEmail()
-  await page.goto('/')
+  await page.goto('/login')
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill(PASSWORD)
   await page.getByRole('button', { name: 'Create an account' }).click()

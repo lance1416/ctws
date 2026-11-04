@@ -11,6 +11,7 @@ import type { Creator } from '../contract'
 import { NewContext, rememberKind, type NewHow } from '../creates'
 import { LinkDialog } from '../links/LinkDialog'
 import { WhyGreyed } from '../../platform/ui/WhyGreyed'
+import { lazyPage } from '../../platform/ui/lazyPage'
 import { BottomBar } from './BottomBar'
 import { KeyboardRow } from './KeyboardRow'
 import { StatusBar } from './StatusBar'
@@ -30,11 +31,15 @@ import { Sidebar } from './Sidebar'
 import { SubjectProvider, useLinkSubject, useSubject } from './subject'
 import { TopBar } from './TopBar'
 
+// Loaded only for a visitor who is not signed in: everyone else never draws it.
+const Landing = lazyPage(() => import('../landing').then((m) => m.Landing))
+
 /**
  * The frame, five regions: the top bar; the icon bar; the module's sidebar; the main
  * area; and the inspector, when something is open in it. Below 1280 the sidebar starts hidden
  * and the inspector covers the main area; below 1024 the phone's tab bar stands in for the top
- * bar, the icon bar and the sidebar. The one place that sends a visitor to /login.
+ * bar, the icon bar and the sidebar. The one place that decides what a visitor who is not signed in
+ * sees: the front page at `/`, the sign-in page anywhere else.
  */
 export function Layout() {
   const qc = useQueryClient()
@@ -67,6 +72,8 @@ export function Layout() {
   }
   // A session that ended under the page comes back to it once signed in again; signing out does not.
   if (!me.data) {
+    // Signing out still lands on the sign-in page, wherever it was done.
+    if (pathname === '/' && !logout.isSuccess) return <Landing />
     const from = logout.isSuccess ? undefined : `${pathname}${location.search}`
     return <Navigate to="/login" replace state={from ? { from } : undefined} />
   }

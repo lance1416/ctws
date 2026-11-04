@@ -5,8 +5,9 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { WORKBENCH_PATH } from '../registry'
 import { ApiError, call, problemText } from '../../platform/http/api'
 import { browserZone } from '../../platform/time/dates'
-import { meKey, useMe } from './useMe'
-import { LINK } from '../../platform/ui/buttonStyles'
+import { meKey, useMe, useRegistrationOpen } from './useMe'
+import { SignUpsClosed } from './SignUpsClosed'
+import { GATED, LINK } from '../../platform/ui/buttonStyles'
 import { Button } from '../../platform/ui/Button'
 import { textbox } from '../../platform/ui/formStyles'
 
@@ -20,6 +21,7 @@ export function Login() {
   /** The page a session ended on, which signing in again goes back to. */
   const from = (location.state as { from?: string } | null)?.from ?? WORKBENCH_PATH
   const me = useMe()
+  const open = useRegistrationOpen()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -55,7 +57,7 @@ export function Login() {
   })
   /** Asks only once both read right; what does not is said under its box, and nothing is sent. */
   const ask = (how: 'register' | 'login') => {
-    if (act.isPending) return
+    if (act.isPending || (how === 'register' && !open)) return
     const typed = email.trim()
     const next = {
       ...(typed === ''
@@ -145,16 +147,22 @@ export function Login() {
           <Button look="primary" type="submit" disabled={act.isPending} className="mt-2 w-full">
             Sign in
           </Button>
-          <div className="flex items-baseline gap-2 text-ui text-muted">
-            First time?
-            <button
-              type="button"
-              disabled={act.isPending}
-              className={`-mx-1 rounded-control px-1 py-0.5 ${LINK} disabled:opacity-50`}
-              onClick={() => ask('register')}
-            >
-              Create an account
-            </button>
+          <div>
+            <div className="flex items-baseline gap-2 text-ui text-muted">
+              First time?
+              <button
+                type="button"
+                disabled={act.isPending}
+                // Greyed, not hidden, while sign-ups are closed: the note under it says why.
+                aria-disabled={open ? undefined : true}
+                aria-describedby={open ? undefined : 'login-closed'}
+                className={`-mx-1 rounded-control px-1 py-0.5 ${LINK} disabled:opacity-50 ${GATED}`}
+                onClick={() => ask('register')}
+              >
+                Create an account
+              </button>
+            </div>
+            {!open && <SignUpsClosed id="login-closed" className="mt-1.5" />}
           </div>
         </form>
       </div>

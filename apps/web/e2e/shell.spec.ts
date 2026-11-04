@@ -34,8 +34,8 @@ test('the app shell routes between today, projects and a project', async ({ page
   await expect(page.getByRole('main').getByText('Inbox', { exact: true }).first()).toBeVisible()
 })
 
-test('an unauthenticated visit lands on login', async ({ page }) => {
-  await page.goto('/')
+test('an unauthenticated visit to a page lands on login', async ({ page }) => {
+  await page.goto('/today')
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByLabel('Email')).toBeVisible()
 })

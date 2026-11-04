@@ -119,6 +119,31 @@ describe('registration gating', () => {
   })
 })
 
+describe('GET /api/v1/auth/registration', () => {
+  const ask = async (ctx: Awaited<ReturnType<typeof app>>) =>
+    (await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/registration', headers })).json()
+
+  it('says open when open, whoever is already there', async () => {
+    const ctx = await app({ authRegistration: 'open' })
+    await post(ctx, body)
+    expect(await ask(ctx)).toEqual({ open: true })
+  })
+
+  // The answer has to agree with what register would do, or the page offers a button that fails.
+  it('says open on a closed server with no account yet, and closed once there is one', async () => {
+    const ctx = await app({ authRegistration: 'closed' })
+    expect(await ask(ctx)).toEqual({ open: true })
+    await post(ctx, body)
+    expect(await ask(ctx)).toEqual({ open: false })
+  })
+
+  it('answers without a session', async () => {
+    const ctx = await app({ authRegistration: 'closed' })
+    const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/auth/registration', headers })
+    expect(res.statusCode).toBe(200)
+  })
+})
+
 describe('first-user bootstrap', () => {
   it('lets the first user in when registration is closed, and makes them admin', async () => {
     const ctx = await app({ authRegistration: 'closed' })

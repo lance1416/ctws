@@ -5,6 +5,7 @@
   "workspaces": {
     ".": {
       "entry": ["tools/**/*.mjs"],
+      "ignoreBinaries": ["cwebp"],
       "ignoreDependencies": ["@playwright/test"]
     },
     "apps/api": {

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { withApp } from '../helpers/app'
 
-const PUBLIC = new Set(['/api/v1/auth/register', '/api/v1/auth/login'])
+const PUBLIC = new Set(['/api/v1/auth/registration', '/api/v1/auth/register', '/api/v1/auth/login'])
 let ctx: Awaited<ReturnType<typeof withApp>>
 let doc: { paths: Record<string, Record<string, { security?: unknown[] }>> }
 

@@ -13,6 +13,7 @@ import {
   setChoices,
   choicesOf,
   registerUser,
+  registrationOpen,
   setTimezone,
 } from './service'
 import { createSession, revokeOtherSessions, revokeSession } from './session'
@@ -24,6 +25,10 @@ export const publicAuthRoutes: FastifyPluginAsyncZod = async (app) => {
   const authLimit = signInLimits(app)
 
   serve(app, [
+    on(api.auth.registration, async () => ({
+      open: await registrationOpen(app.db, app.env.authRegistration),
+    })),
+
     on(
       api.auth.register,
       async (req, reply) => {
