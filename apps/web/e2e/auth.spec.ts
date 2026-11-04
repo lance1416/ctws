@@ -42,10 +42,12 @@ test('GET /api/v1/health returns JSON, not the SPA shell', async ({ request }) =
   expect(res.status()).toBe(200)
   expect(res.headers()['content-type']).toContain('application/json')
   const body = (await res.json()) as Record<string, unknown>
-  expect(Object.keys(body).sort()).toEqual(['commit', 'status', 'version'])
+  expect(Object.keys(body).sort()).toEqual(['commit', 'status', 'storage', 'version'])
+  // This stack runs Garage beside the api, so photos must be reachable, not just configured.
   expect(body).toMatchObject({
     status: 'ok',
     version: expect.stringMatching(/^(v\d+\.\d+\.\d+|dev)$/),
+    storage: 'ready',
   })
   expect(body.commit === null || /^[0-9a-f]{8}$/.test(String(body.commit))).toBe(true)
 })
