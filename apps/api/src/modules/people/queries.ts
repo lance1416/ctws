@@ -54,6 +54,9 @@ export type PersonRow = Omit<
   | 'birthdayLeapMonth'
   | 'birthdayHourBranch'
   | 'birthdayRemindLead'
+  | 'touchSetAt'
+  | 'touchLaterUntil'
+  | 'touchLaterSince'
 > & {
   projects: PersonProject[]
   channels: PersonChannel[]
@@ -213,6 +216,7 @@ async function hydrate(
     familyName: p.familyName,
     sortKey: p.sortKey,
     avatarId: p.avatarId,
+    touchEvery: p.touchEvery,
     timeZone: p.timeZone,
     timeZoneSource: p.timeZoneSource,
     cityKey: p.cityKey,

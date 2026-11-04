@@ -130,6 +130,7 @@ describe('a read answers with exactly the fields its contract names', () => {
       id,
       name: 'Ying',
       avatarId: null,
+      touchEvery: null,
       org: 'Acme',
       note: null,
       projects: [{ id: projectId, name: 'Work', openTasks: 0, lastActivityAt: null }],

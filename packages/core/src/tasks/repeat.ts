@@ -1,5 +1,5 @@
 import { readTaskRule, type Repeat, type TaskRule } from '@ctws/contracts'
-import { addDays } from '../day'
+import { addDays, addMonths } from '../day'
 
 const DAY_MS = 86_400_000
 const ms = (day: string) => Date.parse(`${day}T00:00:00Z`)
@@ -46,16 +46,6 @@ function firstFrom(rule: TaskRule, anchor: string, from: string): string | null 
     if (lands(rule, anchor, day)) return day
   }
   return null
-}
-
-/** `day` plus `n` months, kept to the month's last day when it is shorter (Jan 31 → Feb 28). */
-function addMonths(day: string, n: number): string {
-  const [y, m, d] = ymd(day)
-  const total = y * 12 + (m - 1) + n
-  const year = Math.floor(total / 12)
-  const month = (total % 12) + 1
-  const dd = Math.min(d, lastDayOf(year, month))
-  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
 }
 
 /**
