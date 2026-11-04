@@ -12,7 +12,7 @@ import { followUpLine, followUpTone } from '../logic/followUp'
 
 const ROW = ({ isActive }: { isActive: boolean }) =>
   `mx-1.5 flex min-h-11 items-start gap-2.5 rounded-control px-2 py-1.5 hover:bg-hover ${
-    isActive ? 'bg-select' : ''
+    isActive ? 'bg-select font-medium text-ink' : ''
   }`
 
 /** The Recent half lists this many. */

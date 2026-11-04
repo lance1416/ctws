@@ -19,7 +19,7 @@ import { useTaskParam } from '../components/tree/useTreeParams'
 import { useSavedFlash } from '../components/useSavedFlash'
 import { carriedFrom } from '../logic/todayMarks'
 import { offeredReady, todaySegments } from '../logic/today'
-import { DoneButton, LINE, TaskLine, TaskPath } from './today/TaskLine'
+import { DoneButton, LINE, TaskLine, TaskPath, TitleOver } from './today/TaskLine'
 import { Timeline } from './today/Timeline'
 import { MoveAllMenu, PlanButtons } from './today/planParts'
 import { minutesOf, type TimedItem } from './today/dayLine'
@@ -291,8 +291,10 @@ function PlannedBlock({
             <li key={t.id} data-plan-row={t.id} className={LINE}>
               {/* Its status, as every task row starts. */}
               <StatusMark status={t.status} size={16} />
-              <span className="truncate text-ui text-ink">{t.title}</span>
-              <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
+              <TitleOver
+                title={<span className="max-w-full truncate text-ui text-ink">{t.title}</span>}
+                under={<TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />}
+              />
               <span className="max-lg:hidden" />
               <RowAction
                 label={`Plan “${t.title}” for today`}
@@ -315,7 +317,7 @@ function PlannedBlock({
             t.scheduledOn !== null && t.scheduledOn < day ? (
               <span
                 data-date-hint="carried"
-                className="inline-flex items-center gap-1 text-meta whitespace-nowrap text-muted"
+                className="inline-flex items-center gap-1 text-meta whitespace-nowrap text-muted italic"
               >
                 <CarriedIcon size={12} aria-hidden="true" />
                 {carriedFrom(t.scheduledOn, day)}

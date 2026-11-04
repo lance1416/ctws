@@ -10,22 +10,22 @@ import { readyQuery, todayQuery } from '../api'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { nowRows } from '../logic/nowRows'
 import { offeredReady, todaySegments } from '../logic/today'
-import { DoneButton, DueChip, TaskPath } from '../pages/today/TaskLine'
+import { DoneButton, DueChip, TaskPath, TitleOver } from '../pages/today/TaskLine'
 import { RowAction } from '../components/RowAction'
 
 /** Where Now has no height of its own (one column, on a phone): this many rows. */
 const ROWS_UNFIXED = 9
-/** One row; and what is not rows: a caption over each list shown, and the gap between two. */
-const ROW_PX = 38
+/** One row of two lines; and what is not rows: a caption over each list shown, and the gap. */
+const ROW_PX = 50
 const CAPTION_PX = 22
 const GAP_PX = 10
 
 /**
- * Status, title, where it sits, its deadline, what to do: Today's columns, a little narrower. Both
- * lists share them, so the last is as wide as Start, the widest thing in it.
+ * Status, title over where it sits, its deadline, what to do: Today's columns, a little narrower.
+ * Both lists share them, so the last is as wide as Start, the widest thing in it.
  */
 const ROW =
-  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_190px_96px_56px] items-center gap-x-3 rounded-control px-3 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
+  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_96px_56px] items-center gap-x-3 rounded-control px-3 py-1.5 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
 const CAPTION = 'px-3 pb-1.5 text-overline text-muted uppercase'
 
 const opens = (t: { id: string; projectId: string }) => `/projects/${t.projectId}?task=${t.id}`
@@ -85,13 +85,17 @@ export function NowWidget() {
                   {working.map((t) => (
                     <li key={t.id} data-now-working={t.id} className={ROW}>
                       <InProgressIcon size={16} className="text-go" />
-                      <Link
-                        to={opens(t)}
-                        className="truncate text-ui font-medium text-ink max-lg:py-3"
-                      >
-                        {t.title}
-                      </Link>
-                      <TaskPath task={t} />
+                      <TitleOver
+                        title={
+                          <Link
+                            to={opens(t)}
+                            className="max-w-full truncate text-ui font-medium text-ink"
+                          >
+                            {t.title}
+                          </Link>
+                        }
+                        under={<TaskPath task={t} />}
+                      />
                       <DueChip dueAt={t.dueAt} today={today} timeZone={timeZone} />
                       <span className="justify-self-end">
                         <DoneButton
@@ -114,10 +118,16 @@ export function NowWidget() {
                   {next.map((t) => (
                     <li key={t.id} data-now-ready={t.id} className={ROW}>
                       <ToDoIcon size={16} aria-hidden="true" className="text-muted" />
-                      <Link to={opens(t)} className="truncate text-ui text-ink max-lg:py-3">
-                        {t.title}
-                      </Link>
-                      <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
+                      <TitleOver
+                        title={
+                          <Link to={opens(t)} className="max-w-full truncate text-ui text-ink">
+                            {t.title}
+                          </Link>
+                        }
+                        under={
+                          <TaskPath task={{ ...t, parentTitle: t.path.at(-1)?.title ?? null }} />
+                        }
+                      />
                       <DueChip dueAt={t.dueAt} today={today} timeZone={timeZone} />
                       <RowAction
                         label={`Start “${t.title}”`}

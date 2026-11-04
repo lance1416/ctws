@@ -12,14 +12,24 @@ import { type StatusMove, toggleDoneTarget } from '../../logic/status'
 import { dueMark } from '../../logic/todayMarks'
 
 /**
- * The columns every list on Today shares: status, title, where it sits, its mark, and what can be
- * done about it. A row without one of them leaves that cell empty; nothing moves left. Below the
- * desk width the path and the mark give way to the title.
+ * The columns every list on Today shares: status; the title, with where it sits on a second line
+ * under it; its mark; and what can be done about it. A row without one of them leaves that cell
+ * empty; nothing moves left. Below the desk width the mark gives way to the title.
  */
 export const LINE =
-  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_184px_104px_220px] items-center gap-x-3 rounded-control px-2.5 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
+  'grid min-h-9.5 grid-cols-[16px_minmax(0,1fr)_104px_220px] items-center gap-x-3 rounded-control px-2.5 py-1.5 hover:bg-hover max-lg:grid-cols-[16px_minmax(0,1fr)_auto]'
 
-/** The third column: the project's square and the task it sits under, else the project's name. */
+/** A task's title over where it sits: the second line is quieter, so it never competes. */
+export function TitleOver({ title, under }: { title: ReactNode; under: ReactNode }) {
+  return (
+    <span className="flex min-w-0 flex-col items-start gap-0.5">
+      {title}
+      {under}
+    </span>
+  )
+}
+
+/** The second line: the project's square and the task it sits under, else the project's name. */
 export function TaskPath({
   task,
 }: {
@@ -30,7 +40,7 @@ export function TaskPath({
   return (
     <span
       data-row-path
-      className="inline-flex min-w-0 items-center gap-1.5 text-ui text-muted max-lg:hidden"
+      className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-meta text-muted"
     >
       {project && (
         <span data-project-square={project.id} className="contents">
@@ -118,24 +128,28 @@ export function TaskLine({
           {blocked && <WaitingBadge />}
         </span>
       )}
-      <button
-        type="button"
-        ref={rowRef}
-        data-today-row={t.id}
-        onClick={onOpen}
-        onKeyDown={onKeyDown}
-        title={blocked ?? undefined}
-        className={`flex min-w-0 items-baseline text-left text-ui text-ink ${
-          t.status === 'in_progress' ? 'font-medium' : ''
-        }`}
-      >
-        <span data-row-title className="truncate">
-          {t.title}
-        </span>
-        {saved && <SavedMark />}
-        {blocked && <span className="sr-only">, {blocked}</span>}
-      </button>
-      <TaskPath task={t} />
+      <TitleOver
+        title={
+          <button
+            type="button"
+            ref={rowRef}
+            data-today-row={t.id}
+            onClick={onOpen}
+            onKeyDown={onKeyDown}
+            title={blocked ?? undefined}
+            className={`flex max-w-full min-w-0 items-baseline text-left text-ui text-ink ${
+              t.status === 'in_progress' ? 'font-medium' : ''
+            }`}
+          >
+            <span data-row-title className="truncate">
+              {t.title}
+            </span>
+            {saved && <SavedMark />}
+            {blocked && <span className="sr-only">, {blocked}</span>}
+          </button>
+        }
+        under={<TaskPath task={t} />}
+      />
       <DueChip dueAt={t.dueAt} today={today} timeZone={timeZone} />
       <span className="justify-self-end">
         {t.children ? (
