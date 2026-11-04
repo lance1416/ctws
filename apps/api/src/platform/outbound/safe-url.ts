@@ -1,7 +1,7 @@
 /**
  * Which addresses an outbound fetch may reach. Without this, a pasted `http://169.254.169.254/`
  * reads cloud metadata and `http://10.0.0.5:6379/` probes the internal network, one redirect
- * away from any page. `unfurl.ts` asks about every resolved address and connects to that same
+ * away from any page. `fetch.ts` asks about every resolved address and connects to that same
  * address, so a second resolution cannot slip past (DNS rebinding).
  */
 
