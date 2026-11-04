@@ -1,6 +1,6 @@
 import type { NoteResponse } from '@ctws/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState, type DragEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { monthDay, ymd } from '../../../platform/time/dates'
 import { Block, BlockFailed } from '../../../platform/ui/Block'
@@ -12,6 +12,7 @@ import { useTimeZone } from '../../../shell/auth'
 import { ModuleEmpty } from '../../../shell/layout'
 import { usePhone } from '../../../platform/ui/phone'
 import { notesQuery } from '../api'
+import { carriesFiles, MARKDOWN_ACCEPT, useImportNotes } from '../hooks/useImportNotes'
 import { PhoneNotes } from '../components/PhoneNotes'
 import { NOTES_ID } from '../logic/id'
 import { noteTitle } from '../logic/title'
@@ -28,16 +29,64 @@ export function NotesOverview() {
   const zone = useTimeZone()
   const phone = usePhone()
   const [all, setAll] = useState(false)
+  const [filesOver, setFilesOver] = useState(false)
+  const imports = useImportNotes()
+  const picker = useRef<HTMLInputElement>(null)
   const rows = notes.data ?? []
-  if (notes.isSuccess && rows.length === 0) return <ModuleEmpty kind="note" />
-  if (phone) return <PhoneNotes />
+  if (phone)
+    return notes.isSuccess && rows.length === 0 ? <ModuleEmpty kind="note" /> : <PhoneNotes />
+  // Picked here or dropped on the page, .md files come in on their own, in no folder.
+  const importButton = (
+    <>
+      <button type="button" onClick={() => picker.current?.click()} className={BUTTON.secondary}>
+        Import
+      </button>
+      <input
+        ref={picker}
+        type="file"
+        accept={MARKDOWN_ACCEPT}
+        multiple
+        hidden
+        aria-label="Import .md files"
+        onChange={(e) => {
+          void imports.importFiles([...(e.target.files ?? [])], null)
+          e.target.value = ''
+        }}
+      />
+    </>
+  )
+  const dropHere = {
+    onDragOver: (e: DragEvent) => {
+      if (!carriesFiles(e)) return
+      e.preventDefault()
+      setFilesOver(true)
+    },
+    onDragLeave: (e: DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFilesOver(false)
+    },
+    onDrop: (e: DragEvent) => {
+      if (!carriesFiles(e)) return
+      e.preventDefault()
+      setFilesOver(false)
+      void imports.importFiles([...e.dataTransfer.files], null)
+    },
+  }
+  const lit = filesOver ? 'rounded-container outline-1 outline-offset-4 outline-task' : ''
+  if (notes.isSuccess && rows.length === 0)
+    return (
+      <div {...dropHere} className={lit}>
+        <ModuleEmpty kind="note" also={importButton} />
+        {imports.said}
+      </div>
+    )
   const shown = all ? rows : rows.slice(0, SHOWN)
   return (
-    <div className="flex flex-col gap-3.5">
+    <div {...dropHere} className={`flex flex-col gap-3.5 ${lit}`}>
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <PageHead>Notes</PageHead>
         </div>
+        {importButton}
         <Link to={`/${NOTES_ID}/new`} className={BUTTON.secondary}>
           <NewIcon size={16} aria-hidden="true" />
           New note
@@ -76,6 +125,7 @@ export function NotesOverview() {
           </button>
         )}
       </Block>
+      {imports.said}
     </div>
   )
 }

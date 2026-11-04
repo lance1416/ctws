@@ -1,12 +1,13 @@
 import type { NoteFolderResponse } from '@ctws/contracts'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { problemText } from '../../../platform/http/api'
 import { DeleteConfirm } from '../../../platform/ui/DeleteConfirm'
 import { CollapseIcon, MoreIcon, NewIcon } from '../../../platform/ui/icons'
 import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 import { useFolderActions } from '../hooks/useFolderActions'
+import { MARKDOWN_ACCEPT } from '../hooks/useImportNotes'
 import { RowNameField } from './RowNameField'
 
 /** What a note or a folder dragged in the sidebar is dropped on: a folder, or none. */
@@ -27,6 +28,8 @@ export function FolderRow({
   onToggle,
   onNewNote,
   onNewFolder,
+  onImport,
+  filesOver,
   asked,
   refuses,
   children,
@@ -38,6 +41,10 @@ export function FolderRow({
   onNewNote: () => void
   /** A folder in this one; none on the third level. */
   onNewFolder: (() => void) | null
+  /** .md files, picked from its menu or dropped on it, made notes in it. */
+  onImport: (files: File[]) => void
+  /** Files from the desktop are held over it, and would go in it. */
+  filesOver: boolean
   /** The question before it goes; null when it is empty, and goes unasked. */
   asked: string | null
   /** A folder being dragged may not go in here: too deep, or into itself. */
@@ -48,6 +55,7 @@ export function FolderRow({
   const [menu, setMenu] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [asking, setAsking] = useState(false)
+  const picker = useRef<HTMLInputElement>(null)
   const drop = useDroppable({ id: dropOn(folder), disabled: refuses })
   const drag = useDraggable({ id: dragOf(folder), disabled: renaming })
   const remove = () => actions.remove.mutate(folder.id, { onSuccess: () => setAsking(false) })
@@ -79,7 +87,7 @@ export function FolderRow({
             setMenu(true)
           }}
           className={`group mx-1.5 flex h-7.5 items-center rounded-control text-ui text-ink hover:bg-hover ${
-            drop.isOver ? 'bg-select outline-1 -outline-offset-1 outline-task' : ''
+            drop.isOver || filesOver ? 'bg-select outline-1 -outline-offset-1 outline-task' : ''
           }`}
         >
           <button
@@ -122,6 +130,9 @@ export function FolderRow({
                   New note
                   <span className="ml-auto pl-4 text-meta text-muted">N N</span>
                 </DropdownMenu.Item>
+                <DropdownMenu.Item onSelect={() => picker.current?.click()} className={MENU_ITEM}>
+                  Import .md…
+                </DropdownMenu.Item>
                 {onNewFolder && (
                   <DropdownMenu.Item onSelect={onNewFolder} className={MENU_ITEM}>
                     New folder
@@ -151,6 +162,18 @@ export function FolderRow({
           </span>
         </div>
       )}
+      <input
+        ref={picker}
+        type="file"
+        accept={MARKDOWN_ACCEPT}
+        multiple
+        hidden
+        aria-label={`Import .md files into ${folder.name}`}
+        onChange={(e) => {
+          onImport([...(e.target.files ?? [])])
+          e.target.value = ''
+        }}
+      />
       {open && <ul className="flex flex-col gap-px pl-4">{children}</ul>}
       {asking && asked !== null && (
         <DeleteConfirm

@@ -28,6 +28,7 @@ import { everyShelf, type Shelf, shelvesOf } from '../logic/shelves'
 import { noteTitle } from '../logic/title'
 import { RowNameField } from './RowNameField'
 import { dragOf, dropOn, FolderRow } from './FolderRow'
+import { carriesFiles, useImportNotes } from '../hooks/useImportNotes'
 import { NOTE_ROW, NoteRow } from './NoteRow'
 
 /** How many notes on other things are listed before their "All N". */
@@ -60,6 +61,9 @@ export function NotesSidebar() {
   const [dragged, setDragged] = useState<Dragged | null>(null)
   const [refused, setRefused] = useState(false)
   const [overId, setOverId] = useState<string | null>(null)
+  // Files from the desktop held over a folder, or over the rest of the sidebar ('top').
+  const [filesOver, setFilesOver] = useState<NoteFolderId | 'top' | null>(null)
+  const imports = useImportNotes()
   // A folder being made inside another, in its own row at the top of it.
   const [newFolderIn, setNewFolderIn] = useState<NoteFolderId | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
@@ -180,6 +184,8 @@ export function NotesSidebar() {
         open={isOpen(folder.id)}
         onToggle={() => toggle(folder.id)}
         onNewNote={() => newNote(folder.id)}
+        onImport={(files) => void imports.importFiles(files, folder)}
+        filesOver={filesOver === folder.id}
         onNewFolder={
           depth < FOLDER_DEPTH
             ? () => {
@@ -250,6 +256,22 @@ export function NotesSidebar() {
         onDragEnd={onDragEnd}
       >
         <nav
+          // Files from the desktop: onto a folder, into it; anywhere else here, into none.
+          onDragOver={(e) => {
+            if (!carriesFiles(e)) return
+            e.preventDefault()
+            setFilesOver(folderUnder(e.target) ?? 'top')
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFilesOver(null)
+          }}
+          onDrop={(e) => {
+            if (!carriesFiles(e)) return
+            e.preventDefault()
+            setFilesOver(null)
+            const id = folderUnder(e.target)
+            void imports.importFiles([...e.dataTransfer.files], fs.find((f) => f.id === id) ?? null)
+          }}
           aria-label="Notes"
           className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 *:shrink-0"
         >
@@ -310,8 +332,10 @@ export function NotesSidebar() {
                   {[...pinned, ...inside].map((n) => row(n, folder.id))}
                 </Section>
               ))}
-          {(s.loose.length > 0 || dragged) && (
-            <Loose hasFolders={s.folders.length > 0}>{s.loose.map((n) => row(n))}</Loose>
+          {(s.loose.length > 0 || dragged || filesOver === 'top') && (
+            <Loose hasFolders={s.folders.length > 0} filesOver={filesOver === 'top'}>
+              {s.loose.map((n) => row(n))}
+            </Loose>
           )}
           {s.onThings.length > 0 && (
             <Section title="On other things">
@@ -367,15 +391,32 @@ export function NotesSidebar() {
           )}
         </DragOverlay>
       </DndContext>
+      {imports.said}
     </>
   )
 }
 
+/** The folder whose row is under a point of a drag, if any. */
+const folderUnder = (target: EventTarget | null): NoteFolderId | null =>
+  ((target as Element | null)?.closest<HTMLElement>('[data-folder-row]')?.dataset.folderRow as
+    NoteFolderId | undefined) ?? null
+
 /** The notes in no folder; a note dropped here comes out of its folder. */
-function Loose({ hasFolders, children }: { hasFolders: boolean; children: ReactNode }) {
+function Loose({
+  hasFolders,
+  filesOver,
+  children,
+}: {
+  hasFolders: boolean
+  filesOver: boolean
+  children: ReactNode
+}) {
   const drop = useDroppable({ id: dropOn(null) })
   return (
-    <div ref={drop.setNodeRef} className={drop.isOver ? 'rounded-control bg-select' : ''}>
+    <div
+      ref={drop.setNodeRef}
+      className={drop.isOver || filesOver ? 'rounded-control bg-select' : ''}
+    >
       <Section title={hasFolders ? 'Not in a folder' : 'On their own'}>{children}</Section>
     </div>
   )
