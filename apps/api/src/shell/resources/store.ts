@@ -7,7 +7,7 @@ import {
   type WorkspaceId,
 } from '@ctws/contracts'
 import { rankBetween, resourceLook } from '@ctws/core'
-import { and, asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, ne } from 'drizzle-orm'
 import type { Queryable, Tx } from '../../platform/db/client'
 import { DomainError, NotFound } from '../../platform/errors'
 import { newId } from '../../platform/db/ids'
@@ -43,7 +43,14 @@ class KeyTaken extends DomainError {
   }
 }
 
-/** A thing's resources in the order they were put. */
+/** A drag named a neighbour that is not one of the same thing's resources. */
+class NotANeighbour extends DomainError {
+  constructor() {
+    super('unprocessable', { detail: "the neighbour is not one of the same thing's resources" })
+  }
+}
+
+/** A thing's resources in their order: as they were put, then as they were dragged. */
 export async function resourcesOf(
   q: Queryable,
   workspaceId: WorkspaceId,
@@ -186,14 +193,57 @@ export async function updateResource(
       )
     if (taken && taken.id !== row.id) throw new KeyTaken(patch.pinnedRank)
   }
+  const neighbourId = patch.beforeId ?? patch.afterId
   const set = {
     ...(patch.url !== undefined ? { url: patch.url } : {}),
     ...(patch.name !== undefined ? { name: patch.name } : {}),
     ...(patch.pinnedRank !== undefined ? { pinnedRank: patch.pinnedRank } : {}),
+    ...(neighbourId !== undefined
+      ? { rank: await rankNextTo(tx, row, neighbourId, patch.beforeId !== undefined) }
+      : {}),
   }
   if (Object.keys(set).length === 0) return row
   const [updated] = await tx.update(resources).set(set).where(eq(resources.id, id)).returning()
   return updated!
+}
+
+/**
+ * The rank that puts `row` just before or just after `neighbourId` among its owner's resources.
+ * Only the moved row is written. A neighbour that is not one of the same owner's is refused.
+ */
+async function rankNextTo(
+  tx: Tx,
+  row: Resource,
+  neighbourId: ResourceId,
+  before: boolean,
+): Promise<string> {
+  const siblings = and(
+    eq(resources.ownerType, row.ownerType),
+    eq(resources.ownerId, row.ownerId),
+    ne(resources.id, row.id),
+  )
+  const [neighbour] = await tx
+    .select({ rank: resources.rank })
+    .from(resources)
+    .where(and(siblings, eq(resources.id, neighbourId)))
+  if (!neighbour) throw new NotANeighbour()
+  // Strictly before or after: ranks are not unique, and rankBetween needs before < after.
+  if (before) {
+    const [prev] = await tx
+      .select({ rank: resources.rank })
+      .from(resources)
+      .where(and(siblings, lt(resources.rank, neighbour.rank)))
+      .orderBy(desc(resources.rank), desc(resources.id))
+      .limit(1)
+    return rankBetween(prev?.rank ?? null, neighbour.rank)
+  }
+  const [next] = await tx
+    .select({ rank: resources.rank })
+    .from(resources)
+    .where(and(siblings, gt(resources.rank, neighbour.rank)))
+    .orderBy(asc(resources.rank), asc(resources.id))
+    .limit(1)
+  return rankBetween(neighbour.rank, next?.rank ?? null)
 }
 
 export async function removeResource(tx: Tx, ctx: Actor, id: ResourceId): Promise<void> {
