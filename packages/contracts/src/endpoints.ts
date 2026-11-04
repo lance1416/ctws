@@ -127,6 +127,14 @@ import {
   updateResourceBody,
 } from './resource'
 import { tombstoneParams, tombstoneResponse } from './tombstone'
+import {
+  reminderOfResponse,
+  reminderParams,
+  remindersDueQuery,
+  remindersResponse,
+  reminderResponse,
+  setReminderBody,
+} from './reminder'
 import { checkMigrationItemBody, migrationItemParams, migrationReportResponse } from './migration'
 import {
   createOrganisationBody,
@@ -424,6 +432,50 @@ export const api = {
       ok: 200,
       response: migrationReportResponse,
       refusals: [404],
+    }),
+  },
+  reminders: {
+    due: endpoint({
+      method: 'GET',
+      path: '/reminders',
+      summary: "Every reminder whose day has come, oldest day first: Today's block (view=due).",
+      query: remindersDueQuery,
+      ok: 200,
+      response: remindersResponse,
+    }),
+    calendar: endpoint({
+      method: 'GET',
+      path: '/reminders',
+      summary: 'Reminders on the days they come up on (view=calendar).',
+      query: calendarView,
+      ok: 200,
+      response: calendarEntriesResponse,
+    }),
+    of: endpoint({
+      method: 'GET',
+      path: '/reminders/:type/:id',
+      summary: "A thing's reminder, or null when it has none.",
+      params: reminderParams,
+      ok: 200,
+      response: reminderOfResponse,
+      refusals: [404],
+    }),
+    set: endpoint({
+      method: 'PUT',
+      path: '/reminders/:type/:id',
+      summary: 'Bring a thing to Today on a day, replacing the reminder it had.',
+      params: reminderParams,
+      body: setReminderBody,
+      ok: 200,
+      response: reminderResponse,
+      refusals: [404],
+    }),
+    dismiss: endpoint({
+      method: 'DELETE',
+      path: '/reminders/:type/:id',
+      summary: "Take a thing's reminder away; the thing itself is not touched.",
+      params: reminderParams,
+      ok: 204,
     }),
   },
   photos: {
