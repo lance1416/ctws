@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { useContext, type ReactNode } from 'react'
 import { BUTTON, KEY_ON_INK } from '../../platform/ui/buttonStyles'
 import { KIND_ICON, NewIcon, type Kind } from '../../platform/ui/icons'
 import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
@@ -14,12 +14,15 @@ export function ModuleEmpty({
   kind,
   onNew,
   says,
+  also,
 }: {
   kind: Kind
   /** What the button does where the module makes things in place rather than in a dialog. */
   onNew?: () => void
   /** The button's words where the kind is added, not made: "Add reading". */
   says?: string
+  /** Another way in beside it, such as bringing things in from files. */
+  also?: ReactNode
 }) {
   const Icon = KIND_ICON[kind]
   const registry = useRegistry()
@@ -33,17 +36,20 @@ export function ModuleEmpty({
         <Icon size={20} aria-hidden="true" className={KIND_TEXT[kind]} />
       </span>
       <h2 className="text-subject text-ink">No {KIND_WORDS[kind].many.toLocaleLowerCase()} yet</h2>
-      {creator && (
-        <button
-          type="button"
-          onClick={() => (onNew ? onNew() : openNew(creator, { opens: true }))}
-          className={`${BUTTON.primary} h-7 px-2.5 text-meta`}
-        >
-          <NewIcon size={14} aria-hidden="true" />
-          {says ?? `New ${creator.label.toLocaleLowerCase()}`}
-          <kbd className={KEY_ON_INK}>N {creator.key.toUpperCase()}</kbd>
-        </button>
-      )}
+      <div className="flex items-center gap-2">
+        {creator && (
+          <button
+            type="button"
+            onClick={() => (onNew ? onNew() : openNew(creator, { opens: true }))}
+            className={`${BUTTON.primary} h-7 px-2.5 text-meta`}
+          >
+            <NewIcon size={14} aria-hidden="true" />
+            {says ?? `New ${creator.label.toLocaleLowerCase()}`}
+            <kbd className={KEY_ON_INK}>N {creator.key.toUpperCase()}</kbd>
+          </button>
+        )}
+        {also}
+      </div>
     </div>
   )
 }
