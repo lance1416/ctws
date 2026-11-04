@@ -149,3 +149,59 @@ describe('serving the built web app', () => {
     })
   })
 })
+
+/**
+ * The share tags name the deploy in full, which link previews need and the build cannot know:
+ * `PUBLIC_ORIGIN` is written in where the build left its mark, and never a request's Host.
+ */
+describe('the deploy origin in the shell', () => {
+  const PAGE = [
+    '<!doctype html>',
+    '<head>',
+    '  <meta property="og:title" content="CTWS">',
+    '  <meta property="og:image" content="%CTWS_PUBLIC_ORIGIN%/og.png">',
+    '  <meta property="og:url" content="%CTWS_PUBLIC_ORIGIN%/" />',
+    '</head>',
+  ].join('\n')
+  let dist: string
+  const apps: Awaited<ReturnType<typeof withApp>>[] = []
+
+  beforeAll(() => {
+    dist = mkdtempSync(join(tmpdir(), 'ctws-web-'))
+    writeFileSync(join(dist, 'index.html'), PAGE)
+  })
+
+  afterAll(async () => {
+    for (const a of apps) await a.stop()
+    rmSync(dist, { recursive: true, force: true })
+  })
+
+  const shellOf = async (publicOrigin: string | undefined, url: string, host = 'ctws.test') => {
+    const ctx = await withApp({ webDist: dist, publicOrigin })
+    apps.push(ctx)
+    const res = await ctx.app.inject({ method: 'GET', url, headers: { ...HTML, host } })
+    expect(res.statusCode).toBe(200)
+    return res.body
+  }
+
+  it.each(['/', '/index.html', '/people/someone'])('is written in at %s', async (url) => {
+    const body = await shellOf('https://ctws.example.com', url, 'evil.example')
+    expect(body).toContain('content="https://ctws.example.com/og.png"')
+    expect(body).toContain('content="https://ctws.example.com/"')
+    expect(body).not.toContain('%CTWS_PUBLIC_ORIGIN%')
+    expect(body).not.toContain('evil.example')
+  })
+
+  it('leaves out, whole, every tag that needs it when none is set, and keeps the rest', async () => {
+    const body = await shellOf(undefined, '/')
+    expect(body).not.toContain('og:image')
+    expect(body).not.toContain('og:url')
+    expect(body).not.toContain('%CTWS_PUBLIC_ORIGIN%')
+    expect(body).toContain('<meta property="og:title" content="CTWS">')
+    expect(body).toBe(
+      PAGE.split('\n')
+        .filter((l) => !l.includes('%CTWS'))
+        .join('\n'),
+    )
+  })
+})

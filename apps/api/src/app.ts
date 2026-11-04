@@ -148,7 +148,7 @@ export async function buildApp(opts: {
     { prefix: '/api/v1' },
   )
 
-  await serveWeb(app, opts.env.webDist)
+  await serveWeb(app, opts.env.webDist, opts.env.publicOrigin)
 
   return app
 }
