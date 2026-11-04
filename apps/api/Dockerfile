@@ -26,6 +26,11 @@ RUN pnpm --filter @ctws/api --prod deploy --legacy /deploy
 # and the next line proves the remaining one still loads before the image is allowed to exist.
 RUN rm -rf /deploy/node_modules/.pnpm/@node-rs+argon2-linux-x64-gnu@* \
   && node -e "const a=require('/deploy/node_modules/@node-rs/argon2');const h=a.hashSync('x');if(!a.verifySync(h,'x'))throw new Error('argon2 round trip failed');console.log('argon2 ok on musl')"
+# The same for sharp, on whichever architecture builds: its glibc libvips is 17MB this image never
+# loads (`linux-` is glibc; `linuxmusl-` is what Alpine loads). The check decodes and encodes a
+# picture with what is left, so a sharp that cannot load stops the build, not the first upload.
+RUN rm -rf /deploy/node_modules/.pnpm/@img+sharp-linux-* /deploy/node_modules/.pnpm/@img+sharp-libvips-linux-* \
+  && node -e "require('/deploy/node_modules/sharp')({create:{width:4,height:4,channels:3,background:'#c00'}}).png().toBuffer().then(p=>require('/deploy/node_modules/sharp')(p).webp().toBuffer()).then(w=>{if(w.subarray(8,12).toString()!=='WEBP')throw new Error('sharp round trip failed');console.log('sharp ok on musl')})"
 
 FROM node:24-alpine
 WORKDIR /app
