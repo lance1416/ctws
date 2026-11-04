@@ -3,6 +3,8 @@ import { apiModules } from './modules'
 import { createDb } from './platform/db/client'
 import { parseEnv } from './platform/config'
 import { s3Store, storageConfig } from './platform/storage'
+import { readingConfig } from './modules/reading/config'
+import { outsidePreviewer } from './shell/resources'
 import { parseFailAt, runRedesignMigration } from './shell/migration'
 
 const env = parseEnv(process.env)
@@ -15,6 +17,8 @@ const app = await buildApp({
   db,
   modules: apiModules(process.env),
   storage: storage ? s3Store(storage) : null,
+  // Link cards are fetched under the same switch as a reading link's title.
+  previews: readingConfig(process.env).unfurl ? outsidePreviewer() : null,
 })
 
 // The move to the new layout runs once per workspace, after the schema migrations (the image's

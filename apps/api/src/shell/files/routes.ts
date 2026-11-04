@@ -1,6 +1,6 @@
 import { api, PHOTO_MAX_BYTES, type FileId, type UserId } from '@ctws/contracts'
 import { and, eq, isNull } from 'drizzle-orm'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { NotFound } from '../../platform/errors'
 import { on, serve } from '../../platform/http/serve'
@@ -61,21 +61,30 @@ const accountHolder = (userId: UserId): Holder => ({
  * Photos read back, and the account's own set, taken off and put back. A photo is read only by
  * its own workspace: any other gets the same 404 as an id that never was, so ids cannot be probed.
  */
-export const photoRoutes: FastifyPluginAsyncZod = async (app) => {
+export const photoRoutes: FastifyPluginAsyncZod<{
+  /** A file whose row stands but whose bytes the store has lost, for whoever can make it again. */
+  onMissing: (id: FileId) => Promise<void>
+}> = async (app, { onMissing }) => {
+  /**
+   * A stored picture, to its own workspace only. It never changes under its id, so it is kept for
+   * good; `private`: it is behind a session, and no shared cache may hand it to anyone else.
+   */
+  const send = async (req: FastifyRequest, reply: FastifyReply, id: FileId, what: string) => {
+    const store = storeOf(app)
+    const key = await keyOf(app.db, currentUser(req).workspaceId, id)
+    const file = key ? await store.get(key) : null
+    if (key && !file) await onMissing(id)
+    if (!file) throw new NotFound(what)
+    reply
+      .header('cache-control', 'private, max-age=31536000, immutable')
+      .header('x-content-type-options', 'nosniff')
+      .type('image/webp')
+      .send(file.body)
+  }
+
   serve(app, [
-    on(api.photos.get, async (req, reply) => {
-      const store = storeOf(app)
-      const key = await keyOf(app.db, currentUser(req).workspaceId, req.params.avatarId)
-      const file = key ? await store.get(key) : null
-      if (!file) throw new NotFound('Photo')
-      // A photo never changes under its id, so it is kept for good; `private`: it is behind a
-      // session, and no shared cache may hand it to anyone else.
-      reply
-        .header('cache-control', 'private, max-age=31536000, immutable')
-        .header('x-content-type-options', 'nosniff')
-        .type('image/webp')
-        .send(file.body)
-    }),
+    on(api.photos.get, (req, reply) => send(req, reply, req.params.avatarId, 'Photo')),
+    on(api.files.get, (req, reply) => send(req, reply, req.params.fileId, 'File')),
 
     on(
       api.photos.setMine,

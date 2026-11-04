@@ -15,6 +15,7 @@ export const photoCrop = z
   .strict()
 
 export const avatarParams = z.object({ avatarId: fileId }).strict()
+export const fileParams = z.object({ fileId }).strict()
 
 export const photoResponse = z.object({
   /** Read at `/avatars/:id`; a new photo has a new id, so a cached one is never stale. */

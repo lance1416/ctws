@@ -22,7 +22,7 @@ import { linkRoutes, linkRegistry } from './shell/links'
 import { timelineRoutes } from './shell/events'
 import { mentionSource, relatedStageChanges, relationRoutes } from './shell/relations'
 import { reminderRoutes } from './shell/reminders'
-import { resourceRoutes } from './shell/resources'
+import { previewPending, refetchFor, resourceRoutes, type Previewer } from './shell/resources'
 import { migrationRoutes } from './shell/migration'
 import { tombstoneRoutes } from './shell/tombstones'
 import { acceptFileBodies, photoRoutes, sweepFiles } from './shell/files'
@@ -62,6 +62,8 @@ export async function buildApp(opts: {
   modules: readonly ApiModule[]
   clock?: () => Date
   storage?: ObjectStore | null
+  /** How link cards reach the outside; none, and every resource stays a plain link. */
+  previews?: Previewer | null
 }): Promise<FastifyInstance> {
   // Ready before the first sign-in, so no request pays for hashing it.
   await warmDummyHash()
@@ -75,6 +77,7 @@ export async function buildApp(opts: {
   app.decorate('env', opts.env)
   app.decorate('clock', opts.clock ?? clockFrom(opts.env.clockPinnedAt))
   app.decorate('storage', opts.storage ?? null)
+  app.decorate('previews', opts.previews ?? null)
 
   await app.register(fastifySwagger, {
     openapi: {
@@ -141,7 +144,7 @@ export async function buildApp(opts: {
         authenticated(authed)
         acceptFileBodies(authed)
         await authed.register(sessionRoutes)
-        await authed.register(photoRoutes)
+        await authed.register(photoRoutes, { onMissing: (id) => refetchFor(app.db, id) })
         await authed.register(adminRoutes)
         await authed.register(projectRoutes, { columns, graves })
         await authed.register(linkRoutes, { registry })
@@ -165,6 +168,22 @@ export async function buildApp(opts: {
   )
 
   await serveWeb(app, opts.env.webDist)
+
+  // Cards still waiting are fetched a few a minute: what a fetch started at once missed, and
+  // the resources from before cards existed.
+  const { previews } = app
+  if (previews) {
+    let fetching = false
+    const timer = setInterval(() => {
+      if (fetching) return
+      fetching = true
+      previewPending(app.db, app.storage, previews, app.clock)
+        .catch(() => undefined)
+        .finally(() => (fetching = false))
+    }, SWEEP_EVERY_MS)
+    timer.unref()
+    app.addHook('onClose', async () => clearInterval(timer))
+  }
 
   // Files let go of are removed a minute at a time. A sweep that fails (the store down) leaves
   // them for the next; one still running when the next is due is not started twice.
@@ -193,5 +212,7 @@ declare module 'fastify' {
     clock: () => Date
     /** Where uploaded files go; `null` when the server has none. */
     storage: ObjectStore | null
+    /** How link cards reach the outside; `null` when fetching is off. */
+    previews: Previewer | null
   }
 }

@@ -1,6 +1,6 @@
-import sharp from 'sharp'
+import sharp, { type Sharp } from 'sharp'
 import { describe, expect, it } from 'vitest'
-import { AVATAR_PX, avatarFrom, sniff } from './images'
+import { AVATAR_PX, avatarFrom, iconFrom, pictureFrom, sniff } from './images'
 
 const RED = { r: 255, g: 0, b: 0 }
 const BLUE = { r: 0, g: 0, b: 255 }
@@ -140,5 +140,81 @@ describe('avatarFrom', () => {
     { x: 0.5, y: 0, size: 10 },
   ])('refuses a square that does not fit the upright picture: %j', async (crop) => {
     expect(await avatarFrom(await phonePhoto(), crop)).toEqual({ ok: false, why: 'bad-crop' })
+  })
+})
+
+/** An ICO holding `entries`, each a PNG or (with `bmp`) bytes that are not one. */
+function ico(entries: { width: number; data: Buffer }[]): Buffer {
+  const header = Buffer.alloc(6 + entries.length * 16)
+  header.writeUInt16LE(0, 0)
+  header.writeUInt16LE(1, 2)
+  header.writeUInt16LE(entries.length, 4)
+  let offset = header.length
+  entries.forEach((e, i) => {
+    const at = 6 + i * 16
+    header[at] = e.width === 256 ? 0 : e.width
+    header[at + 1] = header[at]!
+    header.writeUInt32LE(e.data.length, at + 8)
+    header.writeUInt32LE(offset, at + 12)
+    offset += e.data.length
+  })
+  return Buffer.concat([header, ...entries.map((e) => e.data)])
+}
+
+const square = (px: number, background: typeof RED) =>
+  sharp({ create: { width: px, height: px, channels: 3, background } })
+    .png()
+    .toBuffer()
+
+describe('iconFrom', () => {
+  it('keeps a 64px WebP square of a PNG, a JPEG, a GIF or a WebP', async () => {
+    for (const make of [
+      (s: Sharp) => s.png(),
+      (s: Sharp) => s.jpeg(),
+      (s: Sharp) => s.gif(),
+      (s: Sharp) => s.webp(),
+    ]) {
+      const bytes = await make(
+        sharp({ create: { width: 32, height: 32, channels: 3, background: RED } }),
+      ).toBuffer()
+      const out = await iconFrom(bytes)
+      expect(await sharp(out!).metadata()).toMatchObject({ format: 'webp', width: 64, height: 64 })
+    }
+  })
+
+  it('takes the widest PNG out of an ICO', async () => {
+    const out = await iconFrom(
+      ico([
+        { width: 16, data: await square(16, BLUE) },
+        { width: 48, data: await square(48, RED) },
+      ]),
+    )
+    expect(near(await middle(out!), RED)).toBe(true)
+  })
+
+  it('has no icon from an ICO of old bitmaps only, or from an SVG', async () => {
+    expect(await iconFrom(ico([{ width: 16, data: Buffer.alloc(40) }]))).toBeNull()
+    expect(await iconFrom(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'))).toBeNull()
+  })
+})
+
+describe('pictureFrom', () => {
+  it('keeps a picture no wider than 1200, never scaled up, as WebP', async () => {
+    const wide = await sharp({
+      create: { width: 2400, height: 1260, channels: 3, background: RED },
+    })
+      .jpeg()
+      .toBuffer()
+    expect(await sharp((await pictureFrom(wide))!).metadata()).toMatchObject({
+      format: 'webp',
+      width: 1200,
+      height: 630,
+    })
+    const small = await square(300, RED)
+    expect(await sharp((await pictureFrom(small))!).metadata()).toMatchObject({ width: 300 })
+  })
+
+  it('refuses what is not one of the four pictures', async () => {
+    expect(await pictureFrom(Buffer.from('<svg/>'))).toBeNull()
   })
 })

@@ -1,5 +1,6 @@
 import {
   type ObjectType,
+  type PreviewState,
   type ResourceId,
   resourceId,
   type ResourceResponse,
@@ -13,6 +14,7 @@ import { DomainError, NotFound } from '../../platform/errors'
 import { newId } from '../../platform/db/ids'
 import { type Actor, scoped, within } from '../../platform/db/scope'
 import { eventLog } from '../events'
+import { letGo } from '../files/service'
 import { projects } from '../projects/tables'
 import { type Resource, resources } from './tables'
 
@@ -26,6 +28,11 @@ export const toResourceResponse = (r: Resource): ResourceResponse => ({
   name: r.name,
   rank: r.rank,
   pinnedRank: r.pinnedRank,
+  preview:
+    r.previewState === 'done'
+      ? { title: r.previewTitle, siteName: r.previewSite, iconId: r.iconId, imageId: r.imageId }
+      : null,
+  previewState: r.previewState,
   createdAt: r.createdAt.toISOString(),
 })
 
@@ -141,11 +148,15 @@ async function getResource(
   return row
 }
 
+/** A new address's card: waiting to be fetched, or never, with fetching off. */
+const waiting = (opts: { previews: boolean }): PreviewState => (opts.previews ? 'pending' : 'none')
+
 /** Appends a resource after the owner's last one. The caller has checked the owner is visible. */
 export async function addResource(
   tx: Tx,
   ctx: Actor,
   input: { owner: Owner; url: string; name?: string | null | undefined },
+  opts: { previews: boolean },
 ): Promise<Resource> {
   const [last] = await tx
     .select({ rank: resources.rank })
@@ -163,6 +174,7 @@ export async function addResource(
       url: input.url,
       name: input.name ?? null,
       rank: rankBetween(last?.rank ?? null, null),
+      previewState: waiting(opts),
       createdAt: ctx.now,
     })
     .returning()
@@ -175,6 +187,7 @@ export async function updateResource(
   ctx: Actor,
   id: ResourceId,
   patch: UpdateResourceBody,
+  opts: { previews: boolean },
 ): Promise<Resource> {
   const row = await getResource(tx, ctx.workspaceId, id)
   if (patch.pinnedRank !== undefined && patch.pinnedRank !== null && row.ownerType !== 'project') {
@@ -194,8 +207,12 @@ export async function updateResource(
     if (taken && taken.id !== row.id) throw new KeyTaken(patch.pinnedRank)
   }
   const neighbourId = patch.beforeId ?? patch.afterId
+  // Another address is another page: its card is fetched anew, and the old one's pictures go.
+  const moved = patch.url !== undefined && patch.url !== row.url
+  if (moved) await letGo(tx, ctx.now, [row.iconId, row.imageId])
   const set = {
     ...(patch.url !== undefined ? { url: patch.url } : {}),
+    ...(moved ? { ...NO_PREVIEW, previewState: waiting(opts) } : {}),
     ...(patch.name !== undefined ? { name: patch.name } : {}),
     ...(patch.pinnedRank !== undefined ? { pinnedRank: patch.pinnedRank } : {}),
     ...(neighbourId !== undefined
@@ -246,8 +263,32 @@ async function rankNextTo(
   return rankBetween(neighbour.rank, next?.rank ?? null)
 }
 
+/** What a resource's card was, cleared. */
+const NO_PREVIEW = { previewTitle: null, previewSite: null, iconId: null, imageId: null }
+
+/**
+ * Marks a resource's card to be fetched again; its pictures stay until the new ones arrive. With
+ * fetching off there is nothing to fetch it with, and it stays as it is.
+ */
+export async function refreshPreview(
+  tx: Tx,
+  ctx: Actor,
+  id: ResourceId,
+  opts: { previews: boolean },
+): Promise<Resource> {
+  const current = await getResource(tx, ctx.workspaceId, id)
+  if (!opts.previews) return current
+  const [row] = await tx
+    .update(resources)
+    .set({ previewState: 'pending' })
+    .where(eq(resources.id, id))
+    .returning()
+  return row!
+}
+
 export async function removeResource(tx: Tx, ctx: Actor, id: ResourceId): Promise<void> {
   const row = await getResource(tx, ctx.workspaceId, id)
+  await letGo(tx, ctx.now, [row.iconId, row.imageId])
   await tx.delete(resources).where(eq(resources.id, id))
   await eventLog(tx, ctx).append({ type: row.ownerType, id: row.ownerId }, 'resource_removed', {
     url: row.url,
