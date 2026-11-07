@@ -7,15 +7,16 @@ import { KIND_ICON, LockIcon } from '../../../platform/ui/icons'
 export const opensOnClick = (e: MouseEvent) => !(e.target as HTMLElement).closest('button')
 
 /**
- * The tree's columns: name, status, stage, progress, due; then a place of its own for the row's
- * hover controls, so they never cover the due day, wider where a list sets `--row-acts` (the
- * inbox's Move to…). The columns go by the tree's own width, not the window's: 900 and over, all
- * of them; under 900, no stage (the detail and the board have it) and the progress as its count;
- * under 700, no status either (the mark says it); under 520 the name alone, the due day under it.
- * Fixed widths and top-aligned, so a two-line title moves no column.
+ * The tree's columns: name, status, stage, progress, due, the due day flush with the tree's right
+ * edge; the row's hover controls sit over its end. Without hover they always show, so there every
+ * row keeps their width clear, wider where a list sets `--row-acts` (the inbox's Move to…). The
+ * columns go by the tree's own width, not the window's: 900 and over, all of them; under 900, no
+ * stage (the detail and the board have it) and the progress as its count; under 700, no status
+ * either (the mark says it); under 520 the name alone, the due day under it. Fixed widths and
+ * top-aligned, so a two-line title moves no column.
  */
 export const TREE_ROW =
-  'grid min-h-9 grid-cols-[minmax(0,1fr)_var(--row-acts,64px)] items-start gap-x-3 px-3 @[520px]/tree:grid-cols-[minmax(0,1fr)_56px_80px_var(--row-acts,64px)] @[700px]/tree:grid-cols-[minmax(0,1fr)_112px_56px_96px_var(--row-acts,64px)] @[900px]/tree:grid-cols-[minmax(0,1fr)_112px_88px_132px_96px_var(--row-acts,64px)]'
+  'grid min-h-9 grid-cols-[minmax(0,1fr)] items-start gap-x-3 px-3 @[520px]/tree:grid-cols-[minmax(0,1fr)_56px_80px] @[700px]/tree:grid-cols-[minmax(0,1fr)_112px_56px_96px] @[900px]/tree:grid-cols-[minmax(0,1fr)_112px_88px_132px_96px] [@media(hover:none)]:@[520px]/tree:pr-[var(--row-acts,80px)]'
 
 /** The tree's block, which the columns measure. */
 export const TREE_BOX = '@container/tree'
@@ -26,7 +27,7 @@ export const TREE_COL = {
   stage: 'hidden @[900px]/tree:flex',
   progress: 'hidden @[520px]/tree:flex',
   bar: 'hidden @[900px]/tree:block',
-  due: 'hidden @[520px]/tree:flex',
+  due: 'hidden justify-end @[520px]/tree:flex',
   /** The due day under the title, where the tree is too narrow for its column. */
   dueUnder: 'flex @[520px]/tree:hidden',
 } as const

@@ -256,12 +256,11 @@ export function TaskRow({
         )}
       </span>
 
-      {/* The hover controls in their own last column, after the due day, so they never cover it. On
-          a phone, which has no room for it, they sit over the row's end on an opaque ground.
-          Without hover they always show. */}
+      {/* The hover controls sit over the row's end on the hovered row's ground, covering the due day
+          while the pointer is on the row. Without hover they always show. */}
       <span
         data-row-acts
-        className="-my-2 flex h-9 items-center justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 max-md:absolute max-md:top-0 max-md:right-2 max-md:bg-panel max-md:shadow-[inset_0_0_0_100vmax_var(--color-hover)] [@media(hover:none)]:opacity-100"
+        className="absolute top-0 right-2 flex h-9 items-center justify-end bg-panel opacity-0 shadow-[inset_0_0_0_100vmax_var(--color-hover)] group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100"
       >
         {on.moveTo && (
           // The pointer's way; the keyboard moves it from the inspector's edit, as any task.

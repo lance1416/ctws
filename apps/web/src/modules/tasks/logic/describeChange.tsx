@@ -45,22 +45,22 @@ export function describeTaskChange(
   }
   switch (event.type) {
     case 'created':
-      return { mark: <NewIcon size={16} />, text: 'Created' }
+      return { mark: <NewIcon size={14} />, text: 'Created' }
     case 'status_changed': {
       if ((event.payload as { derived?: boolean } | null)?.derived) return null
       if (!isStatus(now)) return null
-      return { mark: <StatusMark status={now} size={16} />, text: BECAME[now] }
+      return { mark: <StatusMark status={now} size={14} />, text: BECAME[now] }
     }
     case 'due_changed':
-      return { mark: <FlagIcon size={16} />, text: span('Due', 'Deadline cleared') }
+      return { mark: <FlagIcon size={14} />, text: span('Due', 'Deadline cleared') }
     case 'scheduled_changed':
-      return { mark: <PLACE_ICON.calendar size={16} />, text: span('Planned', 'Plan cleared') }
+      return { mark: <PLACE_ICON.calendar size={14} />, text: span('Planned', 'Plan cleared') }
     case 'title_changed': {
       const old = text(was)
       return old ? { mark: null, text: `Renamed from “${old}”` } : null
     }
     case 'notes_changed':
-      return { mark: <EditIcon size={16} />, text: 'Notes edited' }
+      return { mark: <EditIcon size={14} />, text: 'Notes edited' }
     case 'stage_changed': {
       const [from, to] = [text(was), text(now)]
       if (!to) return { mark: null, text: 'Stage cleared' }
@@ -74,14 +74,14 @@ export function describeTaskChange(
     case 'dependency_added': {
       const blocker = text(field(event.payload, 'title'))
       return {
-        mark: <LockIcon size={16} />,
+        mark: <LockIcon size={14} />,
         text: blocker ? `Waiting on ${blocker}` : 'Waiting on another task',
       }
     }
     case 'dependency_removed': {
       const blocker = text(field(event.payload, 'title'))
       return {
-        mark: <LockIcon size={16} />,
+        mark: <LockIcon size={14} />,
         text: blocker ? `No longer waiting on ${blocker}` : 'No longer waiting',
       }
     }

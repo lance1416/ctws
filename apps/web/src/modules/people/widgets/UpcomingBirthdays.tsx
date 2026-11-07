@@ -45,7 +45,7 @@ export function UpcomingBirthdays() {
                   <span className="text-meta text-muted">{weekdayDay(b.day, today)}</span>
                 </span>
                 <span
-                  className={`justify-self-end text-ui tabular-nums ${i === 0 ? 'font-medium text-person-t' : 'text-muted'}`}
+                  className={`justify-self-end text-ui tabular-nums ${i === 0 ? 'font-medium text-ink' : 'text-muted'}`}
                 >
                   {b.inDays === 0 ? 'Today' : `${b.inDays} d`}
                 </span>

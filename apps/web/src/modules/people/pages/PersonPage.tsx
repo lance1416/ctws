@@ -294,7 +294,8 @@ function Section({
       {prose ? (
         <div>{children}</div>
       ) : (
-        <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 pl-6 text-ui">
+        // The names start under the section's icon, in a column just wide enough for them.
+        <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-ui">
           {children}
         </dl>
       )}
@@ -305,8 +306,11 @@ function Section({
 function Fact({ name, children }: { name: string; children: ReactNode }) {
   return (
     <div className="contents">
-      {/* Meta's own line, centred on the value's first by its box (h-5 is that line). */}
-      <dt className="flex h-5 items-center text-meta text-muted">{name}</dt>
+      {/* Meta's own line, centred on the value's first by its box (h-5 is that line). A long
+          name of its own (a channel's label) is cut short with its whole in the title. */}
+      <dt title={name} className="h-5 truncate text-meta leading-5 text-muted">
+        {name}
+      </dt>
       <dd className="flex min-w-0 flex-col gap-1.5 text-ink">{children}</dd>
     </div>
   )

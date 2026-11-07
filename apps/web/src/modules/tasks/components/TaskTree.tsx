@@ -285,8 +285,8 @@ export function TaskTree({ projectId, last }: { projectId: ProjectId; last: Reac
         </p>
       )}
       <div
-        // The inbox's rows carry Move to… too: their controls' column is wider.
-        className={`${TREE_BOX} overflow-hidden rounded-container border border-line bg-panel ${inInbox ? '[--row-acts:148px]' : ''}`}
+        // The inbox's rows carry Move to… too: where the controls always show they take more room.
+        className={`${TREE_BOX} overflow-hidden rounded-container border border-line bg-panel ${inInbox ? '[--row-acts:164px]' : ''}`}
       >
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>

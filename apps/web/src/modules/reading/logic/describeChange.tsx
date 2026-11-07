@@ -27,30 +27,30 @@ export function describeReadingChange(event: {
   const now = field(event.payload, 'to')
   switch (event.type) {
     case 'created':
-      return { mark: <NewIcon size={16} />, text: 'Added' }
+      return { mark: <NewIcon size={14} />, text: 'Added' }
     case 'field_changed': {
       const which = text(field(event.payload, 'field'))
       if (which === 'status') {
         const to = text(now) as ReadingStatus | null
         if (!to || !(to in BECAME)) return null
         const Mark = to === 'done' ? DoneIcon : KIND_ICON.reading
-        return { mark: <Mark size={16} />, text: BECAME[to] }
+        return { mark: <Mark size={14} />, text: BECAME[to] }
       }
       if (which === 'title') {
         const old = text(was)
-        return old ? { mark: <EditIcon size={16} />, text: `Renamed from “${old}”` } : null
+        return old ? { mark: <EditIcon size={14} />, text: `Renamed from “${old}”` } : null
       }
       if (which === 'recommendedBy') {
         const to = text(field(event.payload, 'toName'))
         const from = text(field(event.payload, 'fromName'))
         const Mark = KIND_ICON.person
-        if (to) return { mark: <Mark size={16} />, text: `Recommended by ${to}` }
-        return from ? { mark: <Mark size={16} />, text: `No longer recommended by ${from}` } : null
+        if (to) return { mark: <Mark size={14} />, text: `Recommended by ${to}` }
+        return from ? { mark: <Mark size={14} />, text: `No longer recommended by ${from}` } : null
       }
       if (which === 'planOn') {
         const day = text(now)
         return {
-          mark: <EditIcon size={16} />,
+          mark: <EditIcon size={14} />,
           text: day ? `Finish by ${monthDay(day)}` : 'No day to finish by',
         }
       }

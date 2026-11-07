@@ -37,8 +37,9 @@ export function Toast({
       data-toast
       onPointerEnter={() => setHeld(action !== undefined)}
       onPointerLeave={() => setHeld(false)}
-      className={`fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 gap-3 rounded-container bg-float px-3.5 py-2.5 text-ui text-ink shadow-float ${
-        stays ? 'w-md items-start' : 'items-center'
+      // 44 for a line; from 1024 up it stands 12 clear of the status bar.
+      className={`fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 gap-3 rounded-container bg-float px-3.5 text-ui text-ink shadow-float lg:bottom-9 ${
+        stays ? 'w-md items-start py-2.5' : 'min-h-11 items-center py-1.5'
       }`}
     >
       {stays ? (

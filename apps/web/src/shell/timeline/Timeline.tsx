@@ -21,7 +21,7 @@ import {
 } from '../../platform/ui/icons'
 import { KIND_TEXT, KIND_TINT } from '../../platform/ui/kinds'
 import { useTimeZone } from '../auth'
-import type { RelationContribution } from '../contract'
+import type { ChangeLine, RelationContribution } from '../contract'
 import { useRegistry } from '../registry'
 
 type Thing = { type: ObjectType; id: string }
@@ -180,21 +180,17 @@ export function Timeline({
               >
                 {/* By month on a full page; a narrow page's five need no head. */}
                 {!last && <h4 className="text-overline text-muted uppercase">{section.title}</h4>}
-                <ol className="flex flex-col gap-3 [&>li:last-of-type>.thread]:hidden">
+                <ol className="flex flex-col gap-3">
                   {section.entries.map((entry, i) => {
                     const line = lineOf(entry, describeChange, timeZone)
                     if (!line) return null
+                    const kind = line.kind ?? of.type
                     return (
                       <li
                         key={`${entry.at}-${i}`}
                         data-timeline-entry={entry.kind}
-                        className="relative grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
+                        className="grid grid-cols-[52px_24px_minmax(0,1fr)] items-start gap-x-2.5 text-ui"
                       >
-                        {/* The thread from one mark to the next; the last has none. */}
-                        <span
-                          aria-hidden="true"
-                          className="thread absolute top-7 -bottom-2.5 left-[calc(52px+0.625rem+11.5px)] w-px bg-line"
-                        />
                         <time
                           dateTime={entry.at}
                           className="pt-1 font-mono text-meta text-muted tabular-nums"
@@ -203,7 +199,7 @@ export function Timeline({
                         </time>
                         <span
                           aria-hidden="true"
-                          className={`inline-grid size-6 place-items-center rounded-control ${line.tint ?? 'text-muted'}`}
+                          className={`inline-grid size-6 place-items-center rounded-control ${KIND_TINT[kind]} ${KIND_TEXT[kind]}`}
                         >
                           {line.mark}
                         </span>
@@ -302,8 +298,8 @@ const firstLine = (markdown: string) =>
       .trim(),
   )
 
-/** One line: its mark (on `tint`, when it has one), what it says, and what follows under it. */
-type Line = { mark: ReactNode; tint?: string; text: ReactNode; more?: ReactNode }
+/** One line: its mark (on its kind's colour), what it says, and what follows under it. */
+type Line = ChangeLine & { more?: ReactNode }
 
 /** What one entry says: a change in its module's words, the rest in the shell's. */
 function lineOf(
@@ -321,7 +317,7 @@ function lineOf(
       const names = m.parties.map((p) => p.name).join(', ')
       return {
         mark: <Icon size={14} />,
-        tint: 'bg-communication-bg text-communication',
+        kind: 'communication',
         text: (
           <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
             <span className="min-w-0 font-medium">
@@ -385,7 +381,7 @@ function lineOf(
       const mt = entry.meeting
       return {
         mark: <Icon size={14} />,
-        tint: `${KIND_TINT.meeting} ${KIND_TEXT.meeting}`,
+        kind: 'meeting',
         text: <span className="font-medium">{mt.title}</span>,
         more: (
           <span className="flex flex-wrap items-center gap-x-3 text-meta text-muted">
@@ -405,7 +401,8 @@ function lineOf(
       const Icon = KIND_ICON.note
       const name = entry.note.title ?? firstLine(entry.note.excerpt)
       return {
-        mark: <Icon size={16} />,
+        mark: <Icon size={14} />,
+        kind: 'note',
         text: 'Wrote notes',
         ...(name ? { more: <span className="text-muted">{name}</span> } : {}),
       }
@@ -414,7 +411,11 @@ function lineOf(
       // Where it was written, by that kind's icon; the name said plainly, not as typed.
       const Icon = KIND_ICON[entry.from.type]
       const said = linkWords(entry.excerpt.replace(MENTION, '$1'))
-      return { mark: <Icon size={16} />, text: `Mentioned in “${entry.from.title}”: ${said}` }
+      return {
+        mark: <Icon size={14} />,
+        kind: entry.from.type,
+        text: `Mentioned in “${entry.from.title}”: ${said}`,
+      }
     }
   }
 }

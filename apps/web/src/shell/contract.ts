@@ -11,7 +11,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import type { ComponentType, ReactNode } from 'react'
 import type { RouteObject } from 'react-router-dom'
 import type { KeyTable } from '../platform/keyboard/keyTable'
-import type { IconComponent } from '../platform/ui/icons'
+import type { IconComponent, Kind } from '../platform/ui/icons'
 
 /**
  * What a module declares. The shell owns auth, the frame, overlays, projects, the edge table and
@@ -272,8 +272,11 @@ export type RelationContribution = {
   ownHead?: boolean
 }
 
-/** One change on a timeline, in its module's words. */
-export type ChangeLine = { mark: ReactNode; text: ReactNode }
+/**
+ * One change on a timeline, in its module's words. Its mark sits on the colour of `kind`, the kind
+ * the change is about (a role is an organisation's), or of the thing's own kind without one.
+ */
+export type ChangeLine = { mark: ReactNode; kind?: Kind; text: ReactNode }
 
 /** A calendar entry with its times said on the account's clock, as every reader of one draws it. */
 export type SaidEntry = CalendarEntry & {

@@ -28,10 +28,10 @@ export function describeOrganisationChange(event: {
   const now = field(event.payload, 'to')
   switch (event.type) {
     case 'created':
-      return { mark: <NewIcon size={16} />, text: 'Added' }
+      return { mark: <NewIcon size={14} />, text: 'Added' }
     case 'merged': {
       const gone = text(field(was, 'name'))
-      return gone ? { mark: <NewIcon size={16} />, text: `“${gone}” merged into it` } : null
+      return gone ? { mark: <NewIcon size={14} />, text: `“${gone}” merged into it` } : null
     }
     case 'stage_changed': {
       const stage = text(now)
@@ -40,7 +40,7 @@ export function describeOrganisationChange(event: {
       if (!project) return null
       // The stage as its label, the project by its square; said whole for a reader.
       return {
-        mark: <InStageIcon size={16} />,
+        mark: <InStageIcon size={14} />,
         text: (
           <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
             {stage && before ? (
@@ -64,14 +64,14 @@ export function describeOrganisationChange(event: {
       const which = text(field(event.payload, 'field'))
       if (which === 'name') {
         const old = text(was)
-        return old ? { mark: <EditIcon size={16} />, text: `Renamed from “${old}”` } : null
+        return old ? { mark: <EditIcon size={14} />, text: `Renamed from “${old}”` } : null
       }
-      if (which === 'note') return { mark: <EditIcon size={16} />, text: 'Notes changed' }
+      if (which === 'note') return { mark: <EditIcon size={14} />, text: 'Notes changed' }
       const words = which ? FIELD_WORDS[which] : undefined
       if (!words) return null
       const to = text(now)
       return {
-        mark: <EditIcon size={16} />,
+        mark: <EditIcon size={14} />,
         text: to ? `${words} set to ${to}` : `${words} cleared`,
       }
     }

@@ -34,22 +34,26 @@ export function describePersonChange(event: { type: string; payload: unknown }):
     title && org ? `${title} at ${org}` : (title ?? (org ? `a role at ${org}` : null))
   switch (event.type) {
     case 'created':
-      return { mark: <NewIcon size={16} />, text: 'Added' }
+      return { mark: <NewIcon size={14} />, text: 'Added' }
     case 'field_changed': {
       const which = text(field(event.payload, 'field'))
       if (which === 'name') {
         const old = text(was)
-        return old ? { mark: <EditIcon size={16} />, text: `Renamed from “${old}”` } : null
+        return old ? { mark: <EditIcon size={14} />, text: `Renamed from “${old}”` } : null
       }
-      if (which === 'note') return { mark: <EditIcon size={16} />, text: 'Notes changed' }
+      if (which === 'note') return { mark: <EditIcon size={14} />, text: 'Notes changed' }
       const words = which ? PLACE_WORDS[which] : undefined
       if (!words) return null
       const to = text(now)
-      return { mark: <EditIcon size={16} />, text: to ? `${words} ${to}` : `${words} cleared` }
+      return { mark: <EditIcon size={14} />, text: to ? `${words} ${to}` : `${words} cleared` }
     }
     case 'role_added': {
       const said = role(text(field(event.payload, 'title')))
-      return { mark: <Work size={16} />, text: said ? `Took a role: ${said}` : 'Took a role' }
+      return {
+        mark: <Work size={14} />,
+        kind: 'organisation',
+        text: said ? `Took a role: ${said}` : 'Took a role',
+      }
     }
     case 'role_changed': {
       const [a, b] = [text(field(was, 'title')), text(field(now, 'title'))]
@@ -60,11 +64,15 @@ export function describePersonChange(event: { type: string; payload: unknown }):
       else if (ended && !field(was, 'to') && field(was, 'from') === field(now, 'from'))
         said = which && `${which}: ended ${ended}`
       else said = which && `${which}: ${span(was)} → ${span(now)}`
-      return { mark: <Work size={16} />, text: said ?? 'A role changed' }
+      return { mark: <Work size={14} />, kind: 'organisation', text: said ?? 'A role changed' }
     }
     case 'role_removed': {
       const said = role(text(field(event.payload, 'title')))
-      return { mark: <Work size={16} />, text: said ? `Role removed: ${said}` : 'A role removed' }
+      return {
+        mark: <Work size={14} />,
+        kind: 'organisation',
+        text: said ? `Role removed: ${said}` : 'A role removed',
+      }
     }
     default:
       return null
