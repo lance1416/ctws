@@ -23,6 +23,25 @@ test('a visitor at / sees the front page, and Sign in goes to the sign-in page',
   await expect(page.getByLabel('Email')).toBeVisible()
 })
 
+test('a shared link to it previews with its name, a line and the picture', async ({ page }) => {
+  await page.goto('/')
+  await expect(page).toHaveTitle('CTWS: Cheesy Toast Work Space')
+  const meta = (key: string) =>
+    page.locator(`meta[name="${key}"], meta[property="${key}"]`).getAttribute('content')
+  const line =
+    "One person's hub. Your work, your life and the things you think of all go in here, and once they are in they know about each other."
+  expect(await meta('description')).toBe(line)
+  expect(await meta('og:description')).toBe(line)
+  expect(await meta('og:title')).toBe('CTWS: Cheesy Toast Work Space')
+  expect(await meta('og:type')).toBe('website')
+  expect(await page.locator('html').getAttribute('lang')).toBe('en')
+  // The picture is named in full where the deploy says its address, and left out where not.
+  const image = page.locator('meta[property="og:image"]')
+  if ((await image.count()) > 0)
+    expect(await image.getAttribute('content')).toMatch(/^https?:\/\/[^%]+\/og\.png$/)
+  expect((await page.request.get('/og.png')).headers()['content-type']).toBe('image/png')
+})
+
 test('whoever is signed in gets the workbench at /, not the front page', async ({ page }) => {
   await registerFreshUser(page, '/')
   await page.goto('/')
