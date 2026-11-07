@@ -90,6 +90,32 @@ test('a save that fails puts the row back and offers to try again', async ({ pag
   expect((await serverTask(page, pid, '存不上')).status).toBe('done')
 })
 
+test('Retry while offline says so and leaves the page as it is', async ({ page }) => {
+  await registerFreshUser(page)
+  const pid = await makeProject(page, '断网')
+  await makeTask(page, pid, '再试', { status: 'in_progress' })
+  await page.reload()
+  await page.route('**/api/v1/tasks/*', (route) =>
+    route.request().method() === 'PATCH'
+      ? route.fulfill({ status: 503, body: '' })
+      : route.fallback(),
+  )
+  await page.getByRole('button', { name: 'Mark “再试” done' }).click()
+  await expect(foot(page)).toContainText('Couldn’t save. Try again')
+
+  await page.context().setOffline(true)
+  let sent = false
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH') sent = true
+  })
+  await foot(page).getByRole('button', { name: 'Retry' }).click()
+  await expect(foot(page)).toContainText('Offline. Nothing can be saved')
+  const inProgress = page.getByRole('region', { name: 'In progress', exact: true })
+  await expect(inProgress).toContainText('再试')
+  expect(sent).toBe(false)
+  await page.context().setOffline(false)
+})
+
 test('a row moved in the tree goes back where it was with Undo', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, '挪位置')

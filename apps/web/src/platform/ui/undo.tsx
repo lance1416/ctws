@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { OFFLINE_WHY } from '../http/online'
 import { isTypingTarget } from '../keyboard/keys'
 import { Toast } from './Toast'
 
@@ -34,7 +35,7 @@ const UndoContext = createContext<Say | null>(null)
 export function UndoProvider({ children }: { children: ReactNode }) {
   type Shown =
     | { kind: 'done'; said: string; undo: () => Promise<unknown>; n: number }
-    | { kind: 'failed'; retry: () => void; refused: string | null; n: number }
+    | { kind: 'failed'; retry: () => void; refused: string | null; offline?: boolean; n: number }
   const [shown, setShown] = useState<Shown | null>(null)
   // Taken once: a second Undo, or Ctrl Z after it, finds nothing.
   const pending = useRef<Undoable | null>(null)
@@ -103,12 +104,15 @@ export function UndoProvider({ children }: { children: ReactNode }) {
             action={{
               label: 'Retry',
               onPress: () => {
+                // Offline, trying again could only fail: it says so, and nothing on the page moves.
+                if (navigator.onLine === false)
+                  return setShown({ ...shown, offline: true, n: ++count.current })
                 setShown(null)
                 shown.retry()
               },
             }}
           >
-            Couldn’t save. Try again
+            {shown.offline ? OFFLINE_WHY : 'Couldn’t save. Try again'}
           </Toast>
         ))}
     </UndoContext.Provider>

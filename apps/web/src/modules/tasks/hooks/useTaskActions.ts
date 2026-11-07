@@ -23,11 +23,17 @@ const before = new Map<TaskId, 'todo' | 'in_progress'>()
 type Dates = { scheduledOn?: string | null; dueAt?: string | null }
 /** What a row shows of a patch at once: its dates, its stage, its title. */
 type Shown = Dates & { stageId?: TaskResponse['stageId']; title?: string }
+/** A task as a list holds it: Today's rows carry no stage. */
+type Held = {
+  status: TaskStatus
+  scheduledOn: string | null
+  dueAt: string | null
+  stageId?: TaskResponse['stageId']
+}
 
 /**
  * One-click edits from a list row. The row changes at once and the save follows; one that fails
- * puts the row back and says so, with Retry. Finishing a task and changing its dates can be
- * undone; the server still decides the segment a row belongs in, read again after the save.
+ * puts the row back and says so, with Retry. A change of status, stage or dates can be undone; the server still decides the segment a row belongs in, read again after the save.
  */
 export function useTaskActions() {
   const qc = useQueryClient()
@@ -83,17 +89,13 @@ export function useTaskActions() {
   })
 
   /** The task as whichever list holds it has it now. */
-  const held = (
-    id: TaskId,
-  ): { status: TaskStatus; scheduledOn: string | null; dueAt: string | null } | undefined => {
+  const held = (id: TaskId): Held | undefined => {
     for (const [, data] of qc.getQueriesData<ProjectTasks>({ queryKey: taskKeys.lists })) {
       const hit = data?.tasks.find((t) => t.id === id)
       if (hit) return hit
     }
     for (const key of [taskKeys.todays, ['tasks', 'ready']] as const)
-      for (const [, data] of qc.getQueriesData<
-        { id: TaskId; status: TaskStatus; scheduledOn: string | null; dueAt: string | null }[]
-      >({ queryKey: key })) {
+      for (const [, data] of qc.getQueriesData<(Held & { id: TaskId })[]>({ queryKey: key })) {
         const hit = data?.find((t) => t.id === id)
         if (hit) return hit
       }
@@ -103,18 +105,17 @@ export function useTaskActions() {
 
   const set = (id: TaskId, status: TaskStatus, after?: () => void) => {
     const was = statusOf(id)
-    if (isFinished(status) && was && !isFinished(was)) {
-      before.set(id, was === 'in_progress' ? 'in_progress' : 'todo')
-    }
+    const finishing = isFinished(status) && was !== undefined && !isFinished(was)
+    if (finishing) before.set(id, was === 'in_progress' ? 'in_progress' : 'todo')
     run.mutate({ id, body: { status } }, { onSettled: () => after?.() })
-    if (isFinished(status) && was && !isFinished(was))
-      say.offer({
-        said: status === 'done' ? 'Done' : 'Cancelled',
-        undo: () => {
-          before.delete(id)
-          return run.mutateAsync({ id, body: { status: was } })
-        },
-      })
+    if (!was || was === status) return
+    say.offer({
+      said: finishing ? (status === 'done' ? 'Done' : 'Cancelled') : 'Status changed',
+      undo: () => {
+        before.delete(id)
+        return run.mutateAsync({ id, body: { status: was } })
+      },
+    })
   }
 
   return {
@@ -131,12 +132,20 @@ export function useTaskActions() {
     patch: (id: TaskId, body: UpdateTaskBody, after?: () => void) => {
       const was = held(id)
       run.mutate({ id, body }, { onSettled: () => after?.() })
-      if (!was || (body.scheduledOn === undefined && body.dueAt === undefined)) return
-      const back: Dates = {}
+      if (!was) return
+      const back: Dates & Pick<Shown, 'stageId'> = {}
       if (body.scheduledOn !== undefined) back.scheduledOn = was.scheduledOn
       if (body.dueAt !== undefined) back.dueAt = was.dueAt
+      if (body.stageId !== undefined && was.stageId !== undefined && was.stageId !== body.stageId)
+        back.stageId = was.stageId
+      if (Object.keys(back).length === 0) return
       say.offer({
-        said: body.scheduledOn === undefined ? 'Deadline changed' : 'Plan changed',
+        said:
+          back.stageId !== undefined
+            ? 'Stage changed'
+            : body.scheduledOn === undefined
+              ? 'Deadline changed'
+              : 'Plan changed',
         undo: () => run.mutateAsync({ id, body: back }),
       })
     },

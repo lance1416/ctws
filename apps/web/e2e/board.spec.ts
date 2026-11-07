@@ -258,6 +258,14 @@ test('arrows move between cards, and Alt with an arrow moves a card a column', a
   expect((await patched).request().postDataJSON()).toEqual({ status: 'in_progress' })
   await expect(cardsIn(page, 'in_progress')).toHaveCount(2)
   await expect(card(page, 'First')).toBeFocused()
+
+  // A status changed is taken back from the line at the foot.
+  const foot = page.locator('[data-toast]')
+  await expect(foot).toContainText('Status changed')
+  const back = taskPatched(page)
+  await foot.getByRole('button', { name: 'Undo' }).click()
+  expect((await back).request().postDataJSON()).toEqual({ status: 'todo' })
+  await expect(cardsIn(page, 'in_progress')).toHaveCount(1)
 })
 
 test('a board that cannot load says so, instead of empty columns', async ({ page }) => {

@@ -190,6 +190,7 @@ test('a card moved with Alt and an arrow keeps the focus, or its folded stage ha
   await page.keyboard.press('Alt+ArrowRight')
   expect((await patched).request().postDataJSON()).toEqual({ stageId: onsite!.id })
   await expect(column(page, onsite!).locator('[data-stage-title]')).toHaveText(['Stripe'])
+  await expect(page.locator('[data-toast]')).toContainText('Stage changed')
   // Still on the card, in its new column: Enter opens it.
   await expect(card(page, 'Stripe')).toBeFocused()
   await page.keyboard.press('Enter')
@@ -198,8 +199,17 @@ test('a card moved with Alt and an arrow keeps the focus, or its folded stage ha
 
   // Into a folded stage, the strip it went into has the focus.
   await card(page, 'Stripe').focus()
+  const folded = taskPatched(page)
   await page.keyboard.press('Alt+ArrowRight')
   await expect(page.locator(`[data-stage-strip="${rejected!.id}"]`)).toBeFocused()
+  // The focus moves before the save is sent: the save first, then its Undo.
+  expect((await folded).request().postDataJSON()).toEqual({ stageId: rejected!.id })
+
+  // The stage changed is taken back from the line at the foot.
+  const back = taskPatched(page)
+  await page.locator('[data-toast]').getByRole('button', { name: 'Undo' }).click()
+  expect((await back).request().postDataJSON()).toEqual({ stageId: onsite!.id })
+  await expect(column(page, onsite!).locator('[data-stage-title]')).toHaveText(['Stripe'])
 })
 
 test('Edit stages renames, merges, folds, removes, adds and reorders, as the whole list', async ({
