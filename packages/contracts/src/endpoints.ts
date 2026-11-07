@@ -548,7 +548,7 @@ export const api = {
       body: setReminderBody,
       ok: 200,
       response: reminderResponse,
-      refusals: [404],
+      refusals: [404, 422],
     }),
     dismiss: endpoint({
       method: 'DELETE',
@@ -638,9 +638,11 @@ export const api = {
     create: endpoint({
       method: 'POST',
       path: '/resources',
-      summary: 'Hang an outside address on a thing.',
+      summary:
+        'Hang an outside address on a thing; an address it already has is that one, answered 200.',
       body: createResourceBody,
       ok: 201,
+      existing: true,
       response: resourceResponse,
       location: itemAt('/resources/:id'),
       refusals: [404],

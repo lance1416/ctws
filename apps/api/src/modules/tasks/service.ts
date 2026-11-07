@@ -307,6 +307,9 @@ async function editTask(
     if (set.status === 'done' || set.status === 'cancelled') {
       const next = await comeRound(tx, ctx, updated!, cal)
       if (next) updated = { ...updated!, nextId: next }
+    } else if (row.status === 'done' || row.status === 'cancelled') {
+      // Opened again: the next one it made goes, if nobody has touched it since.
+      if (await takeBackNext(tx, ctx, updated!)) updated = { ...updated!, nextId: null }
     }
     await settleAncestors(tx, ctx, row.parentId)
   }
@@ -702,4 +705,27 @@ export async function keepTask(db: Db, ctx: Actor, id: TaskId): Promise<void> {
     await lockTask(tx, ctx.workspaceId, id)
     await tx.update(tasks).set({ keptAt: ctx.now }).where(eq(tasks.id, id))
   })
+}
+
+/**
+ * A repeating task opened again takes back the next one it made when done or cancelled, as long
+ * as that one is untouched: still to do, with nothing in its log but its making. One somebody has
+ * worked on stays, and the task stays linked to it, so being done again makes no second.
+ * Answers whether the next one went.
+ */
+async function takeBackNext(tx: Tx, ctx: Actor, row: Task): Promise<boolean> {
+  if (row.nextId === null) return false
+  const [next] = await tx.select().from(tasks).where(eq(tasks.id, row.nextId)).for('update')
+  if (!next || next.status !== 'todo' || next.deletedAt !== null) return false
+  const [{ n }] = rowsOf(
+    await tx.execute(sql`
+      select count(*)::int as n from events where object_type = 'task' and object_id = ${next.id}`),
+    z.object({ n: z.number() }),
+  ) as [{ n: number }]
+  if (n !== 1 || (await childStatuses(tx, next.id)).length > 0) return false
+  const graves = await subtreeGraves(tx, ctx.workspaceId, [next.id])
+  await bury(tx, ctx, graves)
+  await tx.execute(sql`delete from tasks where id = ${next.id}`)
+  await settleAncestors(tx, ctx, next.parentId, { removed: true })
+  return true
 }

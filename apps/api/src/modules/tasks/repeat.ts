@@ -1,5 +1,5 @@
 import { taskId, type TaskId } from '@ctws/contracts'
-import { addDays, dayIn, nextRepeatDay, rankBetween } from '@ctws/core'
+import { addDays, dayIn, handOn, nextRepeatDay, rankBetween } from '@ctws/core'
 import { and, asc, eq, gt, isNull } from 'drizzle-orm'
 import type { Tx } from '../../platform/db/client'
 import { newId } from '../../platform/db/ids'
@@ -69,7 +69,7 @@ export async function comeRound(
       dueAt: row.dueAt ? shiftDue(row.dueAt, days, cal.zone) : null,
       stageId: row.stageId,
       stageSince: row.stageId ? ctx.now : null,
-      repeat: row.repeat,
+      repeat: handOn(row.repeat, anchor),
       rank: rankBetween(row.rank, after?.rank ?? null),
       createdAt: ctx.now,
       updatedAt: ctx.now,

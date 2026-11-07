@@ -1,6 +1,6 @@
 import { readTaskRule, type Repeat } from '@ctws/contracts'
 import { describe, expect, it } from 'vitest'
-import { firstRepeatDay, nextRepeatDay } from './repeat'
+import { firstRepeatDay, handOn, nextRepeatDay } from './repeat'
 
 const rule = (r: string): Repeat => ({ kind: 'rule', rule: r })
 
@@ -44,18 +44,28 @@ describe('nextRepeatDay, by the calendar', () => {
     expect(nextRepeatDay(rule('FREQ=DAILY;INTERVAL=3'), at)).toBe('2026-11-07')
   })
 
-  it('skips a month without the day, as RFC 5545 does, and finds the last day for -1', () => {
-    const at = { anchor: '2026-01-31', today: '2026-01-31', doneOn: '2026-01-31' }
-    expect(nextRepeatDay(rule('FREQ=MONTHLY;BYMONTHDAY=31'), at)).toBe('2026-03-31')
-    expect(nextRepeatDay(rule('FREQ=MONTHLY;BYMONTHDAY=-1'), at)).toBe('2026-02-28')
+  it('puts the 31st on the last day of a shorter month, and the next month back on its 31st', () => {
+    const jan = { anchor: '2026-01-31', today: '2026-01-31', doneOn: '2026-01-31' }
+    const feb = { anchor: '2026-02-28', today: '2026-02-28', doneOn: '2026-02-28' }
+    expect(nextRepeatDay(rule('FREQ=MONTHLY;BYMONTHDAY=31'), jan)).toBe('2026-02-28')
+    expect(nextRepeatDay(rule('FREQ=MONTHLY;BYMONTHDAY=31'), feb)).toBe('2026-03-31')
+    expect(nextRepeatDay(rule('FREQ=MONTHLY;BYMONTHDAY=-1'), jan)).toBe('2026-02-28')
+  })
+
+  it('does not bring back on the same day what was done today, even a Monday one done on a Monday', () => {
+    const at = { anchor: '2026-11-02', today: '2026-11-09', doneOn: '2026-11-09' }
+    expect(nextRepeatDay(rule('FREQ=WEEKLY;BYDAY=MO'), at)).toBe('2026-11-16')
   })
 
   it('comes round yearly, on the day named or the day it is on', () => {
     const at = { anchor: '2026-11-09', today: '2026-11-09', doneOn: '2026-11-09' }
     expect(nextRepeatDay(rule('FREQ=YEARLY;BYMONTH=11;BYMONTHDAY=9'), at)).toBe('2027-11-09')
     expect(nextRepeatDay(rule('FREQ=YEARLY'), at)).toBe('2027-11-09')
+    // February 29th is the 28th in a year without one, and the 29th again in the next leap year.
     const leap = { anchor: '2028-02-29', today: '2028-02-29', doneOn: '2028-02-29' }
-    expect(nextRepeatDay(rule('FREQ=YEARLY'), leap)).toBe('2032-02-29')
+    expect(nextRepeatDay(rule('FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29'), leap)).toBe('2029-02-28')
+    const plain = { anchor: '2027-02-28', today: '2027-02-28', doneOn: '2027-02-28' }
+    expect(nextRepeatDay(rule('FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29'), plain)).toBe('2028-02-29')
   })
 
   it('stops at its end day', () => {
@@ -132,5 +142,24 @@ describe('readTaskRule', () => {
     ['FREQ=DAILY;INTERVAL=0', /INTERVAL/],
   ])('refuses %s, saying why', (r, why) => {
     expect(readTaskRule(r)).toMatch(why)
+  })
+})
+
+describe('handOn', () => {
+  it('pins the day a monthly rule leans on when it is the 29th to the 31st', () => {
+    expect(handOn(rule('FREQ=MONTHLY'), '2026-01-31')).toEqual(rule('FREQ=MONTHLY;BYMONTHDAY=31'))
+    expect(handOn(rule('FREQ=YEARLY'), '2028-02-29')).toEqual(
+      rule('FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29'),
+    )
+  })
+
+  it('leaves alone a rule with its day, an early day, a weekly rule and a while after done', () => {
+    expect(handOn(rule('FREQ=MONTHLY;BYMONTHDAY=31'), '2026-01-31')).toEqual(
+      rule('FREQ=MONTHLY;BYMONTHDAY=31'),
+    )
+    expect(handOn(rule('FREQ=MONTHLY'), '2026-01-15')).toEqual(rule('FREQ=MONTHLY'))
+    expect(handOn(rule('FREQ=WEEKLY'), '2026-01-31')).toEqual(rule('FREQ=WEEKLY'))
+    const after: Repeat = { kind: 'after', every: 1, unit: 'month' }
+    expect(handOn(after, '2026-01-31')).toEqual(after)
   })
 })

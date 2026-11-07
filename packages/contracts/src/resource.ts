@@ -9,11 +9,26 @@ import { objectType } from './object'
  * address by the client. A project may pin a few of its resources in its head, numbered 1 to 9.
  */
 
+/**
+ * An address typed or pasted without its scheme ("example.com/docs") is https: that is what it is
+ * nearly always meant as. One with another scheme ("mailto:", "javascript:") is left to be refused.
+ */
+const withScheme = (raw: unknown): unknown => {
+  if (typeof raw !== 'string') return raw
+  const text = raw.trim()
+  if (text === '' || /^[a-z][a-z0-9+.-]*:\/\//i.test(text)) return text
+  if (/^(mailto|javascript|data|file|tel|blob):/i.test(text)) return text
+  return `https://${text.replace(/^\/\//, '')}`
+}
+
 // http(s) only: the row renders the address as a link somebody will click.
-const resourceUrl = z
-  .url()
-  .max(2000)
-  .refine((u) => /^https?:\/\//i.test(u), { message: 'expected an http(s) url' })
+const resourceUrl = z.preprocess(
+  withScheme,
+  z
+    .url()
+    .max(2000)
+    .refine((u) => /^https?:\/\//i.test(u), { message: 'expected an http(s) url' }),
+)
 const resourceName = z.string().trim().min(1).max(200)
 
 /** How many resources a project may pin: one per digit key. */

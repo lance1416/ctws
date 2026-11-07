@@ -15,9 +15,11 @@ const mondayOf = (day: string) => addDays(day, -((weekdayOf(day) + 6) % 7))
 function lands(rule: TaskRule, anchor: string, day: string): boolean {
   const [ay, am, ad] = ymd(anchor)
   const [y, m, d] = ymd(day)
+  // A day a month does not have falls on that month's last: the 31st on the 30th, February 29th
+  // on the 28th in a year without one. The next month goes back to its 31st.
   const dayOfMonth = (target: number | null) => {
     const want = target ?? ad
-    return want === -1 ? d === lastDayOf(y, m) : d === want
+    return want === -1 ? d === lastDayOf(y, m) : d === Math.min(want, lastDayOf(y, m))
   }
   switch (rule.freq) {
     case 'DAILY':
@@ -66,9 +68,26 @@ export function nextRepeatDay(
   }
   const rule = readTaskRule(repeat.rule)
   if (typeof rule === 'string') return null
-  const next = firstFrom(rule, at.anchor, addDays(at.anchor, 1))
-  if (next === null || next >= at.today) return next
-  return firstFrom(rule, at.anchor, at.today)
+  // After today, not from it: what was just done does not come back the same day.
+  const earliest = at.anchor >= at.today ? addDays(at.anchor, 1) : addDays(at.today, 1)
+  return firstFrom(rule, at.anchor, earliest)
+}
+
+/**
+ * The repeat to hand on to the next one. A monthly or yearly rule that leans on the day it was
+ * written on, and that day is the 29th to the 31st, is made to say it: the next one may fall on a
+ * shorter month's last day, and would otherwise count its months from there.
+ */
+export function handOn(repeat: Repeat, anchor: string): Repeat {
+  if (repeat.kind !== 'rule') return repeat
+  const rule = readTaskRule(repeat.rule)
+  if (typeof rule === 'string' || rule.byMonthDay !== null) return repeat
+  const [, month, day] = ymd(anchor)
+  if (day <= 28 || (rule.freq !== 'MONTHLY' && rule.freq !== 'YEARLY')) return repeat
+  const parts = [repeat.rule.replace(/^RRULE:/i, '')]
+  if (rule.freq === 'YEARLY' && rule.byMonth === null) parts.push(`BYMONTH=${month}`)
+  parts.push(`BYMONTHDAY=${day}`)
+  return { kind: 'rule', rule: parts.join(';') }
 }
 
 /**

@@ -210,3 +210,45 @@ describe('dragging a resource', () => {
     expect(await order()).toEqual(['a', 'b', 'c'])
   })
 })
+
+describe('an address', () => {
+  it('is https when written without its scheme, and refused when it is another scheme', async () => {
+    const { ctx, task } = await setup()
+    const owner = { type: 'task', id: task }
+    const made = await add(ctx, owner, 'example.com/docs')
+    expect(made.statusCode, made.body).toBe(201)
+    expect(made.json().url).toBe('https://example.com/docs')
+    expect((await add(ctx, owner, 'localhost:3000/x')).json().url).toBe('https://localhost:3000/x')
+    expect((await add(ctx, owner, 'javascript:alert(1)')).statusCode).toBe(400)
+    expect((await add(ctx, owner, 'mailto:a@example.com')).statusCode).toBe(400)
+  })
+
+  it('is kept once on a thing: the same address again is that resource, answered 200', async () => {
+    const { ctx, task } = await setup()
+    const owner = { type: 'task', id: task }
+    const first = await add(ctx, owner, 'https://example.com/docs', 'Docs')
+    const again = await add(ctx, owner, 'EXAMPLE.com/docs')
+    expect(again.statusCode).toBe(200)
+    expect(again.json().id).toBe(first.json().id)
+    expect(await listed(ctx, 'task', task)).toHaveLength(1)
+    // On another thing it is its own.
+    const other = await createTask(ctx, await createProject(ctx, 'Other'), 'Other task')
+    expect(
+      (await add(ctx, { type: 'task', id: other }, 'https://example.com/docs')).statusCode,
+    ).toBe(201)
+  })
+
+  it('cannot be changed to one the thing already has', async () => {
+    const { ctx, task } = await setup()
+    const owner = { type: 'task', id: task }
+    await add(ctx, owner, 'https://example.com/a')
+    const b = (await add(ctx, owner, 'https://example.com/b')).json()
+    const res = await ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/resources/${b.id}`,
+      headers: ctx.authed,
+      payload: { url: 'https://example.com/a' },
+    })
+    expect(res.statusCode).toBe(409)
+  })
+})

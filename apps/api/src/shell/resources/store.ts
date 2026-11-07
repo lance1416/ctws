@@ -43,6 +43,13 @@ class OnlyProjectsPin extends DomainError {
   }
 }
 
+/** The address is another of the same thing's resources. */
+class AlreadyThere extends DomainError {
+  constructor() {
+    super('conflict', { detail: 'that address is already one of its resources' })
+  }
+}
+
 /** The digit key is already taken by another resource of this project. */
 class KeyTaken extends DomainError {
   constructor(rank: number) {
@@ -151,8 +158,42 @@ async function getResource(
 /** A new address's card: waiting to be fetched, or never, with fetching off. */
 const waiting = (opts: { previews: boolean }): PreviewState => (opts.previews ? 'pending' : 'none')
 
-/** Appends a resource after the owner's last one. The caller has checked the owner is visible. */
+/** The same address however it is written: its host's case, a trailing slash, an empty fragment. */
+function sameAddress(a: string, b: string): boolean {
+  const norm = (u: string) => URL.parse(u)?.href ?? u
+  return norm(a) === norm(b)
+}
+
+/** The owner's resource with this address, if it has one. */
+async function resourceAt(
+  q: Queryable,
+  owner: Owner,
+  url: string,
+  except?: ResourceId,
+): Promise<Resource | null> {
+  const rows = await q
+    .select()
+    .from(resources)
+    .where(and(eq(resources.ownerType, owner.type), eq(resources.ownerId, owner.id)))
+  return rows.find((r) => r.id !== except && sameAddress(r.url, url)) ?? null
+}
+
+/**
+ * Appends a resource after the owner's last one. An address the owner already has is not added
+ * twice: that resource is answered instead, with `existing` set.
+ */
 export async function addResource(
+  tx: Tx,
+  ctx: Actor,
+  input: { owner: Owner; url: string; name?: string | null | undefined },
+  opts: { previews: boolean },
+): Promise<Resource & { existing: boolean }> {
+  const had = await resourceAt(tx, input.owner, input.url)
+  if (had) return { ...had, existing: true }
+  return { ...(await insertResource(tx, ctx, input, opts)), existing: false }
+}
+
+async function insertResource(
   tx: Tx,
   ctx: Actor,
   input: { owner: Owner; url: string; name?: string | null | undefined },
@@ -209,6 +250,9 @@ export async function updateResource(
   const neighbourId = patch.beforeId ?? patch.afterId
   // Another address is another page: its card is fetched anew, and the old one's pictures go.
   const moved = patch.url !== undefined && patch.url !== row.url
+  if (moved && (await resourceAt(tx, { type: row.ownerType, id: row.ownerId }, patch.url!, id))) {
+    throw new AlreadyThere()
+  }
   if (moved) await letGo(tx, ctx.now, [row.iconId, row.imageId])
   const set = {
     ...(patch.url !== undefined ? { url: patch.url } : {}),

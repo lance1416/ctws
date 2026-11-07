@@ -1,7 +1,7 @@
 import { api, type CalendarEntry, type LinkCandidate, type WorkspaceId } from '@ctws/contracts'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import type { Queryable } from '../../platform/db/client'
-import { NotFound } from '../../platform/errors'
+import { DomainError, NotFound } from '../../platform/errors'
 import { on, serve } from '../../platform/http/serve'
 import { actorOf, currentUser, todayOf } from '../auth/authenticated'
 import { exists } from '../links/read'
@@ -16,6 +16,16 @@ import {
 } from './store'
 
 type Named = { row: ReminderRow; object: LinkCandidate }
+
+/** The day chosen has gone by. */
+class ReminderInThePast extends DomainError {
+  constructor() {
+    super('unprocessable', {
+      type: 'urn:ctws:problem:reminder-in-the-past',
+      title: 'Pick today or a day to come.',
+    })
+  }
+}
 
 /**
  * The things the reminders are on, named as links to them are, one batch a kind. A reminder whose
@@ -93,6 +103,8 @@ export const reminderRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> =
 
     on(api.reminders.set, async (req) => {
       const ctx = actorOf(req)
+      // Today is fine, a day gone by is not: a reminder is for a day still to come.
+      if (req.body.onDay < todayOf(req)) throw new ReminderInThePast()
       const done = await app.db.transaction(async (tx) => {
         if (!(await exists(registry, tx, ctx.workspaceId, req.params))) throw new NotFound('Object')
         const row = await setReminder(tx, ctx, req.params, {

@@ -46,7 +46,7 @@ export const resourceRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> =
       return { resources: rows.map(toResourceResponse) }
     }),
 
-    on(api.resources.create, async (req) => {
+    on(api.resources.create, async (req, reply) => {
       const ctx = actorOf(req)
       const row = await app.db.transaction(async (tx) => {
         if (!(await exists(registry, tx, ctx.workspaceId, req.body.owner))) {
@@ -54,7 +54,8 @@ export const resourceRoutes: FastifyPluginAsyncZod<{ registry: LinkRegistry }> =
         }
         return addResource(tx, ctx, req.body, previews)
       })
-      fetchCard(row)
+      if (row.existing) reply.code(200)
+      else fetchCard(row)
       return toResourceResponse(row)
     }),
 

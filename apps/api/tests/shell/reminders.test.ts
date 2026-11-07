@@ -76,11 +76,12 @@ describe('a reminder on a person', () => {
   })
 
   it("is the thing's one: a second replaces the first", async () => {
-    const { ctx } = await setup()
+    const { ctx, onDay } = await setup()
     const priya = await createPerson(ctx, { name: 'Priya Shah' })
-    await put(ctx, 'person', priya.id, { onDay: '2026-11-12', why: 'One' })
-    await put(ctx, 'person', priya.id, { onDay: '2026-11-10', why: 'Two' })
-    expect(await due(ctx)).toMatchObject([{ onDay: '2026-11-10', why: 'Two' }])
+    await put(ctx, 'person', priya.id, { onDay: '2026-11-13', why: 'One' })
+    await put(ctx, 'person', priya.id, { onDay: '2026-11-12', why: 'Two' })
+    onDay('2026-11-12')
+    expect(await due(ctx)).toMatchObject([{ onDay: '2026-11-12', why: 'Two' }])
   })
 })
 
@@ -144,11 +145,11 @@ describe('the calendar', () => {
 
 describe('another workspace', () => {
   it('can neither set nor read a reminder on a thing it does not see', async () => {
-    const { ctx } = await setup()
+    const { ctx, onDay } = await setup()
     const priya = await createPerson(ctx, { name: 'Priya Shah' })
-    await put(ctx, 'person', priya.id, { onDay: '2026-11-10' })
+    await put(ctx, 'person', priya.id, { onDay: '2026-11-12' })
     const other = await secondUser(ctx)
-    expect((await put(other, 'person', priya.id, { onDay: '2026-11-10' })).statusCode).toBe(404)
+    expect((await put(other, 'person', priya.id, { onDay: '2026-11-12' })).statusCode).toBe(404)
     expect((await get(other, `/reminders/person/${priya.id}`)).statusCode).toBe(404)
     expect(await due(other)).toEqual([])
     // And dismissing someone else's leaves it.
@@ -157,6 +158,18 @@ describe('another workspace', () => {
       url: `/api/v1/reminders/person/${priya.id}`,
       headers: other.authed,
     })
+    onDay('2026-11-12')
     expect(await due(ctx)).toHaveLength(1)
+  })
+})
+
+describe('the day chosen', () => {
+  it('may be today, and may not be a day gone by', async () => {
+    const { ctx } = await setup()
+    const priya = await createPerson(ctx, { name: 'Priya Shah' })
+    expect((await put(ctx, 'person', priya.id, { onDay: '2026-11-11' })).statusCode).toBe(200)
+    const past = await put(ctx, 'person', priya.id, { onDay: '2026-11-10' })
+    expect(past.statusCode).toBe(422)
+    expect(past.json()).toMatchObject({ type: 'urn:ctws:problem:reminder-in-the-past' })
   })
 })

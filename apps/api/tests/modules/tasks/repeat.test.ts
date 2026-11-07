@@ -122,19 +122,6 @@ describe('done, a repeating task comes round', () => {
     )
   })
 
-  it('is made once: done, reopened and done again, there is still one next', async () => {
-    const ctx = await setup('2026-11-01T02:00:00Z')
-    const p = await createProject(ctx)
-    const rent = await createTask(ctx, p, 'Pay rent', undefined, {
-      scheduledOn: '2026-11-01',
-      repeat: MONTHLY_1ST,
-    })
-    const first = (await patch(ctx, rent, { status: 'done' })).json().nextId
-    await patch(ctx, rent, { status: 'todo' })
-    expect((await patch(ctx, rent, { status: 'done' })).json().nextId).toBe(first)
-    expect(await tasksOf(ctx, p)).toHaveLength(2)
-  })
-
   it('stops at the end day of its rule', async () => {
     const ctx = await setup('2026-11-01T02:00:00Z')
     const p = await createProject(ctx)
@@ -279,5 +266,78 @@ describe('deleting one of them', () => {
     await patch(ctx, rent, { status: 'done' })
     await remove(ctx, rent, 'keep')
     expect(await tasksOf(ctx, p)).toHaveLength(1)
+  })
+})
+
+describe('the rules Product settled', () => {
+  it('does not bring a weekly one back on the day it was done', async () => {
+    // Monday Nov 9, Shanghai: a Monday report done on the Monday comes next on the Monday after.
+    const ctx = await setup('2026-11-09T02:00:00Z')
+    const p = await createProject(ctx)
+    const report = await createTask(ctx, p, 'Weekly report', undefined, {
+      scheduledOn: '2026-11-02',
+      repeat: { kind: 'rule', rule: 'FREQ=WEEKLY;BYDAY=MO' },
+    })
+    const { nextId } = (await patch(ctx, report, { status: 'done' })).json()
+    expect(await read(ctx, nextId)).toMatchObject({ scheduledOn: '2026-11-16' })
+  })
+
+  it("puts the 31st on a shorter month's last day, and goes back to the 31st after", async () => {
+    const ctx = await setup('2026-01-31T02:00:00Z')
+    const p = await createProject(ctx)
+    const rent = await createTask(ctx, p, 'Statement', undefined, {
+      scheduledOn: '2026-01-31',
+      repeat: { kind: 'rule', rule: 'FREQ=MONTHLY' },
+    })
+    const feb = await read(ctx, (await patch(ctx, rent, { status: 'done' })).json().nextId)
+    expect(feb).toMatchObject({
+      scheduledOn: '2026-02-28',
+      repeat: { kind: 'rule', rule: 'FREQ=MONTHLY;BYMONTHDAY=31' },
+    })
+    // Done on its day in February, the next one is back on the 31st.
+    const marClock = await setup('2026-02-28T02:00:00Z')
+    const q = await createProject(marClock)
+    const again = await createTask(marClock, q, 'Statement', undefined, {
+      scheduledOn: '2026-02-28',
+      repeat: { kind: 'rule', rule: 'FREQ=MONTHLY;BYMONTHDAY=31' },
+    })
+    const mar = await read(
+      marClock,
+      (await patch(marClock, again, { status: 'done' })).json().nextId,
+    )
+    expect(mar).toMatchObject({ scheduledOn: '2026-03-31' })
+  })
+
+  it('takes back the next one when opened again, if nobody has touched it', async () => {
+    const ctx = await setup('2026-11-01T02:00:00Z')
+    const p = await createProject(ctx)
+    const rent = await createTask(ctx, p, 'Pay rent', undefined, {
+      scheduledOn: '2026-11-01',
+      repeat: MONTHLY_1ST,
+    })
+    const next = (await patch(ctx, rent, { status: 'done' })).json().nextId
+    const reopened = await patch(ctx, rent, { status: 'todo' })
+    expect(reopened.json()).toMatchObject({ status: 'todo', nextId: null })
+    expect((await tasksOf(ctx, p)).map((t) => t.id)).toEqual([rent])
+    expect(
+      (await ctx.app.inject({ method: 'GET', url: `/api/v1/tasks/${next}`, headers: ctx.authed }))
+        .statusCode,
+    ).toBe(404)
+    // Done again, a fresh next is made.
+    expect((await patch(ctx, rent, { status: 'done' })).json().nextId).toEqual(expect.any(String))
+  })
+
+  it('keeps the next one when it has been worked on, and still makes no second', async () => {
+    const ctx = await setup('2026-11-01T02:00:00Z')
+    const p = await createProject(ctx)
+    const rent = await createTask(ctx, p, 'Pay rent', undefined, {
+      scheduledOn: '2026-11-01',
+      repeat: MONTHLY_1ST,
+    })
+    const next = (await patch(ctx, rent, { status: 'done' })).json().nextId
+    await patch(ctx, next, { status: 'in_progress' })
+    expect((await patch(ctx, rent, { status: 'todo' })).json()).toMatchObject({ nextId: next })
+    expect((await patch(ctx, rent, { status: 'done' })).json().nextId).toBe(next)
+    expect(await tasksOf(ctx, p)).toHaveLength(2)
   })
 })
