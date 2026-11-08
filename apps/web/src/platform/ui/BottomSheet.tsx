@@ -59,6 +59,7 @@ export function BottomSheet({
               initialFocus.current?.focus()
             })
           }
+          data-bottom-sheet
           className={`fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-phone-sheet bg-float pb-[env(safe-area-inset-bottom)] shadow-float ${
             full ? 'top-[env(safe-area-inset-top)] min-h-0' : 'max-h-[92dvh]'
           }`}

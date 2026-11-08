@@ -123,6 +123,16 @@ test('Today on a phone: sections, the circle finishes, the swipes move and finis
   expect((await circle.boundingBox())!.height).toBeGreaterThanOrEqual(44)
   await circle.click()
   await expect(planned.getByText('Measure the room')).toHaveCount(0)
+  // Its line stands 12 over the tab bar, 48 high, its Undo 44 to touch.
+  const line = (await page.locator('[data-toast]').boundingBox())!
+  const bar = (await page.locator('[data-bottom-bar]').boundingBox())!
+  expect(Math.round(bar.y - (line.y + line.height))).toBe(12)
+  expect(line.height).toBeGreaterThanOrEqual(48)
+  const undo = (await page
+    .locator('[data-toast]')
+    .getByRole('button', { name: 'Undo' })
+    .boundingBox())!
+  expect(Math.min(undo.width, undo.height)).toBeGreaterThanOrEqual(44)
 
   // Swiped left: Tomorrow takes it off today.
   const swipe = async (title: string, by: number) => {
