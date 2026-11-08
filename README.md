@@ -132,7 +132,9 @@ account.
 
 A note's page fills the screen, with its outline beside it; the outline can be put away. One key
 turns the whole note into plain source, every mark showing, and back again. A note can be
-downloaded as a .md file.
+downloaded as a .md file, and .md files come in as notes, exactly as written: pick them from the
+Notes page or a folder's menu, or drop them on the sidebar. Each is named by its file; one that
+cannot come in is listed with why, and the rest come in anyway.
 
 A note that stands alone can go in a folder, folders can hold folders, three levels deep at most,
 and a note can be pinned: pinned notes are listed at the top and stay in their folder as well.
@@ -203,6 +205,10 @@ removing them come later.
    wrong one on the way in.
 10. **The words are a product's words**: plain English, a verb that says what pressing it does, and
     the same word for the same action all the way through.
+11. **A quick change shows at once.** Finishing a task, starting it, moving it, changing its stage
+    or its dates answers before the server does, and a line at the foot offers Undo, or Ctrl Z.
+    A save that fails puts the page back and offers Retry; one the server refuses says why. Offline,
+    nothing is saved and nothing is sent later behind your back.
 
 ## Room for the next kind of thing
 
