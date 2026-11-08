@@ -35,10 +35,16 @@ test('a shared link to it previews with its name, a line and the picture', async
   expect(await meta('og:title')).toBe('CTWS: Cheesy Toast Work Space')
   expect(await meta('og:type')).toBe('website')
   expect(await page.locator('html').getAttribute('lang')).toBe('en')
-  // The picture is named in full where the deploy says its address, and left out where not.
+  // The picture is named in full where the deploy says its address, and left out where not, with
+  // its size and the large card.
   const image = page.locator('meta[property="og:image"]')
-  if ((await image.count()) > 0)
+  const withIt = page.locator(
+    'meta[property="og:image:width"], meta[property="og:image:height"], meta[name="twitter:card"]',
+  )
+  if ((await image.count()) > 0) {
     expect(await image.getAttribute('content')).toMatch(/^https?:\/\/[^%]+\/og\.png$/)
+    await expect(withIt).toHaveCount(3)
+  } else await expect(withIt).toHaveCount(0)
   expect((await page.request.get('/og.png')).headers()['content-type']).toBe('image/png')
 })
 

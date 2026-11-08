@@ -9,7 +9,8 @@
       content="One person's hub. Your work, your life and the things you think of all go in here, and once they are in they know about each other."
     />
     <!-- How a link to the front page previews. The image needs the deploy's own address, which the
-         server writes in from PUBLIC_ORIGIN; without one it leaves that tag out. -->
+         server writes in from PUBLIC_ORIGIN; without one it leaves out every tag carrying the mark,
+         so the image's size and the large card go with it. -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="CTWS: Cheesy Toast Work Space" />
     <meta
@@ -17,9 +18,9 @@
       content="One person's hub. Your work, your life and the things you think of all go in here, and once they are in they know about each other."
     />
     <meta property="og:image" content="%CTWS_PUBLIC_ORIGIN%/og.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image:width" content="1200" data-with="%CTWS_PUBLIC_ORIGIN%" />
+    <meta property="og:image:height" content="630" data-with="%CTWS_PUBLIC_ORIGIN%" />
+    <meta name="twitter:card" content="summary_large_image" data-with="%CTWS_PUBLIC_ORIGIN%" />
     <!-- The chosen theme, before the first paint, so the page does not flash the system scheme
          until React mounts. `try` because a private window throws on localStorage. -->
     <script>
