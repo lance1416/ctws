@@ -386,28 +386,36 @@ test('finishing a task from its pane keeps focus in the pane', async ({ page }) 
     .toBe(true)
 })
 
-test('a status change that fails says so', async ({ page }) => {
+test('a status change shows at once; it is undone, or retried when it fails', async ({ page }) => {
   await registerFreshUser(page)
   const pid = await makeProject(page, 'Flaky')
   const id = await makeTask(page, pid, 'Will not move')
   await openTaskPane(page, pid, 'Will not move', false)
   const dialog = page.getByRole('dialog', { name: 'Task details' })
-  await page.route(`**/api/v1/tasks/${id}`, (r) =>
-    r.request().method() === 'PATCH' ? r.fulfill({ status: 500, body: '{}' }) : r.continue(),
-  )
+  const foot = page.locator('[data-toast]')
 
-  await dialog.getByRole('button', { name: 'Status: To do' }).click()
-  await page.getByRole('menuitem', { name: 'In progress' }).click()
-  await expect(dialog.getByRole('alert')).toContainText("Couldn't change the status")
-  // Still what the server holds.
-  await expect(dialog.getByRole('button', { name: 'Status: To do' })).toBeVisible()
-
-  // The next change that lands takes the line away.
-  await page.unroute(`**/api/v1/tasks/${id}`)
+  // Landed: Undo takes it back.
   await dialog.getByRole('button', { name: 'Status: To do' }).click()
   await page.getByRole('menuitem', { name: 'In progress' }).click()
   await expect(dialog.getByRole('button', { name: 'Status: In progress' })).toBeVisible()
-  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await expect(foot).toContainText('Status changed')
+  await foot.getByRole('button', { name: 'Undo' }).click()
+  await expect(dialog.getByRole('button', { name: 'Status: To do' })).toBeVisible()
+
+  // Failed: back to what the server holds, and Retry sends it again.
+  let refuse = true
+  await page.route(`**/api/v1/tasks/${id}`, (r) =>
+    refuse && r.request().method() === 'PATCH'
+      ? r.fulfill({ status: 500, body: '{}' })
+      : r.fallback(),
+  )
+  await dialog.getByRole('button', { name: 'Status: To do' }).click()
+  await page.getByRole('menuitem', { name: 'In progress' }).click()
+  await expect(foot).toContainText('Couldn’t save. Try again')
+  await expect(dialog.getByRole('button', { name: 'Status: To do' })).toBeVisible()
+  refuse = false
+  await foot.getByRole('button', { name: 'Retry' }).click()
+  await expect(dialog.getByRole('button', { name: 'Status: In progress' })).toBeVisible()
 })
 
 test('picking the status it already has writes nothing', async ({ page }) => {

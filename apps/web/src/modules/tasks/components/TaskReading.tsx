@@ -4,7 +4,7 @@ import { BottomSheet } from '../../../platform/ui/BottomSheet'
 import { DayGrid, monthOf } from '../../../shell/dates'
 import { isFinished } from '../logic/status'
 import { InSheet } from '../../../platform/ui/phone'
-import type { TaskResponse, TaskStatus } from '@ctws/contracts'
+import type { TaskResponse } from '@ctws/contracts'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router-dom'
 import { NoteBody } from '../../../platform/notes/NoteBody'
@@ -24,6 +24,7 @@ import { openHref } from '../logic/crumb'
 import { instantPhrase, lateNote } from '../logic/dueDates'
 import { STATUS_LABEL } from '../../../platform/ui/StatusMark'
 import { treeDue } from '../logic/tree/treeDue'
+import { useTaskActions } from '../hooks/useTaskActions'
 import { DependencyRows } from './Dependencies'
 import { Field, FIELDS } from './InspectorField'
 import { ProgressSquare } from './ProgressSquare'
@@ -62,11 +63,8 @@ export function TaskReading({
   const stage = stages.find((s) => s.id === task.stageId)
   const { pathname } = useLocation()
 
-  /** The status writes at once, outside the leave guard: nothing is ever unsaved. */
-  const setStatus = useMutation({
-    mutationFn: (status: TaskStatus) => patchTask(task.id, { status }),
-    meta: { changes: ['task'], awaits: WRITE_AWAITS, ownsError: true },
-  })
+  // The status as a row's: shown at once, with Undo, or Retry when the save fails.
+  const actions = useTaskActions()
   // Its plan moved, not its deadline.
   const plan = useMutation({
     mutationFn: (day: string) => patchTask(task.id, { scheduledOn: day }),
@@ -148,8 +146,7 @@ export function TaskReading({
           ) : (
             <StatusPicker
               status={task.status}
-              busy={setStatus.isPending}
-              onPick={(next) => setStatus.mutate(next)}
+              onPick={(next) => actions.setStatus(task.id, next)}
             />
           )}
         </Field>
@@ -200,11 +197,6 @@ export function TaskReading({
         />
       </dl>
       {act && <div className="flex flex-wrap items-center gap-1.5">{act}</div>}
-      {setStatus.isError && (
-        <p role="alert" className="text-ui text-stop-t">
-          Couldn't change the status
-        </p>
-      )}
 
       {/* Notes only when there are some: an empty section is no news. */}
       {task.notes && (

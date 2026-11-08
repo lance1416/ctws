@@ -13,23 +13,17 @@ import { MENU_ITEM, MENU_SURFACE } from '../../../platform/ui/menuSurface'
 export function StatusPicker({
   status,
   onPick,
-  busy,
 }: {
   status: TaskStatus
   onPick: (next: TaskStatus) => void
-  /** A pick is being written: the menu will not open again until it lands. */
-  busy: boolean
 }) {
   const [open, setOpen] = useState(false)
   return (
-    <DropdownMenu.Root open={open} onOpenChange={(next) => setOpen(next && !busy)}>
+    <DropdownMenu.Root open={open} onOpenChange={setOpen}>
       <DropdownMenu.Trigger
-        // Not `disabled`: the closing menu hands focus back to this button, and a disabled one
-        // drops it to <body>.
-        aria-disabled={busy || undefined}
         // The name carries the current value: this one button both shows and changes it.
         aria-label={`Status: ${STATUS_LABEL[status]}`}
-        className="-mx-1.5 flex h-8 items-center gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover aria-disabled:opacity-50 max-lg:tap"
+        className="-mx-1.5 flex h-8 items-center gap-2 rounded-control px-1.5 text-ui text-ink hover:bg-hover max-lg:tap"
       >
         <span aria-hidden="true" className="flex">
           <StatusMark status={status} />
