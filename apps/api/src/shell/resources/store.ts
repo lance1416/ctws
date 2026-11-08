@@ -264,8 +264,58 @@ export async function updateResource(
       : {}),
   }
   if (Object.keys(set).length === 0) return row
+  // A drag among a project's pinned ones changes their number keys, in the same step; a number
+  // given in the same patch is the person's own and is not overruled.
+  const tracking =
+    neighbourId !== undefined && patch.pinnedRank === undefined && row.ownerType === 'project'
+  const before = tracking ? await pinnedInOrder(tx, row.ownerId) : []
   const [updated] = await tx.update(resources).set(set).where(eq(resources.id, id)).returning()
+  if (tracking && (await renumberPinned(tx, row.ownerId, before))) {
+    return getResource(tx, ctx.workspaceId, id)
+  }
   return updated!
+}
+
+/** A project's pinned resources, in the order they stand in. */
+async function pinnedInOrder(tx: Tx, projectId: string): Promise<ResourceId[]> {
+  const rows = await tx
+    .select({ id: resources.id })
+    .from(resources)
+    .where(
+      and(
+        eq(resources.ownerType, 'project'),
+        eq(resources.ownerId, projectId),
+        isNotNull(resources.pinnedRank),
+      ),
+    )
+    .orderBy(asc(resources.rank), asc(resources.id))
+  return rows.map((r) => r.id)
+}
+
+/**
+ * When a move has changed the order the pinned ones stand in (`before` is the order they stood
+ * in), gives them the number keys 1, 2, 3 in the new order. Moving an unpinned one, or a pinned
+ * one within the unpinned, leaves their keys as they were. Answers whether any key changed.
+ */
+async function renumberPinned(
+  tx: Tx,
+  projectId: string,
+  before: readonly ResourceId[],
+): Promise<boolean> {
+  const after = await pinnedInOrder(tx, projectId)
+  if (after.every((id, at) => id === before[at])) return false
+  // The keys are unique, so they all move aside before any takes its new number.
+  await tx
+    .update(resources)
+    .set({ pinnedRank: null })
+    .where(and(eq(resources.ownerType, 'project'), inArray(resources.id, after)))
+  for (const [at, id] of after.entries()) {
+    await tx
+      .update(resources)
+      .set({ pinnedRank: at + 1 })
+      .where(eq(resources.id, id))
+  }
+  return true
 }
 
 /**

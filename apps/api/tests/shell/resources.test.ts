@@ -252,3 +252,89 @@ describe('an address', () => {
     expect(res.statusCode).toBe(409)
   })
 })
+
+describe('dragging among the pinned', () => {
+  const patch = (ctx: Harness, id: string, payload: object) =>
+    ctx.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/resources/${id}`,
+      headers: ctx.authed,
+      payload,
+    })
+
+  /** A project with a, b, c pinned as 1, 2, 3 and d not pinned, in that order. */
+  async function pinned() {
+    const { ctx, projectId } = await setup()
+    const owner = { type: 'project', id: projectId }
+    const ids: string[] = []
+    for (const n of ['a', 'b', 'c', 'd']) {
+      ids.push((await add(ctx, owner, `https://example.com/${n}`, n)).json().id)
+    }
+    for (const [at, id] of ids.slice(0, 3).entries()) {
+      expect((await patch(ctx, id, { pinnedRank: at + 1 })).statusCode).toBe(200)
+    }
+    const keys = async () =>
+      Object.fromEntries(
+        (await listed(ctx, 'project', projectId)).map((r) => [r.name, r.pinnedRank]),
+      )
+    const order = async () => (await listed(ctx, 'project', projectId)).map((r) => r.name)
+    return { ctx, ids: ids as [string, string, string, string], keys, order }
+  }
+
+  it('gives the number keys out again in the new order, in the same step', async () => {
+    const { ctx, ids, keys, order } = await pinned()
+    const res = await patch(ctx, ids[2], { beforeId: ids[0] })
+    expect(res.statusCode, res.body).toBe(200)
+    // The answer is the one that moved, with its new key.
+    expect(res.json()).toMatchObject({ name: 'c', pinnedRank: 1 })
+    expect(await order()).toEqual(['c', 'a', 'b', 'd'])
+    expect(await keys()).toEqual({ c: 1, a: 2, b: 3, d: null })
+  })
+
+  it('swaps the keys of two neighbours dragged past each other', async () => {
+    const { ctx, ids, keys } = await pinned()
+    await patch(ctx, ids[0], { afterId: ids[1] })
+    expect(await keys()).toEqual({ b: 1, a: 2, c: 3, d: null })
+  })
+
+  it('leaves the keys alone when the pinned ones keep their order', async () => {
+    const { ctx, ids, keys, order } = await pinned()
+    // The unpinned one dragged in among them.
+    await patch(ctx, ids[3], { beforeId: ids[1] })
+    expect(await order()).toEqual(['a', 'd', 'b', 'c'])
+    expect(await keys()).toEqual({ a: 1, d: null, b: 2, c: 3 })
+  })
+
+  it('does not tidy keys that were never in the order they stand in, unless the order changes', async () => {
+    const { ctx, ids, keys } = await pinned()
+    // a, b, c stand in that order but c is 1 and a is 3, by hand.
+    await patch(ctx, ids[0], { pinnedRank: null })
+    await patch(ctx, ids[2], { pinnedRank: 1 })
+    await patch(ctx, ids[0], { pinnedRank: 3 })
+    expect(await keys()).toEqual({ a: 3, b: 2, c: 1, d: null })
+    await patch(ctx, ids[3], { beforeId: ids[0] })
+    expect(await keys()).toEqual({ a: 3, b: 2, c: 1, d: null })
+    // But dragging a pinned one past another does give them out in the new order.
+    await patch(ctx, ids[2], { beforeId: ids[0] })
+    expect(await keys()).toEqual({ c: 1, d: null, a: 2, b: 3 })
+  })
+
+  it("is the person's own when the same patch gives a number", async () => {
+    const { ctx, ids, keys, order } = await pinned()
+    // Pinned as 4 and put first in one step: its number is what was asked, the others stay.
+    const res = await patch(ctx, ids[3], { beforeId: ids[0], pinnedRank: 4 })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(await order()).toEqual(['d', 'a', 'b', 'c'])
+    expect(await keys()).toEqual({ d: 4, a: 1, b: 2, c: 3 })
+  })
+
+  it('does not touch the resources of anything but a project', async () => {
+    const { ctx, task } = await setup()
+    const owner = { type: 'task', id: task }
+    const a = (await add(ctx, owner, 'https://example.com/a')).json()
+    const b = (await add(ctx, owner, 'https://example.com/b')).json()
+    const res = await patch(ctx, b.id, { beforeId: a.id })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toMatchObject({ pinnedRank: null })
+  })
+})
