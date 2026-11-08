@@ -9,12 +9,19 @@ import { plainProblem, sendProblem } from './problem'
 const ORIGIN_MARK = '%CTWS_PUBLIC_ORIGIN%'
 
 /**
+ * A tag that has no address of its own but belongs with one (the size of the image, the card
+ * style) carries the mark as `data-with`, so it goes when the address does. The attribute is only
+ * that: with an origin known it is dropped, not filled in.
+ */
+const DATA_WITH = ` data-with="${ORIGIN_MARK}"`
+
+/**
  * The SPA shell as this deploy sends it: the origin written in where the build left its mark.
  * With no origin known, a tag that needs one is left out whole rather than sent with a relative
  * address that link previews would not read.
  */
 function shellFor(html: string, publicOrigin: string | undefined): string {
-  if (publicOrigin) return html.replaceAll(ORIGIN_MARK, publicOrigin)
+  if (publicOrigin) return html.replaceAll(DATA_WITH, '').replaceAll(ORIGIN_MARK, publicOrigin)
   return html.replace(/[ \t]*<meta\b[^>]*%CTWS_PUBLIC_ORIGIN%[^>]*>[ \t]*\r?\n?/g, '')
 }
 

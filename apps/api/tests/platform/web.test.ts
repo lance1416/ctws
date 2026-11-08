@@ -161,6 +161,8 @@ describe('the deploy origin in the shell', () => {
     '  <meta property="og:title" content="CTWS">',
     '  <meta property="og:image" content="%CTWS_PUBLIC_ORIGIN%/og.png">',
     '  <meta property="og:url" content="%CTWS_PUBLIC_ORIGIN%/" />',
+    '  <meta property="og:image:width" content="1200" data-with="%CTWS_PUBLIC_ORIGIN%" />',
+    '  <meta name="twitter:card" content="summary_large_image" data-with="%CTWS_PUBLIC_ORIGIN%" />',
     '</head>',
   ].join('\n')
   let dist: string
@@ -190,6 +192,10 @@ describe('the deploy origin in the shell', () => {
     expect(body).toContain('content="https://ctws.example.com/"')
     expect(body).not.toContain('%CTWS_PUBLIC_ORIGIN%')
     expect(body).not.toContain('evil.example')
+    // The tags that go with the address stay, without the attribute that tied them to it.
+    expect(body).toContain('<meta property="og:image:width" content="1200" />')
+    expect(body).toContain('<meta name="twitter:card" content="summary_large_image" />')
+    expect(body).not.toContain('data-with')
   })
 
   it('leaves out, whole, every tag that needs it when none is set, and keeps the rest', async () => {
