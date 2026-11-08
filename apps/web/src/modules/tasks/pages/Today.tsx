@@ -269,7 +269,9 @@ function PlannedBlock({
   line: Line
   onPlan: (id: TaskId) => void
 }) {
-  const ready = useQuery({ ...readyQuery(day), enabled: planned.length === 0 })
+  // Turned on as the last plan leaves, it takes the list Ready to start holds rather than read it
+  // again: a read now, with that write still on the way, would bring the finished task back.
+  const ready = useQuery({ ...readyQuery(day), enabled: planned.length === 0, staleTime: Infinity })
   const badge = { icon: PLACE_ICON.calendar, tint: 'bg-hover text-muted' }
   const offered = offeredReady(ready.data ?? [], listed).slice(0, SHOWN)
   // Nothing planned and nothing to offer: its head alone, as any empty block is.

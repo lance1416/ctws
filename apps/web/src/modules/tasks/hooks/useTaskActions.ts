@@ -12,6 +12,8 @@ import { isFinished, REOPEN, reopenedTo, type StatusMove } from '../logic/status
 import { patchTask, type ProjectTasks, ROW_WRITES, taskChanges, taskKeys } from '../api'
 
 type TodayTasks = TodayTaskResponse[]
+/** Today's Ready to start, whatever the day. */
+const READY = ['tasks', 'ready'] as const
 
 /**
  * What each task was when this client finished it, for this visit: what it comes back to, at once
@@ -44,8 +46,12 @@ export function useTaskActions() {
     onMutate: async ({ id, body }) => {
       await qc.cancelQueries({ queryKey: taskKeys.lists })
       await qc.cancelQueries({ queryKey: taskKeys.todays })
+      await qc.cancelQueries({ queryKey: taskKeys.one(id) })
+      await qc.cancelQueries({ queryKey: READY })
       const tasks = qc.getQueriesData<ProjectTasks>({ queryKey: taskKeys.lists })
       const today = qc.getQueriesData<TodayTasks>({ queryKey: taskKeys.todays })
+      const one = qc.getQueriesData<TaskResponse>({ queryKey: taskKeys.one(id) })
+      const ready = qc.getQueriesData<(Held & { id: TaskId })[]>({ queryKey: READY })
       const status = body.status
       const shown: Shown = {}
       if (body.scheduledOn !== undefined) shown.scheduledOn = body.scheduledOn
@@ -64,6 +70,10 @@ export function useTaskActions() {
           old?.map((t) => (t.id === id ? { ...t, ...onToday } : t)),
         )
       }
+      // The task's own page, the inspector's, answers at once too.
+      qc.setQueryData<TaskResponse>(taskKeys.one(id), (old) =>
+        old ? { ...old, ...shown, ...(status ? { status } : {}) } : old,
+      )
       if (status) {
         // The row answers at once; the rollups wait for the refetch.
         qc.setQueriesData<ProjectTasks>({ queryKey: taskKeys.lists }, (old) =>
@@ -75,11 +85,22 @@ export function useTaskActions() {
             // The list never holds finished work, so a finished row leaves at once.
             .filter((t) => !isFinished(t.status)),
         )
+        // Ready to start is work not begun, less what Today lists: one started or finished leaves
+        // it at once, or it would show there the moment Today lets it go.
+        if (status !== 'todo')
+          qc.setQueriesData<(Held & { id: TaskId })[]>({ queryKey: READY }, (old) =>
+            old?.filter((t) => t.id !== id),
+          )
       }
-      return { tasks, today }
+      return { tasks, today, one, ready }
     },
     onError: (e, vars, ctx) => {
-      for (const [key, data] of [...(ctx?.tasks ?? []), ...(ctx?.today ?? [])]) {
+      for (const [key, data] of [
+        ...(ctx?.tasks ?? []),
+        ...(ctx?.today ?? []),
+        ...(ctx?.one ?? []),
+        ...(ctx?.ready ?? []),
+      ]) {
         qc.setQueryData(key, data)
       }
       say.failed(() => run.mutate(vars), refusalText(e))
@@ -94,12 +115,12 @@ export function useTaskActions() {
       const hit = data?.tasks.find((t) => t.id === id)
       if (hit) return hit
     }
-    for (const key of [taskKeys.todays, ['tasks', 'ready']] as const)
+    for (const key of [taskKeys.todays, READY] as const)
       for (const [, data] of qc.getQueriesData<(Held & { id: TaskId })[]>({ queryKey: key })) {
         const hit = data?.find((t) => t.id === id)
         if (hit) return hit
       }
-    return undefined
+    return qc.getQueryData<TaskResponse>(taskKeys.one(id))
   }
   const statusOf = (id: TaskId): TaskStatus | undefined => held(id)?.status
 

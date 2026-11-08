@@ -49,6 +49,9 @@ export const queryClient: QueryClient = new QueryClient({
         )
       },
     },
+    // A write is sent when it is made, never held for the connection to come back: offline, it
+    // fails at once and says so, and nothing is sent later behind the page's back.
+    mutations: { networkMode: 'always' },
   },
   mutationCache: refreshAfterWrites(() => queryClient, registry.staleFor),
 })
