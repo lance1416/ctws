@@ -6,7 +6,27 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
+import { DomainError } from '../errors'
 import type { StorageConfig } from './config'
+
+/**
+ * The store did not do what was asked of it: it is down, the key is refused, or it answered with
+ * an error. The server is fine, so this is a 503, not a 500 that reads as a bug in the app.
+ */
+export class StorageUnreachable extends DomainError {
+  constructor() {
+    super('unavailable', {
+      type: 'urn:ctws:problem:storage-unreachable',
+      title: "The file storage isn't answering.",
+    })
+  }
+}
+
+/** The work of a store call, with whatever goes wrong in it said as `StorageUnreachable`. */
+const reaching = <T>(work: Promise<T>): Promise<T> =>
+  work.catch((error: unknown) => {
+    throw error instanceof DomainError ? error : new StorageUnreachable()
+  })
 
 /** One stored file, as read back. */
 type StoredObject = { body: Buffer; contentType: string }
@@ -44,27 +64,33 @@ export function s3Store(config: StorageConfig): ObjectStore {
 
   return {
     async put(key, body, contentType) {
-      await client.send(
-        new PutObjectCommand({ Bucket, Key: key, Body: body, ContentType: contentType }),
+      await reaching(
+        client.send(
+          new PutObjectCommand({ Bucket, Key: key, Body: body, ContentType: contentType }),
+        ),
       )
     },
 
     async get(key) {
-      try {
-        const out = await client.send(new GetObjectCommand({ Bucket, Key: key }))
-        if (!out.Body) return null
-        return {
-          body: Buffer.from(await out.Body.transformToByteArray()),
-          contentType: out.ContentType ?? 'application/octet-stream',
-        }
-      } catch (error) {
-        if (error instanceof NoSuchKey) return null
-        throw error
-      }
+      return reaching(
+        (async () => {
+          try {
+            const out = await client.send(new GetObjectCommand({ Bucket, Key: key }))
+            if (!out.Body) return null
+            return {
+              body: Buffer.from(await out.Body.transformToByteArray()),
+              contentType: out.ContentType ?? 'application/octet-stream',
+            }
+          } catch (error) {
+            if (error instanceof NoSuchKey) return null
+            throw error
+          }
+        })(),
+      )
     },
 
     async remove(key) {
-      await client.send(new DeleteObjectCommand({ Bucket, Key: key }))
+      await reaching(client.send(new DeleteObjectCommand({ Bucket, Key: key })))
     },
 
     async probe() {

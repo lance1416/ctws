@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { s3Store, type ObjectStore } from '../../src/platform/storage'
+import { s3Store, StorageUnreachable, type ObjectStore } from '../../src/platform/storage'
 import { withApp } from '../helpers/app'
 import { withGarage } from '../helpers/storage'
 
@@ -42,6 +42,19 @@ describe('the S3 store, against Garage', () => {
     expect(await wrongKey.probe()).toBe('unreachable')
     const nobody = s3Store({ ...garage.config, endpoint: 'http://127.0.0.1:9' })
     expect(await nobody.probe()).toBe('unreachable')
+  })
+})
+
+describe('a store that does not answer', () => {
+  it('says so as StorageUnreachable from every call, and not that a key is missing', async () => {
+    const nobody = s3Store({ ...garage.config, endpoint: 'http://127.0.0.1:9' })
+    await expect(nobody.get('avatars/w/a.webp')).rejects.toBeInstanceOf(StorageUnreachable)
+    await expect(
+      nobody.put('avatars/w/a.webp', Buffer.from('x'), 'image/webp'),
+    ).rejects.toBeInstanceOf(StorageUnreachable)
+    await expect(nobody.remove('avatars/w/a.webp')).rejects.toBeInstanceOf(StorageUnreachable)
+    const wrongKey = s3Store({ ...garage.config, secretAccessKey: 'not-the-secret-0000' })
+    await expect(wrongKey.get('avatars/w/a.webp')).rejects.toBeInstanceOf(StorageUnreachable)
   })
 })
 

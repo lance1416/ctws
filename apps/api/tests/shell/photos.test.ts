@@ -277,3 +277,25 @@ describe('the sweep', () => {
     expect(await store.get(key)).toBeNull()
   })
 })
+
+describe('a store that does not answer', () => {
+  it('is a 503 to read from or write to, and the rest of the account still works', async () => {
+    const down = s3Store({ ...garage.config, endpoint: 'http://127.0.0.1:9' })
+    const ctx = await appWithUser('me@example.com', { storage: down })
+    cleanups.push(ctx.stop)
+    const mine = (await call(ctx, 'GET', '/api/v1/auth/me')).json()
+    // A photo the database knows of whose file cannot be reached.
+    const id = '01a1a42a-0000-7000-8000-000000000042'
+    await ctx.db.execute(
+      sql`insert into files (id, workspace_id, key, created_at)
+          values (${id}::uuid, ${mine.workspaceId}::uuid, ${'avatars/w/gone.webp'}, now())`,
+    )
+    const read = await call(ctx, 'GET', `/api/v1/avatars/${id}`)
+    expect(read.statusCode).toBe(503)
+    expect(read.json()).toMatchObject({ type: 'urn:ctws:problem:storage-unreachable' })
+    const write = await put(ctx, `/api/v1/me/avatar?${CROP}`, await phonePhoto())
+    expect(write.statusCode).toBe(503)
+    expect(write.json()).toMatchObject({ type: 'urn:ctws:problem:storage-unreachable' })
+    expect((await call(ctx, 'GET', '/api/v1/auth/me')).statusCode).toBe(200)
+  })
+})
